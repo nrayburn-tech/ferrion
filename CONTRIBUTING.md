@@ -145,6 +145,19 @@ the project's own build:
 cargo corpus lock <project>
 ```
 
+### javac oracle
+
+`tools/javac-oracle` dumps javac's tokens, comments, parse diagnostics, and tree positions as JSON
+lines. Build it with the newest GA JDK:
+
+```bash
+mvn --batch-mode --file tools/javac-oracle/pom.xml package
+```
+
+```bash
+java -jar tools/javac-oracle/target/javac-oracle.jar --release 17 Example.java
+```
+
 ### Tests
 
 - Every bug fix comes with a regression test.
