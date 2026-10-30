@@ -127,6 +127,24 @@ cargo test --workspace
 cargo deny check
 ```
 
+### Corpus
+
+The corpus projects are listed in `tools/corpus/projects.toml`, each pinned to a commit. They are
+fetched into `target/corpus`, or into `FERRION_CORPUS_DIR` if it is set:
+
+```bash
+cargo corpus fetch
+```
+
+Each project's lock file in `tools/corpus/lock/` records its source sets, Java releases, and
+dependency jars, so fetching never runs a project's build. After adding a project or changing its
+commit, regenerate its lock file with `JAVA_HOME` set to the JDK named in `projects.toml`. This runs
+the project's own build:
+
+```bash
+cargo corpus lock <project>
+```
+
 ### Tests
 
 - Every bug fix comes with a regression test.

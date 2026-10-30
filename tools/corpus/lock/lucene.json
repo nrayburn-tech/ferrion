@@ -1,0 +1,2693 @@
+{
+  "formatVersion": 1,
+  "commit": "145d89cd30c38d25e39a0a2232cf00eee208b9cf",
+  "jdk": 21,
+  "modules": [
+    {
+      "path": "lucene/analysis.tests",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [],
+          "classpath": []
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis.tests/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/icu",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/kuromoji",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/morfologik",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/nori",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/opennlp",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/phonetic",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/smartcn",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/stempel",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-stemming/2.1.9/morfologik-stemming-2.1.9.jar"
+            },
+            {
+              "jar": "org/apache/opennlp/opennlp-tools/2.5.3/opennlp-tools-2.5.3.jar"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.17.2/commons-codec-1.17.2.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-fsa/2.1.9/morfologik-fsa-2.1.9.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/analysis/common",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/common/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/common/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        },
+        {
+          "name": "tools",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/common/src/tools/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/analysis/icu",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/icu/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/icu/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/icu",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        },
+        {
+          "name": "tools",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/icu/src/tools/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/analysis/kuromoji",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/kuromoji/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/kuromoji/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/kuromoji",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/analysis/morfologik",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/morfologik/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/carrot2/morfologik-polish/2.1.9/morfologik-polish-2.1.9.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-stemming/2.1.9/morfologik-stemming-2.1.9.jar"
+            },
+            {
+              "jar": "ua/net/nlp/morfologik-ukrainian-search/4.9.1/morfologik-ukrainian-search-4.9.1.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-fsa/2.1.9/morfologik-fsa-2.1.9.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/morfologik/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/morfologik",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/carrot2/morfologik-polish/2.1.9/morfologik-polish-2.1.9.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-stemming/2.1.9/morfologik-stemming-2.1.9.jar"
+            },
+            {
+              "jar": "ua/net/nlp/morfologik-ukrainian-search/4.9.1/morfologik-ukrainian-search-4.9.1.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-fsa/2.1.9/morfologik-fsa-2.1.9.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/analysis/morfologik.tests",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [],
+          "classpath": []
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/morfologik.tests/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/morfologik",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/carrot2/morfologik-stemming/2.1.9/morfologik-stemming-2.1.9.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-fsa/2.1.9/morfologik-fsa-2.1.9.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/analysis/nori",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/nori/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/nori/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/nori",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/analysis/opennlp",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/opennlp/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/apache/opennlp/opennlp-tools/2.5.3/opennlp-tools-2.5.3.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/opennlp/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/opennlp",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/apache/opennlp/opennlp-tools/2.5.3/opennlp-tools-2.5.3.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/analysis/phonetic",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/phonetic/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.17.2/commons-codec-1.17.2.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/phonetic/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/phonetic",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.17.2/commons-codec-1.17.2.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/analysis/smartcn",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/smartcn/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/smartcn/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/smartcn",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/analysis/stempel",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/stempel/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/analysis/stempel/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/stempel",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/backward-codecs",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/backward-codecs/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/backward-codecs/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/backward-codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/benchmark",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/benchmark/src/java"
+          ],
+          "classpath": [
+            {
+              "jar": "xerces/xercesImpl/2.12.2/xercesImpl-2.12.2.jar"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/highlighter",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/spatial-extras",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/spatial3d",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/apache/commons/commons-compress/1.19/commons-compress-1.19.jar"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
+            },
+            {
+              "jar": "org/locationtech/spatial4j/spatial4j/0.8/spatial4j-0.8.jar"
+            },
+            {
+              "jar": "net/sourceforge/nekohtml/nekohtml/1.9.17/nekohtml-1.9.17.jar"
+            },
+            {
+              "jar": "io/sgr/s2-geometry-library-java/1.0.0/s2-geometry-library-java-1.0.0.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/benchmark/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/benchmark",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "xerces/xercesImpl/2.12.2/xercesImpl-2.12.2.jar"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/highlighter",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/spatial-extras",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/spatial3d",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/apache/commons/commons-compress/1.19/commons-compress-1.19.jar"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
+            },
+            {
+              "jar": "org/locationtech/spatial4j/spatial4j/0.8/spatial4j-0.8.jar"
+            },
+            {
+              "jar": "net/sourceforge/nekohtml/nekohtml/1.9.17/nekohtml-1.9.17.jar"
+            },
+            {
+              "jar": "io/sgr/s2-geometry-library-java/1.0.0/s2-geometry-library-java-1.0.0.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/benchmark-jmh",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/benchmark-jmh/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/expressions",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/openjdk/jmh/jmh-core/1.37/jmh-core-1.37.jar"
+            },
+            {
+              "jar": "net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/benchmark-jmh/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/benchmark-jmh",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/expressions",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/openjdk/jmh/jmh-core/1.37/jmh-core-1.37.jar"
+            },
+            {
+              "jar": "net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/classification",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/classification/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/grouping",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/classification/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/classification",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/grouping",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/codecs",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/codecs/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/codecs/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/core",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/core/src/java"
+          ],
+          "classpath": []
+        },
+        {
+          "name": "main21",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/core/src/java21"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/core/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/core.tests",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/core.tests/src/java"
+          ],
+          "classpath": []
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/core.tests/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core.tests",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/demo",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/demo/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/expressions",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/demo/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/demo",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/expressions",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/distribution.tests",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [],
+          "classpath": []
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/distribution.tests/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/distribution.tests",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/procfork/1.0.6/procfork-1.0.6.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            },
+            {
+              "jar": "org/assertj/assertj-core/3.21.0/assertj-core-3.21.0.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/expressions",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/expressions/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.6/asm-commons-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.6/asm-9.6.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/expressions/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/expressions",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.6/asm-commons-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.6/asm-9.6.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/facet",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/facet/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/facet/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/backward-codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/grouping",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/grouping/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/grouping/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/grouping",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/highlighter",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/highlighter/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/memory",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/highlighter/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/highlighter",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/memory",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/join",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/join/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/join/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/join",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/luke",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/luke/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/backward-codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/icu",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/kuromoji",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/morfologik",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/nori",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/opennlp",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/phonetic",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/smartcn",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/stempel",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/suggest",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/misc",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/highlighter",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-stemming/2.1.9/morfologik-stemming-2.1.9.jar"
+            },
+            {
+              "jar": "org/apache/opennlp/opennlp-tools/2.5.3/opennlp-tools-2.5.3.jar"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.17.2/commons-codec-1.17.2.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-fsa/2.1.9/morfologik-fsa-2.1.9.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/luke/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/luke",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/backward-codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/icu",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/kuromoji",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/morfologik",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/nori",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/opennlp",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/phonetic",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/smartcn",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/stempel",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/suggest",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/misc",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/highlighter",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-stemming/2.1.9/morfologik-stemming-2.1.9.jar"
+            },
+            {
+              "jar": "org/apache/opennlp/opennlp-tools/2.5.3/opennlp-tools-2.5.3.jar"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.17.2/commons-codec-1.17.2.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-fsa/2.1.9/morfologik-fsa-2.1.9.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/memory",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/memory/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/memory/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/memory",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/misc",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/misc/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/misc/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/misc",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/monitor",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/monitor/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/memory",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/monitor/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/monitor",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/memory",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/queries",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/queries/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/queries/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/expressions",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/queryparser",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/queryparser/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/queryparser/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/replicator",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/replicator/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/replicator/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/replicator",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/sandbox",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/sandbox/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/sandbox/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/spatial-extras",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/spatial-extras/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/spatial3d",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/locationtech/spatial4j/spatial4j/0.8/spatial4j-0.8.jar"
+            },
+            {
+              "jar": "io/sgr/s2-geometry-library-java/1.0.0/s2-geometry-library-java-1.0.0.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/spatial-extras/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/spatial-extras",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/spatial3d",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/locationtech/spatial4j/spatial4j/0.8/spatial4j-0.8.jar"
+            },
+            {
+              "jar": "org/locationtech/spatial4j/spatial4j/0.8/spatial4j-0.8-tests.jar"
+            },
+            {
+              "jar": "io/sgr/s2-geometry-library-java/1.0.0/s2-geometry-library-java-1.0.0.jar"
+            },
+            {
+              "module": "lucene/spatial-test-fixtures",
+              "sourceSet": "testFixtures"
+            },
+            {
+              "jar": "org/locationtech/jts/jts-core/1.17.0/jts-core-1.17.0.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/spatial-test-fixtures",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/spatial-test-fixtures/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/spatial3d",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [],
+          "classpath": [
+            {
+              "module": "lucene/spatial-test-fixtures",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/spatial3d",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/spatial3d",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/spatial3d/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/spatial3d/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/spatial3d",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/spatial-test-fixtures",
+              "sourceSet": "testFixtures"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/suggest",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/suggest/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/suggest/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/suggest",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "lucene/test-framework",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/test-framework/src/java"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 21,
+          "sourceRoots": [
+            "lucene/test-framework/src/test"
+          ],
+          "classpath": [
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "jars": {
+    "com/carrotsearch/procfork/1.0.6/procfork-1.0.6.jar": "9ff1835553d7abcc4d68ae00dec3eb4ca992c892a02d2edd0a23d7155ced1aa3",
+    "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar": "38302cf4c5a8ba4bf0ff2f707340dcd230657b3a766d9df6e3783cce19c5acb5",
+    "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar": "b3640b9f416a4411fd33c59abbeea8fd57d024c23e1819bf9673220a97499fe3",
+    "commons-codec/commons-codec/1.17.2/commons-codec-1.17.2.jar": "4148332728490cef12b29dac4c385f46982f04285132c6fa51ad7267d7dc7a8b",
+    "io/sgr/s2-geometry-library-java/1.0.0/s2-geometry-library-java-1.0.0.jar": "8e2c74fbe98adf02e93cc831c3a2d9fda9c4c8577eff7bec3ce9ce5863abbda7",
+    "junit/junit/4.13.1/junit-4.13.1.jar": "c30719db974d6452793fe191b3638a5777005485bae145924044530ffa5f6122",
+    "net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar": "df26cc58f235f477db07f753ba5a3ab243ebe5789d9f89ecf68dd62ea9a66c28",
+    "net/sourceforge/nekohtml/nekohtml/1.9.17/nekohtml-1.9.17.jar": "a79bd92c686c403896ebd72db6e2543180d57a1f81bc4e2f3c177043d89b4189",
+    "org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar": "dd3e8a13a2d669bf84fb8d834de35ce4875f27157698d206241ec8488aadcaf7",
+    "org/apache/commons/commons-compress/1.19/commons-compress-1.19.jar": "ff2d59fad74e867630fbc7daab14c432654712ac624dbee468d220677b124dd5",
+    "org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar": "1e56d7b058d28b65abd256b8458e3885b674c1d588fa43cd7d1cbb9c7ef2b308",
+    "org/apache/opennlp/opennlp-tools/2.5.3/opennlp-tools-2.5.3.jar": "98dde134b986f0777712679c8008ffd89ba8e6ac84f1689a158a724f86e22a1d",
+    "org/assertj/assertj-core/3.21.0/assertj-core-3.21.0.jar": "04bf8242755dac66999ebabce8e6eb89ad3dcd9b64abf0e95e0d2409cf608516",
+    "org/carrot2/morfologik-fsa/2.1.9/morfologik-fsa-2.1.9.jar": "1bfefce937df14cc94d32a98ce59c33f4d5b6c0eddbb436b6bfe27ff2120a23d",
+    "org/carrot2/morfologik-polish/2.1.9/morfologik-polish-2.1.9.jar": "e503682b3f4e8bb7a5d05820b0e2a4a19d4bad43dae20f64741786658a9cf478",
+    "org/carrot2/morfologik-stemming/2.1.9/morfologik-stemming-2.1.9.jar": "6170895b2315b697f4da5630caf57c6c441f1cb419d89d1cb5326b0673293e8a",
+    "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar": "5e62846a89f05cd78cd9c1a553f340d002458380c320455dd1f8fc5497a8a1c1",
+    "org/locationtech/jts/jts-core/1.17.0/jts-core-1.17.0.jar": "774b17b1051403eecbd1415c377fba886ff0de997a06af968cc4204ffb603334",
+    "org/locationtech/spatial4j/spatial4j/0.8/spatial4j-0.8-tests.jar": "9593f84ae0d2213174401117fa05cedac7f5e459ae6a43c0019c62c6ddfa0462",
+    "org/locationtech/spatial4j/spatial4j/0.8/spatial4j-0.8.jar": "566cfe7eea3a96ef7dd2f4e30394edefca71454505513f090fa54be21c529082",
+    "org/openjdk/jmh/jmh-core/1.37/jmh-core-1.37.jar": "dc0eaf2bbf0036a70b60798c785d6e03a9daf06b68b8edb0f1ba9eb3421baeb3",
+    "org/ow2/asm/asm-commons/9.6/asm-commons-9.6.jar": "7aefd0d5c0901701c69f7513feda765fb6be33af2ce7aa17c5781fc87657c511",
+    "org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar": "c43ecf17b539c777e15da7b5b86553b377e2d39a683de6285567d5283888e7ef",
+    "org/ow2/asm/asm/9.6/asm-9.6.jar": "3c6fac2424db3d4a853b669f4e3d1d9c3c552235e19a319673f887083c2303a1",
+    "org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar": "a12578dde1ba00bd9b816d388a0b879928d00bab3c83c240f7013bf4196c579a",
+    "ua/net/nlp/morfologik-ukrainian-search/4.9.1/morfologik-ukrainian-search-4.9.1.jar": "463d9054b8d4cfacb9cd69566395826a6fe32fb6e7da91dbf79d37ddf7d56ba0",
+    "xerces/xercesImpl/2.12.2/xercesImpl-2.12.2.jar": "6fc991829af1708d15aea50c66f0beadcd2cfeb6968e0b2f55c1b0909883fe16"
+  }
+}

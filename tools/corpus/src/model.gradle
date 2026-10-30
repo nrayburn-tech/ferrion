@@ -1,0 +1,57 @@
+// Init script used by `corpus lock`. Adds a `ferrionCorpusModel` task to every project, which
+// writes the project's source sets and resolved compile classpaths to a JSON file in the directory
+// named by the FERRION_CORPUS_OUT environment variable.
+
+import groovy.json.JsonOutput
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier
+
+allprojects { p ->
+    p.tasks.register('ferrionCorpusModel') {
+        doLast {
+            def sourceSets = p.extensions.findByName('sourceSets')
+            if (sourceSets == null) {
+                return
+            }
+            def model = [path: p.path, dir: p.projectDir.absolutePath, sourceSets: []]
+            sourceSets.each { s ->
+                def compile = p.tasks.findByName(s.compileJavaTaskName)
+                def release = compile?.options?.release?.getOrNull()
+                if (release == null) {
+                    release = compile?.sourceCompatibility
+                }
+
+                // Other source sets in this project whose output is on this one's classpath.
+                def classpathFiles = s.compileClasspath.files
+                def classpath = []
+                sourceSets.each { other ->
+                    if (other != s && other.output.classesDirs.files.any { classpathFiles.contains(it) }) {
+                        classpath << [project: p.path, sourceSet: other.name]
+                    }
+                }
+
+                def configuration = p.configurations.getByName(s.compileClasspathConfigurationName)
+                configuration.incoming.artifactView { lenient(false) }.artifacts.each { a ->
+                    def id = a.id.componentIdentifier
+                    if (id instanceof ProjectComponentIdentifier) {
+                        def testFixtures = a.variant.capabilities.any { it.name.endsWith('-test-fixtures') }
+                        classpath << [project: id.projectPath, sourceSet: testFixtures ? 'testFixtures' : 'main']
+                    } else if (id instanceof ModuleComponentIdentifier) {
+                        classpath << [group: id.group, module: id.module, version: id.version, file: a.file.absolutePath]
+                    } else {
+                        classpath << [file: a.file.absolutePath]
+                    }
+                }
+
+                model.sourceSets << [
+                    name: s.name,
+                    release: release?.toString(),
+                    sourceRoots: s.java.srcDirs.findAll { it.isDirectory() }.collect { it.absolutePath },
+                    classpath: classpath,
+                ]
+            }
+            def name = p.path == ':' ? 'root' : p.path.substring(1).replace(':', '_')
+            new File(System.getenv('FERRION_CORPUS_OUT'), name + '.json').text = JsonOutput.toJson(model)
+        }
+    }
+}

@@ -1,0 +1,991 @@
+{
+  "formatVersion": 1,
+  "commit": "666338cc49d5686c07e3e4d17f0aa1cec25a2be6",
+  "jdk": 21,
+  "modules": [
+    {
+      "path": "guava",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 8,
+          "sourceRoots": [
+            "guava/src"
+          ],
+          "classpath": [
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 8,
+          "sourceRoots": [],
+          "classpath": [
+            {
+              "module": "guava",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "guava-testlib",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 8,
+          "sourceRoots": [
+            "guava-testlib/src"
+          ],
+          "classpath": [
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "module": "guava",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 8,
+          "sourceRoots": [
+            "guava-testlib/test"
+          ],
+          "classpath": [
+            {
+              "module": "guava-testlib",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "module": "guava",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+            },
+            {
+              "jar": "com/google/testparameterinjector/test-parameter-injector/1.22/test-parameter-injector-1.22.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.7.4/auto-value-annotations-1.7.4.jar"
+            },
+            {
+              "jar": "org/yaml/snakeyaml/2.0/snakeyaml-2.0.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-reflect/2.2.20/kotlin-reflect-2.2.20.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20.jar"
+            },
+            {
+              "jar": "org/jetbrains/annotations/13.0/annotations-13.0.jar"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.8/asm-9.8.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "guava-tests",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 8,
+          "sourceRoots": [],
+          "classpath": []
+        },
+        {
+          "name": "test",
+          "javaRelease": 8,
+          "sourceRoots": [
+            "guava-tests/test"
+          ],
+          "classpath": [
+            {
+              "module": "guava-tests",
+              "sourceSet": "main"
+            },
+            {
+              "module": "guava",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "module": "guava-testlib",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/4.11.0/mockito-core-4.11.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.12.19/byte-buddy-1.12.19.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.12.19/byte-buddy-agent-1.12.19.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.8/asm-9.8.jar"
+            },
+            {
+              "jar": "com/google/jimfs/jimfs/1.3.1/jimfs-1.3.1.jar"
+            },
+            {
+              "jar": "com/google/caliper/caliper/1.0-beta-3/caliper-1.0-beta-3.jar"
+            },
+            {
+              "jar": "com/google/caliper/caliper-core/1.0-beta-3/caliper-core-1.0-beta-3.jar"
+            },
+            {
+              "jar": "com/google/caliper/caliper-api/1.0-beta-3/caliper-api-1.0-beta-3.jar"
+            },
+            {
+              "jar": "com/google/caliper/caliper-util/1.0-beta-3/caliper-util-1.0-beta-3.jar"
+            },
+            {
+              "jar": "com/google/code/gson/gson/2.8.7/gson-2.8.7.jar"
+            },
+            {
+              "jar": "joda-time/joda-time/2.10.10/joda-time-2.10.10.jar"
+            },
+            {
+              "jar": "com/squareup/okhttp/okhttp/2.7.5/okhttp-2.7.5.jar"
+            },
+            {
+              "jar": "com/squareup/okio/okio/1.6.0/okio-1.6.0.jar"
+            },
+            {
+              "jar": "com/google/caliper/caliper-runner/1.0-beta-3/caliper-runner-1.0-beta-3.jar"
+            },
+            {
+              "jar": "com/google/dagger/dagger-producers/2.22.1/dagger-producers-2.22.1.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-compat-qual/2.5.3/checker-compat-qual-2.5.3.jar"
+            },
+            {
+              "jar": "com/google/caliper/caliper-worker-jvm/1.0-beta-3/caliper-worker-jvm-1.0-beta-3.jar"
+            },
+            {
+              "jar": "com/google/caliper/caliper-worker/1.0-beta-3/caliper-worker-1.0-beta-3.jar"
+            },
+            {
+              "jar": "com/sun/jersey/jersey-client/1.19.4/jersey-client-1.19.4.jar"
+            },
+            {
+              "jar": "com/sun/jersey/jersey-core/1.19.4/jersey-core-1.19.4.jar"
+            },
+            {
+              "jar": "javax/ws/rs/jsr311-api/1.1.1/jsr311-api-1.1.1.jar"
+            },
+            {
+              "jar": "com/google/dagger/dagger/2.22.1/dagger-2.22.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "com/google/code/java-allocation-instrumenter/java-allocation-instrumenter/3.3.0/java-allocation-instrumenter-3.3.0.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-analysis/7.2/asm-analysis-7.2.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/7.2/asm-commons-7.2.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/7.2/asm-tree-7.2.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-util/7.2/asm-util-7.2.jar"
+            },
+            {
+              "jar": "javax/annotation/javax.annotation-api/1.3.2/javax.annotation-api-1.3.2.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "guava-gwt",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 8,
+          "sourceRoots": [
+            "guava-gwt/src"
+          ],
+          "classpath": [
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "module": "guava",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "org/gwtproject/gwt-dev/2.13.0/gwt-dev-2.13.0.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/1.3.9/jsr305-1.3.9.jar"
+            },
+            {
+              "jar": "com/google/code/gson/gson/2.11.0/gson-2.11.0.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.6/asm-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-util/9.6/asm-util-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-analysis/9.6/asm-analysis-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.6/asm-commons-9.6.jar"
+            },
+            {
+              "jar": "colt/colt/1.2.0/colt-1.2.0.jar"
+            },
+            {
+              "jar": "commons-collections/commons-collections/3.2.2/commons-collections-3.2.2.jar"
+            },
+            {
+              "jar": "commons-io/commons-io/2.4/commons-io-2.4.jar"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/63.1/icu4j-63.1.jar"
+            },
+            {
+              "jar": "tapestry/tapestry/4.0.2/tapestry-4.0.2.jar"
+            },
+            {
+              "jar": "net/sourceforge/htmlunit/htmlunit/2.55.0/htmlunit-2.55.0.jar"
+            },
+            {
+              "jar": "xalan/xalan/2.7.2/xalan-2.7.2.jar"
+            },
+            {
+              "jar": "xalan/serializer/2.7.2/serializer-2.7.2.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-text/1.9/commons-text-1.9.jar"
+            },
+            {
+              "jar": "org/apache/httpcomponents/httpmime/4.5.13/httpmime-4.5.13.jar"
+            },
+            {
+              "jar": "org/apache/httpcomponents/httpclient/4.5.13/httpclient-4.5.13.jar"
+            },
+            {
+              "jar": "org/apache/httpcomponents/httpcore/4.4.13/httpcore-4.4.13.jar"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.11/commons-codec-1.11.jar"
+            },
+            {
+              "jar": "net/sourceforge/htmlunit/htmlunit-core-js/2.55.0/htmlunit-core-js-2.55.0.jar"
+            },
+            {
+              "jar": "net/sourceforge/htmlunit/neko-htmlunit/2.55.0/neko-htmlunit-2.55.0.jar"
+            },
+            {
+              "jar": "xerces/xercesImpl/2.12.1/xercesImpl-2.12.1.jar"
+            },
+            {
+              "jar": "xml-apis/xml-apis/1.4.01/xml-apis-1.4.01.jar"
+            },
+            {
+              "jar": "net/sourceforge/htmlunit/htmlunit-cssparser/1.10.0/htmlunit-cssparser-1.10.0.jar"
+            },
+            {
+              "jar": "commons-logging/commons-logging/1.2/commons-logging-1.2.jar"
+            },
+            {
+              "jar": "commons-net/commons-net/3.8.0/commons-net-3.8.0.jar"
+            },
+            {
+              "jar": "org/brotli/dec/0.1.2/dec-0.1.2.jar"
+            },
+            {
+              "jar": "com/shapesecurity/salvation2/3.0.0/salvation2-3.0.0.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/websocket/websocket-client/9.4.44.v20210927/websocket-client-9.4.44.v20210927.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-client/9.4.44.v20210927/jetty-client-9.4.44.v20210927.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/websocket/websocket-common/9.4.44.v20210927/websocket-common-9.4.44.v20210927.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/websocket/websocket-api/9.4.44.v20210927/websocket-api-9.4.44.v20210927.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-webapp/9.4.58.v20250814/jetty-webapp-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-xml/9.4.58.v20250814/jetty-xml-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-servlet/9.4.58.v20250814/jetty-servlet-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-security/9.4.58.v20250814/jetty-security-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-server/9.4.58.v20250814/jetty-server-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-util-ajax/9.4.58.v20250814/jetty-util-ajax-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-servlets/9.4.58.v20250814/jetty-servlets-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-continuation/9.4.58.v20250814/jetty-continuation-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-http/9.4.58.v20250814/jetty-http-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-util/9.4.58.v20250814/jetty-util-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-io/9.4.58.v20250814/jetty-io-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-annotations/9.4.58.v20250814/jetty-annotations-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-plus/9.4.58.v20250814/jetty-plus-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-jndi/9.4.58.v20250814/jetty-jndi-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "javax/annotation/javax.annotation-api/1.3.2/javax.annotation-api-1.3.2.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/apache-jsp/9.4.58.v20250814/apache-jsp-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/toolchain/jetty-schemas/3.1.2/jetty-schemas-3.1.2.jar"
+            },
+            {
+              "jar": "org/mortbay/jasper/apache-jsp/8.5.100/apache-jsp-8.5.100.jar"
+            },
+            {
+              "jar": "org/mortbay/jasper/apache-el/8.5.100/apache-el-8.5.100.jar"
+            },
+            {
+              "jar": "org/eclipse/jdt/org.eclipse.jdt.core/3.33.0/org.eclipse.jdt.core-3.33.0.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.core.resources/3.18.200/org.eclipse.core.resources-3.18.200.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.core.expressions/3.8.200/org.eclipse.core.expressions-3.8.200.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.osgi/3.18.300/org.eclipse.osgi-3.18.300.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.core.runtime/3.26.100/org.eclipse.core.runtime-3.26.100.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.equinox.common/3.17.0/org.eclipse.equinox.common-3.17.0.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.core.jobs/3.13.200/org.eclipse.core.jobs-3.13.200.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.equinox.registry/3.11.200/org.eclipse.equinox.registry-3.11.200.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.equinox.preferences/3.10.100/org.eclipse.equinox.preferences-3.10.100.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.service.prefs/1.1.2/org.osgi.service.prefs-1.1.2.jar"
+            },
+            {
+              "jar": "org/osgi/osgi.annotation/8.0.1/osgi.annotation-8.0.1.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.core.contenttype/3.8.200/org.eclipse.core.contenttype-3.8.200.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.equinox.app/1.6.200/org.eclipse.equinox.app-1.6.200.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.core.filesystem/1.9.500/org.eclipse.core.filesystem-1.9.500.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.text/3.12.300/org.eclipse.text-3.12.300.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.core.commands/3.10.300/org.eclipse.core.commands-3.10.300.jar"
+            },
+            {
+              "jar": "org/eclipse/jdt/ecj/3.33.0/ecj-3.33.0.jar"
+            },
+            {
+              "jar": "org/gwtproject/gwt-user/2.13.0/gwt-user-2.13.0.jar"
+            },
+            {
+              "jar": "com/google/jsinterop/jsinterop-annotations/2.0.0/jsinterop-annotations-2.0.0.jar"
+            },
+            {
+              "jar": "javax/validation/validation-api/1.0.0.GA/validation-api-1.0.0.GA.jar"
+            },
+            {
+              "jar": "javax/validation/validation-api/1.0.0.GA/validation-api-1.0.0.GA-sources.jar"
+            },
+            {
+              "jar": "javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar"
+            },
+            {
+              "jar": "org/w3c/css/sac/1.3/sac-1.3.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 8,
+          "sourceRoots": [
+            "guava-gwt/test"
+          ],
+          "classpath": [
+            {
+              "module": "guava-gwt",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "module": "guava",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "module": "guava-testlib",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+            },
+            {
+              "module": "guava-testlib",
+              "sourceSet": "test"
+            },
+            {
+              "module": "guava-tests",
+              "sourceSet": "test"
+            },
+            {
+              "jar": "org/gwtproject/gwt-dev/2.13.0/gwt-dev-2.13.0.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/1.3.9/jsr305-1.3.9.jar"
+            },
+            {
+              "jar": "com/google/code/gson/gson/2.11.0/gson-2.11.0.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.6/asm-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-util/9.6/asm-util-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-analysis/9.6/asm-analysis-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.6/asm-commons-9.6.jar"
+            },
+            {
+              "jar": "colt/colt/1.2.0/colt-1.2.0.jar"
+            },
+            {
+              "jar": "commons-collections/commons-collections/3.2.2/commons-collections-3.2.2.jar"
+            },
+            {
+              "jar": "commons-io/commons-io/2.4/commons-io-2.4.jar"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/63.1/icu4j-63.1.jar"
+            },
+            {
+              "jar": "tapestry/tapestry/4.0.2/tapestry-4.0.2.jar"
+            },
+            {
+              "jar": "net/sourceforge/htmlunit/htmlunit/2.55.0/htmlunit-2.55.0.jar"
+            },
+            {
+              "jar": "xalan/xalan/2.7.2/xalan-2.7.2.jar"
+            },
+            {
+              "jar": "xalan/serializer/2.7.2/serializer-2.7.2.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-text/1.9/commons-text-1.9.jar"
+            },
+            {
+              "jar": "org/apache/httpcomponents/httpmime/4.5.13/httpmime-4.5.13.jar"
+            },
+            {
+              "jar": "org/apache/httpcomponents/httpclient/4.5.13/httpclient-4.5.13.jar"
+            },
+            {
+              "jar": "org/apache/httpcomponents/httpcore/4.4.13/httpcore-4.4.13.jar"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.11/commons-codec-1.11.jar"
+            },
+            {
+              "jar": "net/sourceforge/htmlunit/htmlunit-core-js/2.55.0/htmlunit-core-js-2.55.0.jar"
+            },
+            {
+              "jar": "net/sourceforge/htmlunit/neko-htmlunit/2.55.0/neko-htmlunit-2.55.0.jar"
+            },
+            {
+              "jar": "xerces/xercesImpl/2.12.1/xercesImpl-2.12.1.jar"
+            },
+            {
+              "jar": "xml-apis/xml-apis/1.4.01/xml-apis-1.4.01.jar"
+            },
+            {
+              "jar": "net/sourceforge/htmlunit/htmlunit-cssparser/1.10.0/htmlunit-cssparser-1.10.0.jar"
+            },
+            {
+              "jar": "commons-logging/commons-logging/1.2/commons-logging-1.2.jar"
+            },
+            {
+              "jar": "commons-net/commons-net/3.8.0/commons-net-3.8.0.jar"
+            },
+            {
+              "jar": "org/brotli/dec/0.1.2/dec-0.1.2.jar"
+            },
+            {
+              "jar": "com/shapesecurity/salvation2/3.0.0/salvation2-3.0.0.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/websocket/websocket-client/9.4.44.v20210927/websocket-client-9.4.44.v20210927.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-client/9.4.44.v20210927/jetty-client-9.4.44.v20210927.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/websocket/websocket-common/9.4.44.v20210927/websocket-common-9.4.44.v20210927.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/websocket/websocket-api/9.4.44.v20210927/websocket-api-9.4.44.v20210927.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-webapp/9.4.58.v20250814/jetty-webapp-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-xml/9.4.58.v20250814/jetty-xml-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-servlet/9.4.58.v20250814/jetty-servlet-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-security/9.4.58.v20250814/jetty-security-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-server/9.4.58.v20250814/jetty-server-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-util-ajax/9.4.58.v20250814/jetty-util-ajax-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-servlets/9.4.58.v20250814/jetty-servlets-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-continuation/9.4.58.v20250814/jetty-continuation-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-http/9.4.58.v20250814/jetty-http-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-util/9.4.58.v20250814/jetty-util-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-io/9.4.58.v20250814/jetty-io-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-annotations/9.4.58.v20250814/jetty-annotations-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-plus/9.4.58.v20250814/jetty-plus-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/jetty-jndi/9.4.58.v20250814/jetty-jndi-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "javax/annotation/javax.annotation-api/1.3.2/javax.annotation-api-1.3.2.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/apache-jsp/9.4.58.v20250814/apache-jsp-9.4.58.v20250814.jar"
+            },
+            {
+              "jar": "org/eclipse/jetty/toolchain/jetty-schemas/3.1.2/jetty-schemas-3.1.2.jar"
+            },
+            {
+              "jar": "org/mortbay/jasper/apache-jsp/8.5.100/apache-jsp-8.5.100.jar"
+            },
+            {
+              "jar": "org/mortbay/jasper/apache-el/8.5.100/apache-el-8.5.100.jar"
+            },
+            {
+              "jar": "org/eclipse/jdt/org.eclipse.jdt.core/3.33.0/org.eclipse.jdt.core-3.33.0.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.core.resources/3.18.200/org.eclipse.core.resources-3.18.200.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.core.expressions/3.8.200/org.eclipse.core.expressions-3.8.200.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.osgi/3.18.300/org.eclipse.osgi-3.18.300.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.core.runtime/3.26.100/org.eclipse.core.runtime-3.26.100.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.equinox.common/3.17.0/org.eclipse.equinox.common-3.17.0.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.core.jobs/3.13.200/org.eclipse.core.jobs-3.13.200.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.equinox.registry/3.11.200/org.eclipse.equinox.registry-3.11.200.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.equinox.preferences/3.10.100/org.eclipse.equinox.preferences-3.10.100.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.service.prefs/1.1.2/org.osgi.service.prefs-1.1.2.jar"
+            },
+            {
+              "jar": "org/osgi/osgi.annotation/8.0.1/osgi.annotation-8.0.1.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.core.contenttype/3.8.200/org.eclipse.core.contenttype-3.8.200.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.equinox.app/1.6.200/org.eclipse.equinox.app-1.6.200.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.core.filesystem/1.9.500/org.eclipse.core.filesystem-1.9.500.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.text/3.12.300/org.eclipse.text-3.12.300.jar"
+            },
+            {
+              "jar": "org/eclipse/platform/org.eclipse.core.commands/3.10.300/org.eclipse.core.commands-3.10.300.jar"
+            },
+            {
+              "jar": "org/eclipse/jdt/ecj/3.33.0/ecj-3.33.0.jar"
+            },
+            {
+              "jar": "org/gwtproject/gwt-user/2.13.0/gwt-user-2.13.0.jar"
+            },
+            {
+              "jar": "com/google/jsinterop/jsinterop-annotations/2.0.0/jsinterop-annotations-2.0.0.jar"
+            },
+            {
+              "jar": "javax/validation/validation-api/1.0.0.GA/validation-api-1.0.0.GA.jar"
+            },
+            {
+              "jar": "javax/validation/validation-api/1.0.0.GA/validation-api-1.0.0.GA-sources.jar"
+            },
+            {
+              "jar": "javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar"
+            },
+            {
+              "jar": "org/w3c/css/sac/1.3/sac-1.3.jar"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5-gwt.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "jars": {
+    "colt/colt/1.2.0/colt-1.2.0.jar": "e1fcbfbdd0d0caedadfb59febace5a62812db3b9425f3a03ef4c4cbba3ed0ee3",
+    "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar": "5a055ce4255333b3346e1a8703da5bf8ff049532286fdcd31712d624abe111dd",
+    "com/google/auto/value/auto-value-annotations/1.7.4/auto-value-annotations-1.7.4.jar": "fedd59b0b4986c342f6ab2d182f2a4ee9fceb2c7e2d5bdc4dc764c92394a23d3",
+    "com/google/caliper/caliper-api/1.0-beta-3/caliper-api-1.0-beta-3.jar": "374f0c6c0c1f8784cb69d885e1dcbb7498c34ca20369e0597264568530642928",
+    "com/google/caliper/caliper-core/1.0-beta-3/caliper-core-1.0-beta-3.jar": "514deac8f8b09dd4262733e0a4406a333208c899dc7ea726b03600b9bb94f192",
+    "com/google/caliper/caliper-runner/1.0-beta-3/caliper-runner-1.0-beta-3.jar": "3ab58890aa01343361adedf859500d280f67813df0cedfcd165b169533b9b1fa",
+    "com/google/caliper/caliper-util/1.0-beta-3/caliper-util-1.0-beta-3.jar": "6e9af500c7020450dfdb5003d09501d512d395f431c54c7ee8f79e712463fe66",
+    "com/google/caliper/caliper-worker-jvm/1.0-beta-3/caliper-worker-jvm-1.0-beta-3.jar": "e14e1ecfdf939c82abdb902105be41ff3f83c18cb968116232015f2662d065a4",
+    "com/google/caliper/caliper-worker/1.0-beta-3/caliper-worker-1.0-beta-3.jar": "315d8e51df1f60551645a0e3bf2c504d2c79762f688e6f728eb9d1d9cd9a491b",
+    "com/google/caliper/caliper/1.0-beta-3/caliper-1.0-beta-3.jar": "d54e1bfdbe9359a79e175c217b8d472555cf20da9c5c0a18bdb1ea7db979ed8e",
+    "com/google/code/findbugs/jsr305/1.3.9/jsr305-1.3.9.jar": "905721a0eea90a81534abb7ee6ef4ea2e5e645fa1def0a5cd88402df1b46c9ed",
+    "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar": "766ad2a0783f2687962c8ad74ceecc38a28b9f72a2d085ee438b7813e928d0c7",
+    "com/google/code/gson/gson/2.11.0/gson-2.11.0.jar": "57928d6e5a6edeb2abd3770a8f95ba44dce45f3b23b7a9dc2b309c581552a78b",
+    "com/google/code/gson/gson/2.8.7/gson-2.8.7.jar": "67bd19c510ed227d8a9dc5f67f1b4b2f3426853f5eff02e1d9ea7e95f4923ba0",
+    "com/google/code/java-allocation-instrumenter/java-allocation-instrumenter/3.3.0/java-allocation-instrumenter-3.3.0.jar": "1ef5535a8bd41cf3072469f381b9ee6ab28275311a7499f53d6e52adf976fef0",
+    "com/google/dagger/dagger-producers/2.22.1/dagger-producers-2.22.1.jar": "f834a0082014213a68ff06a0f048d750178d02196c58b0b15beb367d32b97e35",
+    "com/google/dagger/dagger/2.22.1/dagger-2.22.1.jar": "329d4340f24c4f5717af016c097e90668bfea2a5376e6aa9964b01cef3fd241a",
+    "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar": "4667724877f1d37a689202da191e23efa7657c62eef93ccdac406eccfe5cdd0a",
+    "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar": "cbfc3906b19b8f55dd7cfd6dfe0aa4532e834250d7f080bd8d211a3e246b59cb",
+    "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar": "b372a037d4230aa57fbeffdef30fd6123f9c0c2db85d0aced00c91b974f33f99",
+    "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar": "84d3a150518485f8140ea99b8a985656749629f6433c92b80c75b36aba3b099b",
+    "com/google/jimfs/jimfs/1.3.1/jimfs-1.3.1.jar": "b31e5da8d4d73bf9634ca8543af099517d45e9c2e6b47b76c6bcc28736902f14",
+    "com/google/jsinterop/jsinterop-annotations/2.0.0/jsinterop-annotations-2.0.0.jar": "ce01f48439240e46521b99cc4c889dcb6793f7a0b0a3e238a38359093f457b49",
+    "com/google/testparameterinjector/test-parameter-injector/1.22/test-parameter-injector-1.22.jar": "ff534578f2e3dc6030d1f4a6896df3d20573644858c6ade878efb75d2a36504b",
+    "com/google/truth/truth/1.4.5/truth-1.4.5-gwt.jar": "266e2f0f74af18b8fac3083cf0ff2b202aab5b3ddde97bbcf2894d25407ffbdd",
+    "com/google/truth/truth/1.4.5/truth-1.4.5.jar": "a6409e90fdd6b31f239b0c02065c43b53e1b09c72f2e08c3a86d04fe5910cf4b",
+    "com/ibm/icu/icu4j/63.1/icu4j-63.1.jar": "0940c61d12667413a58206a010ab5ca0758cc44ad9e9957ea98e0f871ab5eda0",
+    "com/shapesecurity/salvation2/3.0.0/salvation2-3.0.0.jar": "1375d45e36ff94643779bdd2f158f49cb137d2de8a4aa8080c7a602d95db7cee",
+    "com/squareup/okhttp/okhttp/2.7.5/okhttp-2.7.5.jar": "88ac9fd1bb51f82bcc664cc1eb9c225c90dc4389d660231b4cc737bebfe7d0aa",
+    "com/squareup/okio/okio/1.6.0/okio-1.6.0.jar": "114bdc1f47338a68bcbc95abf2f5cdc72beeec91812f2fcd7b521c1937876266",
+    "com/sun/jersey/jersey-client/1.19.4/jersey-client-1.19.4.jar": "639c825c5db580f8115bf49ffc893093526d2ed1079fbc929b6a5fbd0b2eda40",
+    "com/sun/jersey/jersey-core/1.19.4/jersey-core-1.19.4.jar": "64b03198e0264849d0fc341857ebcc9c882b1909a2dc35a0972fe7d901b826e5",
+    "commons-codec/commons-codec/1.11/commons-codec-1.11.jar": "e599d5318e97aa48f42136a2927e6dfa4e8881dff0e6c8e3109ddbbff51d7b7d",
+    "commons-collections/commons-collections/3.2.2/commons-collections-3.2.2.jar": "eeeae917917144a68a741d4c0dff66aa5c5c5fd85593ff217bced3fc8ca783b8",
+    "commons-io/commons-io/2.4/commons-io-2.4.jar": "cc6a41dc3eaacc9e440a6bd0d2890b20d36b4ee408fe2d67122f328bb6e01581",
+    "commons-logging/commons-logging/1.2/commons-logging-1.2.jar": "daddea1ea0be0f56978ab3006b8ac92834afeefbd9b7e4e6316fca57df0fa636",
+    "commons-net/commons-net/3.8.0/commons-net-3.8.0.jar": "352b0ba1c657d8930063a9b83878fb717deef2d29ee25d13943be9beccc64d49",
+    "javax/annotation/javax.annotation-api/1.3.2/javax.annotation-api-1.3.2.jar": "e04ba5195bcd555dc95650f7cc614d151e4bcd52d29a10b8aa2197f3ab89ab9b",
+    "javax/inject/javax.inject/1/javax.inject-1.jar": "91c77044a50c481636c32d916fd89c9118a72195390452c81065080f957de7ff",
+    "javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar": "af456b2dd41c4e82cf54f3e743bc678973d9fe35bd4d3071fa05c7e5333b8482",
+    "javax/validation/validation-api/1.0.0.GA/validation-api-1.0.0.GA-sources.jar": "a394d52a9b7fe2bb14f0718d2b3c8308ffe8f37e911956012398d55c9f9f9b54",
+    "javax/validation/validation-api/1.0.0.GA/validation-api-1.0.0.GA.jar": "e459f313ebc6db2483f8ceaad39af07086361b474fa92e40f442e8de5d9895dc",
+    "javax/ws/rs/jsr311-api/1.1.1/jsr311-api-1.1.1.jar": "ab1534b73b5fa055808e6598a5e73b599ccda28c3159c3c0908977809422ee4a",
+    "joda-time/joda-time/2.10.10/joda-time-2.10.10.jar": "dd8e7c92185a678d1b7b933f31209b6203c8ffa91e9880475a1be0346b9617e3",
+    "junit/junit/4.13.2/junit-4.13.2.jar": "8e495b634469d64fb8acfa3495a065cbacc8a0fff55ce1e31007be4c16dc57d3",
+    "net/bytebuddy/byte-buddy-agent/1.12.19/byte-buddy-agent-1.12.19.jar": "3a70240de7cdcde04e7c504c2327d7035b9c25ae0206881e3bf4e6798a273ed8",
+    "net/bytebuddy/byte-buddy/1.12.19/byte-buddy-1.12.19.jar": "030704139e46f32c38d27060edee9e0676b0a0fff8a8be53461515154ba8a7be",
+    "net/sourceforge/htmlunit/htmlunit-core-js/2.55.0/htmlunit-core-js-2.55.0.jar": "612746615e89fe75ac255a4d4269a437875527949efb58f091a27c8284f8e7a9",
+    "net/sourceforge/htmlunit/htmlunit-cssparser/1.10.0/htmlunit-cssparser-1.10.0.jar": "8a2e0c61d3b50b76b7157e1d2235b99ced68f7af2d907e6bb92089e6f4925ee5",
+    "net/sourceforge/htmlunit/htmlunit/2.55.0/htmlunit-2.55.0.jar": "df37f1007a623a5924f2cc9dfab2dbc005fd50540bb06f7a7e40debe6571009d",
+    "net/sourceforge/htmlunit/neko-htmlunit/2.55.0/neko-htmlunit-2.55.0.jar": "8d8d81d5092c586ed6c6f90342b67d8c1f3f615fd7ebed977f03c9506754f752",
+    "org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar": "d919d904486c037f8d193412da0c92e22a9fa24230b9d67a57855c5c31c7e94e",
+    "org/apache/commons/commons-text/1.9/commons-text-1.9.jar": "0812f284ac5dd0d617461d9a2ab6ac6811137f25122dfffd4788a4871e732d00",
+    "org/apache/httpcomponents/httpclient/4.5.13/httpclient-4.5.13.jar": "6fe9026a566c6a5001608cf3fc32196641f6c1e5e1986d1037ccdbd5f31ef743",
+    "org/apache/httpcomponents/httpcore/4.4.13/httpcore-4.4.13.jar": "e06e89d40943245fcfa39ec537cdbfce3762aecde8f9c597780d2b00c2b43424",
+    "org/apache/httpcomponents/httpmime/4.5.13/httpmime-4.5.13.jar": "06e754d99245b98dcc2860dcb43d20e737d650da2bf2077a105f68accbd5c5cc",
+    "org/brotli/dec/0.1.2/dec-0.1.2.jar": "615c0c3efef990d77831104475fba6a1f7971388691d4bad1471ad84101f6d52",
+    "org/checkerframework/checker-compat-qual/2.5.3/checker-compat-qual-2.5.3.jar": "d76b9afea61c7c082908023f0cbc1427fab9abd2df915c8b8a3e7a509bccbc6d",
+    "org/eclipse/jdt/ecj/3.33.0/ecj-3.33.0.jar": "f7686c4960cf70c2ebc5c500a73a8cfc04541b730c18f1c5c21329889b137f45",
+    "org/eclipse/jdt/org.eclipse.jdt.core/3.33.0/org.eclipse.jdt.core-3.33.0.jar": "c03cbbf5ab447d954efb8268a58dd9f2fe70f9e5d9be0a8371f79d785357eba3",
+    "org/eclipse/jetty/apache-jsp/9.4.58.v20250814/apache-jsp-9.4.58.v20250814.jar": "970d14c2368e1f72f8d28d62a2fb5488eefd25553ec7d99c7fc3c7d350186d02",
+    "org/eclipse/jetty/jetty-annotations/9.4.58.v20250814/jetty-annotations-9.4.58.v20250814.jar": "3fb094784c6ac6305ada43977f11c547c47fa5c4d8e321908d60ca645c0d6943",
+    "org/eclipse/jetty/jetty-client/9.4.44.v20210927/jetty-client-9.4.44.v20210927.jar": "81c335a33fea19ab71470e2b89295161f98a773fd3dfba1f4c4f9a358608090d",
+    "org/eclipse/jetty/jetty-continuation/9.4.58.v20250814/jetty-continuation-9.4.58.v20250814.jar": "9583e70d6a8ea8773589da6bed1a069ca16a4834289afcbb8a4199358262a083",
+    "org/eclipse/jetty/jetty-http/9.4.58.v20250814/jetty-http-9.4.58.v20250814.jar": "8f49b8583fc8dbbfe3a0ba80a04c97df64ebabca2981b56ee403c989aba9d4da",
+    "org/eclipse/jetty/jetty-io/9.4.58.v20250814/jetty-io-9.4.58.v20250814.jar": "f55b2cc7c05244fd7b1773e99979b740002b0186e45b8a688243d89c7006fe21",
+    "org/eclipse/jetty/jetty-jndi/9.4.58.v20250814/jetty-jndi-9.4.58.v20250814.jar": "78b9ad4290841ade1d9f98ca46ce72ea1a0f4062f6bb8825989021c4bc56f91c",
+    "org/eclipse/jetty/jetty-plus/9.4.58.v20250814/jetty-plus-9.4.58.v20250814.jar": "726fcc1d0591545f55390df270537f87a7e0445beec094c207385b7edbd0a46d",
+    "org/eclipse/jetty/jetty-security/9.4.58.v20250814/jetty-security-9.4.58.v20250814.jar": "301548ebf008551a3a4312b04df0ea0468acc2780f863b83cc9cf0d668e62252",
+    "org/eclipse/jetty/jetty-server/9.4.58.v20250814/jetty-server-9.4.58.v20250814.jar": "608dbd3e1c4184374f02c70704e5d1c9daaded45e6a31d07824f40dac6083ba9",
+    "org/eclipse/jetty/jetty-servlet/9.4.58.v20250814/jetty-servlet-9.4.58.v20250814.jar": "1c6bb17326147e642c8a41e4657b32bca5057c8958db4da770d09c0904aefcff",
+    "org/eclipse/jetty/jetty-servlets/9.4.58.v20250814/jetty-servlets-9.4.58.v20250814.jar": "263a678be14b56765bcf6722d63cf2eb93eb6a8b10a7e44b00e669f2ce9dedcb",
+    "org/eclipse/jetty/jetty-util-ajax/9.4.58.v20250814/jetty-util-ajax-9.4.58.v20250814.jar": "185430a2eafcdffba18204dbf51cb18436ab4ca09b74d97c1dc13abbadd9704b",
+    "org/eclipse/jetty/jetty-util/9.4.58.v20250814/jetty-util-9.4.58.v20250814.jar": "8d591679d318d20c8fb2b1e83900562b3c4571ff7a189696be700293e0204146",
+    "org/eclipse/jetty/jetty-webapp/9.4.58.v20250814/jetty-webapp-9.4.58.v20250814.jar": "3f58ac238deb2218140ffa446661c1d1323752bc4b4ae01653d9500c3fca38aa",
+    "org/eclipse/jetty/jetty-xml/9.4.58.v20250814/jetty-xml-9.4.58.v20250814.jar": "2fc7f7364ec009fe2bbae574554994cef16c4230de170bd6be51ecd6f6bb95d3",
+    "org/eclipse/jetty/toolchain/jetty-schemas/3.1.2/jetty-schemas-3.1.2.jar": "40e2ae14ab6329e8eb6e6e6ba72e3b7091c69e3d28ac5d60ac5a93eadb81c60a",
+    "org/eclipse/jetty/websocket/websocket-api/9.4.44.v20210927/websocket-api-9.4.44.v20210927.jar": "6e580933546864bd3294ffa5af13bfc9aed7de690b62a183fef58203afda4368",
+    "org/eclipse/jetty/websocket/websocket-client/9.4.44.v20210927/websocket-client-9.4.44.v20210927.jar": "46f531b1b46da48ace1b8c3cc0a9c080762b8bcc0b9ce411364b8552e4ea0e75",
+    "org/eclipse/jetty/websocket/websocket-common/9.4.44.v20210927/websocket-common-9.4.44.v20210927.jar": "5bbd4799cc2366f40055734ea9312bde7f2a31ec5cae56e65f6df469f0be9852",
+    "org/eclipse/platform/org.eclipse.core.commands/3.10.300/org.eclipse.core.commands-3.10.300.jar": "e589b4036723278bcd25e7aa190d1632a58569437a202d5c2b97c7ac9847b874",
+    "org/eclipse/platform/org.eclipse.core.contenttype/3.8.200/org.eclipse.core.contenttype-3.8.200.jar": "d32716bfb03e7f3244a5df0f8816a8f0b6644a8c782f54062af8a3b00e1b4e45",
+    "org/eclipse/platform/org.eclipse.core.expressions/3.8.200/org.eclipse.core.expressions-3.8.200.jar": "13dbbe3256f1199c69a79c3ba4c6ee79e6c1a0e73f67d49f5f3365b7ad387818",
+    "org/eclipse/platform/org.eclipse.core.filesystem/1.9.500/org.eclipse.core.filesystem-1.9.500.jar": "0c4810a1fa6e871c0bb23b29090a72c83b760af8171495c1325b4711b919072b",
+    "org/eclipse/platform/org.eclipse.core.jobs/3.13.200/org.eclipse.core.jobs-3.13.200.jar": "f6303d411f5013aac5e3491860392b7fddc09b518d0eb63722b0926679cd9dbf",
+    "org/eclipse/platform/org.eclipse.core.resources/3.18.200/org.eclipse.core.resources-3.18.200.jar": "df6e64965c436c96c3d1de0481407a3c5523e320145dac01ca3d2edf4aa66738",
+    "org/eclipse/platform/org.eclipse.core.runtime/3.26.100/org.eclipse.core.runtime-3.26.100.jar": "f90ebd2f052d602281840b2b8cd1f5a7b6d1cf2d5a85b7b0415c70456855d173",
+    "org/eclipse/platform/org.eclipse.equinox.app/1.6.200/org.eclipse.equinox.app-1.6.200.jar": "52840b5fe48ed8f50a26d792d21b2db73b622a0a10d64c18883da6fb85dcbc24",
+    "org/eclipse/platform/org.eclipse.equinox.common/3.17.0/org.eclipse.equinox.common-3.17.0.jar": "e85fee16eba255a451cbed66c03dc024267542036bdc590f7b7a6b3092959ada",
+    "org/eclipse/platform/org.eclipse.equinox.preferences/3.10.100/org.eclipse.equinox.preferences-3.10.100.jar": "ee791bfa46e35e3551209b89b2152544a6f860a12c4aab4a2f6c9c0cc3dd1dda",
+    "org/eclipse/platform/org.eclipse.equinox.registry/3.11.200/org.eclipse.equinox.registry-3.11.200.jar": "7a3668ca406930213e3edb8024ac72c51fbc3f289de63a33254c8070aa8d0a3f",
+    "org/eclipse/platform/org.eclipse.osgi/3.18.300/org.eclipse.osgi-3.18.300.jar": "bab943e58edd17309238672dba7a45aec9e2dacbdddb818a8cf17723ea13fa22",
+    "org/eclipse/platform/org.eclipse.text/3.12.300/org.eclipse.text-3.12.300.jar": "6c4f4f01397ae566cb7007ca885ffc5d1813c913d6602d78a8f81801a39060e8",
+    "org/gwtproject/gwt-dev/2.13.0/gwt-dev-2.13.0.jar": "2d3368f7582d9e56bcf0103ef53c20ca806e544d485b853bb07baee465deef45",
+    "org/gwtproject/gwt-user/2.13.0/gwt-user-2.13.0.jar": "ef34031b7a71b2de06708395dbc7a3c126f76fe6cbbb0ef587f8fada6c56c11b",
+    "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar": "66fdef91e9739348df7a096aa384a5685f4e875584cce89386a7a47251c4d8e9",
+    "org/jetbrains/annotations/13.0/annotations-13.0.jar": "ace2a10dc8e2d5fd34925ecac03e4988b2c0f851650c94b8cef49ba1bd111478",
+    "org/jetbrains/kotlin/kotlin-reflect/2.2.20/kotlin-reflect-2.2.20.jar": "8209083a4a7c4e476d9842b078308fa96a96f07a6bd99f05f3586ee13289ab26",
+    "org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20.jar": "8836ccffd3585fadda9901244b20d42901d2f3cd581058d8434e2ffabcf3a3e7",
+    "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar": "070d75f261fe4c5b8202508366715f7f2d4660f88c8ef7e6d3575e48c9683b66",
+    "org/mockito/mockito-core/4.11.0/mockito-core-4.11.0.jar": "4b909690cab288c761eb94c0bf0e814496cf3921d8affac84cd87774530351e5",
+    "org/mortbay/jasper/apache-el/8.5.100/apache-el-8.5.100.jar": "d8c308da48c0229ab71905fba410fee44c73a4650a27ef7cece072e925ce9242",
+    "org/mortbay/jasper/apache-jsp/8.5.100/apache-jsp-8.5.100.jar": "69d4d9a1a5da72bdcdb34f08e797a9c11715c00f282e94b0fd868f6b99022a1e",
+    "org/objenesis/objenesis/3.3/objenesis-3.3.jar": "02dfd0b0439a5591e35b708ed2f5474eb0948f53abf74637e959b8e4ef69bfeb",
+    "org/osgi/org.osgi.service.prefs/1.1.2/org.osgi.service.prefs-1.1.2.jar": "43c7c870710e363405d422da653cce0d798a4537f76e4930f79bceadd3a55345",
+    "org/osgi/osgi.annotation/8.0.1/osgi.annotation-8.0.1.jar": "a0e8a4c362bd3600812f37b0ea45fba966c7bc049d01fed56a09ecc74082759e",
+    "org/ow2/asm/asm-analysis/7.2/asm-analysis-7.2.jar": "be922aae60ff1ff1768e8e6544a38a7f92bd0a6d6b0b9791f94955d1bd453de2",
+    "org/ow2/asm/asm-analysis/9.6/asm-analysis-9.6.jar": "d92832d7c37edc07c60e2559ac6118b31d642e337a6671edcb7ba9fae68edbbb",
+    "org/ow2/asm/asm-commons/7.2/asm-commons-7.2.jar": "0e86b8b179c5fb223d1a880a0ff4960b6978223984b94e62e71135f2d8ea3558",
+    "org/ow2/asm/asm-commons/9.6/asm-commons-9.6.jar": "7aefd0d5c0901701c69f7513feda765fb6be33af2ce7aa17c5781fc87657c511",
+    "org/ow2/asm/asm-tree/7.2/asm-tree-7.2.jar": "c063f5a67fa03cdc9bd79fd1c2ea6816cc4a19473ecdfbd9e9153b408c6f2656",
+    "org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar": "c43ecf17b539c777e15da7b5b86553b377e2d39a683de6285567d5283888e7ef",
+    "org/ow2/asm/asm-util/7.2/asm-util-7.2.jar": "6e24913b021ffacfe8e7e053d6e0ccc731941148cfa078d4f1ed3d96904530f8",
+    "org/ow2/asm/asm-util/9.6/asm-util-9.6.jar": "c635a7402f4aa9bf66b2f4230cea62025a0fe1cd63e8729adefc9b1994fac4c3",
+    "org/ow2/asm/asm/9.6/asm-9.6.jar": "3c6fac2424db3d4a853b669f4e3d1d9c3c552235e19a319673f887083c2303a1",
+    "org/ow2/asm/asm/9.8/asm-9.8.jar": "876eab6a83daecad5ca67eb9fcabb063c97b5aeb8cf1fca7a989ecde17522051",
+    "org/w3c/css/sac/1.3/sac-1.3.jar": "003785669f921aafe4f137468dd20a01a36111e94fd7449f26c16e7924d82d23",
+    "org/yaml/snakeyaml/2.0/snakeyaml-2.0.jar": "880c9d896e4b74a06c549c15ca496450165d6909fa15d7e662bee8f6a66d7afa",
+    "tapestry/tapestry/4.0.2/tapestry-4.0.2.jar": "16dfc5b6b322bb0734b80e89d77fbeb987c809002fe59d52d9707a035949b107",
+    "xalan/serializer/2.7.2/serializer-2.7.2.jar": "e8f5b4340d3b12a0cfa44ac2db4be4e0639e479ae847df04c4ed8b521734bb4a",
+    "xalan/xalan/2.7.2/xalan-2.7.2.jar": "a44bd80e82cb0f4cfac0dac8575746223802514e3cec9dc75235bc0de646af14",
+    "xerces/xercesImpl/2.12.1/xercesImpl-2.12.1.jar": "ae0c329a3187178c8e7b0369a5346845e426062ffbb8a08fc68ced6affe6c626",
+    "xml-apis/xml-apis/1.4.01/xml-apis-1.4.01.jar": "a840968176645684bb01aed376e067ab39614885f9eee44abe35a5f20ebe7fad"
+  }
+}

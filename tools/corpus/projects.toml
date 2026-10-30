@@ -1,0 +1,49 @@
+# Corpus projects, each pinned to a commit. Nothing fetched from them is committed.
+#
+# `jdk` is the JDK feature version needed to run the project's build when locking.
+# `notes` records why the project is in the corpus.
+
+[[project]]
+name = "jedis"
+repository = "https://github.com/redis/jedis"
+tag = "v8.0.2"
+commit = "eb8cd653e0400f30337e6cd927459d995cd8f5ba"
+build = "maven"
+jdk = 21
+notes = "Java 8, single module, @formatter:off markers"
+
+[[project]]
+name = "guava"
+repository = "https://github.com/google/guava"
+tag = "v33.7.2"
+commit = "666338cc49d5686c07e3e4d17f0aa1cec25a2be6"
+build = "maven"
+jdk = 21
+notes = "Java 8, multi-module, formatted with Google Java Format"
+
+[[project]]
+name = "spring-data-jpa"
+repository = "https://github.com/spring-projects/spring-data-jpa"
+tag = "4.0.8"
+commit = "216e697e269536d9d259bcc6648aaf57de6f9c82"
+build = "maven"
+jdk = 21
+notes = "Java 17, multi-module, @formatter:off markers"
+
+[[project]]
+name = "lucene"
+repository = "https://github.com/apache/lucene"
+tag = "releases/lucene/10.5.2"
+commit = "145d89cd30c38d25e39a0a2232cf00eee208b9cf"
+build = "gradle"
+jdk = 21
+notes = "Java 21, Gradle, formatted with Google Java Format"
+
+[[project]]
+name = "hertzbeat"
+repository = "https://github.com/apache/hertzbeat"
+tag = "v1.9.0"
+commit = "a85bd46c18d33130298f0e223bd84ea6e29a17de"
+build = "maven"
+jdk = 25
+notes = "Java 25, multi-module, Lombok"

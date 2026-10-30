@@ -1,0 +1,484 @@
+{
+  "formatVersion": 1,
+  "commit": "eb8cd653e0400f30337e6cd927459d995cd8f5ba",
+  "jdk": 21,
+  "modules": [
+    {
+      "path": ".",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 8,
+          "sourceRoots": [
+            "src/main/java"
+          ],
+          "classpath": [
+            {
+              "jar": "org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-pool2/2.13.1/commons-pool2-2.13.1.jar"
+            },
+            {
+              "jar": "org/json/json/20260719/json-20260719.jar"
+            },
+            {
+              "jar": "com/google/code/gson/gson/2.14.0/gson-2.14.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.48.0/error_prone_annotations-2.48.0.jar"
+            },
+            {
+              "jar": "redis/clients/authentication/redis-authx-core/0.1.1-beta2/redis-authx-core-0.1.1-beta2.jar"
+            },
+            {
+              "jar": "io/github/resilience4j/resilience4j-all/1.7.1/resilience4j-all-1.7.1.jar"
+            },
+            {
+              "jar": "io/vavr/vavr/0.10.2/vavr-0.10.2.jar"
+            },
+            {
+              "jar": "io/vavr/vavr-match/0.10.2/vavr-match-0.10.2.jar"
+            },
+            {
+              "jar": "io/github/resilience4j/resilience4j-circuitbreaker/1.7.1/resilience4j-circuitbreaker-1.7.1.jar"
+            },
+            {
+              "jar": "io/github/resilience4j/resilience4j-core/1.7.1/resilience4j-core-1.7.1.jar"
+            },
+            {
+              "jar": "io/github/resilience4j/resilience4j-retry/1.7.1/resilience4j-retry-1.7.1.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 8,
+          "sourceRoots": [
+            "src/test/java"
+          ],
+          "classpath": [
+            {
+              "module": ".",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-pool2/2.13.1/commons-pool2-2.13.1.jar"
+            },
+            {
+              "jar": "org/json/json/20260719/json-20260719.jar"
+            },
+            {
+              "jar": "com/google/code/gson/gson/2.14.0/gson-2.14.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.48.0/error_prone_annotations-2.48.0.jar"
+            },
+            {
+              "jar": "redis/clients/authentication/redis-authx-core/0.1.1-beta2/redis-authx-core-0.1.1-beta2.jar"
+            },
+            {
+              "jar": "com/kohlschutter/junixsocket/junixsocket-core/2.10.1/junixsocket-core-2.10.1.pom"
+            },
+            {
+              "jar": "com/kohlschutter/junixsocket/junixsocket-native-common/2.10.1/junixsocket-native-common-2.10.1.jar"
+            },
+            {
+              "jar": "com/kohlschutter/junixsocket/junixsocket-common/2.10.1/junixsocket-common-2.10.1.jar"
+            },
+            {
+              "jar": "org/locationtech/jts/jts-core/1.20.0/jts-core-1.20.0.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.4/junit-jupiter-api-5.14.4.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.4/junit-platform-commons-1.14.4.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.4/junit-jupiter-params-5.14.4.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-junit-jupiter/4.11.0/mockito-junit-jupiter-4.11.0.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/4.11.0/mockito-core-4.11.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.12.19/byte-buddy-1.12.19.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.12.19/byte-buddy-agent-1.12.19.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-engine/5.14.4/junit-jupiter-engine-5.14.4.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-engine/1.14.4/junit-platform-engine-1.14.4.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/3.0/hamcrest-3.0.jar"
+            },
+            {
+              "jar": "ch/qos/logback/logback-classic/1.2.13/logback-classic-1.2.13.jar"
+            },
+            {
+              "jar": "ch/qos/logback/logback-core/1.2.13/logback-core-1.2.13.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-inline/4.11.0/mockito-inline-4.11.0.jar"
+            },
+            {
+              "jar": "com/fasterxml/jackson/core/jackson-databind/2.22.1/jackson-databind-2.22.1.jar"
+            },
+            {
+              "jar": "com/fasterxml/jackson/core/jackson-annotations/2.22/jackson-annotations-2.22.jar"
+            },
+            {
+              "jar": "com/fasterxml/jackson/core/jackson-core/2.22.1/jackson-core-2.22.1.jar"
+            },
+            {
+              "jar": "com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.22.1/jackson-datatype-jsr310-2.22.1.jar"
+            },
+            {
+              "jar": "net/javacrumbs/json-unit/json-unit/2.40.1/json-unit-2.40.1.jar"
+            },
+            {
+              "jar": "net/javacrumbs/json-unit/json-unit-core/2.40.1/json-unit-core-2.40.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/2.2/hamcrest-core-2.2.jar"
+            },
+            {
+              "jar": "org/apache/httpcomponents/client5/httpclient5-fluent/5.6.3/httpclient5-fluent-5.6.3.jar"
+            },
+            {
+              "jar": "org/apache/httpcomponents/client5/httpclient5/5.6.3/httpclient5-5.6.3.jar"
+            },
+            {
+              "jar": "org/apache/httpcomponents/core5/httpcore5/5.4.3/httpcore5-5.4.3.jar"
+            },
+            {
+              "jar": "org/apache/httpcomponents/core5/httpcore5-h2/5.4.3/httpcore5-h2-5.4.3.jar"
+            },
+            {
+              "jar": "org/awaitility/awaitility/4.3.0/awaitility-4.3.0.jar"
+            },
+            {
+              "jar": "redis/clients/authentication/redis-authx-entraid/0.1.1-beta2/redis-authx-entraid-0.1.1-beta2.jar"
+            },
+            {
+              "jar": "com/auth0/java-jwt/4.5.0/java-jwt-4.5.0.jar"
+            },
+            {
+              "jar": "com/microsoft/azure/msal4j/1.19.1/msal4j-1.19.1.jar"
+            },
+            {
+              "jar": "com/nimbusds/oauth2-oidc-sdk/11.23/oauth2-oidc-sdk-11.23.jar"
+            },
+            {
+              "jar": "com/github/stephenc/jcip/jcip-annotations/1.0-1/jcip-annotations-1.0-1.jar"
+            },
+            {
+              "jar": "com/nimbusds/content-type/2.3/content-type-2.3.jar"
+            },
+            {
+              "jar": "com/nimbusds/lang-tag/1.7/lang-tag-1.7.jar"
+            },
+            {
+              "jar": "com/nimbusds/nimbus-jose-jwt/10.0.1/nimbus-jose-jwt-10.0.1.jar"
+            },
+            {
+              "jar": "net/minidev/json-smart/2.5.2/json-smart-2.5.2.jar"
+            },
+            {
+              "jar": "net/minidev/accessors-smart/2.5.2/accessors-smart-2.5.2.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.7.1/asm-9.7.1.jar"
+            },
+            {
+              "jar": "com/azure/azure-identity/1.15.4/azure-identity-1.15.4.jar"
+            },
+            {
+              "jar": "com/azure/azure-core/1.55.3/azure-core-1.55.3.jar"
+            },
+            {
+              "jar": "com/azure/azure-xml/1.2.0/azure-xml-1.2.0.jar"
+            },
+            {
+              "jar": "io/projectreactor/reactor-core/3.4.41/reactor-core-3.4.41.jar"
+            },
+            {
+              "jar": "org/reactivestreams/reactive-streams/1.0.4/reactive-streams-1.0.4.jar"
+            },
+            {
+              "jar": "com/azure/azure-core-http-netty/1.15.11/azure-core-http-netty-1.15.11.jar"
+            },
+            {
+              "jar": "io/netty/netty-handler/4.1.118.Final/netty-handler-4.1.118.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-resolver/4.1.118.Final/netty-resolver-4.1.118.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-transport/4.1.118.Final/netty-transport-4.1.118.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-handler-proxy/4.1.118.Final/netty-handler-proxy-4.1.118.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-codec-socks/4.1.118.Final/netty-codec-socks-4.1.118.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-buffer/4.1.118.Final/netty-buffer-4.1.118.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-codec/4.1.118.Final/netty-codec-4.1.118.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-codec-http/4.1.118.Final/netty-codec-http-4.1.118.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-codec-http2/4.1.118.Final/netty-codec-http2-4.1.118.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-transport-native-unix-common/4.1.118.Final/netty-transport-native-unix-common-4.1.118.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-transport-native-epoll/4.1.118.Final/netty-transport-native-epoll-4.1.118.Final-linux-x86_64.jar"
+            },
+            {
+              "jar": "io/netty/netty-transport-classes-epoll/4.1.118.Final/netty-transport-classes-epoll-4.1.118.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-transport-native-kqueue/4.1.118.Final/netty-transport-native-kqueue-4.1.118.Final-osx-x86_64.jar"
+            },
+            {
+              "jar": "io/netty/netty-transport-classes-kqueue/4.1.118.Final/netty-transport-classes-kqueue-4.1.118.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-tcnative-boringssl-static/2.0.70.Final/netty-tcnative-boringssl-static-2.0.70.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-tcnative-classes/2.0.70.Final/netty-tcnative-classes-2.0.70.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-tcnative-boringssl-static/2.0.70.Final/netty-tcnative-boringssl-static-2.0.70.Final-linux-x86_64.jar"
+            },
+            {
+              "jar": "io/netty/netty-tcnative-boringssl-static/2.0.70.Final/netty-tcnative-boringssl-static-2.0.70.Final-linux-aarch_64.jar"
+            },
+            {
+              "jar": "io/netty/netty-tcnative-boringssl-static/2.0.70.Final/netty-tcnative-boringssl-static-2.0.70.Final-osx-x86_64.jar"
+            },
+            {
+              "jar": "io/netty/netty-tcnative-boringssl-static/2.0.70.Final/netty-tcnative-boringssl-static-2.0.70.Final-osx-aarch_64.jar"
+            },
+            {
+              "jar": "io/netty/netty-tcnative-boringssl-static/2.0.70.Final/netty-tcnative-boringssl-static-2.0.70.Final-windows-x86_64.jar"
+            },
+            {
+              "jar": "io/projectreactor/netty/reactor-netty-http/1.0.48/reactor-netty-http-1.0.48.jar"
+            },
+            {
+              "jar": "io/netty/netty-resolver-dns/4.1.112.Final/netty-resolver-dns-4.1.112.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-codec-dns/4.1.112.Final/netty-codec-dns-4.1.112.Final.jar"
+            },
+            {
+              "jar": "io/netty/netty-resolver-dns-native-macos/4.1.112.Final/netty-resolver-dns-native-macos-4.1.112.Final-osx-x86_64.jar"
+            },
+            {
+              "jar": "io/netty/netty-resolver-dns-classes-macos/4.1.112.Final/netty-resolver-dns-classes-macos-4.1.112.Final.jar"
+            },
+            {
+              "jar": "io/projectreactor/netty/reactor-netty-core/1.0.48/reactor-netty-core-1.0.48.jar"
+            },
+            {
+              "jar": "io/netty/netty-common/4.1.118.Final/netty-common-4.1.118.Final.jar"
+            },
+            {
+              "jar": "com/azure/azure-json/1.5.0/azure-json-1.5.0.jar"
+            },
+            {
+              "jar": "com/microsoft/azure/msal4j-persistence-extension/1.3.0/msal4j-persistence-extension-1.3.0.jar"
+            },
+            {
+              "jar": "net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar"
+            },
+            {
+              "jar": "net/java/dev/jna/jna-platform/5.13.0/jna-platform-5.13.0.jar"
+            },
+            {
+              "jar": "eu/rekawek/toxiproxy/toxiproxy-java/2.1.11/toxiproxy-java-2.1.11.jar"
+            },
+            {
+              "jar": "org/openjdk/jmh/jmh-core/1.37/jmh-core-1.37.jar"
+            },
+            {
+              "jar": "net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar"
+            },
+            {
+              "jar": "org/openjdk/jmh/jmh-generator-annprocess/1.37/jmh-generator-annprocess-1.37.jar"
+            },
+            {
+              "jar": "io/github/resilience4j/resilience4j-all/1.7.1/resilience4j-all-1.7.1.jar"
+            },
+            {
+              "jar": "io/vavr/vavr/0.10.2/vavr-0.10.2.jar"
+            },
+            {
+              "jar": "io/vavr/vavr-match/0.10.2/vavr-match-0.10.2.jar"
+            },
+            {
+              "jar": "io/github/resilience4j/resilience4j-ratelimiter/1.7.1/resilience4j-ratelimiter-1.7.1.jar"
+            },
+            {
+              "jar": "io/github/resilience4j/resilience4j-bulkhead/1.7.1/resilience4j-bulkhead-1.7.1.jar"
+            },
+            {
+              "jar": "io/github/resilience4j/resilience4j-cache/1.7.1/resilience4j-cache-1.7.1.jar"
+            },
+            {
+              "jar": "javax/cache/cache-api/1.1.0/cache-api-1.1.0.jar"
+            },
+            {
+              "jar": "io/github/resilience4j/resilience4j-timelimiter/1.7.1/resilience4j-timelimiter-1.7.1.jar"
+            },
+            {
+              "jar": "io/github/resilience4j/resilience4j-circuitbreaker/1.7.1/resilience4j-circuitbreaker-1.7.1.jar"
+            },
+            {
+              "jar": "io/github/resilience4j/resilience4j-core/1.7.1/resilience4j-core-1.7.1.jar"
+            },
+            {
+              "jar": "io/github/resilience4j/resilience4j-retry/1.7.1/resilience4j-retry-1.7.1.jar"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "jars": {
+    "ch/qos/logback/logback-classic/1.2.13/logback-classic-1.2.13.jar": "937afb220b91d8a394d78befdbf587c71aeed289d582e2a91e72a7d92172371d",
+    "ch/qos/logback/logback-core/1.2.13/logback-core-1.2.13.jar": "07b1586faf220c05821d0f3ed8e2e417e214c83f40641f76e8a90b134c31ff6b",
+    "com/auth0/java-jwt/4.5.0/java-jwt-4.5.0.jar": "defc50d5066630d46737ba3077e1e13df7201baf5817394c9a4d3d23e2ad3019",
+    "com/azure/azure-core-http-netty/1.15.11/azure-core-http-netty-1.15.11.jar": "34862571f2d95b07b23073f0eb87db25a0393087e3192d205115099fa18aa62f",
+    "com/azure/azure-core/1.55.3/azure-core-1.55.3.jar": "53f64121176aca98b8634bd79fddabeea26c0ebcc092e342631a2b0d2dcec9e5",
+    "com/azure/azure-identity/1.15.4/azure-identity-1.15.4.jar": "3e7c4ca616570ad2a5886528c909d6888feb0fd8db637f19dadbc3f987cae2c0",
+    "com/azure/azure-json/1.5.0/azure-json-1.5.0.jar": "65b1ec85f5d734221f1028d60c95bf5b453515797d6ab68ea8c36a6f2d5bc56b",
+    "com/azure/azure-xml/1.2.0/azure-xml-1.2.0.jar": "69d9559c561d3125bfd2bf9b5248601e442902bc755d935dde3edba97dc0d931",
+    "com/fasterxml/jackson/core/jackson-annotations/2.22/jackson-annotations-2.22.jar": "21ddb598807d3a51a876704eb979d9296e1c6a6f47ab1826ff88c6d6a127a2d0",
+    "com/fasterxml/jackson/core/jackson-core/2.22.1/jackson-core-2.22.1.jar": "941ff029bcdb93e83d209ce516c1a7fb8bbac07d0a2fa122f5bf194b2cd7b4f4",
+    "com/fasterxml/jackson/core/jackson-databind/2.22.1/jackson-databind-2.22.1.jar": "7dcd7e53bec1f56c7ad278bd1ca0840bebcc595d61ce44d6a8439abb75b965b2",
+    "com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.22.1/jackson-datatype-jsr310-2.22.1.jar": "85da45b7e5e565418963ff8f0dcb184365b0557c15468933f4318dde5c3ce845",
+    "com/github/stephenc/jcip/jcip-annotations/1.0-1/jcip-annotations-1.0-1.jar": "4fccff8382aafc589962c4edb262f6aa595e34f1e11e61057d1c6a96e8fc7323",
+    "com/google/code/gson/gson/2.14.0/gson-2.14.0.jar": "2cbd119bf1961c28788310963dc80ba65f58cdeec1dd139c8bdb1240faa2c36f",
+    "com/google/errorprone/error_prone_annotations/2.48.0/error_prone_annotations-2.48.0.jar": "b49c5c958316ed67a09c699dda9aa749caf434d51d863dea599ef36a49b9c855",
+    "com/kohlschutter/junixsocket/junixsocket-common/2.10.1/junixsocket-common-2.10.1.jar": "19e5f7615ad2293f3532bc3f991b31396c1161834e89d9a6aa0c7def939c6729",
+    "com/kohlschutter/junixsocket/junixsocket-core/2.10.1/junixsocket-core-2.10.1.pom": "5f659d3cd7ea2270798e3a078dfd4749bae33102a82f99b6323b471eb31fb2c3",
+    "com/kohlschutter/junixsocket/junixsocket-native-common/2.10.1/junixsocket-native-common-2.10.1.jar": "0126ce0baf1ceb575ef517807d4d2b14b9f32f06180204e12ec73ab4a772567a",
+    "com/microsoft/azure/msal4j-persistence-extension/1.3.0/msal4j-persistence-extension-1.3.0.jar": "dfc41c817fbfa76057af6ffe4379dbca6a5e16b8e87df8bdda23f371756c2d09",
+    "com/microsoft/azure/msal4j/1.19.1/msal4j-1.19.1.jar": "5c8bbf40c72d259230c7717348fc026dcaf2a6cb7f029eb78abc2d0235e66e0f",
+    "com/nimbusds/content-type/2.3/content-type-2.3.jar": "60349793e006fba96b532cb0c21e10e969fe0db8d87f91c3b9eaf82ba2998895",
+    "com/nimbusds/lang-tag/1.7/lang-tag-1.7.jar": "e8c1c594e2425bdbea2d860de55c69b69fc5d59454452449a0f0913c2a5b8a31",
+    "com/nimbusds/nimbus-jose-jwt/10.0.1/nimbus-jose-jwt-10.0.1.jar": "f28dbd9ab128324f05050d76b78469d3a9cd83e0319aabc68d1c276e3923e13a",
+    "com/nimbusds/oauth2-oidc-sdk/11.23/oauth2-oidc-sdk-11.23.jar": "aaabce3dbf002ec053cb4e370864c8eecbd71381905e14d52ae1e12dba896343",
+    "eu/rekawek/toxiproxy/toxiproxy-java/2.1.11/toxiproxy-java-2.1.11.jar": "510d86b5f2e80cd78fd464c58c52bed876733557e380287b8f81ce5ef878ab65",
+    "io/github/resilience4j/resilience4j-all/1.7.1/resilience4j-all-1.7.1.jar": "43272690a5ce3f8ea8acb76cadd9d3240d3d2a4581da007fecbf558effb66934",
+    "io/github/resilience4j/resilience4j-bulkhead/1.7.1/resilience4j-bulkhead-1.7.1.jar": "230f94d84df455d801353d868db3e806ad0fb174d689119bd5babf80bc7126f7",
+    "io/github/resilience4j/resilience4j-cache/1.7.1/resilience4j-cache-1.7.1.jar": "6995b03eb6ccfdae771ee3bda6cf8199a0743ba4a805340208e129fa22c98804",
+    "io/github/resilience4j/resilience4j-circuitbreaker/1.7.1/resilience4j-circuitbreaker-1.7.1.jar": "05ae08b684e6245b8d88bcb823dfd0a2994052098226bd1e614fb9828e5d13df",
+    "io/github/resilience4j/resilience4j-core/1.7.1/resilience4j-core-1.7.1.jar": "3153a2c96c3e3b31122a7fa8ca8ea1ab0f305bf82d096c291b7416443fff6491",
+    "io/github/resilience4j/resilience4j-ratelimiter/1.7.1/resilience4j-ratelimiter-1.7.1.jar": "b209e66931f833e52f86a0f1d7347c844c214e4f8f4218be018d5fadd1384875",
+    "io/github/resilience4j/resilience4j-retry/1.7.1/resilience4j-retry-1.7.1.jar": "2f141de0fdd778e327e80b51b93948a47a5dcc52465df4567f6c8b115a075c38",
+    "io/github/resilience4j/resilience4j-timelimiter/1.7.1/resilience4j-timelimiter-1.7.1.jar": "906e3645b6b1e94d3810fc239237b2d9472a087f0c7b25f83fafc3836662992e",
+    "io/netty/netty-buffer/4.1.118.Final/netty-buffer-4.1.118.Final.jar": "0eea4e8666a9636a28722661d8ba5fa8564477e75fec6dd2ff3e324e361f8b3c",
+    "io/netty/netty-codec-dns/4.1.112.Final/netty-codec-dns-4.1.112.Final.jar": "8939e59890dba2b72f720811c15034178449f2ce0ff3daf7942f0fb488d7ee6b",
+    "io/netty/netty-codec-http/4.1.118.Final/netty-codec-http-4.1.118.Final.jar": "09822d785e9a794838031ddd5346cf419b30c036a981c2e277a062bea884174b",
+    "io/netty/netty-codec-http2/4.1.118.Final/netty-codec-http2-4.1.118.Final.jar": "68da0b1a34dceb00a6f9f6f788fb2f6b7b9e4adba8c70658ac2bd7eb898b97ae",
+    "io/netty/netty-codec-socks/4.1.118.Final/netty-codec-socks-4.1.118.Final.jar": "094465e3cfb3aef0fca38ed82b801f53a6c8be7ae1f83ab0c1b2e8ece2586840",
+    "io/netty/netty-codec/4.1.118.Final/netty-codec-4.1.118.Final.jar": "4abd215fd1ed7ce86509d169cc9cbede5042176c265a79b3b70602b017226c3f",
+    "io/netty/netty-common/4.1.118.Final/netty-common-4.1.118.Final.jar": "65cce901ecf0f9d6591cc7750772614ab401a84415dc9aec9da4d046f0f9a77c",
+    "io/netty/netty-handler-proxy/4.1.118.Final/netty-handler-proxy-4.1.118.Final.jar": "fef926126f44c668968dd3e2389c2552981d452e6dfc23b1f9bd03db92c21f96",
+    "io/netty/netty-handler/4.1.118.Final/netty-handler-4.1.118.Final.jar": "26e3f8a5e859fd62cf3c13dc6d75e4e18879f000a5d0ad7f58f8679675d23dae",
+    "io/netty/netty-resolver-dns-classes-macos/4.1.112.Final/netty-resolver-dns-classes-macos-4.1.112.Final.jar": "12d431286ab142e5bb395f1559cb45f703d65ef8d7ce1d95fd401ef7b9d54605",
+    "io/netty/netty-resolver-dns-native-macos/4.1.112.Final/netty-resolver-dns-native-macos-4.1.112.Final-osx-x86_64.jar": "f800ddd2ed121b61010a2b2c7f3fc697ee0207a9ac5f1f719a78012c4b7449a6",
+    "io/netty/netty-resolver-dns/4.1.112.Final/netty-resolver-dns-4.1.112.Final.jar": "ad918df020ba6e10aeecc0b47133754d0c2616aa44d414bcb876d61bd704e56d",
+    "io/netty/netty-resolver/4.1.118.Final/netty-resolver-4.1.118.Final.jar": "3170c225972c18b6850d28add60db15bb28d83c4e3d5b686ca220e0bd7273c8a",
+    "io/netty/netty-tcnative-boringssl-static/2.0.70.Final/netty-tcnative-boringssl-static-2.0.70.Final-linux-aarch_64.jar": "523c43f67ad9040d70f9494fc28eebf711d8c54e2aa30e3fd1a199c38740f53b",
+    "io/netty/netty-tcnative-boringssl-static/2.0.70.Final/netty-tcnative-boringssl-static-2.0.70.Final-linux-x86_64.jar": "3d773aac73fe40f5d04de37ce14a1f7abd27caf0b3bd8275884f5d2968b3e254",
+    "io/netty/netty-tcnative-boringssl-static/2.0.70.Final/netty-tcnative-boringssl-static-2.0.70.Final-osx-aarch_64.jar": "0454c53e65da6e253b2104d1ae26ecc79df4faf999e8924b659846b5bf41e996",
+    "io/netty/netty-tcnative-boringssl-static/2.0.70.Final/netty-tcnative-boringssl-static-2.0.70.Final-osx-x86_64.jar": "9c6a23335f296689fb3538bc49e4e280ff163675212c6fe01c9cf2a9273ee19a",
+    "io/netty/netty-tcnative-boringssl-static/2.0.70.Final/netty-tcnative-boringssl-static-2.0.70.Final-windows-x86_64.jar": "b3e3e0559df29a5624bcf529cb8e2bd9375c6d68164dda338e841677586a14c4",
+    "io/netty/netty-tcnative-boringssl-static/2.0.70.Final/netty-tcnative-boringssl-static-2.0.70.Final.jar": "3f7b4c3a51737965cd5b53777782c125784420458d96513cfac7412e4d1fa0c3",
+    "io/netty/netty-tcnative-classes/2.0.70.Final/netty-tcnative-classes-2.0.70.Final.jar": "a79c1579313d4ad48a3ecc1d01a25da06d22d6449c3bcc369c2318749bcf55bc",
+    "io/netty/netty-transport-classes-epoll/4.1.118.Final/netty-transport-classes-epoll-4.1.118.Final.jar": "bd86e6d41e1f6053f9577931655236259778ab045646e1e6ab04150f070864f3",
+    "io/netty/netty-transport-classes-kqueue/4.1.118.Final/netty-transport-classes-kqueue-4.1.118.Final.jar": "9ac68d26efb78d74a24eeec8309d60bc80265655b60c44920dcac0828db4e8e2",
+    "io/netty/netty-transport-native-epoll/4.1.118.Final/netty-transport-native-epoll-4.1.118.Final-linux-x86_64.jar": "c95f66b9ab3f7fb6e666a81a5d0120e0c6acddf8fdf440e2ba212bfaf76a7c73",
+    "io/netty/netty-transport-native-kqueue/4.1.118.Final/netty-transport-native-kqueue-4.1.118.Final-osx-x86_64.jar": "dc0a100920afadd39c252ba682ea62bfdb139945eaa9efdb6472f20b6bae4ef2",
+    "io/netty/netty-transport-native-unix-common/4.1.118.Final/netty-transport-native-unix-common-4.1.118.Final.jar": "69b16793d7b41ea76a762bd2bd144fc4f7c39c156a7a59ebf69baeb560fb10b7",
+    "io/netty/netty-transport/4.1.118.Final/netty-transport-4.1.118.Final.jar": "ab3751e717daef9c8d91e4d74728a48730bd8530b72e2466b222b2ea3fb07db9",
+    "io/projectreactor/netty/reactor-netty-core/1.0.48/reactor-netty-core-1.0.48.jar": "29b20a42d039de5cd92ab77f5079d2bf66ea7af86b5627aab610dec152dc9268",
+    "io/projectreactor/netty/reactor-netty-http/1.0.48/reactor-netty-http-1.0.48.jar": "dcc612f4f98978815a293b3941ac286583eb7476129cabf0dbc24c660f74575e",
+    "io/projectreactor/reactor-core/3.4.41/reactor-core-3.4.41.jar": "27ffc421736b78481e815c407acc8a169a417d2bea6ed79bf56eb2a32d80ade8",
+    "io/vavr/vavr-match/0.10.2/vavr-match-0.10.2.jar": "5d7a9515b05e3291194e04e641acf74a9a544c1caa1e2c24f59a1424c6ec8288",
+    "io/vavr/vavr/0.10.2/vavr-0.10.2.jar": "1b2ae46cf352627e05b39ac1f1d3bda7b285a8f643cdc7472aea4aa279492e54",
+    "javax/cache/cache-api/1.1.0/cache-api-1.1.0.jar": "6c980ad1ae4a6dda3bdb62986c3ef5b41ccf766e12353587ee4e4307e27e155a",
+    "net/bytebuddy/byte-buddy-agent/1.12.19/byte-buddy-agent-1.12.19.jar": "3a70240de7cdcde04e7c504c2327d7035b9c25ae0206881e3bf4e6798a273ed8",
+    "net/bytebuddy/byte-buddy/1.12.19/byte-buddy-1.12.19.jar": "030704139e46f32c38d27060edee9e0676b0a0fff8a8be53461515154ba8a7be",
+    "net/java/dev/jna/jna-platform/5.13.0/jna-platform-5.13.0.jar": "474d7b88f6e97009b6ec1d98c3024dd95c23187c65dabfbc35331bcac3d173dd",
+    "net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar": "66d4f819a062a51a1d5627bffc23fac55d1677f0e0a1feba144aabdd670a64bb",
+    "net/javacrumbs/json-unit/json-unit-core/2.40.1/json-unit-core-2.40.1.jar": "adb7e82bff755c8a90c3b7412226f3a72ed4a8bbdb0cdb3726b46905036051dc",
+    "net/javacrumbs/json-unit/json-unit/2.40.1/json-unit-2.40.1.jar": "1058352c36d08dcc342c1a197308e2f142647745438d2332dba5565858ce9d13",
+    "net/minidev/accessors-smart/2.5.2/accessors-smart-2.5.2.jar": "9b8a7bc43861d6156c021166d941fb7dddbe4463e2fa5ee88077e4b01452a836",
+    "net/minidev/json-smart/2.5.2/json-smart-2.5.2.jar": "4fbdedb0105cedc7f766b95c297d2e88fb6a560da48f3bbaa0cc538ea8b7bf71",
+    "net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar": "df26cc58f235f477db07f753ba5a3ab243ebe5789d9f89ecf68dd62ea9a66c28",
+    "org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar": "1e56d7b058d28b65abd256b8458e3885b674c1d588fa43cd7d1cbb9c7ef2b308",
+    "org/apache/commons/commons-pool2/2.13.1/commons-pool2-2.13.1.jar": "f77a5060d6936a9144023584232f9de3f2248f1abfe156e9d31795f18770674f",
+    "org/apache/httpcomponents/client5/httpclient5-fluent/5.6.3/httpclient5-fluent-5.6.3.jar": "6a7d73f63751d0146f88d16cc55bfb7bcbef95c25507a91cdadecbfdab0a1915",
+    "org/apache/httpcomponents/client5/httpclient5/5.6.3/httpclient5-5.6.3.jar": "80712ff129210d7c73d9fcc1195cbee5c3c34744965c7a05ea107b3648922f18",
+    "org/apache/httpcomponents/core5/httpcore5-h2/5.4.3/httpcore5-h2-5.4.3.jar": "c7db7026b8e2dea39132b04a6069f6671e2858309b20a146ec5c7dd6ed73a0b6",
+    "org/apache/httpcomponents/core5/httpcore5/5.4.3/httpcore5-5.4.3.jar": "18bfbbabb478dfb67f31aeaf428c387f3c3df654582e1309f708ee1f3086830a",
+    "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar": "b509448ac506d607319f182537f0b35d71007582ec741832a1f111e5b5b70b38",
+    "org/awaitility/awaitility/4.3.0/awaitility-4.3.0.jar": "ee58568ea5945dcf988551501655183dc184e23e45a8e013fdfd9036194e6f7b",
+    "org/hamcrest/hamcrest-core/2.2/hamcrest-core-2.2.jar": "094f5d92b4b7d9c8a2bf53cc69d356243ae89c3499457bcb4b92f7ed3bf95879",
+    "org/hamcrest/hamcrest/3.0/hamcrest-3.0.jar": "5d66b6a4a680755cb6ed7cb104fa7835ef644667586ff0737adeb977c39ecdbc",
+    "org/json/json/20260719/json-20260719.jar": "c243f45f9590c12694a4142ed3f07fc70dfb71e4daebd05ae234bf92a2da92a6",
+    "org/junit/jupiter/junit-jupiter-api/5.14.4/junit-jupiter-api-5.14.4.jar": "aa1ae085fd92dfdbf85d867e60e59adc599bac183b46fc7e0698198bf426ad3f",
+    "org/junit/jupiter/junit-jupiter-engine/5.14.4/junit-jupiter-engine-5.14.4.jar": "e1e35cf651ae1635638d431ea4412d5c65938be54150444f07ba659586042b11",
+    "org/junit/jupiter/junit-jupiter-params/5.14.4/junit-jupiter-params-5.14.4.jar": "28f2a8dab5b9d259b18fa6b0ba5a6f302cbc70dd875f42032ea9e3afea09a870",
+    "org/junit/platform/junit-platform-commons/1.14.4/junit-platform-commons-1.14.4.jar": "55c8a0c069ac1bc4e1f8bbb26b5eae95cbd10e4ff1b23248441ab61a607381e1",
+    "org/junit/platform/junit-platform-engine/1.14.4/junit-platform-engine-1.14.4.jar": "3c7f3f84a6747aef0db6bd5fdd2a6c8fe37132e653c939bd67387377af66d91c",
+    "org/locationtech/jts/jts-core/1.20.0/jts-core-1.20.0.jar": "6a783d8f9dba3d3cf7265435f134402f63c05838aa6cbcc4297ad3a5b2842baf",
+    "org/mockito/mockito-core/4.11.0/mockito-core-4.11.0.jar": "4b909690cab288c761eb94c0bf0e814496cf3921d8affac84cd87774530351e5",
+    "org/mockito/mockito-inline/4.11.0/mockito-inline-4.11.0.jar": "ee52e1c299a632184fba274a9370993e09140429f5e516e6c5570fd6574b297f",
+    "org/mockito/mockito-junit-jupiter/4.11.0/mockito-junit-jupiter-4.11.0.jar": "f4b3694f60fccc7b520d8aea9b6c827d8e9949b652cad09fce10b546bf3ac537",
+    "org/objenesis/objenesis/3.3/objenesis-3.3.jar": "02dfd0b0439a5591e35b708ed2f5474eb0948f53abf74637e959b8e4ef69bfeb",
+    "org/openjdk/jmh/jmh-core/1.37/jmh-core-1.37.jar": "dc0eaf2bbf0036a70b60798c785d6e03a9daf06b68b8edb0f1ba9eb3421baeb3",
+    "org/openjdk/jmh/jmh-generator-annprocess/1.37/jmh-generator-annprocess-1.37.jar": "6a5604b5b804e0daca1145df1077609321687734a8b49387e49f10557c186c77",
+    "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar": "48e2df636cab6563ced64dcdff8abb2355627cb236ef0bf37598682ddf742f1b",
+    "org/ow2/asm/asm/9.7.1/asm-9.7.1.jar": "8cadd43ac5eb6d09de05faecca38b917a040bb9139c7edeb4cc81c740b713281",
+    "org/reactivestreams/reactive-streams/1.0.4/reactive-streams-1.0.4.jar": "f75ca597789b3dac58f61857b9ac2e1034a68fa672db35055a8fb4509e325f28",
+    "org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar": "d3ef575e3e4979678dc01bf1dcce51021493b4d11fb7f1be8ad982877c16a1c0",
+    "redis/clients/authentication/redis-authx-core/0.1.1-beta2/redis-authx-core-0.1.1-beta2.jar": "cc56edb08b3df8562cddac108dca61907d21cc4ad04de05e9f5d1b01058390af",
+    "redis/clients/authentication/redis-authx-entraid/0.1.1-beta2/redis-authx-entraid-0.1.1-beta2.jar": "84315dbca772fed29db090ef79b32bca306c41644a0293aaa5af6978ce844501"
+  }
+}

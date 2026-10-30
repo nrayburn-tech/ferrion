@@ -1,0 +1,997 @@
+{
+  "formatVersion": 1,
+  "commit": "216e697e269536d9d259bcc6648aaf57de6f9c82",
+  "jdk": 21,
+  "modules": [
+    {
+      "path": "spring-data-jpa",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 17,
+          "sourceRoots": [
+            "spring-data-jpa/src/main/java"
+          ],
+          "classpath": [
+            {
+              "jar": "org/springframework/data/spring-data-commons/4.0.8/spring-data-commons-4.0.8.jar"
+            },
+            {
+              "jar": "org/springframework/spring-orm/7.0.10/spring-orm-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-jdbc/7.0.10/spring-jdbc-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-context/7.0.10/spring-context-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-expression/7.0.10/spring-expression-7.0.10.jar"
+            },
+            {
+              "jar": "io/micrometer/micrometer-observation/1.16.8/micrometer-observation-1.16.8.jar"
+            },
+            {
+              "jar": "io/micrometer/micrometer-commons/1.16.8/micrometer-commons-1.16.8.jar"
+            },
+            {
+              "jar": "org/springframework/spring-aop/7.0.10/spring-aop-7.0.10.jar"
+            },
+            {
+              "jar": "org/aspectj/aspectjrt/1.9.25.1/aspectjrt-1.9.25.1.jar"
+            },
+            {
+              "jar": "org/springframework/spring-tx/7.0.10/spring-tx-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-beans/7.0.10/spring-beans-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-instrument/7.0.10/spring-instrument-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-core/7.0.10/spring-core-7.0.10.jar"
+            },
+            {
+              "jar": "commons-logging/commons-logging/1.3.5/commons-logging-1.3.5.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar"
+            },
+            {
+              "jar": "org/springframework/spring-aspects/7.0.10/spring-aspects-7.0.10.jar"
+            },
+            {
+              "jar": "org/aspectj/aspectjweaver/1.9.25.1/aspectjweaver-1.9.25.1.jar"
+            },
+            {
+              "jar": "org/hibernate/orm/hibernate-core/7.2.25.Final/hibernate-core-7.2.25.Final.jar"
+            },
+            {
+              "jar": "jakarta/persistence/jakarta.persistence-api/3.2.0/jakarta.persistence-api-3.2.0.jar"
+            },
+            {
+              "jar": "jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.jar"
+            },
+            {
+              "jar": "org/jboss/logging/jboss-logging/3.6.1.Final/jboss-logging-3.6.1.Final.jar"
+            },
+            {
+              "jar": "org/hibernate/orm/hibernate-vector/7.2.25.Final/hibernate-vector-7.2.25.Final.jar"
+            },
+            {
+              "jar": "org/hibernate/orm/hibernate-processor/7.2.25.Final/hibernate-processor-7.2.25.Final.jar"
+            },
+            {
+              "jar": "io/smallrye/jandex/3.3.2/jandex-3.3.2.jar"
+            },
+            {
+              "jar": "jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.8/byte-buddy-1.17.8.jar"
+            },
+            {
+              "jar": "jakarta/xml/bind/jakarta.xml.bind-api/3.0.1/jakarta.xml.bind-api-3.0.1.jar"
+            },
+            {
+              "jar": "com/sun/activation/jakarta.activation/2.0.1/jakarta.activation-2.0.1.jar"
+            },
+            {
+              "jar": "jakarta/annotation/jakarta.annotation-api/2.0.0/jakarta.annotation-api-2.0.0.jar"
+            },
+            {
+              "jar": "org/eclipse/persistence/org.eclipse.persistence.jpa/5.0.2/org.eclipse.persistence.jpa-5.0.2.jar"
+            },
+            {
+              "jar": "org/eclipse/persistence/org.eclipse.persistence.core/5.0.2/org.eclipse.persistence.core-5.0.2.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.10.1/asm-commons-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar"
+            },
+            {
+              "jar": "org/eclipse/persistence/org.eclipse.persistence.jpa.jpql/5.0.2/org.eclipse.persistence.jpa.jpql-5.0.2.jar"
+            },
+            {
+              "jar": "com/querydsl/querydsl-apt/5.1.0/querydsl-apt-5.1.0-jakarta.jar"
+            },
+            {
+              "jar": "com/querydsl/querydsl-codegen/5.1.0/querydsl-codegen-5.1.0.jar"
+            },
+            {
+              "jar": "com/querydsl/codegen-utils/5.1.0/codegen-utils-5.1.0.jar"
+            },
+            {
+              "jar": "org/eclipse/jdt/ecj/3.26.0/ecj-3.26.0.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "io/github/classgraph/classgraph/4.8.146/classgraph-4.8.146.jar"
+            },
+            {
+              "jar": "com/querydsl/querydsl-jpa/5.1.0/querydsl-jpa-5.1.0-jakarta.jar"
+            },
+            {
+              "jar": "com/querydsl/querydsl-core/5.1.0/querydsl-core-5.1.0.jar"
+            },
+            {
+              "jar": "com/mysema/commons/mysema-commons-lang/0.2.4/mysema-commons-lang-0.2.4.jar"
+            },
+            {
+              "jar": "jakarta/enterprise/jakarta.enterprise.cdi-api/4.0.1/jakarta.enterprise.cdi-api-4.0.1.jar"
+            },
+            {
+              "jar": "jakarta/enterprise/jakarta.enterprise.lang-model/4.0.1/jakarta.enterprise.lang-model-4.0.1.jar"
+            },
+            {
+              "jar": "jakarta/el/jakarta.el-api/5.0.0/jakarta.el-api-5.0.0.jar"
+            },
+            {
+              "jar": "jakarta/interceptor/jakarta.interceptor-api/2.1.0/jakarta.interceptor-api-2.1.0.jar"
+            },
+            {
+              "jar": "com/github/jsqlparser/jsqlparser/5.3/jsqlparser-5.3.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 17,
+          "sourceRoots": [
+            "spring-data-jpa/src/test/java"
+          ],
+          "classpath": [
+            {
+              "module": "spring-data-jpa",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/springframework/data/spring-data-commons/4.0.8/spring-data-commons-4.0.8.jar"
+            },
+            {
+              "jar": "org/springframework/spring-orm/7.0.10/spring-orm-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-jdbc/7.0.10/spring-jdbc-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-context/7.0.10/spring-context-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-expression/7.0.10/spring-expression-7.0.10.jar"
+            },
+            {
+              "jar": "io/micrometer/micrometer-observation/1.16.8/micrometer-observation-1.16.8.jar"
+            },
+            {
+              "jar": "io/micrometer/micrometer-commons/1.16.8/micrometer-commons-1.16.8.jar"
+            },
+            {
+              "jar": "org/springframework/spring-aop/7.0.10/spring-aop-7.0.10.jar"
+            },
+            {
+              "jar": "org/aspectj/aspectjrt/1.9.25.1/aspectjrt-1.9.25.1.jar"
+            },
+            {
+              "jar": "org/springframework/spring-tx/7.0.10/spring-tx-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-beans/7.0.10/spring-beans-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-instrument/7.0.10/spring-instrument-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-core/7.0.10/spring-core-7.0.10.jar"
+            },
+            {
+              "jar": "commons-logging/commons-logging/1.3.5/commons-logging-1.3.5.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar"
+            },
+            {
+              "jar": "org/springframework/spring-aspects/7.0.10/spring-aspects-7.0.10.jar"
+            },
+            {
+              "jar": "org/aspectj/aspectjweaver/1.9.25.1/aspectjweaver-1.9.25.1.jar"
+            },
+            {
+              "jar": "org/springframework/spring-test/7.0.10/spring-test-7.0.10.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-launcher/6.0.3/junit-platform-launcher-6.0.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-engine/6.0.3/junit-platform-engine-6.0.3.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/6.0.3/junit-platform-commons-6.0.3.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "org/junit-pioneer/junit-pioneer/2.3.0/junit-pioneer-2.3.0.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/6.0.3/junit-jupiter-api-6.0.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/6.0.3/junit-jupiter-params-6.0.3.jar"
+            },
+            {
+              "jar": "org/springframework/spring-core-test/7.0.10/spring-core-test-7.0.10.jar"
+            },
+            {
+              "jar": "com/thoughtworks/qdox/qdox/2.2.0/qdox-2.2.0.jar"
+            },
+            {
+              "jar": "net/javacrumbs/json-unit/json-unit-assertj/4.1.0/json-unit-assertj-4.1.0.jar"
+            },
+            {
+              "jar": "net/javacrumbs/json-unit/json-unit-core/4.1.0/json-unit-core-4.1.0.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/3.0/hamcrest-core-3.0.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/3.0/hamcrest-3.0.jar"
+            },
+            {
+              "jar": "net/javacrumbs/json-unit/json-unit-json-path/4.1.0/json-unit-json-path-4.1.0.jar"
+            },
+            {
+              "jar": "com/jayway/jsonpath/json-path/2.9.0/json-path-2.9.0.jar"
+            },
+            {
+              "jar": "net/minidev/json-smart/2.5.0/json-smart-2.5.0.jar"
+            },
+            {
+              "jar": "net/minidev/accessors-smart/2.5.0/accessors-smart-2.5.0.jar"
+            },
+            {
+              "jar": "com/fasterxml/jackson/core/jackson-databind/2.21.7/jackson-databind-2.21.7.jar"
+            },
+            {
+              "jar": "com/fasterxml/jackson/core/jackson-annotations/2.21/jackson-annotations-2.21.jar"
+            },
+            {
+              "jar": "com/fasterxml/jackson/core/jackson-core/2.21.7/jackson-core-2.21.7.jar"
+            },
+            {
+              "jar": "org/hsqldb/hsqldb/2.7.4/hsqldb-2.7.4.jar"
+            },
+            {
+              "jar": "com/h2database/h2/2.3.232/h2-2.3.232.jar"
+            },
+            {
+              "jar": "com/mysql/mysql-connector-j/9.7.0/mysql-connector-j-9.7.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.31.1/protobuf-java-4.31.1.jar"
+            },
+            {
+              "jar": "org/testcontainers/testcontainers-mysql/2.0.5/testcontainers-mysql-2.0.5.jar"
+            },
+            {
+              "jar": "org/testcontainers/testcontainers-jdbc/2.0.5/testcontainers-jdbc-2.0.5.jar"
+            },
+            {
+              "jar": "org/testcontainers/testcontainers-database-commons/2.0.5/testcontainers-database-commons-2.0.5.jar"
+            },
+            {
+              "jar": "org/testcontainers/testcontainers/2.0.5/testcontainers-2.0.5.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.19.0/commons-codec-1.19.0.jar"
+            },
+            {
+              "jar": "commons-io/commons-io/2.20.0/commons-io-2.20.0.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-lang3/3.18.0/commons-lang3-3.18.0.jar"
+            },
+            {
+              "jar": "org/rnorth/duct-tape/duct-tape/1.0.8/duct-tape-1.0.8.jar"
+            },
+            {
+              "jar": "com/github/docker-java/docker-java-api/3.7.1/docker-java-api-3.7.1.jar"
+            },
+            {
+              "jar": "com/github/docker-java/docker-java-transport-zerodep/3.7.1/docker-java-transport-zerodep-3.7.1.jar"
+            },
+            {
+              "jar": "com/github/docker-java/docker-java-transport/3.7.1/docker-java-transport-3.7.1.jar"
+            },
+            {
+              "jar": "net/java/dev/jna/jna/5.18.1/jna-5.18.1.jar"
+            },
+            {
+              "jar": "org/postgresql/postgresql/42.7.14/postgresql-42.7.14.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/3.55.1/checker-qual-3.55.1.jar"
+            },
+            {
+              "jar": "org/testcontainers/testcontainers-postgresql/2.0.5/testcontainers-postgresql-2.0.5.jar"
+            },
+            {
+              "jar": "com/oracle/database/jdbc/ojdbc17/23.26.3.0.0/ojdbc17-23.26.3.0.0.jar"
+            },
+            {
+              "jar": "com/oracle/database/jdbc/ucp17/23.26.3.0.0/ucp17-23.26.3.0.0.jar"
+            },
+            {
+              "jar": "org/testcontainers/testcontainers-oracle-free/2.0.5/testcontainers-oracle-free-2.0.5.jar"
+            },
+            {
+              "jar": "io/vavr/vavr/0.10.5/vavr-0.10.5.jar"
+            },
+            {
+              "jar": "io/vavr/vavr-match/0.10.5/vavr-match-0.10.5.jar"
+            },
+            {
+              "jar": "org/hibernate/orm/hibernate-core/7.2.25.Final/hibernate-core-7.2.25.Final.jar"
+            },
+            {
+              "jar": "jakarta/persistence/jakarta.persistence-api/3.2.0/jakarta.persistence-api-3.2.0.jar"
+            },
+            {
+              "jar": "jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.jar"
+            },
+            {
+              "jar": "org/hibernate/models/hibernate-models/1.0.1/hibernate-models-1.0.1.jar"
+            },
+            {
+              "jar": "com/fasterxml/classmate/1.7.1/classmate-1.7.1.jar"
+            },
+            {
+              "jar": "org/glassfish/jaxb/jaxb-runtime/4.0.6/jaxb-runtime-4.0.6.jar"
+            },
+            {
+              "jar": "org/glassfish/jaxb/jaxb-core/4.0.6/jaxb-core-4.0.6.jar"
+            },
+            {
+              "jar": "jakarta/activation/jakarta.activation-api/2.1.4/jakarta.activation-api-2.1.4.jar"
+            },
+            {
+              "jar": "org/eclipse/angus/angus-activation/2.0.3/angus-activation-2.0.3.jar"
+            },
+            {
+              "jar": "org/glassfish/jaxb/txw2/4.0.6/txw2-4.0.6.jar"
+            },
+            {
+              "jar": "com/sun/istack/istack-commons-runtime/4.1.2/istack-commons-runtime-4.1.2.jar"
+            },
+            {
+              "jar": "jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar"
+            },
+            {
+              "jar": "org/jboss/logging/jboss-logging/3.6.1.Final/jboss-logging-3.6.1.Final.jar"
+            },
+            {
+              "jar": "org/hibernate/orm/hibernate-vector/7.2.25.Final/hibernate-vector-7.2.25.Final.jar"
+            },
+            {
+              "jar": "org/hibernate/orm/hibernate-processor/7.2.25.Final/hibernate-processor-7.2.25.Final.jar"
+            },
+            {
+              "jar": "io/smallrye/jandex/3.3.2/jandex-3.3.2.jar"
+            },
+            {
+              "jar": "jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.8/byte-buddy-1.17.8.jar"
+            },
+            {
+              "jar": "jakarta/xml/bind/jakarta.xml.bind-api/3.0.1/jakarta.xml.bind-api-3.0.1.jar"
+            },
+            {
+              "jar": "com/sun/activation/jakarta.activation/2.0.1/jakarta.activation-2.0.1.jar"
+            },
+            {
+              "jar": "jakarta/annotation/jakarta.annotation-api/2.0.0/jakarta.annotation-api-2.0.0.jar"
+            },
+            {
+              "jar": "org/eclipse/persistence/org.eclipse.persistence.jpa/5.0.2/org.eclipse.persistence.jpa-5.0.2.jar"
+            },
+            {
+              "jar": "org/eclipse/persistence/org.eclipse.persistence.core/5.0.2/org.eclipse.persistence.core-5.0.2.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.10.1/asm-commons-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar"
+            },
+            {
+              "jar": "org/eclipse/persistence/org.eclipse.persistence.jpa.jpql/5.0.2/org.eclipse.persistence.jpa.jpql-5.0.2.jar"
+            },
+            {
+              "jar": "com/querydsl/querydsl-apt/5.1.0/querydsl-apt-5.1.0-jakarta.jar"
+            },
+            {
+              "jar": "com/querydsl/querydsl-codegen/5.1.0/querydsl-codegen-5.1.0.jar"
+            },
+            {
+              "jar": "com/querydsl/codegen-utils/5.1.0/codegen-utils-5.1.0.jar"
+            },
+            {
+              "jar": "org/eclipse/jdt/ecj/3.26.0/ecj-3.26.0.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "io/github/classgraph/classgraph/4.8.146/classgraph-4.8.146.jar"
+            },
+            {
+              "jar": "com/querydsl/querydsl-jpa/5.1.0/querydsl-jpa-5.1.0-jakarta.jar"
+            },
+            {
+              "jar": "com/querydsl/querydsl-core/5.1.0/querydsl-core-5.1.0.jar"
+            },
+            {
+              "jar": "com/mysema/commons/mysema-commons-lang/0.2.4/mysema-commons-lang-0.2.4.jar"
+            },
+            {
+              "jar": "org/jmolecules/integrations/jmolecules-spring/0.33.0/jmolecules-spring-0.33.0.jar"
+            },
+            {
+              "jar": "org/jmolecules/jmolecules-ddd/2.0.1/jmolecules-ddd-2.0.1.jar"
+            },
+            {
+              "jar": "org/jmolecules/jstereotype/2.0.1/jstereotype-2.0.1.jar"
+            },
+            {
+              "jar": "jakarta/enterprise/jakarta.enterprise.cdi-api/4.0.1/jakarta.enterprise.cdi-api-4.0.1.jar"
+            },
+            {
+              "jar": "jakarta/enterprise/jakarta.enterprise.lang-model/4.0.1/jakarta.enterprise.lang-model-4.0.1.jar"
+            },
+            {
+              "jar": "jakarta/el/jakarta.el-api/5.0.0/jakarta.el-api-5.0.0.jar"
+            },
+            {
+              "jar": "jakarta/interceptor/jakarta.interceptor-api/2.1.0/jakarta.interceptor-api-2.1.0.jar"
+            },
+            {
+              "jar": "org/apache/openwebbeans/openwebbeans-se/4.0.3/openwebbeans-se-4.0.3.jar"
+            },
+            {
+              "jar": "org/apache/openwebbeans/openwebbeans-impl/4.0.3/openwebbeans-impl-4.0.3.jar"
+            },
+            {
+              "jar": "org/apache/openwebbeans/openwebbeans-spi/4.0.3/openwebbeans-spi-4.0.3.jar"
+            },
+            {
+              "jar": "org/apache/xbean/xbean-finder-shaded/4.26/xbean-finder-shaded-4.26.jar"
+            },
+            {
+              "jar": "org/apache/xbean/xbean-asm9-shaded/4.26/xbean-asm9-shaded-4.26.jar"
+            },
+            {
+              "jar": "com/github/jsqlparser/jsqlparser/5.3/jsqlparser-5.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/6.0.3/junit-jupiter-6.0.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-engine/6.0.3/junit-jupiter-engine-6.0.3.jar"
+            },
+            {
+              "jar": "org/junit/vintage/junit-vintage-engine/6.0.3/junit-vintage-engine-6.0.3.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/openjdk/jmh/jmh-core/1.37/jmh-core-1.37.jar"
+            },
+            {
+              "jar": "net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.23.0/mockito-core-5.23.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-junit-jupiter/5.23.0/mockito-junit-jupiter-5.23.0.jar"
+            },
+            {
+              "jar": "org/assertj/assertj-core/3.27.7/assertj-core-3.27.7.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "ch/qos/logback/logback-classic/1.5.38/logback-classic-1.5.38.jar"
+            },
+            {
+              "jar": "ch/qos/logback/logback-core/1.5.38/logback-core-1.5.38.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "spring-data-envers",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 17,
+          "sourceRoots": [
+            "spring-data-envers/src/main/java"
+          ],
+          "classpath": [
+            {
+              "module": "spring-data-jpa",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/springframework/data/spring-data-commons/4.0.8/spring-data-commons-4.0.8.jar"
+            },
+            {
+              "jar": "org/springframework/spring-orm/7.0.10/spring-orm-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-jdbc/7.0.10/spring-jdbc-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-context/7.0.10/spring-context-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-expression/7.0.10/spring-expression-7.0.10.jar"
+            },
+            {
+              "jar": "io/micrometer/micrometer-observation/1.16.8/micrometer-observation-1.16.8.jar"
+            },
+            {
+              "jar": "io/micrometer/micrometer-commons/1.16.8/micrometer-commons-1.16.8.jar"
+            },
+            {
+              "jar": "org/springframework/spring-aop/7.0.10/spring-aop-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-tx/7.0.10/spring-tx-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-beans/7.0.10/spring-beans-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-core/7.0.10/spring-core-7.0.10.jar"
+            },
+            {
+              "jar": "commons-logging/commons-logging/1.3.5/commons-logging-1.3.5.jar"
+            },
+            {
+              "jar": "org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar"
+            },
+            {
+              "jar": "jakarta/annotation/jakarta.annotation-api/2.0.0/jakarta.annotation-api-2.0.0.jar"
+            },
+            {
+              "jar": "org/hibernate/orm/hibernate-envers/7.2.25.Final/hibernate-envers-7.2.25.Final.jar"
+            },
+            {
+              "jar": "org/hibernate/orm/hibernate-core/7.2.25.Final/hibernate-core-7.2.25.Final.jar"
+            },
+            {
+              "jar": "jakarta/persistence/jakarta.persistence-api/3.2.0/jakarta.persistence-api-3.2.0.jar"
+            },
+            {
+              "jar": "jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.jar"
+            },
+            {
+              "jar": "com/querydsl/querydsl-jpa/5.1.0/querydsl-jpa-5.1.0-jakarta.jar"
+            },
+            {
+              "jar": "com/querydsl/querydsl-core/5.1.0/querydsl-core-5.1.0.jar"
+            },
+            {
+              "jar": "com/mysema/commons/mysema-commons-lang/0.2.4/mysema-commons-lang-0.2.4.jar"
+            },
+            {
+              "jar": "org/springframework/spring-instrument/7.0.10/spring-instrument-7.0.10.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 17,
+          "sourceRoots": [
+            "spring-data-envers/src/test/java"
+          ],
+          "classpath": [
+            {
+              "module": "spring-data-envers",
+              "sourceSet": "main"
+            },
+            {
+              "module": "spring-data-jpa",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/springframework/data/spring-data-commons/4.0.8/spring-data-commons-4.0.8.jar"
+            },
+            {
+              "jar": "org/springframework/spring-orm/7.0.10/spring-orm-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-jdbc/7.0.10/spring-jdbc-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-context/7.0.10/spring-context-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-expression/7.0.10/spring-expression-7.0.10.jar"
+            },
+            {
+              "jar": "io/micrometer/micrometer-observation/1.16.8/micrometer-observation-1.16.8.jar"
+            },
+            {
+              "jar": "io/micrometer/micrometer-commons/1.16.8/micrometer-commons-1.16.8.jar"
+            },
+            {
+              "jar": "org/springframework/spring-aop/7.0.10/spring-aop-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-tx/7.0.10/spring-tx-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-beans/7.0.10/spring-beans-7.0.10.jar"
+            },
+            {
+              "jar": "org/springframework/spring-core/7.0.10/spring-core-7.0.10.jar"
+            },
+            {
+              "jar": "commons-logging/commons-logging/1.3.5/commons-logging-1.3.5.jar"
+            },
+            {
+              "jar": "org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar"
+            },
+            {
+              "jar": "jakarta/annotation/jakarta.annotation-api/2.0.0/jakarta.annotation-api-2.0.0.jar"
+            },
+            {
+              "jar": "org/hibernate/orm/hibernate-envers/7.2.25.Final/hibernate-envers-7.2.25.Final.jar"
+            },
+            {
+              "jar": "org/hibernate/orm/hibernate-core/7.2.25.Final/hibernate-core-7.2.25.Final.jar"
+            },
+            {
+              "jar": "jakarta/persistence/jakarta.persistence-api/3.2.0/jakarta.persistence-api-3.2.0.jar"
+            },
+            {
+              "jar": "jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.jar"
+            },
+            {
+              "jar": "com/fasterxml/classmate/1.7.1/classmate-1.7.1.jar"
+            },
+            {
+              "jar": "jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar"
+            },
+            {
+              "jar": "org/jboss/logging/jboss-logging/3.6.1.Final/jboss-logging-3.6.1.Final.jar"
+            },
+            {
+              "jar": "org/hibernate/models/hibernate-models/1.0.1/hibernate-models-1.0.1.jar"
+            },
+            {
+              "jar": "jakarta/xml/bind/jakarta.xml.bind-api/4.0.4/jakarta.xml.bind-api-4.0.4.jar"
+            },
+            {
+              "jar": "jakarta/activation/jakarta.activation-api/2.1.4/jakarta.activation-api-2.1.4.jar"
+            },
+            {
+              "jar": "org/glassfish/jaxb/jaxb-runtime/4.0.6/jaxb-runtime-4.0.6.jar"
+            },
+            {
+              "jar": "org/glassfish/jaxb/jaxb-core/4.0.6/jaxb-core-4.0.6.jar"
+            },
+            {
+              "jar": "org/eclipse/angus/angus-activation/2.0.3/angus-activation-2.0.3.jar"
+            },
+            {
+              "jar": "org/glassfish/jaxb/txw2/4.0.6/txw2-4.0.6.jar"
+            },
+            {
+              "jar": "com/sun/istack/istack-commons-runtime/4.1.2/istack-commons-runtime-4.1.2.jar"
+            },
+            {
+              "jar": "io/smallrye/jandex/3.3.2/jandex-3.3.2.jar"
+            },
+            {
+              "jar": "com/querydsl/querydsl-jpa/5.1.0/querydsl-jpa-5.1.0-jakarta.jar"
+            },
+            {
+              "jar": "com/querydsl/querydsl-core/5.1.0/querydsl-core-5.1.0.jar"
+            },
+            {
+              "jar": "com/mysema/commons/mysema-commons-lang/0.2.4/mysema-commons-lang-0.2.4.jar"
+            },
+            {
+              "jar": "com/h2database/h2/2.3.232/h2-2.3.232.jar"
+            },
+            {
+              "jar": "org/springframework/spring-instrument/7.0.10/spring-instrument-7.0.10.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/6.0.3/junit-jupiter-6.0.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/6.0.3/junit-jupiter-api-6.0.3.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/6.0.3/junit-platform-commons-6.0.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/6.0.3/junit-jupiter-params-6.0.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-engine/6.0.3/junit-jupiter-engine-6.0.3.jar"
+            },
+            {
+              "jar": "org/junit/vintage/junit-vintage-engine/6.0.3/junit-vintage-engine-6.0.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-engine/6.0.3/junit-platform-engine-6.0.3.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar"
+            },
+            {
+              "jar": "org/openjdk/jmh/jmh-core/1.37/jmh-core-1.37.jar"
+            },
+            {
+              "jar": "net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.23.0/mockito-core-5.23.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-junit-jupiter/5.23.0/mockito-junit-jupiter-5.23.0.jar"
+            },
+            {
+              "jar": "org/assertj/assertj-core/3.27.7/assertj-core-3.27.7.jar"
+            },
+            {
+              "jar": "org/springframework/spring-test/7.0.10/spring-test-7.0.10.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "ch/qos/logback/logback-classic/1.5.38/logback-classic-1.5.38.jar"
+            },
+            {
+              "jar": "ch/qos/logback/logback-core/1.5.38/logback-core-1.5.38.jar"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "jars": {
+    "ch/qos/logback/logback-classic/1.5.38/logback-classic-1.5.38.jar": "afb439c61fa287c9e1925523b13baab03617e724406a389d48b61c2c3e46b700",
+    "ch/qos/logback/logback-core/1.5.38/logback-core-1.5.38.jar": "a855a0fc97b1d06f4efb1c3bba5ebd0eb508d8b58e68e89e4bbc23a85135c883",
+    "com/fasterxml/classmate/1.7.1/classmate-1.7.1.jar": "cc3299e5df4fc24180e69477c890d07d38db79dd2decc0ef20e74a986897c0a1",
+    "com/fasterxml/jackson/core/jackson-annotations/2.21/jackson-annotations-2.21.jar": "53ca085f4a150f703f49e1aabd935bd03b43e1ea3d55d135438292af22cef56b",
+    "com/fasterxml/jackson/core/jackson-core/2.21.7/jackson-core-2.21.7.jar": "8c5623b98f32d5f7e1287ff61ed50e08ab7b11381e991fff89327faabba42261",
+    "com/fasterxml/jackson/core/jackson-databind/2.21.7/jackson-databind-2.21.7.jar": "1290c2795e93e8a6861a6c4d9ff0d844d32f5ea178362cb2721edf5561e828b1",
+    "com/github/docker-java/docker-java-api/3.7.1/docker-java-api-3.7.1.jar": "dad153d484b1f4ef009e2fdbad27e07aeb3191122da52b8985507ac504300081",
+    "com/github/docker-java/docker-java-transport-zerodep/3.7.1/docker-java-transport-zerodep-3.7.1.jar": "b89bdb1754160323597f9ea32a7fe7a4a3aa8f5b3b43b88e8d71fff3b267ab21",
+    "com/github/docker-java/docker-java-transport/3.7.1/docker-java-transport-3.7.1.jar": "d15eec8034bf0f92c2a48ca9172691804048115c96dc853272f9486fa2695c3c",
+    "com/github/jsqlparser/jsqlparser/5.3/jsqlparser-5.3.jar": "41bcb5b00488231db179cb5a375690830a59aba521dfa303daa94dcb9dcc8e88",
+    "com/google/protobuf/protobuf-java/4.31.1/protobuf-java-4.31.1.jar": "d60dfe7c68a0d38a248cca96924f289dc7e1966a887ee7cae397701af08575ae",
+    "com/h2database/h2/2.3.232/h2-2.3.232.jar": "8dae62d22db8982c3dcb3826edb9c727c5d302063a67eef7d63d82de401f07d3",
+    "com/jayway/jsonpath/json-path/2.9.0/json-path-2.9.0.jar": "11a9ee6f88bb31f1450108d1cf6441377dec84aca075eb6bb2343be157575bea",
+    "com/mysema/commons/mysema-commons-lang/0.2.4/mysema-commons-lang-0.2.4.jar": "dbbdd6816b33d3bead50f4d217825fcf568d50a43af881df5cdd01468c2b6efe",
+    "com/mysql/mysql-connector-j/9.7.0/mysql-connector-j-9.7.0.jar": "0353648eaa1c91e0f4020c959abf756bc866ffd583df22ae6b6f6e0cbd43eb44",
+    "com/oracle/database/jdbc/ojdbc17/23.26.3.0.0/ojdbc17-23.26.3.0.0.jar": "17ad1c2d5242432cc4db9e2a7f67762bc8a4086cbcb3cd81f6ffaa2a510c41d8",
+    "com/oracle/database/jdbc/ucp17/23.26.3.0.0/ucp17-23.26.3.0.0.jar": "54ec00615e3fc90918d68b4535ddbeefb9f744a44d3ad4bf734d2af740debdbf",
+    "com/querydsl/codegen-utils/5.1.0/codegen-utils-5.1.0.jar": "0633634e74fb716ea998d9d31c99c8dc6c24ea6e906046f2fc4707148ac58888",
+    "com/querydsl/querydsl-apt/5.1.0/querydsl-apt-5.1.0-jakarta.jar": "9b0e0f18205930ce1e21ab03758c46c069b92d4418956bf8468d85887cd2dfef",
+    "com/querydsl/querydsl-codegen/5.1.0/querydsl-codegen-5.1.0.jar": "6b3dafdf32370dbfa45f649a7194fab4506794aefe879ac23f5fd5ca59a46226",
+    "com/querydsl/querydsl-core/5.1.0/querydsl-core-5.1.0.jar": "57a3033ddbb4d928552b33443be7195bc3caba6fa85cd9a492bc874a5ef98c8e",
+    "com/querydsl/querydsl-jpa/5.1.0/querydsl-jpa-5.1.0-jakarta.jar": "01b064b511e093ceff2a8698829354b4fb1dc08f576e405dd6dfa8ab35736ca2",
+    "com/sun/activation/jakarta.activation/2.0.1/jakarta.activation-2.0.1.jar": "b9e24b7dd6e07495562ea96531be3130c96dba4d78e1dfd88adbbdebf4332871",
+    "com/sun/istack/istack-commons-runtime/4.1.2/istack-commons-runtime-4.1.2.jar": "7fd6792361f4dd00f8c56af4a20cecc0066deea4a8f3dec38348af23fc2296ee",
+    "com/thoughtworks/qdox/qdox/2.2.0/qdox-2.2.0.jar": "c260c3230b2340af97d54bf01f7f67ebc57c901922736c881bb11cb981302be2",
+    "commons-codec/commons-codec/1.19.0/commons-codec-1.19.0.jar": "5c3881e4f556855e9c532927ee0c9dfde94cc66760d5805c031a59887070af5f",
+    "commons-io/commons-io/2.20.0/commons-io-2.20.0.jar": "df90bba0fe3cb586b7f164e78fe8f8f4da3f2dd5c27fa645f888100ccc25dd72",
+    "commons-logging/commons-logging/1.3.5/commons-logging-1.3.5.jar": "6d7a744e4027649fbb50895df9497d109f98c766a637062fe8d2eabbb3140ba4",
+    "io/github/classgraph/classgraph/4.8.146/classgraph-4.8.146.jar": "184b8319c463656672e3480dead3bdb77d7b116d55f3a618f4f5564e8f6fa0a4",
+    "io/micrometer/micrometer-commons/1.16.8/micrometer-commons-1.16.8.jar": "66ebb98b23ec65300b5b670f8ff49e1cc1400e71ebb7881390cd10bc6ed492ad",
+    "io/micrometer/micrometer-observation/1.16.8/micrometer-observation-1.16.8.jar": "e9640e8a4c77fe458deada6db9b8e1c094e519ebc333a3d005c15eebb1be942c",
+    "io/smallrye/jandex/3.3.2/jandex-3.3.2.jar": "b7a214dbb405c11cfa62fd4319810a46e502b633ce86d6e2dea7a5065b932256",
+    "io/vavr/vavr-match/0.10.5/vavr-match-0.10.5.jar": "246ea9cbc800552cb847f2d68e4304836800237466ef59c980fe28655fecdecf",
+    "io/vavr/vavr/0.10.5/vavr-0.10.5.jar": "9b54f6d4a5f1784a6413b07110a1168ddc4d8c43ee39d6d5442e91e91489706f",
+    "jakarta/activation/jakarta.activation-api/2.1.4/jakarta.activation-api-2.1.4.jar": "c9db52100ce6c8aac95cc39075f95720d2e561b11f8051b81c121ad4effd7004",
+    "jakarta/annotation/jakarta.annotation-api/2.0.0/jakarta.annotation-api-2.0.0.jar": "2f0a0a2a5fe653794bdb1b9531bc9bea53c92c11e0b693e74cf8e396aa2ff325",
+    "jakarta/el/jakarta.el-api/5.0.0/jakarta.el-api-5.0.0.jar": "57b822380207900f5145c2a687384c50fd41495d388a235791d96ae3b9bfd36d",
+    "jakarta/enterprise/jakarta.enterprise.cdi-api/4.0.1/jakarta.enterprise.cdi-api-4.0.1.jar": "beaf74c4f2618189309e3f4a09c43effab633dd96aa1f6dc58a6ba7ee0042717",
+    "jakarta/enterprise/jakarta.enterprise.lang-model/4.0.1/jakarta.enterprise.lang-model-4.0.1.jar": "53acafe65b6ef0195fa1b8a0ef2650e5aa024c32cb4059c4df372d6b32089cd3",
+    "jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar": "f7dc98062fccf14126abb751b64fab12c312566e8cbdc8483598bffcea93af7c",
+    "jakarta/interceptor/jakarta.interceptor-api/2.1.0/jakarta.interceptor-api-2.1.0.jar": "ef787d3f713fc6ff4f02cd4b0dbed08f93d8af3400c90cbb43fb4b5c0583710b",
+    "jakarta/persistence/jakarta.persistence-api/3.2.0/jakarta.persistence-api-3.2.0.jar": "be8a26b0e75c84c1b7600f759256fbc68d60333d89ec0ce3f784fc3ffa09aa8c",
+    "jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.jar": "50c0a7c760c13ae6c042acf182b28f0047413db95b4636fb8879bcffab5ba875",
+    "jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.jar": "291c25e6910cc6a7ebd96d4c6baebf6d7c37676c5482c2d96146e901b62c1fc9",
+    "jakarta/xml/bind/jakarta.xml.bind-api/3.0.1/jakarta.xml.bind-api-3.0.1.jar": "b8fb4bee3ff5b5c1ef77144d8411316018d7bbd41fcf1ede0646f7978546b867",
+    "jakarta/xml/bind/jakarta.xml.bind-api/4.0.4/jakarta.xml.bind-api-4.0.4.jar": "c507ca69a8c6dd11bf4afeec9e0d412c4fa3933fffb0a84680ea5727e8472124",
+    "javax/inject/javax.inject/1/javax.inject-1.jar": "91c77044a50c481636c32d916fd89c9118a72195390452c81065080f957de7ff",
+    "junit/junit/4.13.2/junit-4.13.2.jar": "8e495b634469d64fb8acfa3495a065cbacc8a0fff55ce1e31007be4c16dc57d3",
+    "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar": "a9ba887dca252ad61b7d5153294f34e6f3bdf4b2736b04373d13615a695fc0ff",
+    "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar": "3575dcb8a98faf943d3c1595c47a16047c4fce8a83ebbb26262f1a2f67546357",
+    "net/bytebuddy/byte-buddy/1.17.8/byte-buddy-1.17.8.jar": "2b5ddc8c1f4234bdb7cb45338a8e10a13e0e3ca473e91d5d821d681127ea8ba1",
+    "net/java/dev/jna/jna/5.18.1/jna-5.18.1.jar": "260c4b1e22b1db9e110ee441c4f13ce115f841fa48c41d78750986214b395557",
+    "net/javacrumbs/json-unit/json-unit-assertj/4.1.0/json-unit-assertj-4.1.0.jar": "ccad8bcdc6310dd2b55cffe2848f8c66ad7af70bc46254b8eb3d0ed9446a31ee",
+    "net/javacrumbs/json-unit/json-unit-core/4.1.0/json-unit-core-4.1.0.jar": "a16948ba1eacbd2fe779484816bfa0cb185a33fd9b61ad92ffb1ab24c9e9e544",
+    "net/javacrumbs/json-unit/json-unit-json-path/4.1.0/json-unit-json-path-4.1.0.jar": "5701248166dd242c1bf4f47cb9303610a464d5e1b412088dfa297bfad2ab22e1",
+    "net/minidev/accessors-smart/2.5.0/accessors-smart-2.5.0.jar": "12314fc6881d66a413fd66370787adba16e504fbf7e138690b0f3952e3fbd321",
+    "net/minidev/json-smart/2.5.0/json-smart-2.5.0.jar": "432b9e545848c4141b80717b26e367f83bf33f19250a228ce75da6e967da2bc7",
+    "net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar": "df26cc58f235f477db07f753ba5a3ab243ebe5789d9f89ecf68dd62ea9a66c28",
+    "org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar": "dd3e8a13a2d669bf84fb8d834de35ce4875f27157698d206241ec8488aadcaf7",
+    "org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar": "e1522945218456f3649a39bc4afd70ce4bd466221519dba7d378f2141a4642ca",
+    "org/apache/commons/commons-lang3/3.18.0/commons-lang3-3.18.0.jar": "4eeeae8d20c078abb64b015ec158add383ac581571cddc45c68f0c9ae0230720",
+    "org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar": "1e56d7b058d28b65abd256b8458e3885b674c1d588fa43cd7d1cbb9c7ef2b308",
+    "org/apache/openwebbeans/openwebbeans-impl/4.0.3/openwebbeans-impl-4.0.3.jar": "a79be364b46f784b203c911173081ecc135f889ff3b7fe75146cd494ab4c638e",
+    "org/apache/openwebbeans/openwebbeans-se/4.0.3/openwebbeans-se-4.0.3.jar": "f47dac8f54d13dda5b8a004a4d6f04495c722854ecafa046a7d766f423c7f88e",
+    "org/apache/openwebbeans/openwebbeans-spi/4.0.3/openwebbeans-spi-4.0.3.jar": "d04bea40e72cd8597fdb3ae1b3a285eb846429f2836d33ee31899c1fcaa13096",
+    "org/apache/xbean/xbean-asm9-shaded/4.26/xbean-asm9-shaded-4.26.jar": "685fd5b31f5b3de28b59c4de2aeb1b4fcb5c854655ad1a351d1c07bff3b1a5c9",
+    "org/apache/xbean/xbean-finder-shaded/4.26/xbean-finder-shaded-4.26.jar": "5ef4b1539cd6aabcb2f935a0b8764aef6091dc3d893ef5a82b6b4a1d33fe71c6",
+    "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar": "b509448ac506d607319f182537f0b35d71007582ec741832a1f111e5b5b70b38",
+    "org/aspectj/aspectjrt/1.9.25.1/aspectjrt-1.9.25.1.jar": "5765d5c8fbf94a895350f2643bb7543bc5b774de987bf12b92f63809b4d21a71",
+    "org/aspectj/aspectjweaver/1.9.25.1/aspectjweaver-1.9.25.1.jar": "4fe86fdc18faea571f29129c70eaad5d121363504a06d7907be88f6c60ba3116",
+    "org/assertj/assertj-core/3.27.7/assertj-core-3.27.7.jar": "c4a445426c3c2861666863b842cc4ec7bbb1c4226fefd370b6d2fe83d6c4ff0f",
+    "org/checkerframework/checker-qual/3.55.1/checker-qual-3.55.1.jar": "857658c8bdcbff794949a8d9922f88d63ee3751c203c7cd7d21ea97f9e745288",
+    "org/eclipse/angus/angus-activation/2.0.3/angus-activation-2.0.3.jar": "a6bd35c538cf90fff941ad6258c40c08fca0b5c9c3f536c657114f27ce0527a7",
+    "org/eclipse/jdt/ecj/3.26.0/ecj-3.26.0.jar": "ac0ba5876eaf7ebb47749a0d1be179c51f194b9dd0b875d1c09e1b530f5a2db5",
+    "org/eclipse/persistence/org.eclipse.persistence.core/5.0.2/org.eclipse.persistence.core-5.0.2.jar": "a11ceece118cae03909337f3ae810963099abf1159e387e03ebdb90f84a2eca5",
+    "org/eclipse/persistence/org.eclipse.persistence.jpa.jpql/5.0.2/org.eclipse.persistence.jpa.jpql-5.0.2.jar": "3bbe0abbcc72aa76604d091beb89d12c2e86004a0253545ce9ea500f8ea82980",
+    "org/eclipse/persistence/org.eclipse.persistence.jpa/5.0.2/org.eclipse.persistence.jpa-5.0.2.jar": "18484859c82c4588aa6e052747cbe295e52ca016948460df7ca82487d2f331fc",
+    "org/glassfish/jaxb/jaxb-core/4.0.6/jaxb-core-4.0.6.jar": "ebbd274207b4860d0dc6e2d44d6dbdb5945cede01222d2e50661d45f5d46c0f7",
+    "org/glassfish/jaxb/jaxb-runtime/4.0.6/jaxb-runtime-4.0.6.jar": "1c0d57f8c25f9605d5a2f7ad0a87581893776ac85b00b101b2651258edaa9118",
+    "org/glassfish/jaxb/txw2/4.0.6/txw2-4.0.6.jar": "fcc749785412ef3806fde1ce70f93ef5a0065dcc47fe449bc871db0795cb11af",
+    "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar": "66fdef91e9739348df7a096aa384a5685f4e875584cce89386a7a47251c4d8e9",
+    "org/hamcrest/hamcrest-core/3.0/hamcrest-core-3.0.jar": "b78a3a81692f421cc01fc17ded9a45e9fb6f3949c712f8ec4d01da6b8c06bc6e",
+    "org/hamcrest/hamcrest/3.0/hamcrest-3.0.jar": "5d66b6a4a680755cb6ed7cb104fa7835ef644667586ff0737adeb977c39ecdbc",
+    "org/hibernate/models/hibernate-models/1.0.1/hibernate-models-1.0.1.jar": "bdb42c4979001742ebc098f3b206dd1057dc93be55c50a31c3f027d3eed06412",
+    "org/hibernate/orm/hibernate-core/7.2.25.Final/hibernate-core-7.2.25.Final.jar": "c60a5a49b6c7aa2ee43831ab82b1d43ab64c7ffed20c654e1eb31496f8ea65ef",
+    "org/hibernate/orm/hibernate-envers/7.2.25.Final/hibernate-envers-7.2.25.Final.jar": "be59f644cf8f63e6c52fac442cedc860339c7065000b95ecd53af6a7b2081513",
+    "org/hibernate/orm/hibernate-processor/7.2.25.Final/hibernate-processor-7.2.25.Final.jar": "25b070c5c7864df9aa578493a1b89818a1424a064f796c4d9923abb53de184c8",
+    "org/hibernate/orm/hibernate-vector/7.2.25.Final/hibernate-vector-7.2.25.Final.jar": "2e7838652e5758189afcf160a2a6b2d9ba175eccd414a9eeb1a5b4cdcae6526c",
+    "org/hsqldb/hsqldb/2.7.4/hsqldb-2.7.4.jar": "5fab2bb4384ac06b762638c8fa2740c944b8d080e4796c0c6c2af8b90dd4e5ad",
+    "org/jboss/logging/jboss-logging/3.6.1.Final/jboss-logging-3.6.1.Final.jar": "5e08a4b092dc85b337f0910a740571d8720cfa565fabd880a8caf94a657ca416",
+    "org/jmolecules/integrations/jmolecules-spring/0.33.0/jmolecules-spring-0.33.0.jar": "faa2e1346b3b2e4333422ff2d82c1a3cdba5c0a0f4c7907b348a4a70eab566c5",
+    "org/jmolecules/jmolecules-ddd/2.0.1/jmolecules-ddd-2.0.1.jar": "29c9013e9110ef169a9564bc13fdf3f77e6bcece19fa2938cb11b9f29d497d78",
+    "org/jmolecules/jstereotype/2.0.1/jstereotype-2.0.1.jar": "8ee2277ede551ba969c381b2f90fb697a0fad610d1d1d2e432947c9bdcf19e7e",
+    "org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar": "1fad6e6be7557781e4d33729d49ae1cdc8fdda6fe477bb0cc68ce351eafdfbab",
+    "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar": "070d75f261fe4c5b8202508366715f7f2d4660f88c8ef7e6d3575e48c9683b66",
+    "org/junit-pioneer/junit-pioneer/2.3.0/junit-pioneer-2.3.0.jar": "8b09db32c8cf5b2112a00262411ccd4ef6ca3bae695a0015ecad4def23dea9fd",
+    "org/junit/jupiter/junit-jupiter-api/6.0.3/junit-jupiter-api-6.0.3.jar": "d655d7e6f0c7ae07f10a2f3bbaaebb6d30e9b26204a068ad9e9b3950aa28792c",
+    "org/junit/jupiter/junit-jupiter-engine/6.0.3/junit-jupiter-engine-6.0.3.jar": "1e2fab61ad27ea08fc7c70dd9677cf8c6d1ae5434d42dcfdd633b12c7e7c04d0",
+    "org/junit/jupiter/junit-jupiter-params/6.0.3/junit-jupiter-params-6.0.3.jar": "cf2947e2302b9f8c8a059259a277881c1cadae8fbc2514c16a925cfeb7beb2e5",
+    "org/junit/jupiter/junit-jupiter/6.0.3/junit-jupiter-6.0.3.jar": "784b65815f479a0c99a9d3a573b142e2a525efb6025d97f751b19e72f90aeda3",
+    "org/junit/platform/junit-platform-commons/6.0.3/junit-platform-commons-6.0.3.jar": "39f262d09c3d52719fe0b77f080e90a3695e285d779a41b232e17963ae5da200",
+    "org/junit/platform/junit-platform-engine/6.0.3/junit-platform-engine-6.0.3.jar": "491e9e4f745f161b8a8e4186a1a7c6a450ea12c70930c9aedae427215301d947",
+    "org/junit/platform/junit-platform-launcher/6.0.3/junit-platform-launcher-6.0.3.jar": "315608372e4dc44bca0ccb3ae8a07ecc206b3367033fa05748a03ccd563f1301",
+    "org/junit/vintage/junit-vintage-engine/6.0.3/junit-vintage-engine-6.0.3.jar": "e0935f0b44296e73fe487dede48a0e7cfa7c3cdd066f8345f89a61ed51b58132",
+    "org/mockito/mockito-core/5.23.0/mockito-core-5.23.0.jar": "ae295bebd5d11fab97ab297815dc7617188b86003cbce3dfd5c0d5c3a6cc4a0c",
+    "org/mockito/mockito-junit-jupiter/5.23.0/mockito-junit-jupiter-5.23.0.jar": "65938526fdc311bb3a1c0015eb1c8a0be81515aa998f22b9f4e92f1b668e4f63",
+    "org/objenesis/objenesis/3.3/objenesis-3.3.jar": "02dfd0b0439a5591e35b708ed2f5474eb0948f53abf74637e959b8e4ef69bfeb",
+    "org/openjdk/jmh/jmh-core/1.37/jmh-core-1.37.jar": "dc0eaf2bbf0036a70b60798c785d6e03a9daf06b68b8edb0f1ba9eb3421baeb3",
+    "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar": "48e2df636cab6563ced64dcdff8abb2355627cb236ef0bf37598682ddf742f1b",
+    "org/ow2/asm/asm-commons/9.10.1/asm-commons-9.10.1.jar": "6d0abefb7cbf972ea16edb37ec14835372505063a45f976ab7ea889ed9497895",
+    "org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar": "3dfb0d5b6a106cd40b5b250e39935fbf2f927f4477546a5369a3ac609cf0506b",
+    "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar": "ed825d10ab1399c8c0cb669e688cf0c8c82629b4c8399b58352b68e92ca10fcb",
+    "org/postgresql/postgresql/42.7.14/postgresql-42.7.14.jar": "73914527305a40cce504b0d3d90b23caf565136912d607ae8ae7c5895512332c",
+    "org/rnorth/duct-tape/duct-tape/1.0.8/duct-tape-1.0.8.jar": "31cef12ddec979d1f86d7cf708c41a17da523d05c685fd6642e9d0b2addb7240",
+    "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar": "7e1446499b359675d8aabe6af2de86b85e72ae8a2a932c0b40d0e5ba57097439",
+    "org/springframework/data/spring-data-commons/4.0.8/spring-data-commons-4.0.8.jar": "cdc5072d629403008c92b1855d0e3eeb3f0b64d95cf9ba0f1d7c16b6044802d0",
+    "org/springframework/spring-aop/7.0.10/spring-aop-7.0.10.jar": "babf50a645f4f788e1267078cf891e472f657cabf65518055cf5214220574e3f",
+    "org/springframework/spring-aspects/7.0.10/spring-aspects-7.0.10.jar": "8c119546615b14dc0f9d12d5cd0e4eae4163f51f00fba205ce83bbecac5ed3de",
+    "org/springframework/spring-beans/7.0.10/spring-beans-7.0.10.jar": "bd67c6fc887afa30cbcb489ff4f82bf19f818e79ab1cf1bef98dff8a289108ec",
+    "org/springframework/spring-context/7.0.10/spring-context-7.0.10.jar": "f0065166b6a5101a871ab8702d6c4011cf39faed370a64e7ef14a3ad2bf2a99a",
+    "org/springframework/spring-core-test/7.0.10/spring-core-test-7.0.10.jar": "a12505dca33af638a2e7da82b89643496f695ccd48e0ac188bc2465e6c67cf4d",
+    "org/springframework/spring-core/7.0.10/spring-core-7.0.10.jar": "a236f31a7c07e3a1a8e7839ec5c0d47b5cc75709132db50416d5dad320341f12",
+    "org/springframework/spring-expression/7.0.10/spring-expression-7.0.10.jar": "12067b66548f7613fa8938ca6051a6d1dd8c397bf478e0bb1adb9936358ec81d",
+    "org/springframework/spring-instrument/7.0.10/spring-instrument-7.0.10.jar": "f7ef0d88e07e36f38487d22accbd10349fb38083b3c1e9c4e2badeda2d2a19bc",
+    "org/springframework/spring-jdbc/7.0.10/spring-jdbc-7.0.10.jar": "bc4ba6bd242f2db2642938960ae27589b53dd6a611d700a260af7b3383cd0c6c",
+    "org/springframework/spring-orm/7.0.10/spring-orm-7.0.10.jar": "a158aabfbd760abd7d50ed352b46421affa46595321e09fe91bec048f2c3b54c",
+    "org/springframework/spring-test/7.0.10/spring-test-7.0.10.jar": "73c18292b63e814c415c1c470fcc47be1e21442b80ee31a0bcd949e53d0c49bd",
+    "org/springframework/spring-tx/7.0.10/spring-tx-7.0.10.jar": "9442610a8ed3d44e70fa97f49896ea810c831da62620101450f0feb522edb4cd",
+    "org/testcontainers/testcontainers-database-commons/2.0.5/testcontainers-database-commons-2.0.5.jar": "0ebbc62bdcfb315cb840a63fbaa148b455927666d9034b5e5c00009d84c755b0",
+    "org/testcontainers/testcontainers-jdbc/2.0.5/testcontainers-jdbc-2.0.5.jar": "0f7fe603a32692c33739cf99d638206f9060ca47615bf0141ca2eb32d33d764a",
+    "org/testcontainers/testcontainers-mysql/2.0.5/testcontainers-mysql-2.0.5.jar": "1fafe80953b9b5ef947035b3ee6ae387466f54c401b6f84c6827a1126746d9b5",
+    "org/testcontainers/testcontainers-oracle-free/2.0.5/testcontainers-oracle-free-2.0.5.jar": "5f26ce776446f48427fedd27b5d6357da0de3450f67295fa89872ef1c9ed1fea",
+    "org/testcontainers/testcontainers-postgresql/2.0.5/testcontainers-postgresql-2.0.5.jar": "8dbfb2fda977eb813ed1188ce02f098b8b634910eeab220568d54d6bd5b7ce9f",
+    "org/testcontainers/testcontainers/2.0.5/testcontainers-2.0.5.jar": "0466f481343d5f350a91274cd7bf984308cbaf90d706247fd1cf4b1a8010c2e1"
+  }
+}
