@@ -1,0 +1,8 @@
+# Direct dependencies for the ScanCode check. requirements.txt is generated from this file; see
+# scan.sh for how to regenerate it.
+#
+# The mini package leaves out ScanCode's bundled native libraries, which aren't published for every
+# platform, so one lock file works everywhere. It uses the system's libmagic instead.
+scancode-toolkit-mini==32.5.0
+# pluggy 1.7 no longer finds the hook specifications in plugincode 32.0.0, so ScanCode fails at startup.
+pluggy<1.7

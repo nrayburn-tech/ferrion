@@ -27,8 +27,8 @@ is checked against javac. Most of those tools are licensed in ways that are not 
 Ferrion's licensing. Ferrion must be an independent implementation, so every contribution follows
 this policy.
 
-Automated checks (ScanCode in CI) catch copied license headers and verbatim snippets, but they
-cannot detect a port from Java to Rust. This policy, and the checklist item in the pull-request
+Automated checks (ScanCode in CI) catch copied license notices and copyright statements, but they
+cannot detect copied code without them, or a port from Java to Rust. This policy, and the checklist item in the pull-request
 template, are the main safeguards.
 
 ### What you may use
@@ -106,6 +106,8 @@ Concerns are taken seriously, and code with unclear provenance is removed or rew
 - **A JDK:** needed only for the javac oracle and corpus tools. Use the newest GA release to cover
   the latest language features.
 - **Maven:** needed only for the javac oracle and the Maven plugin.
+- **Python 3.13 and libmagic:** needed only to run ScanCode locally. On macOS, install libmagic with
+  `brew install libmagic`.
 
 ### Checks
 
@@ -126,6 +128,14 @@ cargo test --workspace
 ```bash
 cargo deny check
 ```
+
+```bash
+python3 tools/scancode/scan.py
+```
+
+The ScanCode check installs its pinned dependencies from `tools/scancode/requirements.txt` into
+`target/scancode/venv`, then fails on any license other than MIT or Apache-2.0, or any copyright
+holder other than Ferrion's.
 
 ### Corpus
 
