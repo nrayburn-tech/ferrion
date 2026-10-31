@@ -10,6 +10,7 @@ mod grammar;
 #[doc(hidden)]
 pub mod invariants;
 mod parser;
+pub mod version;
 
 use std::fmt::Write as _;
 use std::sync::Arc;
