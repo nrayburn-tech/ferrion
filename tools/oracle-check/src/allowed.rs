@@ -31,21 +31,30 @@ pub enum Allowed {
     /// javac styles `/**/` as a documentation comment (`JAVADOC_BLOCK`). It has no content, and the
     /// lexer makes it a block comment.
     EmptyBlockComment,
+    /// javac doesn't report a `//` comment that ends the file with no line terminator after it.
+    /// `///` and `/* */` comments in the same place are reported.
+    LineCommentAtEndOfFile,
 }
 
 impl Allowed {
-    pub const ALL: [Allowed; 2] = [Allowed::ByteOrderMark, Allowed::EmptyBlockComment];
+    pub const ALL: [Allowed; 3] = [
+        Allowed::ByteOrderMark,
+        Allowed::EmptyBlockComment,
+        Allowed::LineCommentAtEndOfFile,
+    ];
 
     pub const fn id(self) -> &'static str {
         match self {
             Allowed::ByteOrderMark => "byte-order-mark",
             Allowed::EmptyBlockComment => "empty-block-comment",
+            Allowed::LineCommentAtEndOfFile => "line-comment-at-end-of-file",
         }
     }
 
     pub const fn category(self) -> Category {
         match self {
             Allowed::ByteOrderMark | Allowed::EmptyBlockComment => Category::DeliberateDeparture,
+            Allowed::LineCommentAtEndOfFile => Category::JavacQuirk,
         }
     }
 }

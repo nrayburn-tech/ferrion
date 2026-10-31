@@ -176,8 +176,9 @@ Disagreements with javac are allowed only as this list, in SCOPE.md's categories
 | --- | --- | --- |
 | `byte-order-mark` | deliberate departure | javac reads a UTF-8 byte-order mark as an illegal character. Ferrion records the mark, so the formatter can keep it, and lexes the text after it. See [Byte-order mark](#byte-order-mark). |
 | <a id="empty-block-comment"></a>`empty-block-comment` | deliberate departure | javac styles `/**/` as `JAVADOC_BLOCK`, like `/***/` and `/** */`. It has no content, and the lexer makes it a `BlockComment`, so it isn't taken for documentation. Before comparing, the lexer's `/**/` is given javac's style. |
+| `line-comment-at-end-of-file` | javac quirk | javac doesn't report a `//` comment that ends the file with no line terminator after it (`class A {}\n// x`). It does report one followed by a line terminator, and `///` and `/* */` comments in the same place. The lexer's comment is left out before comparing. |
 
-The javac error recovery and javac quirk categories have no entries. A new entry needs an input
+The javac error recovery category has no entries. A new entry needs an input
 that shows javac's behavior, a reason, and a row here.
 
 ## Changing this
