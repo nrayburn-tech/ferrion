@@ -244,6 +244,21 @@ cargo oracle parser-cases
 It fails if javac's output no longer matches a snapshot; `--bless` rewrites them, and the document
 is updated to match.
 
+### Parser checks
+
+`tools/parser-check` checks the parser on the corpus without javac. With the projects checked out,
+parse every file at its source set's release, check that the tree reproduces it byte for byte and
+keeps the parser's invariants, and report throughput:
+
+```bash
+cargo parser-check round-trip
+```
+
+Like `cargo oracle`, it takes project names, `jdk-tests`, and `jdk-deep-nesting`; javac's tests are
+parsed at the releases their tests compile them at. Any failure fails the run; syntax errors only
+are counted, since the oracle comparison decides which are right. `--verbose` prints each file
+before parsing it, to find one that aborts the process.
+
 ### Tests
 
 - Every bug fix comes with a regression test.

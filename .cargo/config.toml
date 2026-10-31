@@ -2,3 +2,4 @@
 codegen = "run --quiet --package codegen --"
 corpus = "run --quiet --package corpus --"
 oracle = "run --quiet --release --package oracle-check --"
+parser-check = "run --quiet --release --package parser-check --"

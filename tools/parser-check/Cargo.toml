@@ -1,0 +1,17 @@
+[package]
+name = "parser-check"
+description = "Checks the parser on the corpus: round trips and throughput."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow = "1"
+corpus = { path = "../corpus" }
+ferrion_diagnostics = { path = "../../crates/ferrion_diagnostics" }
+ferrion_parser = { path = "../../crates/ferrion_parser" }
+
+[lints]
+workspace = true
