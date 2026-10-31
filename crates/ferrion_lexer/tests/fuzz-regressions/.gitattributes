@@ -1,0 +1,2 @@
+# Regression inputs are bytes: line endings must not be converted.
+* -text
