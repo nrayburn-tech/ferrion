@@ -1,10 +1,12 @@
-//! What `parse` reports: lexical errors, syntax errors, and (later) version errors, each with the
-//! offset javac reports the same mistake at (docs/design/parser-error-recovery.md).
+//! What `parse` reports: lexical errors, syntax errors, and the version check's diagnostics, each
+//! with the offset javac reports the same mistake at (docs/design/parser-error-recovery.md).
 
 use ferrion_diagnostics::Span;
+use ferrion_java_version::LATEST_RELEASE;
 use ferrion_lexer::{LexError, LexErrorKind};
 
 use crate::SyntaxKind;
+use crate::version::{Feature, RestrictedName};
 
 /// A problem `parse` found. The tree still holds every token.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -185,6 +187,51 @@ pub enum ParseDiagnosticKind {
     /// switch rule in a switch statement. Anchor: the start of the statement, as for javac's
     /// `switch.case.unexpected.statement`.
     StatementNotAllowedInRule,
+    /// A language feature the release doesn't have (the version check). Anchor: the feature's,
+    /// documented on [`Feature`]. javac's code and phase are in the feature's row: usually
+    /// `feature.not.supported.in.source.plural`, with the feature's name and the release.
+    FeatureNotInRelease { feature: Feature, release: u32 },
+    /// A preview feature, which Ferrion never supports. Anchor: the feature's. javac reports
+    /// `preview.feature.disabled.plural` after parsing.
+    PreviewFeature(Feature),
+    /// A restricted name (`var`, `yield`, `record`, `sealed`, `permits`) as a type declaration's
+    /// or type parameter's name: an error from the release that restricts it, and before, a
+    /// warning. Anchor: the name, as for javac's `restricted.type.not.allowed` and its warning
+    /// (`warn.restricted.type.not.allowed`, or `.preview` for `record`, `sealed`, and `permits`).
+    RestrictedTypeName { name: RestrictedName, release: u32 },
+    /// A restricted name used as a type: an error from the release that restricts it, and before,
+    /// a warning. Anchor: the type, as for javac's `restricted.type.not.allowed.here`; the
+    /// warning's, as for javac's, is the first variable's name in a local variable declaration
+    /// and the type elsewhere.
+    RestrictedType { name: RestrictedName, release: u32 },
+    /// `var` as an array's element type in a local variable declaration (`var[] a`, `var a[]`),
+    /// from 10. Anchor: `var`, as for javac's `restricted.type.not.allowed.array`.
+    VarArray,
+    /// `var` declaring several local variables (`var a = 1, b = 2;`), from 10. Anchor: `var`, as
+    /// for javac's `restricted.type.not.allowed.compound`.
+    VarCompound,
+    /// Lambda parameters mixing `var` with declared types (`(var a, int b)`), from 11; before,
+    /// `var` is a type's name there. Anchor: the lambda's `(`, as for javac's
+    /// `invalid.lambda.parameter.declaration`.
+    VarWithDeclaredTypes,
+    /// `_` as an identifier: a warning at 8, and an error from 9. Anchor: the `_`, as for javac's
+    /// `underscore.as.identifier` (and its warning), or from 22, where `_` names unnamed
+    /// variables, `use.of.underscore.not.allowed.non.variable`.
+    UnderscoreIdentifier { release: u32 },
+    /// `_` naming a field after the first (`int a, _;`), from 22; before, javac reads it as an
+    /// unnamed variable, which needs 22. Anchor: the `_`, as for javac's
+    /// `use.of.underscore.not.allowed`.
+    UnderscoreNotAllowed,
+    /// `_` naming a local variable with `[]` after it (`int _[]`), from 22; before, unnamed
+    /// variables need 22. Anchor: the `_`, as for javac's
+    /// `use.of.underscore.not.allowed.with.brackets`.
+    UnderscoreWithBrackets,
+    /// An unqualified call to a method named `yield`: a warning before 14, and an error from it.
+    /// Anchor: `yield`, as for javac's `invalid.yield` (and its warning).
+    YieldCall { release: u32 },
+    /// A `;` before an import (the first of several in a row): a warning before 21, and an error
+    /// from it. Anchor: the `;`, as for javac's `extraneous.semicolon` (and its warning).
+    ExtraneousSemicolon { release: u32 },
 }
 
 /// What an [`Expected`](ParseDiagnosticKind::Expected) error expected.
@@ -244,8 +291,83 @@ impl ParseDiagnosticKind {
             | ParseDiagnosticKind::CaseExpected
             | ParseDiagnosticKind::DefaultNotAllowed
             | ParseDiagnosticKind::GuardNotAllowed
-            | ParseDiagnosticKind::StatementNotAllowedInRule => JavacPhase::Parse,
+            | ParseDiagnosticKind::StatementNotAllowedInRule
+            | ParseDiagnosticKind::RestrictedTypeName { .. }
+            | ParseDiagnosticKind::RestrictedType { .. }
+            | ParseDiagnosticKind::VarArray
+            | ParseDiagnosticKind::VarCompound
+            | ParseDiagnosticKind::VarWithDeclaredTypes
+            | ParseDiagnosticKind::UnderscoreIdentifier { .. }
+            | ParseDiagnosticKind::UnderscoreNotAllowed
+            | ParseDiagnosticKind::UnderscoreWithBrackets
+            | ParseDiagnosticKind::YieldCall { .. }
+            | ParseDiagnosticKind::ExtraneousSemicolon { .. } => JavacPhase::Parse,
+            ParseDiagnosticKind::FeatureNotInRelease { feature, .. }
+            | ParseDiagnosticKind::PreviewFeature(feature) => feature.javac_phase(),
             ParseDiagnosticKind::NestingTooDeep => JavacPhase::Never,
+        }
+    }
+
+    /// Whether the version check reports it. Version diagnostics don't mark the tree as
+    /// containing an error: the tree is complete, and only its release rejects it.
+    pub fn is_version(self) -> bool {
+        match self {
+            ParseDiagnosticKind::FeatureNotInRelease { .. }
+            | ParseDiagnosticKind::PreviewFeature(_)
+            | ParseDiagnosticKind::RestrictedTypeName { .. }
+            | ParseDiagnosticKind::RestrictedType { .. }
+            | ParseDiagnosticKind::VarArray
+            | ParseDiagnosticKind::VarCompound
+            | ParseDiagnosticKind::VarWithDeclaredTypes
+            | ParseDiagnosticKind::UnderscoreIdentifier { .. }
+            | ParseDiagnosticKind::UnderscoreNotAllowed
+            | ParseDiagnosticKind::UnderscoreWithBrackets
+            | ParseDiagnosticKind::YieldCall { .. }
+            | ParseDiagnosticKind::ExtraneousSemicolon { .. } => true,
+            ParseDiagnosticKind::Lexical(_)
+            | ParseDiagnosticKind::Expected(_)
+            | ParseDiagnosticKind::UnexpectedToken(_)
+            | ParseDiagnosticKind::ExpressionExpected(_)
+            | ParseDiagnosticKind::TypeExpected(_)
+            | ParseDiagnosticKind::ClassLiteralExpected
+            | ParseDiagnosticKind::ArrayDimensionMissing
+            | ParseDiagnosticKind::ArrayDimensionsAndInitializer
+            | ParseDiagnosticKind::MixedLambdaParameters
+            | ParseDiagnosticKind::NestingTooDeep
+            | ParseDiagnosticKind::ExpectedDeclaration(_)
+            | ParseDiagnosticKind::ExpectedMember(_)
+            | ParseDiagnosticKind::ExpectedEnumConstant(_)
+            | ParseDiagnosticKind::ExpectedModuleDirective(_)
+            | ParseDiagnosticKind::ExpectedModuleKeyword(_)
+            | ParseDiagnosticKind::RepeatedModifier
+            | ParseDiagnosticKind::MissingReturnType
+            | ParseDiagnosticKind::MisplacedEnumConstant
+            | ParseDiagnosticKind::GenericEnum
+            | ParseDiagnosticKind::PermitsWithoutSealed
+            | ParseDiagnosticKind::ModifierNotAllowed
+            | ParseDiagnosticKind::RecordComponentModifiers
+            | ParseDiagnosticKind::RecordComponentDims
+            | ParseDiagnosticKind::InstanceFieldInRecord
+            | ParseDiagnosticKind::VarargsNotLast
+            | ParseDiagnosticKind::VarargsWithDims
+            | ParseDiagnosticKind::MisplacedReceiver
+            | ParseDiagnosticKind::ReceiverWithDims
+            | ParseDiagnosticKind::StatementExpected
+            | ParseDiagnosticKind::NotAStatement
+            | ParseDiagnosticKind::LocalVariableNotAllowed
+            | ParseDiagnosticKind::LocalClassNotAllowed
+            | ParseDiagnosticKind::SealedLocalClass
+            | ParseDiagnosticKind::ElseWithoutIf
+            | ParseDiagnosticKind::CatchWithoutTry
+            | ParseDiagnosticKind::FinallyWithoutTry
+            | ParseDiagnosticKind::TryWithoutCatch
+            | ParseDiagnosticKind::ResourceNotAVariable
+            | ParseDiagnosticKind::ForEachWithoutDeclaration
+            | ParseDiagnosticKind::CaseOutsideSwitch
+            | ParseDiagnosticKind::CaseExpected
+            | ParseDiagnosticKind::DefaultNotAllowed
+            | ParseDiagnosticKind::GuardNotAllowed
+            | ParseDiagnosticKind::StatementNotAllowedInRule => false,
         }
     }
 }
@@ -390,6 +512,47 @@ impl ParseDiagnostic {
             }
             ParseDiagnosticKind::StatementNotAllowedInRule => {
                 "a switch rule's body must be an expression, a block, or 'throw'".to_owned()
+            }
+            ParseDiagnosticKind::FeatureNotInRelease { feature, release } => {
+                feature.message(release)
+            }
+            ParseDiagnosticKind::PreviewFeature(feature) => feature.message(LATEST_RELEASE),
+            ParseDiagnosticKind::RestrictedTypeName { name, .. } => format!(
+                "'{}' can't name a type from Java {}",
+                name.text(),
+                name.restricted_from()
+            ),
+            ParseDiagnosticKind::RestrictedType { name, .. } => format!(
+                "'{}' can't be used as a type here from Java {}",
+                name.text(),
+                name.restricted_from()
+            ),
+            ParseDiagnosticKind::VarArray => {
+                "'var' can't declare an array; give the element type".to_owned()
+            }
+            ParseDiagnosticKind::VarCompound => {
+                "'var' can declare only one variable at a time".to_owned()
+            }
+            ParseDiagnosticKind::VarWithDeclaredTypes => {
+                "a lambda's parameters must all use 'var' or all have declared types".to_owned()
+            }
+            ParseDiagnosticKind::UnderscoreIdentifier { release } if release >= 22 => {
+                "'_' can only name an unused variable or stand for an unused pattern".to_owned()
+            }
+            ParseDiagnosticKind::UnderscoreIdentifier { .. } => {
+                "'_' can't be used as a name from Java 9".to_owned()
+            }
+            ParseDiagnosticKind::UnderscoreNotAllowed => {
+                "'_' can only name a local variable or parameter, not a field".to_owned()
+            }
+            ParseDiagnosticKind::UnderscoreWithBrackets => {
+                "an unnamed variable '_' can't have '[]' after it".to_owned()
+            }
+            ParseDiagnosticKind::YieldCall { .. } => {
+                "a method named 'yield' must be called with a qualifier from Java 14".to_owned()
+            }
+            ParseDiagnosticKind::ExtraneousSemicolon { .. } => {
+                "a ';' can't come before an import from Java 21".to_owned()
             }
             ParseDiagnosticKind::NestingTooDeep => format!(
                 "too deeply nested: more than {} levels",

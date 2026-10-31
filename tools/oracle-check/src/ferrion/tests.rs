@@ -14,17 +14,7 @@ use crate::syntax::{Prepared, Syntax, Tree};
 
 /// The comparisons that don't match yet, by case and check, each with the reason. A comparison
 /// listed here that matches fails the test, so the list stays current.
-const PENDING: &[(&str, &str, &str)] = &[
-    ("implicit-class-members", "syntax", VERSIONS),
-    ("implicit-classes-and-module-imports", "syntax", VERSIONS),
-    ("records", "syntax", VERSIONS),
-    ("sealed-and-text-blocks", "syntax", VERSIONS),
-    ("switches-and-patterns", "syntax", VERSIONS),
-    ("var-and-underscore", "syntax", VERSIONS),
-];
-
-/// The version check (W4).
-const VERSIONS: &str = "version errors aren't reported yet";
+const PENDING: &[(&str, &str, &str)] = &[];
 
 /// javac's output for a case at each release, read back from its snapshot: the diagnostics at
 /// every release, and the tree at the last.

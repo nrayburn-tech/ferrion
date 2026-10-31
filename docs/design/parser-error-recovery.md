@@ -183,8 +183,16 @@ javac 27:
 | `open m {}` | `expected.module` | start of `m` |
 | `module m {} class A {}` | `expected` (end of input expected) | end of the module's `}` |
 | an unclosed class at the end of the file | `premature.eof` | end of the last token |
-| a `;` before the first import | `extraneous.semicolon` | the `;` |
+| a `;` before an import | `extraneous.semicolon` (a warning before 21) | the first `;` of a run |
 | a feature too new for the release | `feature.not.supported.in.source(.plural)` | the feature's anchor (see [language versions](parser-language-versions.md#the-feature-table)) |
+| `class var {}`, `<var>` | `restricted.type.not.allowed` (a warning before the release) | the name |
+| `var` as a field's type | `restricted.type.not.allowed.here` (a warning before 10) | `var` |
+| `var x = 1;` at 8 or 9 | `restricted.type.not.allowed` (a warning) | the variable's name |
+| `var a[] = ...`, `var a = 1, b = 2;` | `restricted.type.not.allowed.array`, `.compound` | `var` |
+| `(var a, int b) -> a` from 11 | `invalid.lambda.parameter.declaration` | the lambda's `(` |
+| `int _;` | `underscore.as.identifier` (a warning at 8), from 22 `use.of.underscore.not.allowed.non.variable` | the `_` |
+| `int a, _;` as a field, `int _[]` as a local, from 22 | `use.of.underscore.not.allowed`, `.with.brackets` | the `_` |
+| `yield(1)` in an expression | `invalid.yield` (a warning before 14) | `yield` |
 
 So "expected" errors anchor at the end of the previous non-trivia token, and "illegal start" errors
 at the start of the offending token. Errors about a construct that is complete but wrong anchor at
@@ -198,12 +206,18 @@ javac's codes. Each kind maps to one or more javac codes in the comparison's tab
 ### Reported earlier than javac
 
 Some errors are syntax-shaped but javac reports them after parsing. Ferrion reports them while
-parsing, because they are decidable from the tree. Known so far:
+parsing, because they are decidable from the tree. These are the feature table's rows with phase
+`later` ([language versions](parser-language-versions.md#the-feature-table)), named as there; a
+test checks that each is listed:
 
-- flexible constructor bodies below 25 (statements before `this()` or `super()`);
-- primitive types in patterns (preview);
-- diamond with anonymous classes below 9;
-- local interfaces, and static members of inner classes, below 16.
+- '<>' with anonymous classes, below 9;
+- local interfaces, and static members of inner classes, below 16;
+- 'case null', below 21;
+- statements before 'super()' or 'this()' (flexible constructor bodies), below 25;
+- primitive types in patterns (preview).
+
+The version check's tests compare them with javac's full compile, on the inputs in
+`crates/ferrion_parser/tests/version/`.
 
 The mechanism, so the list stays complete:
 

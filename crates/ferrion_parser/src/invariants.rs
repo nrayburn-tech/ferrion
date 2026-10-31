@@ -3,8 +3,9 @@
 //!
 //! Beyond the tree's own invariants (`ferrion_syntax::invariants`): the tree holds the text and
 //! the lexer's tokens for it, and its release; diagnostics are in source order, inside the text,
-//! and carry their kind's javac phase; and the root is marked as containing an error exactly when
-//! an error is reported.
+//! and carry their kind's javac phase; the version diagnostics, if any, are the version check's
+//! for the tree; and the root is marked as containing an error exactly when a lexical or syntax
+//! error is reported.
 
 use std::sync::Arc;
 
@@ -65,10 +66,20 @@ pub fn check(text: &str, release: u32, parsed: &Parse) -> Result<(), String> {
             return Err(format!("{d:?}: the wrong javac phase"));
         }
     }
+    let version: Vec<_> = parsed
+        .diagnostics
+        .iter()
+        .filter(|d| d.kind.is_version())
+        .cloned()
+        .collect();
+    // Tests that drive the grammar alone make a `Parse` without them.
+    if !version.is_empty() && version != crate::version::check(tree) {
+        return Err("the version diagnostics aren't the version check's".to_owned());
+    }
     let reported = parsed
         .diagnostics
         .iter()
-        .any(|d| d.severity == Severity::Error);
+        .any(|d| d.severity == Severity::Error && !d.kind.is_version());
     if reported != tree.root().contains_error() {
         return Err(format!(
             "an error is {}reported, but the root is {}marked as containing one",

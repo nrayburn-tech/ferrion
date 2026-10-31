@@ -32,3 +32,5 @@ CompilationUnit 0..53
     Semi 51..52 ";"
   LineTerminator 52..53 "\n"
   Eof 53..53 ""
+warning 25..26 @25 ExtraneousSemicolon { release: 17 }: a ';' can't come before an import from Java 21
+warning 39..40 @39 ExtraneousSemicolon { release: 17 }: a ';' can't come before an import from Java 21
