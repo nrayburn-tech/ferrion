@@ -6,5 +6,8 @@ license.workspace = true
 repository.workspace = true
 publish.workspace = true
 
+[dependencies]
+ferrion_diagnostics = { path = "../ferrion_diagnostics" }
+
 [lints]
 workspace = true
