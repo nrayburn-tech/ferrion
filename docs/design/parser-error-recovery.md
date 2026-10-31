@@ -158,6 +158,17 @@ javac 27:
 | `new int[];` | `array.dimension.missing` | start of `;`, the token after the `]` |
 | `new int[1] {2}` | `illegal.array.creation.both.dimension.and.initialization` | the `{` |
 | `(a, int b) -> 1` | `invalid.lambda.parameter.declaration` | the lambda's `(` |
+| `}` among top-level declarations | `expected3` before 16, `expected4` to 24, then `class.method.or.field.expected` | start of `}` |
+| `class A { 5 }`, `class A { public }` | `illegal.start.of.type` | start of the token that can't start a member |
+| `void f()` then the class's `}` | `expected2` (`'{' or ';' expected`) | end of `)` |
+| `B() {}` in class `A` | `invalid.meth.decl.ret.type.req` | the name |
+| `public public int x;` | `repeated.modifier` | the second `public` |
+| `enum E { int x; }` | `enum.constant.expected` | start of `int` |
+| `class A permits B {}` | `invalid.permits.clause` | `permits` |
+| `record R(final int x)` | `record.cant.declare.field.modifiers` | start of the modifiers |
+| `module m { foo a; }` | `invalid.module.directive` | start of `foo` |
+| `open m {}` | `expected.module` | start of `m` |
+| `module m {} class A {}` | `expected` (end of input expected) | end of the module's `}` |
 | an unclosed class at the end of the file | `premature.eof` | end of the last token |
 | a `;` before the first import | `extraneous.semicolon` | the `;` |
 | a feature too new for the release | `feature.not.supported.in.source(.plural)` | the feature's anchor (see [language versions](parser-language-versions.md#the-feature-table)) |

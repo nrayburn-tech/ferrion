@@ -76,6 +76,61 @@ pub enum ParseDiagnosticKind {
     /// has no such limit (docs/design/parser-deep-nesting.md). Anchor: the token that would have
     /// gone deeper.
     NestingTooDeep,
+    /// A token that can't start a top-level declaration. Anchor: its start. javac's code depends
+    /// on the release: `expected3` (class, interface, or enum) before 16, `expected4` (or record)
+    /// from 16 to 24, and `class.method.or.field.expected` from 25.
+    ExpectedDeclaration(SyntaxKind),
+    /// A token that can't start a member declaration in a class body, or that can't follow a
+    /// member's modifiers. Anchor: its start, as for javac's `illegal.start.of.type`.
+    ExpectedMember(SyntaxKind),
+    /// A token that can't start an enum constant before an enum's `;`. Anchor: its start, as for
+    /// javac's `enum.constant.expected`.
+    ExpectedEnumConstant(SyntaxKind),
+    /// A token that can't start a module directive. Anchor: its start, as for javac's
+    /// `invalid.module.directive`.
+    ExpectedModuleDirective(SyntaxKind),
+    /// `open` not followed by `module`. Anchor: the start of the token after `open`, as for
+    /// javac's `expected.module`.
+    ExpectedModuleKeyword(SyntaxKind),
+    /// A modifier written twice. Anchor: the second one's start (for `non-sealed`, its `sealed`),
+    /// as for javac's `repeated.modifier`.
+    RepeatedModifier,
+    /// A method without a result type: a constructor whose name isn't its class's. Anchor: the
+    /// name, as for javac's `invalid.meth.decl.ret.type.req`.
+    MissingReturnType,
+    /// The same, among an enum's members: `F() {}` after the enum's `;`. Anchor: the name, as for
+    /// javac's `enum.constant.not.expected`.
+    MisplacedEnumConstant,
+    /// Type parameters on an enum. Anchor: the first type parameter, as for javac's
+    /// `enum.cant.be.generic`.
+    GenericEnum,
+    /// A `permits` clause on a class or interface that isn't `sealed`. Anchor: `permits`, as for
+    /// javac's `invalid.permits.clause`.
+    PermitsWithoutSealed,
+    /// A modifier keyword where none is allowed: on a parameter (other than `final`) or a module
+    /// declaration. Anchor: the token after the modifiers, as for javac's `mod.not.allowed.here`.
+    ModifierNotAllowed,
+    /// A modifier keyword on a record component. Anchor: the start of the modifiers, as for
+    /// javac's `record.cant.declare.field.modifiers`.
+    RecordComponentModifiers,
+    /// `[]` after a record component's name. Anchor: the `[`, as for javac's
+    /// `record.component.and.old.array.syntax`.
+    RecordComponentDims,
+    /// A field in a record that isn't `static`. Anchor: the first declarator's name, as for
+    /// javac's `record.cannot.declare.instance.fields`.
+    InstanceFieldInRecord,
+    /// A variable arity parameter or record component followed by another. Anchor: its name, as
+    /// for javac's `varargs.must.be.last`.
+    VarargsNotLast,
+    /// `[]` after a variable arity parameter's name. Anchor: the `[`, as for javac's
+    /// `varargs.and.old.array.syntax`.
+    VarargsWithDims,
+    /// A receiver parameter (`A this`) that isn't the first parameter, or in a record header.
+    /// Anchor: `this`, as for javac's `this.as.identifier`.
+    MisplacedReceiver,
+    /// `[]` after a receiver parameter's `this`. Anchor: the `[`, as for javac's
+    /// `array.and.receiver`.
+    ReceiverWithDims,
 }
 
 /// What an [`Expected`](ParseDiagnosticKind::Expected) error expected.
@@ -101,7 +156,25 @@ impl ParseDiagnosticKind {
             | ParseDiagnosticKind::ClassLiteralExpected
             | ParseDiagnosticKind::ArrayDimensionMissing
             | ParseDiagnosticKind::ArrayDimensionsAndInitializer
-            | ParseDiagnosticKind::MixedLambdaParameters => JavacPhase::Parse,
+            | ParseDiagnosticKind::MixedLambdaParameters
+            | ParseDiagnosticKind::ExpectedDeclaration(_)
+            | ParseDiagnosticKind::ExpectedMember(_)
+            | ParseDiagnosticKind::ExpectedEnumConstant(_)
+            | ParseDiagnosticKind::ExpectedModuleDirective(_)
+            | ParseDiagnosticKind::ExpectedModuleKeyword(_)
+            | ParseDiagnosticKind::RepeatedModifier
+            | ParseDiagnosticKind::MissingReturnType
+            | ParseDiagnosticKind::MisplacedEnumConstant
+            | ParseDiagnosticKind::GenericEnum
+            | ParseDiagnosticKind::PermitsWithoutSealed
+            | ParseDiagnosticKind::ModifierNotAllowed
+            | ParseDiagnosticKind::RecordComponentModifiers
+            | ParseDiagnosticKind::RecordComponentDims
+            | ParseDiagnosticKind::InstanceFieldInRecord
+            | ParseDiagnosticKind::VarargsNotLast
+            | ParseDiagnosticKind::VarargsWithDims
+            | ParseDiagnosticKind::MisplacedReceiver
+            | ParseDiagnosticKind::ReceiverWithDims => JavacPhase::Parse,
             ParseDiagnosticKind::NestingTooDeep => JavacPhase::Never,
         }
     }
@@ -156,6 +229,61 @@ impl ParseDiagnostic {
             }
             ParseDiagnosticKind::MixedLambdaParameters => {
                 "a lambda's parameters must all have types or all be inferred".to_owned()
+            }
+            ParseDiagnosticKind::ExpectedDeclaration(kind) => {
+                format!("unexpected {}: expected a declaration", describe(kind))
+            }
+            ParseDiagnosticKind::ExpectedMember(kind) => {
+                format!(
+                    "unexpected {}: expected a member declaration",
+                    describe(kind)
+                )
+            }
+            ParseDiagnosticKind::ExpectedEnumConstant(kind) => {
+                format!("unexpected {}: expected an enum constant", describe(kind))
+            }
+            ParseDiagnosticKind::ExpectedModuleDirective(kind) => {
+                format!("unexpected {}: expected a module directive", describe(kind))
+            }
+            ParseDiagnosticKind::ExpectedModuleKeyword(kind) => {
+                format!(
+                    "unexpected {}: 'module' expected after 'open'",
+                    describe(kind)
+                )
+            }
+            ParseDiagnosticKind::RepeatedModifier => "this modifier is already given".to_owned(),
+            ParseDiagnosticKind::MissingReturnType => {
+                "a method needs a result type; a constructor takes its class's name".to_owned()
+            }
+            ParseDiagnosticKind::MisplacedEnumConstant => {
+                "enum constants come before the enum's ';'; a method needs a result type".to_owned()
+            }
+            ParseDiagnosticKind::GenericEnum => "an enum can't have type parameters".to_owned(),
+            ParseDiagnosticKind::PermitsWithoutSealed => {
+                "only a sealed class or interface has a 'permits' clause".to_owned()
+            }
+            ParseDiagnosticKind::ModifierNotAllowed => "modifiers aren't allowed here".to_owned(),
+            ParseDiagnosticKind::RecordComponentModifiers => {
+                "a record component can't have modifiers".to_owned()
+            }
+            ParseDiagnosticKind::RecordComponentDims => {
+                "a record component's array dimensions go on its type".to_owned()
+            }
+            ParseDiagnosticKind::InstanceFieldInRecord => {
+                "a record's fields must be static; its components are its instance fields"
+                    .to_owned()
+            }
+            ParseDiagnosticKind::VarargsNotLast => {
+                "only the last parameter can be variable arity".to_owned()
+            }
+            ParseDiagnosticKind::VarargsWithDims => {
+                "a variable arity parameter's array dimensions go on its type".to_owned()
+            }
+            ParseDiagnosticKind::MisplacedReceiver => {
+                "a receiver parameter ('this') can only be a method's first parameter".to_owned()
+            }
+            ParseDiagnosticKind::ReceiverWithDims => {
+                "a receiver parameter can't have array dimensions".to_owned()
             }
             ParseDiagnosticKind::NestingTooDeep => format!(
                 "too deeply nested: more than {} levels",
