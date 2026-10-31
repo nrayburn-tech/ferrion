@@ -6,7 +6,7 @@ const UTF8_BOM: &[u8] = b"\xEF\xBB\xBF";
 
 /// Byte-order marks of encodings that aren't supported, longest first so that UTF-32LE is not
 /// mistaken for UTF-16LE.
-const FOREIGN_BOMS: &[(&[u8], &str)] = &[
+const UNSUPPORTED_ENCODING_BOMS: &[(&[u8], &str)] = &[
     (b"\xFF\xFE\x00\x00", "UTF-32LE"),
     (b"\x00\x00\xFE\xFF", "UTF-32BE"),
     (b"\xFF\xFE", "UTF-16LE"),
@@ -167,7 +167,10 @@ impl SourceText {
 
 /// Identifies UTF-16 and UTF-32, by byte-order mark or by a high share of NUL bytes.
 fn foreign_encoding(bytes: &[u8]) -> Option<&'static str> {
-    if let Some((_, name)) = FOREIGN_BOMS.iter().find(|(bom, _)| bytes.starts_with(bom)) {
+    if let Some((_, name)) = UNSUPPORTED_ENCODING_BOMS
+        .iter()
+        .find(|(bom, _)| bytes.starts_with(bom))
+    {
         return Some(name);
     }
     let sample = &bytes[..bytes.len().min(NUL_SAMPLE)];
