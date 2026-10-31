@@ -5,6 +5,7 @@
 //! allocate nothing. Every accessor returns an `Option` or an iterator, since error recovery can
 //! leave any child missing.
 
+mod doc_comment;
 mod generated;
 pub(crate) mod support;
 
