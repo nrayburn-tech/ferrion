@@ -41,7 +41,6 @@ impl<'a> Cursor<'a> {
         self.pos >= self.text.len()
     }
 
-    /// The next character.
     pub fn peek(&self) -> Option<char> {
         self.char_at(self.pos).map(|(c, _)| c)
     }
@@ -127,7 +126,6 @@ impl<'a> Cursor<'a> {
         }
     }
 
-    /// The invalid escape at the current position, if any.
     pub fn invalid_escape_here(&self) -> Option<&'a Escape> {
         self.escape_at(self.pos).filter(|e| !e.is_valid())
     }

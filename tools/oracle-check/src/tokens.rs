@@ -982,7 +982,7 @@ mod tests {
 
     #[test]
     fn mismatches_are_described_with_both_sides() {
-        // As the placeholder lexer does, one ERROR token for the whole text.
+        // One ERROR token for the whole text, so the sides differ from the first item on.
         let prepared = Prepared {
             items: Ok(vec![token("ERROR", 0, 18), token("EOF", 18, 18)]),
             ..prepare("class A {}\nint x;\n")

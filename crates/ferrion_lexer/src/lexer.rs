@@ -386,7 +386,7 @@ impl<'a> Lexer<'a> {
             float = true;
             malformed = !self.exponent();
         } else if float || !has_digits {
-            // A fraction with no exponent, or `0x` with no digits.
+            // A hexadecimal fraction needs a binary exponent (JLS §3.10.2), and `0x` needs digits.
             malformed = true;
         }
         let kind = if !float {
