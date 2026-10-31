@@ -103,6 +103,9 @@ version = "0.0.0"
 [[package]]
 name = "ferrion_lexer"
 version = "0.0.0"
+dependencies = [
+ "ferrion_diagnostics",
+]
 
 [[package]]
 name = "ferrion_linter"
