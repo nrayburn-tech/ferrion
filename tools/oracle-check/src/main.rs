@@ -18,6 +18,8 @@ mod oracle;
 mod report;
 mod run;
 mod tokens;
+#[cfg(test)]
+mod versions;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
