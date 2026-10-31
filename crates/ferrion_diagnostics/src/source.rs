@@ -17,13 +17,17 @@ const UNSUPPORTED_ENCODING_BOMS: &[(&[u8], &str)] = &[
 /// byte-order mark.
 const NUL_SAMPLE: usize = 1024;
 
-/// A source file's encoding, detected from its content.
+/// A source file's encoding, detected from its content, with what the formatter needs to write the
+/// file back in it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Encoding {
-    /// Every byte is ASCII and there is no byte-order mark.
+    /// Every byte is ASCII. ASCII has no byte-order mark: a file with one is [`Encoding::Utf8`].
     Ascii,
-    /// Valid UTF-8 with at least one non-ASCII byte, or a UTF-8 byte-order mark.
-    Utf8,
+    /// Valid UTF-8 with at least one non-ASCII byte, or a byte-order mark.
+    Utf8 {
+        /// Whether the file starts with a UTF-8 byte-order mark.
+        bom: bool,
+    },
 }
 
 /// A line terminator (JLS §3.4).
@@ -91,12 +95,11 @@ impl fmt::Display for SkipReason {
 
 impl std::error::Error for SkipReason {}
 
-/// A source file's text, with what the formatter needs to write it back: whether it had a UTF-8
-/// byte-order mark, and its first line ending.
+/// A source file's text, with what the formatter needs to write it back: its encoding, including
+/// whether it had a byte-order mark, and its first line ending.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SourceText {
     text: String,
-    bom: bool,
     encoding: Encoding,
     line_ending: Option<LineEnding>,
 }
@@ -125,14 +128,13 @@ impl SourceText {
             ),
         })?;
         let encoding = if bom || !text.is_ascii() {
-            Encoding::Utf8
+            Encoding::Utf8 { bom }
         } else {
             Encoding::Ascii
         };
         let line_ending = first_line_ending(text.as_bytes());
         Ok(SourceText {
             text,
-            bom,
             encoding,
             line_ending,
         })
@@ -143,9 +145,9 @@ impl SourceText {
         &self.text
     }
 
-    /// Whether the file starts with a UTF-8 byte-order mark.
+    /// Whether the file starts with a byte-order mark, as its [`Encoding`] records.
     pub fn has_bom(&self) -> bool {
-        self.bom
+        matches!(self.encoding, Encoding::Utf8 { bom: true })
     }
 
     pub fn encoding(&self) -> Encoding {
@@ -160,7 +162,7 @@ impl SourceText {
 
     /// The file's original bytes.
     pub fn to_bytes(&self) -> Vec<u8> {
-        let bom: &[u8] = if self.bom { UTF8_BOM } else { &[] };
+        let bom: &[u8] = if self.has_bom() { UTF8_BOM } else { &[] };
         [bom, self.text.as_bytes()].concat()
     }
 }
@@ -197,7 +199,8 @@ mod tests {
         assert_eq!(ascii.encoding(), Encoding::Ascii);
         assert!(!ascii.has_bom());
         let utf8 = SourceText::decode("class Ä {}").unwrap();
-        assert_eq!(utf8.encoding(), Encoding::Utf8);
+        assert_eq!(utf8.encoding(), Encoding::Utf8 { bom: false });
+        assert!(!utf8.has_bom());
     }
 
     #[test]
@@ -205,7 +208,8 @@ mod tests {
         let bytes = b"\xEF\xBB\xBFclass A {}\n".to_vec();
         let source = SourceText::decode(bytes.clone()).unwrap();
         assert!(source.has_bom());
-        assert_eq!(source.encoding(), Encoding::Utf8);
+        // The content is ASCII, but ASCII has no byte-order mark.
+        assert_eq!(source.encoding(), Encoding::Utf8 { bom: true });
         assert_eq!(source.text(), "class A {}\n");
         assert_eq!(source.to_bytes(), bytes);
     }
