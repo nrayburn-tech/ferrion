@@ -151,7 +151,7 @@ pub fn sha256(file: &Path) -> Result<String> {
 }
 
 /// Reads the JDK feature version from `$JAVA_HOME/release`.
-fn jdk_version(java_home: &Path) -> Result<u32> {
+pub fn jdk_version(java_home: &Path) -> Result<u32> {
     let release = std::fs::read_to_string(java_home.join("release"))
         .with_context(|| format!("{} is not a JDK", java_home.display()))?;
     let version = release
