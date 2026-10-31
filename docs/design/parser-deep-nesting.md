@@ -125,13 +125,23 @@ comment parser, formatter, and semantic analysis can use it without depending on
 
 ## Testing
 
-- **Stress tests,** generated rather than committed: each pattern above, plus nested classes,
-  nested generic types (`List<List<...>>`), nested annotations, and nested `switch` expressions, at
-  depths from 1,000 to 100,000 (1,000,000 for chains). Each is parsed, checked, walked by every
+- **Stress tests,** generated rather than committed, in
+  `crates/ferrion_parser/tests/nesting_stress.rs`: each pattern above, plus nested classes, nested
+  generic types (`List<List<...>>`), nested annotations, and nested `switch` expressions, at depths
+  from 1,000 to 100,000. Chains go to 100,000 links, and some to about a million tokens; a million
+  links would be several million tokens, more memory than test threads running side by side should
+  take. Each is parsed, checked, walked with the tree's iterators and, as they're written, by every
   consumer, and dropped, on a thread with a deliberately small stack (256 KiB), so that a missing
-  `ensure_stack` fails the test instead of passing on a large main-thread stack.
+  `ensure_stack` fails the test instead of passing on a large main-thread stack. Nested constructs
+  report no error below the limit and exactly one `NestingTooDeep` past it; a construct that takes
+  more than one level of the limit is listed with how many and why. Patterns whose grammar isn't
+  written yet are in an explicit pending list, and fail once they parse. A construct that reports
+  `NestingTooDeep` more than once is listed too, with why, until it's fixed. The tree's dump, which
+  indents each line by its depth, is only taken of shallow trees.
 - **javac's deep-nesting tests,** fetched at test time with javac's other test inputs, are parsed
-  and compared like any other input.
+  and compared like any other input, and round-tripped by `cargo parser-check round-trip
+  jdk-deep-nesting`.
 - **Fuzzing:** the parser fuzz targets include a fragment-based target that produces deep nesting,
   like the lexer's `lex_fragments`.
-- **Time:** the stress tests also check each input against the per-file time limit.
+- **Time:** until there is a per-file time limit, the stress tests check that parsing time grows
+  linearly: ten times the input must take well under a hundred times as long.

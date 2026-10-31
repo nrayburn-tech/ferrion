@@ -277,6 +277,9 @@ that lost them.
 
 - Every bug fix comes with a regression test.
 - Fuzz failures are reduced and kept as regression tests.
+- The deep-nesting stress tests in `crates/ferrion_parser/tests/nesting_stress.rs` generate their
+  inputs. A pattern whose grammar isn't written yet is listed in `PENDING` there, and its test
+  fails once it parses without errors, so that it's moved out of the list.
 - Generated rule documentation is checked in CI, so regenerate it when rule metadata changes.
 
 ### Generated syntax code
