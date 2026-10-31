@@ -1,0 +1,65 @@
+CompilationUnit 0..127 [error]
+  LineComment 0..77 "// An element value is a conditional expression: javac expects `)` after `y`."
+  LineTerminator 77..78 "\n"
+  ClassDecl 78..102 [error]
+    Modifiers 78..91 [error]
+      Annotation 78..91 [error]
+        At 78..79 "@"
+        Name 79..80
+          Identifier 79..80 "A"
+        AnnotationArguments 80..91 [error]
+          LParen 80..81 "("
+          ElementValuePair 81..86
+            Identifier 81..82 "x"
+            Whitespace 82..83 " "
+            Eq 83..84 "="
+            Whitespace 84..85 " "
+            NameExpr 85..86
+              Identifier 85..86 "y"
+          Whitespace 86..87 " "
+          Error 87..90 [error]
+            Eq 87..88 "="
+            Whitespace 88..89 " "
+            IntLiteral 89..90 "1"
+          RParen 90..91 ")"
+    LineTerminator 91..92 "\n"
+    ClassKw 92..97 "class"
+    Whitespace 97..98 " "
+    Identifier 98..99 "B"
+    Whitespace 99..100 " "
+    ClassBody 100..102
+      LBrace 100..101 "{"
+      RBrace 101..102 "}"
+  LineTerminator 102..103 "\n"
+  LineTerminator 103..104 "\n"
+  ClassDecl 104..126 [error]
+    Modifiers 104..115 [error]
+      Annotation 104..115 [error]
+        At 104..105 "@"
+        Name 105..106
+          Identifier 105..106 "C"
+        AnnotationArguments 106..115 [error]
+          LParen 106..107 "("
+          FieldAccessExpr 107..110
+            NameExpr 107..108
+              Identifier 107..108 "a"
+            Dot 108..109 "."
+            Identifier 109..110 "b"
+          Whitespace 110..111 " "
+          Error 111..114 [error]
+            Eq 111..112 "="
+            Whitespace 112..113 " "
+            IntLiteral 113..114 "1"
+          RParen 114..115 ")"
+    LineTerminator 115..116 "\n"
+    ClassKw 116..121 "class"
+    Whitespace 121..122 " "
+    Identifier 122..123 "D"
+    Whitespace 123..124 " "
+    ClassBody 124..126
+      LBrace 124..125 "{"
+      RBrace 125..126 "}"
+  LineTerminator 126..127 "\n"
+  Eof 127..127 ""
+error 86..86 @86 Expected(Token(RParen)): ')' expected
+error 110..110 @110 Expected(Token(RParen)): ')' expected

@@ -102,6 +102,13 @@ pub(crate) fn expr(p: &mut Parser<'_>) -> Option<CompletedMarker> {
     p.nested(assignment)
 }
 
+/// A conditional expression, or any expression that binds tighter: an annotation's element value
+/// (JLS 9.7.1), where an assignment isn't one, so that `@A(x = y = 1)` is an error at the second
+/// `=`, as with javac. `None`, consuming nothing, if no expression starts here.
+pub(crate) fn conditional_expr(p: &mut Parser<'_>) -> Option<CompletedMarker> {
+    p.nested(conditional)
+}
+
 /// Whether an expression can start at the current token.
 pub(crate) fn at_expr_start(p: &Parser<'_>) -> bool {
     p.at_set(EXPR_START) || p.at(VoidKw) && p.nth(1) == Dot

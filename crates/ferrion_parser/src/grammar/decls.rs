@@ -329,9 +329,7 @@ pub(crate) fn element_value(p: &mut Parser<'_>) -> Option<CompletedMarker> {
     match p.current() {
         At => Some(annotation(p)),
         LBrace => p.nested(|p| Some(element_value_array(p))),
-        // TODO(W2): javac reads a conditional expression here, so that `@A(x = y = 1)` is an
-        // error at the second `=`; use that entry point once expressions have one.
-        _ => exprs::expr(p),
+        _ => exprs::conditional_expr(p),
     }
 }
 
