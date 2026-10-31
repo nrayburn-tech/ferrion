@@ -704,7 +704,3 @@ node SwitchExpr = 'switch' '(' selector:Expr ')' body:SwitchBlock
 
 /// Tokens the parser couldn't place. Each one comes with a diagnostic.
 node Error
-
-/// TEMPORARY, until the declaration grammar lands: the tokens after the imports, unparsed.
-/// It isn't an error, and has no diagnostic. The declaration grammar removes it.
-node Unparsed

@@ -437,9 +437,6 @@ pub enum SyntaxKind {
     SwitchExpr,
     /// Tokens the parser couldn't place. Each one comes with a diagnostic.
     Error,
-    /// TEMPORARY, until the declaration grammar lands: the tokens after the imports, unparsed.
-    /// It isn't an error, and has no diagnostic. The declaration grammar removes it.
-    Unparsed,
 }
 
 impl SyntaxKind {
@@ -689,7 +686,6 @@ impl SyntaxKind {
         SyntaxKind::MethodRefExpr,
         SyntaxKind::SwitchExpr,
         SyntaxKind::Error,
-        SyntaxKind::Unparsed,
     ];
 
     /// The first contextual keyword kind; the token kinds the lexer produces come before it.

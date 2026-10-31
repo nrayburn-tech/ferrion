@@ -166,7 +166,7 @@ fn builder_records_parsed_token_kinds() {
         "record",
         Events::new()
             .start(K::CompilationUnit)
-            .start(K::Unparsed)
+            .start(K::Name)
             .token(K::RecordKw)
             .finish()
             .token(K::Eof)
