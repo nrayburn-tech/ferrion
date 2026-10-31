@@ -18,8 +18,6 @@ mod oracle;
 mod report;
 mod run;
 mod tokens;
-#[cfg(test)]
-mod versions;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -27,18 +25,13 @@ use std::process::ExitCode;
 use anyhow::{Context, Result, bail};
 use corpus::Dirs;
 use corpus::project::Project;
+use ferrion_java_version::{LATEST_RELEASE, OLDEST_RELEASE, SUPPORTED_RELEASES};
 
 use crate::cache::Cache;
 use crate::check::Check;
 use crate::inventory::Releases;
 use crate::oracle::Oracle;
 use crate::report::Report;
-
-/// The oldest Java release Ferrion supports.
-pub const OLDEST_RELEASE: u32 = 8;
-/// The newest Java release Ferrion supports: the latest GA release. This is the one place it's
-/// recorded for the oracle comparison; the JDK in `.github/workflows` must be at least this new.
-pub const LATEST_RELEASE: u32 = 27;
 
 const USAGE: &str = "\
 usage: oracle <check> [<option>...] [<project>...]
@@ -130,7 +123,7 @@ fn parse_args(args: impl Iterator<Item = String>) -> Options {
         match arg.as_str() {
             "--release" => {
                 let release = number("--release") as u32;
-                if !(OLDEST_RELEASE..=LATEST_RELEASE).contains(&release) {
+                if !ferrion_java_version::is_supported(release) {
                     usage(&format!(
                         "--release must be from {OLDEST_RELEASE} to {LATEST_RELEASE}"
                     ));
@@ -153,7 +146,7 @@ fn parse_args(args: impl Iterator<Item = String>) -> Options {
         }
     }
     options.releases = match (all_releases, releases.is_empty()) {
-        (true, true) => Releases::These((OLDEST_RELEASE..=LATEST_RELEASE).collect()),
+        (true, true) => Releases::These(SUPPORTED_RELEASES.collect()),
         (true, false) => usage("--release and --all-releases can't be combined"),
         (false, true) => Releases::Own,
         (false, false) => {

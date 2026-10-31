@@ -35,6 +35,7 @@ foundations  lexer     parser   │
   crates/                  Rust workspace (internal crates are `publish = false`)
     ferrion_cli/           `ferrion` binary
     ferrion_diagnostics/   spans, source files, rendering (pretty/json/github)
+    ferrion_java_version/  the supported Java releases
     ferrion_lexer/
     ferrion_parser/        AST, parser, error recovery, version checks
     ferrion_doc_comments/  Javadoc and Markdown doc comment parsing

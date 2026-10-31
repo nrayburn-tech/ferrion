@@ -1,8 +1,8 @@
-//! Checks that what depends on the latest release agrees with [`LATEST_RELEASE`]: the JDK the
+//! Checks that what depends on the latest release agrees with `LATEST_RELEASE`: the JDK the
 //! lexer's Unicode tables were generated with, and the JDK the workflows install. Raising
 //! `LATEST_RELEASE` without the others fails these tests.
 
-use crate::LATEST_RELEASE;
+use ferrion_java_version::LATEST_RELEASE;
 
 const ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
 
