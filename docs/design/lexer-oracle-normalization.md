@@ -202,6 +202,7 @@ the same; only the kind differs. Category: javac error recovery.
 | [`invalid-string-escape.java`](../../tools/oracle-check/differences/invalid-string-escape.java) | `"a\qb"` | `ERROR "a\qb"` | `StringLiteral "a\qb"`, `InvalidEscape` on `\q` |
 | [`unclosed-text-block.java`](../../tools/oracle-check/differences/unclosed-text-block.java) | `"""` then lines with no closing `"""` | `ERROR` from `"""` to the end of its first content line | `TextBlock` with the same span, `UnterminatedTextBlock` |
 | [`unclosed-block-comment.java`](../../tools/oracle-check/differences/unclosed-block-comment.java) | `/* abc` to the end of the file | `ERROR` to the end of the file | `BlockComment` to the end of the file, `UnterminatedComment` |
+| [`char-literal-escaped-line-break.java`](../../tools/oracle-check/differences/char-literal-escaped-line-break.java) | `'\` and a line break, then `';` | `ERROR` from `'` across the line break to `'`, `illegal.esc.char` | `CharLiteral` with the same span, `InvalidEscape` on `\` and the line break |
 | [`malformed-numbers.java`](../../tools/oracle-check/differences/malformed-numbers.java) | `0x.p1` | `ERROR 0x.` | `DoubleLiteral 0x.`, `MalformedNumber` |
 
 In the same file, `0x`, `1e+`, `0b1012`, and `1_` have javac's spans and kinds. The lexer's
@@ -226,23 +227,14 @@ reports one error at the mistake. Category: deliberate departure.
 After some errors, javac's `ERROR` token runs to the end of the file. The lexer ends a character
 or string literal at the end of its line, since a line terminator can't be in one (JLS §3.10.4,
 §3.10.5), so an error never changes how later lines are lexed. That matters to the language
-server, which lexes files mid-edit. Category: javac error recovery.
+server, which lexes files mid-edit. The one exception follows javac: a character literal whose
+character is a line terminator, or `\` and a line terminator, takes in a `'` that starts the next
+line, which would otherwise open a literal of its own. Category: javac error recovery.
 
 | Case | Input | javac | Lexer |
 | --- | --- | --- | --- |
 | [`char-literal-invalid-escape-unclosed.java`](../../tools/oracle-check/differences/char-literal-invalid-escape-unclosed.java) | `'\ ;` | one `ERROR` from `'` to the end of the file, `illegal.esc.char` | `CharLiteral '\ ` (`UnterminatedCharLiteral`, `InvalidEscape`), then the rest of the file as usual |
 | [`char-literal-three-quotes.java`](../../tools/oracle-check/differences/char-literal-three-quotes.java) | `''';` | `ERROR ''`, then one `ERROR` to the end of the file, `empty.char.lit` | `CharLiteral ''` (`EmptyCharLiteral`), `CharLiteral ';` (`UnterminatedCharLiteral`), then the rest of the file as usual |
-
-### Where javac recovers better
-
-| Case | Input | javac | Lexer |
-| --- | --- | --- | --- |
-| [`char-literal-escaped-line-break.java`](../../tools/oracle-check/differences/char-literal-escaped-line-break.java) | `'\` and a line break, then `';` | one `ERROR` across the line break, `illegal.esc.char`; the `;` is kept | `CharLiteral '\` (`UnterminatedCharLiteral`, `InvalidEscape`), then `CharLiteral ';` (`UnterminatedCharLiteral`); the `;` is lost |
-
-This follows from ending literals at the end of the line: the `'` that would have closed the
-first literal opens a second one on the next line. Three errors instead of one, and the next
-line's first token is lost. Category: javac error recovery. It's a known gap, kept so that literals
-never span lines; the snapshot will show any fix.
 
 ### Tokens javac doesn't produce
 
