@@ -43,6 +43,21 @@ pub(crate) fn parse_type(content: &Content, start: usize, end: usize) -> (Option
     (ty, ok)
 }
 
+/// Whether `text` reads as a well-formed reference. Markdown comments use this to tell a link to
+/// a program element, such as `[List]`, from brackets that are just text, such as `[1]`.
+pub(crate) fn is_reference(text: &str) -> bool {
+    let mut content = Content::new(0);
+    for c in crate::escape::chars(text, 0, text.len()) {
+        // Only the structure matters here, so escapes needn't be told apart.
+        content.push_char(crate::escape::Char {
+            escaped: false,
+            ..c
+        });
+    }
+    let len = content.len();
+    !text.is_empty() && parse(&content, 0, len).1
+}
+
 pub(crate) fn is_identifier_start(c: char) -> bool {
     c.is_alphabetic() || c == '_' || c == '$'
 }
@@ -479,5 +494,22 @@ mod tests {
             .map(|t| t.name.segments[0].text.as_str())
             .collect();
         assert_eq!(found, ["Map", "K", "List", "V", "Key", "Set", "Val"]);
+    }
+
+    #[test]
+    fn looks_like_a_reference() {
+        for text in [
+            "List",
+            "java.util.List",
+            "List#add(Object)",
+            "#m",
+            "java.base/",
+            "d",
+        ] {
+            assert!(is_reference(text), "{text:?}");
+        }
+        for text in ["1", "see above", "", "a b", "x]"] {
+            assert!(!is_reference(text), "{text:?}");
+        }
     }
 }
