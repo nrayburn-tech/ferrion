@@ -58,6 +58,9 @@ pub(crate) struct Parser<'t> {
     release: u32,
     /// How many [`Parser::nested`] calls are active.
     depth: u32,
+    /// The depth at which `->` ends an expression instead of starting a lambda, set by
+    /// [`Parser::without_lambdas`].
+    no_lambda_depth: Option<u32>,
     /// Whether an error was reported since a token was last consumed normally. While it is, no
     /// more errors are reported, so each mistake gets one diagnostic.
     recovering: bool,
@@ -94,6 +97,7 @@ impl<'t> Parser<'t> {
             diagnostics: Vec::new(),
             release,
             depth: 0,
+            no_lambda_depth: None,
             recovering: false,
         }
     }
@@ -445,6 +449,28 @@ impl<'t> Parser<'t> {
         let result = ferrion_stack::ensure_stack(|| f(self));
         self.depth -= 1;
         result
+    }
+
+    /// Runs `f` one level deeper, as [`Parser::nested`] does, at a level where `->` can't start
+    /// a lambda: in a case label, where it ends the label. Expressions nested deeper, such as in
+    /// parentheses or arguments, can have lambdas again.
+    #[allow(dead_code, reason = "for case labels, in the expression grammar")]
+    pub fn without_lambdas<R>(
+        &mut self,
+        f: impl FnOnce(&mut Parser<'t>) -> Option<R>,
+    ) -> Option<R> {
+        self.nested(|p| {
+            let saved = p.no_lambda_depth.replace(p.depth);
+            let result = f(p);
+            p.no_lambda_depth = saved;
+            result
+        })
+    }
+
+    /// Whether a lambda can start here: false directly inside [`Parser::without_lambdas`].
+    #[allow(dead_code, reason = "for case labels, in the expression grammar")]
+    pub fn lambdas_allowed(&self) -> bool {
+        self.no_lambda_depth != Some(self.depth)
     }
 
     fn skip_too_deep(&mut self) {

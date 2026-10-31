@@ -314,6 +314,25 @@ fn nesting_too_deep_without_a_group() {
 }
 
 #[test]
+fn lambdas_only_where_allowed() {
+    run("x", |p| {
+        assert!(p.lambdas_allowed());
+        p.without_lambdas(|p| {
+            assert!(!p.lambdas_allowed());
+            // One level deeper, as in parentheses, lambdas are allowed again.
+            p.nested(|p| {
+                assert!(p.lambdas_allowed());
+                Some(())
+            });
+            assert!(!p.lambdas_allowed());
+            Some(())
+        });
+        assert!(p.lambdas_allowed());
+        p.bump();
+    });
+}
+
+#[test]
 fn anchors_of_the_last_node() {
     run("a + b.c(d) ;", |p| {
         let m = p.start();
