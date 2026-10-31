@@ -1,0 +1,20 @@
+[package]
+name = "oracle-check"
+description = "Compares Ferrion's results with the javac oracle's across the corpus."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow = "1"
+corpus = { path = "../corpus" }
+ferrion_diagnostics = { path = "../../crates/ferrion_diagnostics" }
+ferrion_lexer = { path = "../../crates/ferrion_lexer" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.11"
+
+[lints]
+workspace = true
