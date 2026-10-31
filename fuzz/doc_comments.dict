@@ -57,6 +57,16 @@
 "*@/"
 "\\{@"
 "\\@"
+"\\}"
+"\\\\"
+"\\`"
+
+# Markdown in inline tags.
+"{@link List *"
+"{@summary *"
+"{@return - "
+"`}`"
+"``}``"
 
 # References.
 "#"
