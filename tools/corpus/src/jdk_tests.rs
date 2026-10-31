@@ -403,8 +403,8 @@ fn normalize(path: &Path) -> PathBuf {
     normal
 }
 
-/// The `.java` files under `dir`. Symbolic links aren't followed.
-fn java_files(dir: &Path) -> Result<Vec<PathBuf>> {
+/// The `.java` files under `dir`, sorted. Symbolic links aren't followed.
+pub(crate) fn java_files(dir: &Path) -> Result<Vec<PathBuf>> {
     let mut files = Vec::new();
     let mut pending = vec![dir.to_path_buf()];
     while let Some(dir) = pending.pop() {
@@ -421,6 +421,7 @@ fn java_files(dir: &Path) -> Result<Vec<PathBuf>> {
             }
         }
     }
+    files.sort();
     Ok(files)
 }
 

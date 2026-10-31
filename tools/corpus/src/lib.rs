@@ -7,7 +7,8 @@
 //!
 //! OpenJDK's javac tests are fetched the same way, as parser inputs (see [`jdk_tests`]).
 //!
-//! The `corpus` binary fetches and locks projects; other test tools use this library to find them.
+//! The `corpus` binary fetches and locks projects; other test tools use this library to find them,
+//! and [`sources`] to list their files with the releases each is meant for.
 
 pub mod fetch;
 mod gradle;
@@ -15,6 +16,7 @@ pub mod jdk_tests;
 pub mod lock;
 mod maven;
 pub mod project;
+pub mod sources;
 
 use std::path::PathBuf;
 
