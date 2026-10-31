@@ -1,7 +1,7 @@
 //! The comment map and doc comment lookup on files parsed by `ferrion_parser`.
 //!
-//! Only package declarations and imports parse so far; everything after the imports is one
-//! `Unparsed` node. Declarations, statements, and expressions get their tests as they parse.
+//! These tests cover package declarations and imports. Declarations, statements, and
+//! expressions get their tests as they parse.
 
 use std::sync::Arc;
 

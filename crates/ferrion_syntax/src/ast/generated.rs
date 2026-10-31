@@ -3773,25 +3773,6 @@ impl<'t> AstNode<'t> for Error<'t> {
     }
 }
 
-/// TEMPORARY, until the declaration grammar lands: the tokens after the imports, unparsed.
-/// It isn't an error, and has no diagnostic. The declaration grammar removes it.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub struct Unparsed<'t>(SyntaxNode<'t>);
-
-impl<'t> AstNode<'t> for Unparsed<'t> {
-    fn can_cast(kind: SyntaxKind) -> bool {
-        kind == SyntaxKind::Unparsed
-    }
-
-    fn cast(node: SyntaxNode<'t>) -> Option<Self> {
-        Self::can_cast(node.kind()).then_some(Unparsed(node))
-    }
-
-    fn syntax(self) -> SyntaxNode<'t> {
-        self.0
-    }
-}
-
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum ModuleDirective<'t> {
     RequiresDirective(RequiresDirective<'t>),

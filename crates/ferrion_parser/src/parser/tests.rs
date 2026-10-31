@@ -95,7 +95,7 @@ fn contextual_keywords_are_recorded_where_read() {
         p.bump();
         assert!(p.eat(RecordKw));
         p.expect(YieldKw);
-        m.complete(p, Unparsed);
+        m.complete(p, Name);
     });
     let tokens: Vec<_> = parsed
         .tree
