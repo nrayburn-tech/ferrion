@@ -6,6 +6,10 @@ use crate::invariants::check_markdown;
 use crate::model::{BlockTagKind, InlineTagContent, TagArgument};
 use ferrion_lexer::lex;
 
+/// Markdown content of inline tags: what javadoc 27 does with `{@link List a *b*}` and the like
+/// in a `///` comment.
+mod tag_content;
+
 /// Parses the Markdown comments in `text`, which must be one run of `///` lines, and checks the
 /// parser's invariants.
 fn parse(text: &str) -> MarkdownComment {
@@ -391,6 +395,9 @@ fn nesting_is_bounded() {
         " ".to_owned() + &"*a ".repeat(5_000) + &"b* ".repeat(5_000),
         " ".to_owned() + &"[".repeat(5_000) + &"](u)".repeat(5_000),
         " ".to_owned() + &"{@summary ".repeat(5_000),
+        " ".to_owned() + &"{@summary *> ".repeat(5_000),
+        " ".to_owned() + &"{@link A [".repeat(5_000) + &"]}".repeat(5_000),
+        " ".to_owned() + &"{@return - ".repeat(5_000),
     ] {
         let parsed = parse(&comment(&line));
         let _ = parsed;
@@ -423,8 +430,19 @@ fn long_inputs_take_linear_time() {
         "`{@a` ".repeat(n / 6),
         "[a][b".repeat(n / 5),
         "<a title=\"{@a}".repeat(n / 14),
+        // Inline tags with Markdown content: unclosed, each in the last; closed, side by side;
+        // and code spans, escapes, and braces in them.
+        "{@summary *a ".repeat(n / 13),
+        "{@link A b}".repeat(n / 11),
+        "{@summary `a ".repeat(n / 13),
+        "{@summary a`} ".repeat(n / 14),
+        "{@link A {".repeat(n / 10),
+        "{@link A \\".repeat(n / 10),
+        "\\".repeat(n),
     ] {
         parse(&comment(&line));
     }
     parse(&comment(&" {@code x}\n".repeat(n / 11)));
+    parse(&comment(&" {@summary - x\n".repeat(n / 15)));
+    parse(&comment(&" {@link A `\n".repeat(n / 11)));
 }

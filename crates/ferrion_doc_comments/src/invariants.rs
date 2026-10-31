@@ -325,7 +325,11 @@ impl<'a> Checker<'a> {
             }
             Inline::EndElement(element) => self.part(&element.name, span, "element name"),
             Inline::HtmlComment(comment) => self.inlines(&comment.content, span, depth + 1),
-            Inline::Tag(tag) => self.inline_tag(tag, depth),
+            Inline::Tag(tag) => {
+                self.inline_tag(tag, depth, |checker, content, parent, depth, siblings| {
+                    checker.literal_text(content, parent, depth, siblings)
+                })
+            }
         }
     }
 
@@ -348,41 +352,50 @@ impl<'a> Checker<'a> {
         Ok(())
     }
 
-    fn inline_tag(&self, tag: &InlineTag, depth: usize) -> Result<(), String> {
+    /// Checks an inline tag at `depth`, whose descriptive content `described` checks: inline
+    /// content in a traditional comment, and Markdown blocks in a Markdown comment.
+    fn inline_tag<D>(
+        &self,
+        tag: &InlineTag<D>,
+        depth: usize,
+        described: fn(&Self, &D, Span, usize, &mut Siblings) -> Result<(), String>,
+    ) -> Result<(), String> {
         let span = tag.span;
         self.part(&tag.name, span, "tag name")?;
         let mut siblings = Siblings::new(span);
         siblings.next(tag.name.span, "tag name")?;
-        let mut content = |nodes: &[Inline]| -> Result<(), String> {
-            for node in nodes {
-                self.inline(node, span, depth + 1)?;
-                siblings.next(node.span(), "tag content")?;
-            }
-            Ok(())
-        };
+        let depth = depth + 1;
         match &tag.content {
             InlineTagContent::Code(nodes)
             | InlineTagContent::Literal(nodes)
-            | InlineTagContent::Return(nodes)
-            | InlineTagContent::Summary(nodes)
-            | InlineTagContent::Other(nodes) => content(nodes),
+            | InlineTagContent::Other(nodes) => {
+                self.literal_text(nodes, span, depth, &mut siblings)
+            }
+            InlineTagContent::Return(content) | InlineTagContent::Summary(content) => {
+                described(self, content, span, depth, &mut siblings)
+            }
             InlineTagContent::DocRoot => Ok(()),
             InlineTagContent::Index { term, description } => {
                 if let Some(term) = term {
                     self.part(term, span, "index term")?;
+                    siblings.next(term.span, "index term")?;
                 }
-                content(description)
+                described(self, description, span, depth, &mut siblings)
             }
             InlineTagContent::InheritDoc { supertype } => match supertype {
-                Some(reference) => self.reference(reference, span),
+                Some(reference) => {
+                    self.reference(reference, span)?;
+                    siblings.next(reference.span, "supertype")
+                }
                 None => Ok(()),
             },
             InlineTagContent::Link { reference, label }
             | InlineTagContent::LinkPlain { reference, label } => {
                 if let Some(reference) = reference {
                     self.reference(reference, span)?;
+                    siblings.next(reference.span, "link reference")?;
                 }
-                content(label)
+                described(self, label, span, depth, &mut siblings)
             }
             InlineTagContent::Snippet(snippet) => {
                 for attribute in &snippet.attributes {
@@ -391,9 +404,10 @@ impl<'a> Checker<'a> {
                     if let Some(value) = &attribute.value {
                         self.part(value, attribute.span, "snippet attribute value")?;
                     }
+                    siblings.next(attribute.span, "snippet attribute")?;
                 }
                 match &snippet.body {
-                    Some(body) => content(body),
+                    Some(body) => self.literal_text(body, span, depth, &mut siblings),
                     None => Ok(()),
                 }
             }
@@ -404,13 +418,48 @@ impl<'a> Checker<'a> {
             InlineTagContent::Value { format, reference } => {
                 if let Some(format) = format {
                     self.part(format, span, "value format")?;
+                    siblings.next(format.span, "value format")?;
                 }
                 match reference {
-                    Some(reference) => self.reference(reference, span),
+                    Some(reference) => {
+                        self.reference(reference, span)?;
+                        siblings.next(reference.span, "value reference")
+                    }
                     None => Ok(()),
                 }
             }
         }
+    }
+
+    /// Checks an inline tag's literal text, or a traditional comment's inline tag's descriptive
+    /// content.
+    fn literal_text(
+        &self,
+        nodes: &[Inline],
+        parent: Span,
+        depth: usize,
+        siblings: &mut Siblings,
+    ) -> Result<(), String> {
+        for node in nodes {
+            self.inline(node, parent, depth)?;
+            siblings.next(node.span(), "tag content")?;
+        }
+        Ok(())
+    }
+
+    /// Checks a Markdown comment's inline tag's descriptive content.
+    fn block_content(
+        &self,
+        blocks: &[Block],
+        parent: Span,
+        depth: usize,
+        siblings: &mut Siblings,
+    ) -> Result<(), String> {
+        for block in blocks {
+            self.markdown_block(block, parent, depth)?;
+            siblings.next(block.span(), "tag content block")?;
+        }
+        Ok(())
     }
 
     fn reference(&self, reference: &Reference, parent: Span) -> Result<(), String> {
@@ -568,7 +617,11 @@ impl<'a> Checker<'a> {
                     }
                     self.markdown_inlines(content, span, depth + 1)?;
                 }
-                markdown::Inline::Tag(tag) => self.inline_tag(tag, depth + 1)?,
+                markdown::Inline::Tag(tag) => {
+                    self.inline_tag(tag, depth, |checker, content, parent, depth, siblings| {
+                        checker.block_content(content, parent, depth, siblings)
+                    })?
+                }
             }
         }
         Ok(())

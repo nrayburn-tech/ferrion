@@ -56,8 +56,9 @@ pub enum DiagnosticKind {
     NestingTooDeep,
 }
 
-/// Inline content: what a traditional comment's description and block tags hold, and what the
-/// labels and descriptions of inline tags hold in both kinds of comment.
+/// Inline content: what a traditional comment's description, block tags, and inline tag labels
+/// hold, and what literal text (`{@code}`, `{@literal}`, snippet bodies, unknown tags) holds in
+/// both kinds of comment.
 ///
 /// Nodes are in source order and don't overlap. Text is split at line breaks, so the formatter
 /// can tell where the lines of the comment are.
@@ -157,23 +158,27 @@ pub struct HtmlComment {
     pub content: Vec<Inline>,
 }
 
-/// An inline tag, `{@name ...}`.
+/// An inline tag, `{@name ...}`. `D` is what its descriptive content is: the label of
+/// `{@link}` and `{@linkplain}`, and the description of `{@index}`, `{@summary}`, and
+/// `{@return}`. In a traditional comment, that is [`Inline`] content (the default); in a Markdown
+/// comment, it is Markdown [`Block`](crate::markdown::Block)s, as javadoc renders it.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct InlineTag {
+pub struct InlineTag<D = Vec<Inline>> {
     /// From `{` to the closing `}`, or to the end of the comment when it isn't closed.
     pub span: Span,
     /// The tag name, without the `@`.
     pub name: Text,
-    pub content: InlineTagContent,
+    pub content: InlineTagContent<D>,
     /// Whether the tag has its closing `}`. An unclosed tag runs to the end of the comment and
     /// has an [`UnclosedInlineTag`](DiagnosticKind::UnclosedInlineTag) diagnostic.
     pub closed: bool,
 }
 
 /// What an inline tag holds, by tag. Content that is read as written ("literal text" in the
-/// specification) holds only [`Inline::Text`] and [`Inline::LineBreak`].
+/// specification) holds only [`Inline::Text`] and [`Inline::LineBreak`], in both kinds of
+/// comment. Descriptive content is a `D` (see [`InlineTag`]).
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum InlineTagContent {
+pub enum InlineTagContent<D = Vec<Inline>> {
     /// `{@code text}`, literal text. Braces in it are balanced. One space or tab after the name
     /// separates it from the text and isn't part of it, as in javadoc.
     Code(Vec<Inline>),
@@ -182,29 +187,27 @@ pub enum InlineTagContent {
     /// `{@docRoot}`
     DocRoot,
     /// `{@index term description}`. The term is a word, or a phrase in double quotes; its text
-    /// leaves the quotes out.
-    Index {
-        term: Option<Text>,
-        description: Vec<Inline>,
-    },
+    /// leaves the quotes out. The term is read as written in both kinds of comment, as javadoc
+    /// does.
+    Index { term: Option<Text>, description: D },
     /// `{@inheritDoc}` or `{@inheritDoc supertype}`.
     InheritDoc { supertype: Option<Reference> },
     /// `{@link reference label}`
     Link {
         reference: Option<Reference>,
-        label: Vec<Inline>,
+        label: D,
     },
     /// `{@linkplain reference label}`
     LinkPlain {
         reference: Option<Reference>,
-        label: Vec<Inline>,
+        label: D,
     },
     /// `{@return description}`
-    Return(Vec<Inline>),
+    Return(D),
     /// `{@snippet attributes : body}`
     Snippet(Snippet),
     /// `{@summary description}`
-    Summary(Vec<Inline>),
+    Summary(D),
     /// `{@systemProperty name}`
     SystemProperty { name: Option<Text> },
     /// `{@value format reference}`, both optional. The format is a word starting with `%`, or a
@@ -217,6 +220,40 @@ pub enum InlineTagContent {
     /// name and any whitespace, as written. Tags nested more deeply than
     /// [`MAX_NESTING`](crate::MAX_NESTING) are read this way too, whatever their name.
     Other(Vec<Inline>),
+}
+
+impl<D> InlineTagContent<D> {
+    /// The same content, with the descriptive content changed by `f`.
+    pub(crate) fn map<E>(self, mut f: impl FnMut(D) -> E) -> InlineTagContent<E> {
+        match self {
+            InlineTagContent::Code(text) => InlineTagContent::Code(text),
+            InlineTagContent::Literal(text) => InlineTagContent::Literal(text),
+            InlineTagContent::DocRoot => InlineTagContent::DocRoot,
+            InlineTagContent::Index { term, description } => InlineTagContent::Index {
+                term,
+                description: f(description),
+            },
+            InlineTagContent::InheritDoc { supertype } => {
+                InlineTagContent::InheritDoc { supertype }
+            }
+            InlineTagContent::Link { reference, label } => InlineTagContent::Link {
+                reference,
+                label: f(label),
+            },
+            InlineTagContent::LinkPlain { reference, label } => InlineTagContent::LinkPlain {
+                reference,
+                label: f(label),
+            },
+            InlineTagContent::Return(description) => InlineTagContent::Return(f(description)),
+            InlineTagContent::Snippet(snippet) => InlineTagContent::Snippet(snippet),
+            InlineTagContent::Summary(description) => InlineTagContent::Summary(f(description)),
+            InlineTagContent::SystemProperty { name } => InlineTagContent::SystemProperty { name },
+            InlineTagContent::Value { format, reference } => {
+                InlineTagContent::Value { format, reference }
+            }
+            InlineTagContent::Other(text) => InlineTagContent::Other(text),
+        }
+    }
 }
 
 /// `{@snippet attributes : body}` (JEP 413).

@@ -4,11 +4,18 @@
 //! javadoc's block tags, inline tags, and links to program elements:
 //!
 //! - **Inline tags** (`{@code ...}`, `{@link ...}`) are found first, anywhere but in code spans
-//!   and code blocks, and an escaped `\{@` isn't one. A tag runs to its matching `}`, across lines
-//!   and Markdown structure, and to the end of the comment when unclosed, as in javadoc 27. Its
-//!   content is read as in a traditional comment, so `{@code a*b*c}` has no emphasis. Before the
-//!   Markdown parser reads a section, each tag is replaced by inert text of the same length, which
-//!   keeps offsets and stands in for the tag in the structure.
+//!   and code blocks, and a backslash hides a `{@` as javadoc 27 reads it. A tag runs to its
+//!   matching `}`, across lines and Markdown structure, and to the end of the comment when
+//!   unclosed, as in javadoc 27. Before the Markdown parser reads a section, each tag is replaced
+//!   by inert text of the same length, which keeps offsets and stands in for the tag in the
+//!   structure.
+//! - **Inline tag content:** literal text (`{@code a*b*c}`, `{@literal}`, snippets, unknown tags)
+//!   is read as written, with no emphasis. Descriptive content (the label of `{@link}` and
+//!   `{@linkplain}`, the description of `{@index}`, `{@summary}`, and `{@return}`) is Markdown,
+//!   as javadoc 27 renders it: a Markdown document of its own, so emphasis doesn't pair across the
+//!   tag's braces and the section's link reference definitions don't apply in it. In it, code
+//!   spans and code blocks hide braces and tags, and a backslash hides the two characters after
+//!   it, so `{@link List a \} b}` has the label `a } b`.
 //! - **Block tags** start at an `@` that begins a line, after any whitespace, outside code spans,
 //!   code blocks, and inline tags. HTML blocks don't hide them: javadoc 27 ends an HTML block's
 //!   paragraph at an `@param` line inside it. `\@` and `&#064;` are a literal `@`.
@@ -29,7 +36,7 @@ use pulldown_cmark::{
 
 use crate::content::Content;
 use crate::escape;
-use crate::inline::{Parser, is_blank};
+use crate::inline::{Parser, Pending, PendingTags, is_blank};
 use crate::model::{BlockTag, Diagnostic, DiagnosticKind, InlineTag, Reference, Text};
 use crate::{MAX_NESTING, Span, clamp_span, reference};
 
@@ -188,7 +195,8 @@ pub enum Inline {
     SoftBreak(Span),
     /// A hard line break: a backslash or two spaces, and the line break after it.
     HardBreak(Span),
-    Tag(Box<InlineTag>),
+    /// An inline tag, whose descriptive content (a `{@link}` label, a `{@summary}`) is Markdown.
+    Tag(Box<InlineTag<Vec<Block>>>),
 }
 
 impl Inline {
@@ -279,18 +287,19 @@ pub fn parse_markdown(text: &str, lines: &[Span]) -> MarkdownComment {
     let mut diagnostics = Vec::new();
     let tags = find_inline_tags(text, &content, &code, &mut diagnostics);
     let starts = block_tag_starts(&content.text, &code, &tags);
-    // Each block tag's head is read from the content, and its body as Markdown.
-    let (tag_ranges, tags): (Vec<_>, Vec<_>) = tags
-        .into_iter()
-        .map(|(range, tag)| (range, Some(tag)))
-        .unzip();
+    // Each block tag's head is read from the content, and its body as Markdown. Block tags don't
+    // start inside inline tags, so each inline tag is in one section.
+    let mut tags = tags.into_iter().peekable();
+    let mut section_tags = |end: usize| -> PendingTags {
+        std::iter::from_fn(|| tags.next_if(|(range, _)| range.start < end)).collect()
+    };
     let mut sections = Sections {
         content: &content,
-        tag_ranges,
-        tags,
         diagnostics: &mut diagnostics,
     };
-    let description = sections.blocks(0..starts.first().copied().unwrap_or(len), false);
+    let description_end = starts.first().copied().unwrap_or(len);
+    let description_tags = section_tags(description_end);
+    let description = sections.blocks(0..description_end, description_tags, false, 0);
     let mut block_tags = Vec::new();
     for (i, &start) in starts.iter().enumerate() {
         let end = starts.get(i + 1).copied().unwrap_or(len);
@@ -299,7 +308,7 @@ pub fn parse_markdown(text: &str, lines: &[Span]) -> MarkdownComment {
         parser.end = end;
         let head = parser.block_tag_head();
         sections.diagnostics.append(&mut parser.diagnostics);
-        let body = sections.blocks(head.end..end, true);
+        let body = sections.blocks(head.end..end, section_tags(end), true, 0);
         let head_span = content.span(head.start..head.end);
         let end = body
             .last()
@@ -413,38 +422,15 @@ fn find_inline_tags(
     content: &Content,
     code: &[Range<usize>],
     diagnostics: &mut Vec<Diagnostic>,
-) -> Vec<(Range<usize>, Box<InlineTag>)> {
-    let text = &content.text;
-    let mut tags = Vec::new();
-    let mut parser = Parser::new(source, content, true);
-    let mut from = 0;
-    while let Some(i) = text[from..].find("{@") {
-        let start = from + i;
-        from = start + 2;
-        let backslashes = text[..start]
-            .bytes()
-            .rev()
-            .take_while(|&b| b == b'\\')
-            .count();
-        if backslashes % 2 == 1 || in_ranges(code, start) {
-            continue;
-        }
-        parser.pos = start;
-        if let crate::Inline::Tag(tag) = parser.inline_tag(0) {
-            from = parser.pos;
-            tags.push((start..parser.pos, tag));
-        }
-    }
+) -> PendingTags {
+    let mut parser = Parser::markdown(source, content, code);
+    let (tags, _) = parser.markdown_tags(0, false);
     diagnostics.append(&mut parser.diagnostics);
     tags
 }
 
 /// The offsets of the `@`s that start block tags.
-fn block_tag_starts(
-    text: &str,
-    code: &[Range<usize>],
-    tags: &[(Range<usize>, Box<InlineTag>)],
-) -> Vec<usize> {
+fn block_tag_starts(text: &str, code: &[Range<usize>], tags: &PendingTags) -> Vec<usize> {
     let in_tag = |offset: usize| {
         let i = tags.partition_point(|(range, _)| range.start <= offset);
         i > 0 && offset < tags[i - 1].0.end
@@ -460,13 +446,10 @@ fn block_tag_starts(
     starts
 }
 
-/// Reads sections of a comment as Markdown.
+/// Reads parts of a comment as Markdown documents: its sections, and the descriptive content of
+/// its inline tags.
 struct Sections<'a> {
     content: &'a Content,
-    /// The content ranges of the inline tags, in order.
-    tag_ranges: Vec<Range<usize>>,
-    /// The inline tags, taken as they are placed in the structure.
-    tags: Vec<Option<Box<InlineTag>>>,
     diagnostics: &'a mut Vec<Diagnostic>,
 }
 
@@ -481,9 +464,17 @@ fn placeholder(len: usize) -> String {
 }
 
 impl Sections<'_> {
-    /// Reads `range` of the content as Markdown blocks, leaving out leading blank lines, and
-    /// with `after_tag`, the whitespace after a block tag's name or argument too.
-    fn blocks(&mut self, range: Range<usize>, after_tag: bool) -> Vec<Block> {
+    /// Reads `range` of the content as a Markdown document, whose inline tags are `tags`, leaving
+    /// out leading blank lines, and with `after_tag`, the whitespace after a block tag's name or
+    /// argument too. The document is nested `depth` deep in the comment's structure, which counts
+    /// toward [`MAX_NESTING`].
+    fn blocks(
+        &mut self,
+        range: Range<usize>,
+        tags: PendingTags,
+        after_tag: bool,
+        depth: usize,
+    ) -> Vec<Block> {
         let text = &self.content.text;
         let start = range.start.min(text.len());
         let end = range.end.clamp(start, text.len());
@@ -495,14 +486,17 @@ impl Sections<'_> {
             let blank = section.len() - section.trim_start_matches([' ', '\t', '\x0C', '\n']).len();
             start + section[..blank].rfind('\n').map_or(0, |i| i + 1)
         };
+        let (tag_ranges, tags): (Vec<_>, Vec<_>) = tags
+            .into_iter()
+            .filter(|(range, _)| start <= range.start && range.end <= end)
+            .map(|(range, tag)| (range, Some(tag)))
+            .unzip();
         let mut filled = String::with_capacity(end - start);
         let mut copied = start;
-        for tag_range in &self.tag_ranges {
-            if start <= tag_range.start && tag_range.end <= end {
-                filled.push_str(&text[copied..tag_range.start]);
-                filled.push_str(&placeholder(tag_range.len()));
-                copied = tag_range.end;
-            }
+        for tag_range in &tag_ranges {
+            filled.push_str(&text[copied..tag_range.start]);
+            filled.push_str(&placeholder(tag_range.len()));
+            copied = tag_range.end;
         }
         filled.push_str(&text[copied..end]);
         // A label with no definition that reads as a reference links to a program element. The
@@ -529,6 +523,9 @@ impl Sections<'_> {
             sections: self,
             filled: &filled,
             offset: start,
+            tag_ranges,
+            tags,
+            depth,
             stack: vec![Frame::new(FrameKind::Root, 0..filled.len())],
             suppressed: 0,
             definitions: definitions.into_iter().peekable(),
@@ -624,17 +621,25 @@ impl Frame {
 /// A link reference definition: its range, label, destination, and title.
 type Definition = (Range<usize>, String, String, Option<String>);
 
-/// Builds the structure of a section from the Markdown parser's events, with an explicit stack.
+/// Builds the structure of a Markdown document (a section, or an inline tag's descriptive
+/// content) from the Markdown parser's events, with an explicit stack.
 struct Builder<'a, 'b> {
     sections: &'a mut Sections<'b>,
-    /// The section's text, with placeholders for inline tags.
+    /// The document's text, with placeholders for inline tags.
     filled: &'a str,
-    /// Where the section starts in the content.
+    /// Where the document starts in the content.
     offset: usize,
+    /// The content ranges of the document's inline tags, in order.
+    tag_ranges: Vec<Range<usize>>,
+    /// The document's inline tags, taken as they are placed in the structure.
+    tags: Vec<Option<Box<InlineTag<Pending>>>>,
+    /// How deeply the document is nested in the comment's structure: 0 for a section of the
+    /// comment, and more for an inline tag's content.
+    depth: usize,
     stack: Vec<Frame>,
     /// The number of open containers nested too deeply to have frames.
     suppressed: usize,
-    /// The section's link reference definitions, which the parser's events leave out, in order.
+    /// The document's link reference definitions, which the parser's events leave out, in order.
     definitions: std::iter::Peekable<std::vec::IntoIter<Definition>>,
 }
 
@@ -723,7 +728,7 @@ impl Builder<'_, '_> {
         match event {
             Event::Start(tag) => {
                 let kind = self.frame_kind(tag, &range);
-                if self.stack.len() > MAX_NESTING {
+                if self.depth + self.stack.len() > MAX_NESTING {
                     if self.suppressed == 0 {
                         let span = self.span(range.clone());
                         self.sections.diagnostics.push(Diagnostic {
@@ -880,9 +885,9 @@ impl Builder<'_, '_> {
         let mut text_pos = 0;
         let mut source_pos = range.start;
         for i in self.tags_within(range.clone()) {
-            let tag_range = &self.sections.tag_ranges[i];
+            let tag_range = &self.tag_ranges[i];
             let local = tag_range.start - self.offset..tag_range.end - self.offset;
-            if local.start < source_pos || self.sections.tags[i].is_none() {
+            if local.start < source_pos || self.tags[i].is_none() {
                 continue;
             }
             let Some(found) = text[text_pos..].find(&placeholder(local.len())) else {
@@ -890,14 +895,37 @@ impl Builder<'_, '_> {
             };
             let before = &text[text_pos..text_pos + found];
             self.text_nodes(before, source_pos..local.start, html, &mut nodes);
-            if let Some(tag) = self.sections.tags[i].take() {
-                nodes.push(Inline::Tag(tag));
+            if let Some(tag) = self.tags[i].take() {
+                nodes.push(Inline::Tag(self.tag(tag)));
             }
             text_pos += found + local.len();
             source_pos = local.end;
         }
         self.text_nodes(&text[text_pos..], source_pos..range.end, html, &mut nodes);
         nodes
+    }
+
+    /// An inline tag placed in the structure, with its descriptive content read as a Markdown
+    /// document of its own, as javadoc 27 reads it: emphasis and links don't reach into or out of
+    /// it, and the section's link reference definitions don't apply in it. The content is as
+    /// deeply nested as the tag, so Markdown in tags in Markdown is limited by [`MAX_NESTING`] as
+    /// a whole, and the recursion this makes is limited by the depth of the tags, which is.
+    fn tag(&mut self, tag: Box<InlineTag<Pending>>) -> Box<InlineTag<Vec<Block>>> {
+        let InlineTag {
+            span,
+            name,
+            content,
+            closed,
+        } = *tag;
+        let depth = self.depth + self.stack.len();
+        let content =
+            content.map(|Pending { range, tags }| self.sections.blocks(range, tags, true, depth));
+        Box::new(InlineTag {
+            span,
+            name,
+            content,
+            closed,
+        })
     }
 
     fn text_nodes(&self, text: &str, range: Range<usize>, html: bool, nodes: &mut Vec<Inline>) {
@@ -939,10 +967,10 @@ impl Builder<'_, '_> {
         }
     }
 
-    /// The indices of the inline tags within `range` of the section.
+    /// The indices of the inline tags within `range` of the document.
     fn tags_within(&self, range: Range<usize>) -> Range<usize> {
         let (start, end) = (self.offset + range.start, self.offset + range.end);
-        let ranges = &self.sections.tag_ranges;
+        let ranges = &self.tag_ranges;
         let first = ranges.partition_point(|r| r.start < start);
         let last = ranges.partition_point(|r| r.start < end);
         let last = (first..last).find(|&i| ranges[i].end > end).unwrap_or(last);
@@ -960,7 +988,7 @@ impl Builder<'_, '_> {
         let content = &self.sections.content.text;
         let mut from = 0;
         for i in self.tags_within(range) {
-            let tag_range = self.sections.tag_ranges[i].clone();
+            let tag_range = self.tag_ranges[i].clone();
             let placeholder = placeholder(tag_range.len());
             if let Some(found) = restored[from..].find(&placeholder) {
                 let found = from + found;
