@@ -1,0 +1,9 @@
+*** <p>Text with <b>bold</b>, <a href="{@docRoot}/x.html"
+ *  title='t' hidden>a link</a>, <br/> and <!-- a comment -->.
+ * Entities: &amp; &#64; &#x40; &bogus; &#xZZ; & 1 < 2 <3
+ * <pre>
+ *   indented @@code
+ *@* starred
+ * </pre>
+ * Escapes {@@code x} *@/ a@*b A} \u000a * escaped line
+ * {@index "a phrase" desc} {@inheritDoc java.util.List} {@docRoot x} {@systemProperty a.b-c}

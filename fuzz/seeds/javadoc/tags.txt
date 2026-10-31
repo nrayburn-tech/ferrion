@@ -1,0 +1,18 @@
+
+ * Returns the {@code first} element of {@link java.util.List#get(int) the list}.
+ * {@summary A summary with {@linkplain #m(String...) a link}.}
+ *
+ * @param <T> the type
+ * @param list the list, not {@literal null}
+ * @return the element, or {@value #DEFAULT}
+ * @throws IllegalArgumentException if {@code list} is empty
+ * @exception java.io.IOException never
+ * @see "The Spec"
+ * @see <a href="https://example.com">Example</a>
+ * @see java.base/java.lang.String##chars the chars
+ * @serialField name String the name
+ * @spec https://example.com/spec The Spec
+ * @since 1.0
+ * @deprecated use {@link #other()}
+ * @apiNote custom
+ * @ x

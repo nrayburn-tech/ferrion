@@ -56,9 +56,13 @@ jobs:
         run: |
           for target in $(cargo fuzz list); do
             mkdir -p "corpus/$target" "seeds/$target"
+            case "$target" in
+              javadoc | markdown) dict=doc_comments.dict ;;
+              *) dict=java.dict ;;
+            esac
             cargo fuzz run --sanitizer none --debug-assertions "$target" \
               "corpus/$target" "seeds/$target" -- \
-              -dict=java.dict -max_total_time="$FUZZ_SECONDS" -timeout=10
+              -dict="$dict" -max_total_time="$FUZZ_SECONDS" -timeout=10
           done
       - name: Upload crashing inputs
         if: failure()
