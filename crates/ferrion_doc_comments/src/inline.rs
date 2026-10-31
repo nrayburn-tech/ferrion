@@ -1,11 +1,15 @@
 //! Inline content, inline tags, and block tag arguments, read from a comment's [`Content`].
 //!
-//! Traditional comments are read entirely here. Markdown comments use this for their inline tags
-//! and block tag arguments, and leave the rest to the Markdown parser; in Markdown mode, HTML,
-//! entities, and `@` escapes aren't read, since Markdown handles HTML and has its own escapes.
+//! Traditional comments are read entirely here. Markdown comments use this to find their inline
+//! tags ([`Parser::markdown_tags`]) and to read block tag arguments, and leave the rest to the
+//! Markdown parser: in Markdown mode, HTML, entities, and `@` escapes aren't read, and the
+//! descriptive content of inline tags (a `{@link}` label, a `{@summary}`) is found but not read,
+//! since the Markdown parser reads it (see [`Pending`]).
 //!
 //! What javadoc does where the specification is silent was found by running javadoc 27 on small
 //! comments; the unit tests note each case.
+
+use std::ops::Range;
 
 use crate::content::Content;
 use crate::model::{
@@ -50,6 +54,48 @@ pub(crate) struct TagHead {
     pub end: usize,
 }
 
+/// The descriptive content of an inline tag in a Markdown comment (a `{@link}` label, a
+/// `{@summary}`), found but not yet read as Markdown: the range of the content it covers, from
+/// its first character that isn't whitespace to the closing `}`, and the inline tags in it.
+#[derive(Debug)]
+pub(crate) struct Pending {
+    pub range: Range<usize>,
+    pub tags: PendingTags,
+}
+
+/// Inline tags found in a Markdown comment, in order, with their content ranges, whose
+/// descriptive content is still to be read as Markdown.
+pub(crate) type PendingTags = Vec<(Range<usize>, Box<InlineTag<Pending>>)>;
+
+/// The descriptive content of inline tags, as each kind of comment reads it.
+pub(crate) trait TagBody: Sized {
+    /// Reads the content after the tag's name and arguments, through the closing `}`. Returns it
+    /// and whether the `}` was found.
+    fn read(parser: &mut Parser<'_>, depth: usize) -> (Self, bool);
+}
+
+/// Traditional comments: inline content.
+impl TagBody for Vec<Inline> {
+    fn read(parser: &mut Parser<'_>, depth: usize) -> (Self, bool) {
+        parser.skip_whitespace(false);
+        let (mut nodes, closed) = parser.content_until(Until::Brace, depth + 1, false);
+        parser.trim(&mut nodes);
+        (nodes, closed)
+    }
+}
+
+/// Markdown comments: content for the Markdown parser.
+impl TagBody for Pending {
+    fn read(parser: &mut Parser<'_>, depth: usize) -> (Self, bool) {
+        parser.skip_whitespace(false);
+        let start = parser.pos;
+        let (tags, close) = parser.markdown_tags(depth + 1, true);
+        let end = close.unwrap_or(parser.pos);
+        let range = start..end;
+        (Pending { range, tags }, close.is_some())
+    }
+}
+
 pub(crate) struct Parser<'a> {
     source: &'a str,
     content: &'a Content,
@@ -62,6 +108,12 @@ pub(crate) struct Parser<'a> {
     /// Recent searches by [`Parser::find`]: the pattern, where the search started, and what it
     /// found.
     found: Vec<(&'static str, usize, Option<usize>)>,
+    /// In a Markdown comment, the code spans and code blocks of the content, sorted and not
+    /// overlapping, where tags and braces aren't read.
+    code: &'a [Range<usize>],
+    /// The first of `code` that doesn't start before the last offset [`Parser::code_at`] was
+    /// asked about.
+    next_code: usize,
 }
 
 impl<'a> Parser<'a> {
@@ -75,6 +127,17 @@ impl<'a> Parser<'a> {
             markdown,
             diagnostics: Vec::new(),
             found: Vec::new(),
+            code: &[],
+            next_code: 0,
+        }
+    }
+
+    /// A parser for finding the inline tags of a Markdown comment whose code spans and code
+    /// blocks are at `code`, sorted and not overlapping.
+    pub fn markdown(source: &'a str, content: &'a Content, code: &'a [Range<usize>]) -> Parser<'a> {
+        Parser {
+            code,
+            ..Parser::new(source, content, true)
         }
     }
 
@@ -201,7 +264,11 @@ impl<'a> Parser<'a> {
                     && !(!self.markdown && self.peek_at(self.pos + 2) == Some('@')) =>
                 {
                     flush(self, &mut nodes, run);
-                    nodes.push(self.inline_tag(depth));
+                    let start = self.pos;
+                    match self.inline_tag(depth) {
+                        Some(tag) => nodes.push(Inline::Tag(tag)),
+                        None => nodes.push(Inline::Text(self.text_node(start, self.pos))),
+                    }
                     run = self.pos;
                     continue;
                 }
@@ -335,9 +402,9 @@ impl<'a> Parser<'a> {
         (nodes, false)
     }
 
-    /// Reads an inline tag at `{@`. Returns the `{@` as text when no name follows, as javadoc
-    /// does.
-    pub fn inline_tag(&mut self, depth: usize) -> Inline {
+    /// Reads an inline tag at `{@`. When no name follows, returns `None` after the `{@`, which is
+    /// text, as javadoc reads it.
+    fn inline_tag<D: TagBody>(&mut self, depth: usize) -> Option<Box<InlineTag<D>>> {
         let start = self.pos;
         self.pos += 2;
         let name_start = self.pos;
@@ -346,7 +413,7 @@ impl<'a> Parser<'a> {
         }
         if self.pos == name_start {
             self.report(DiagnosticKind::MissingTagName, self.span(start, name_start));
-            return Inline::Text(self.text_node(start, name_start));
+            return None;
         }
         let name = self.text_node(name_start, self.pos);
         let name_end = self.pos;
@@ -364,7 +431,7 @@ impl<'a> Parser<'a> {
                 self.span(start, name_end),
             );
         }
-        Inline::Tag(Box::new(InlineTag {
+        Some(Box::new(InlineTag {
             span: self.span(start, self.pos),
             name,
             content,
@@ -373,7 +440,11 @@ impl<'a> Parser<'a> {
     }
 
     /// Reads an inline tag's content after its name, through the closing `}`.
-    fn tag_content(&mut self, name: &Text, depth: usize) -> (InlineTagContent, bool) {
+    fn tag_content<D: TagBody>(
+        &mut self,
+        name: &Text,
+        depth: usize,
+    ) -> (InlineTagContent<D>, bool) {
         let name_span = name.span;
         match name.text.as_str() {
             "code" | "literal" => {
@@ -405,7 +476,7 @@ impl<'a> Parser<'a> {
                 if reference.is_none() {
                     self.report(DiagnosticKind::MissingArgument, name_span);
                 }
-                let (label, closed) = self.tag_inline_content(depth);
+                let (label, closed) = D::read(self, depth);
                 let content = if name.text == "link" {
                     InlineTagContent::Link { reference, label }
                 } else {
@@ -436,11 +507,11 @@ impl<'a> Parser<'a> {
                 if term.is_none() {
                     self.report(DiagnosticKind::MissingArgument, name_span);
                 }
-                let (description, closed) = self.tag_inline_content(depth);
+                let (description, closed) = D::read(self, depth);
                 (InlineTagContent::Index { term, description }, closed)
             }
             "return" | "summary" => {
-                let (description, closed) = self.tag_inline_content(depth);
+                let (description, closed) = D::read(self, depth);
                 let content = if name.text == "return" {
                     InlineTagContent::Return(description)
                 } else {
@@ -472,12 +543,67 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Reads the inline content of a tag such as `{@link}` or `{@summary}` through its `}`.
-    fn tag_inline_content(&mut self, depth: usize) -> (Vec<Inline>, bool) {
-        self.skip_whitespace(false);
-        let (mut nodes, closed) = self.content_until(Until::Brace, depth + 1, false);
-        self.trim(&mut nodes);
-        (nodes, closed)
+    // Markdown comments.
+
+    /// In a Markdown comment, reads to the end of the range, or with `brace`, through the `}` that
+    /// closes an inline tag, finding the inline tags on the way at nesting `depth`. Returns them,
+    /// with their ranges, and where the closing `}` is, if it was found.
+    ///
+    /// As javadoc 27 reads it: code spans and code blocks hide tags and braces; a backslash hides
+    /// itself and the two characters after it, whatever they are (so a backslash before `{@`, a
+    /// brace, or a backtick hides it, and so do two backslashes, or a backslash and a space, but
+    /// three don't); and other braces nest, as in `{@link C a {b} c}`.
+    pub fn markdown_tags(&mut self, depth: usize, brace: bool) -> (PendingTags, Option<usize>) {
+        let mut tags = Vec::new();
+        let mut braces = 0usize;
+        let mut escaped = 0;
+        while let Some(c) = self.peek() {
+            if escaped > 0 {
+                escaped -= 1;
+                self.pos += c.len_utf8();
+                continue;
+            }
+            if let Some(end) = self.code_at(self.pos) {
+                self.pos = end;
+                continue;
+            }
+            match c {
+                '\\' => escaped = 2,
+                '{' if self.peek_at(self.pos + 1) == Some('@') => {
+                    let start = self.pos;
+                    if let Some(tag) = self.inline_tag(depth) {
+                        tags.push((start..self.pos, tag));
+                    }
+                    continue;
+                }
+                '{' if brace => braces += 1,
+                '}' if brace && braces == 0 => {
+                    let close = self.pos;
+                    self.pos += 1;
+                    return (tags, Some(close));
+                }
+                '}' if brace => braces -= 1,
+                _ => {}
+            }
+            self.pos += c.len_utf8();
+        }
+        (tags, None)
+    }
+
+    /// The end of the code span or code block that starts at `offset`, if one does. One that
+    /// starts before `offset` is passed over, even if `offset` is inside it: a tag or an escape
+    /// read first hid its start, as javadoc 27 reads ``{@code a`b} c` d`` as a tag and text. The
+    /// offsets asked about only move forward, so asking takes linear time in all.
+    fn code_at(&mut self, offset: usize) -> Option<usize> {
+        while self
+            .code
+            .get(self.next_code)
+            .is_some_and(|r| r.start < offset)
+        {
+            self.next_code += 1;
+        }
+        let range = self.code.get(self.next_code)?;
+        (range.start == offset && range.end > offset).then_some(range.end.min(self.end))
     }
 
     /// Reads to the end of a tag that takes no more content, reporting any content before the

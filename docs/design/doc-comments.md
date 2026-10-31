@@ -95,18 +95,22 @@ fuzz targets check both.
   quoted text of `@see "..."`, the name and type of `@serialField`, and the URL of `@spec`. The
   body is the rest: the description, or `@see`'s label. Bodies leave out leading and trailing
   whitespace, so an empty description is an empty body.
-- **`Inline`** (traditional content, and the content of inline tags in both kinds of comment):
+- **`Inline`** (traditional content, and literal text in inline tags in both kinds of comment):
   text (one line at most), line breaks, `@` escapes, entities, HTML start and end tags, HTML
   comments, and inline tags. HTML elements aren't matched with their end tags, as in javadoc's own
   tree: start and end tags are separate nodes, so unbalanced HTML is representable, and checking it
   is for the linter. `<pre>` content is ordinary content, with its whitespace kept; javadoc 27 reads
   a line starting with `@` inside `<pre>` as a block tag, and so do the parsers.
-- **`InlineTag`:** span, name, `closed`, and an `InlineTagContent` by tag. `{@code}`, `{@literal}`,
-  `{@snippet}` bodies, and unknown tags hold literal text (text and line breaks). `{@link}` and
-  `{@linkplain}` hold an optional reference and a label; `{@value}` a format and a reference;
-  `{@index}` a term and a description; `{@inheritDoc}` an optional supertype; `{@summary}` and
-  `{@return}` inline content; `{@systemProperty}` a name; `{@snippet}` its attributes and inline
-  body. Snippet markup comments (`// @highlight ...`) are left in the body's text.
+- **`InlineTag<D>`:** span, name, `closed`, and an `InlineTagContent<D>` by tag. `{@code}`,
+  `{@literal}`, `{@snippet}` bodies, and unknown tags hold literal text (text and line breaks).
+  `{@link}` and `{@linkplain}` hold an optional reference and a label; `{@value}` a format and a
+  reference; `{@index}` a term and a description; `{@inheritDoc}` an optional supertype;
+  `{@summary}` and `{@return}` a description; `{@systemProperty}` a name; `{@snippet}` its
+  attributes and inline body. Snippet markup comments (`// @highlight ...`) are left in the body's
+  text. `D` is the type of the *descriptive content*, the labels and descriptions: `Vec<Inline>` in
+  a traditional comment (the default, `InlineTag`), and `Vec<markdown::Block>` in a Markdown
+  comment (`InlineTag<Vec<Block>>`), since javadoc 27 renders it as Markdown there. Literal text
+  is `Vec<Inline>` in both, as javadoc reads it as written in both.
 - **`Reference`:** the module, the qualifier (a `RefType`: a qualified name, type arguments, `[]`s,
   and `...`), the member with its parameters (each a type and an optional name), and a `##`
   fragment, all with spans. `Reference::types` lists every type it names, in source order, for
@@ -115,8 +119,8 @@ fuzz targets check both.
   number and tightness; the items of a tight list hold paragraphs too), fenced and indented code
   blocks, HTML blocks, thematic breaks, GFM tables, and link reference definitions. Markdown
   `Inline`s: text, code spans, emphasis, strong emphasis, links, images, inline HTML, soft and hard
-  breaks, and inline tags. A link's target is a URL or a program element (`LinkTarget::Element`,
-  with a `Reference`).
+  breaks, and inline tags (with Markdown descriptive content). A link's target is a URL or a
+  program element (`LinkTarget::Element`, with a `Reference`).
 - **`Diagnostic`:** a kind and a span. Kinds cover unclosed inline tags, missing tag names, malformed
   HTML, entities, arguments, and references, missing arguments, unexpected content, and nesting
   beyond the limit. Unknown tags aren't diagnostics: custom tags are legitimate, and whether a tag
@@ -152,11 +156,15 @@ enabled (the dialect JEP 467 specifies), in four steps:
 
 1. **Code.** The whole content is parsed once as Markdown to find code spans and code blocks, where
    tags aren't recognized.
-2. **Inline tags.** Every `{@` outside code, and not escaped as `\{@`, is read as an inline tag with
-   the traditional parser in Markdown mode (no HTML, entities, or `@` escapes). A tag runs to its
-   matching `}`, across lines and Markdown structure, and to the end of the comment when unclosed,
-   as in javadoc 27. Tags are found before code spans that start inside them: javadoc 27 reads
-   ``{@code a`b} c` `` as a tag followed by `` c` ``, and so does the parser.
+2. **Inline tags.** The content is scanned once, left to right, for `{@`, with the traditional
+   parser in Markdown mode (no HTML, entities, or `@` escapes). Code spans and code blocks (from
+   step 1) hide tags. A backslash hides itself and the next *two* characters, whatever they are, as
+   javadoc 27 reads it: `\{@code x}`, `\\{@code x}`, `\x{@code x}`, and `\*{@code x}` aren't tags,
+   but `\\\{@code x}` and `\xy{@code x}` are. A tag runs to its matching `}`, across lines and
+   Markdown structure, and to the end of the comment when unclosed, as in javadoc 27. Tags are
+   found before code spans that start inside them: javadoc 27 reads ``{@code a`b} c` `` as a tag
+   followed by `` c` ``, and so does the parser; a code span or code block that starts inside a
+   tag or an escape hides nothing.
 3. **Block tags** start at an `@` that begins a line, after any whitespace, outside code and inline
    tags. HTML blocks don't hide them: javadoc 27 ends the description at an `@param` line inside a
    `<div>`. `\@` and `&#064;` are a literal `@`.
@@ -167,7 +175,39 @@ enabled (the dialect JEP 467 specifies), in four steps:
    character. That keeps every offset and stands in for the tag: emphasis and links form around it
    as they would around a word. The tree is then built from the parser's events, with the
    placeholders replaced by the tags. Where the structure has no room for a tag (inside a link
-   destination, say), its source text is put back instead.
+   destination or a code span, say), its source text is put back instead.
+
+### Inline tag content
+
+javadoc 27 reads an inline tag's literal text as written in a Markdown comment, as in a traditional
+one, and its descriptive content as Markdown. The parser does the same:
+
+- **Literal text** (`{@code}`, `{@literal}`, snippet bodies, and unknown tags) is text and line
+  breaks, read to the matching `}` as in a traditional comment. Nothing hides a brace in it:
+  `` {@code a `}` b} `` is `` a ` ``, and `{@code a\}b}` is `a\`.
+- **Descriptive content** (the label of `{@link}` and `{@linkplain}`, and the description of
+  `{@index}`, `{@summary}`, and `{@return}`) is Markdown blocks. `{@link List the *list*}` renders
+  the label with emphasis, a label or summary can hold headings, lists, and code blocks, and an
+  `{@index}` description shows in the search index with its Markdown resolved. The index term is
+  read as written.
+- **Its own document.** The content is a Markdown document from its first character that isn't
+  whitespace or a line break (so a summary starting on the next line, indented by four, is a
+  paragraph) to the closing `}`, with later lines keeping their indentation (so an indented code
+  block after a blank line is one). Emphasis doesn't pair across the braces
+  (`*a {@link List b* c} d*` is emphasis around the tag, and the label is `b* c`), and the
+  section's link reference definitions don't apply in it (javadoc 27 reports "reference not
+  found" for `[a]` in a label when `[a]` is defined in the description); its own do.
+- **Finding the `}`.** Braces nest (`{@link List a {b} c}`). Code spans and code blocks hide
+  braces and tags (`` {@link List a `}` b} ``, and fenced and indented code blocks, as javadoc 27
+  reads them), so a code span can make a tag unclosed. HTML, links, and autolinks don't. A
+  backslash hides itself and the next two characters, as at the top level: `{@link List a \} b}`
+  has the label `a } b` (Markdown reads the `\}` as `}`), `\\}` and `\x}` hide the `}` too, and
+  `\\\}` doesn't. Inside code spans, backslashes are text, as in CommonMark.
+- **Nesting.** Inline tags nest in descriptive content, which is Markdown at every level:
+  `{@summary a {@link List *b*}}` has a link whose label has emphasis.
+
+Each case is a unit test in `markdown/tests/tag_content.rs`, named after the javadoc observation it
+records.
 
 **Links to program elements** are reference links (`[List]`, `[List][]`, `[a list][List]`) whose
 label has no link reference definition and reads as a reference. javadoc 27 links `[List]`,
@@ -185,12 +225,17 @@ and Markdown blocks and inlines nest at most `MAX_NESTING` (32) deep; deeper con
 with a `NestingTooDeep` diagnostic: an inline tag as literal text, a type argument as a malformed
 reference, and Markdown content as part of the deepest container. The tree is built from the
 Markdown parser's events with an explicit stack, and the depth limit also bounds the recursion of
-dropping, comparing, and printing the tree.
+dropping, comparing, and printing the tree. Markdown inside an inline tag's descriptive content
+counts toward the limit with the Markdown around the tag, so Markdown nesting along any path of the
+tree is limited as a whole; reading the descriptive content of nested tags recurses once per tag,
+which the limit on inline tags bounds.
 
 Reading is linear in the comment's length. A malformed HTML tag fails before its attribute values'
 content is read, and searches for closing quotes and `-->` are cached, so many unclosed tags don't
-make reading quadratic or exponential. Unit tests and the fuzz targets' 10-second timeout check
-this.
+make reading quadratic or exponential. In a Markdown comment, each tag's descriptive content is a
+Markdown document, which holds the tags nested in it as placeholders, so a character is read as
+Markdown at most once per level of tags around it, which the nesting limit bounds. Unit tests and
+the fuzz targets' 10-second timeout check this.
 
 ## Fuzzing
 
@@ -209,10 +254,26 @@ are in order; and parsing is deterministic. Reduced failures are kept in
   their line.
 - **Identifiers** in references and parameter names are Unicode letters, digits, `_`, and `$`, an
   approximation of Java's identifier characters that leaves out identifier-ignorable characters.
-- **Inline tag content in Markdown comments** (the label of `{@link X the *label*}`, the text of
-  `{@summary}`) is read as in traditional comments, as text and nested tags. javadoc 27 reads it as
-  Markdown, rendering `*label*` as emphasis. The model's inline tag content is traditional
-  `Inline`s, so representing it would need Markdown content in inline tags.
+- **Code spans that hide tags and braces** in Markdown comments are CommonMark's, from a parse of
+  the whole comment. javadoc 27 finds them with a scan of its own, which differs in corner cases:
+  - A backtick string with no match of its length is matched in part: in
+    ``` {@link List a ``b} c` d} ``` and ``` a ``b {@code x} c` d ```, javadoc 27 reads the
+    single backticks' content as code spans that hide the `}` and the tag, though Markdown then
+    renders them as text. The parser reads no code span there.
+  - A code span that starts on an ATX heading's line continues onto the next line, and one that
+    reaches a line starting an HTML block (`<div>`) continues through it; CommonMark ends both at
+    the end of the block, and so does the parser.
+  - Three backslashes before a backtick (``` {@link List a \\\`b} c` d} ```): javadoc's escape
+    rule hides the backslashes, so the backtick begins a code span that hides the `}`; in
+    CommonMark the third backslash escapes the backtick, so the parser reads no code span.
+  - A code block whose opening fence is inside an inline tag: javadoc 27 doesn't see that fence,
+    so a later fence line opens a code block instead of closing one. The parser pairs the
+    fences as CommonMark does over the whole comment, and a code block that starts inside a tag
+    hides nothing.
+- **Tags in code spans:** where a code span begins after an escape hid its backtick for javadoc
+  27 but not for CommonMark (`` a \x`b {@code x}` c ``), the tag is found, and Markdown then
+  makes a code span around it; javadoc 27 renders the tag inside the code span. The parser puts
+  the tag's source text in the code span's text instead.
 - **Markdown links with array references written with plain brackets,** such as `[Object\[\]]`:
   javadoc 27 treats the label as a reference and reports "reference not found"; the parser doesn't
   read it as a reference (a type in that position has no `[]`), so it stays text.
