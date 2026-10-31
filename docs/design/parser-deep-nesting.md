@@ -100,7 +100,10 @@ Structures that can't be flat get a hand-written `Drop` that frees with an expli
   parse the operand once, then close the nodes. `a ? b : c ? d : e` loops on the else branch.
 - **Recursion** remains for parentheses, blocks, statements nested in statements, lambdas,
   anonymous and local classes, array initializers, switch bodies, annotation values, and type
-  arguments. Each recursive entry point calls `ensure_stack` and increments a depth counter.
+  arguments. Each recursive entry point calls `ensure_stack` and increments a depth counter. An
+  entry point other parts of the grammar call (an expression, a block, a switch block, a class
+  body, a pattern) counts its own level, and its callers don't count another, so each construct
+  in the source takes one level of the limit.
 - **The nesting limit:** at the limit, the parser reports `NestingTooDeep` at the token that would
   go deeper, skips to the matching closing delimiter (an iterative scan of the tokens), and puts the
   skipped tokens in an `ERROR` node. Other parts of the construct at the limit that would go deeper

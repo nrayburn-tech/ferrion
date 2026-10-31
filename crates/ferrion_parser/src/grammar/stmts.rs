@@ -100,8 +100,13 @@ fn block_statements(p: &mut Parser<'_>, stop: TokenSet) {
     }
 }
 
-/// A statement where one must follow, as a body: nested one level deeper.
+/// A statement where one must follow, as a body: nested one level deeper. A block body is one
+/// level, not two: the block counts its own nesting.
 fn substatement(p: &mut Parser<'_>) {
+    if p.at(LBrace) {
+        block(p);
+        return;
+    }
     p.nested(|p| {
         statement(p, Context::Substatement);
         Some(())
@@ -884,10 +889,8 @@ fn rule_body(p: &mut Parser<'_>, switch: Switch) {
             substatement(p);
         }
         _ if at_local_decl(p) => {
-            p.nested(|p| {
-                local_decl(p, Context::Substatement);
-                Some(())
-            });
+            // Not nested itself: a local class's body and an initializer count their own.
+            local_decl(p, Context::Substatement);
         }
         _ => {
             if statement_expr(p).is_none() {

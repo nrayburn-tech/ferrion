@@ -32,12 +32,13 @@ const PENDING: &[&str] = &[];
 /// many. Every construct takes one, as the design counts them ("10,000 nested constructs"), unless
 /// it's listed here with a reason.
 const LEVELS: &[(&str, usize)] = &[
-    // Each repetition nests an expression (the field's initializer) and a class body, and the
-    // body counts twice: `NewExpr` nests `class_body`, which nests itself. 2 if that's changed.
-    ("anonymous_classes", 3),
-    // Each repetition nests the rule's expression and the switch block, and the block counts
-    // twice: `SwitchExpr` nests `switch_block`, which nests itself. 2 if that's changed.
-    ("switch_expressions", 3),
+    // Each repetition nests an expression (the field's initializer) and a class body.
+    ("anonymous_classes", 2),
+    // Each repetition nests the rule's expression and the switch block.
+    ("switch_expressions", 2),
+    // Each repetition nests a block (the lambda's body) and an expression (the local's
+    // initializer).
+    ("lambda_blocks", 2),
 ];
 
 /// Nesting patterns that report `NestingTooDeep` more than once past the limit, against the
@@ -97,6 +98,10 @@ patterns! {
         field("Object", nest("new Object() { Object f = ", "null", "; }", n))
     };
     lambdas: Nesting, |n| field("Object", nest("() -> ", "1", "", n));
+    lambda_blocks: Nesting, |n| {
+        field("Runnable", nest("() -> { Runnable r = ", "null", "; }", n))
+    };
+    if_blocks: Nesting, |n| method(nest("if (a) { ", ";", "}", n));
     array_initializers: Nesting, |n| field("Object[]", nest("{", "", "}", n));
     generic_types: Nesting, |n| format!("class A {{ {} x; }}\n", nest("List<", "String", ">", n));
     conditionals: Nesting, |n| field("int", nest("a ? ", "1", " : 2", n));
