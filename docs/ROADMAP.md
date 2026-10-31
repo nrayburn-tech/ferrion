@@ -63,8 +63,9 @@ foundations  lexer     parser   │
   - a pull-request template with a provenance checklist item.
 - **Corpus tooling:** `tools/corpus` fetches a pinned list of open-source projects, by commit hash,
   at test time. Nothing it fetches is committed.
-  - the list spans Java 8 through the latest GA release, and includes projects that use Lombok and
-    projects with `@formatter:off` markers;
+  - the list covers each primary release (the LTS releases from Java 8 and the latest GA release,
+    see SCOPE.md), and includes projects that use Lombok and projects with `@formatter:off`
+    markers;
   - test sources are included;
   - for each project and source set, it records source roots, classpath, Java version, and JDK, and
     fetches the dependency jars.
@@ -515,3 +516,7 @@ These apply in every phase:
 - **Language updates:** each new GA Java release is a work item covering the lexer, parser, version
   check, formatter, type checker, and oracle updates. There is no fixed deadline. Language features
   that are still in preview are tracked but not implemented.
+- **Primary releases:** testing focuses on the LTS releases from Java 8 and the latest GA release
+  (SCOPE.md). Test matrices, the corpus, javac comparisons, and fuzzing run at these;
+  `ferrion_java_version::PRIMARY_RELEASES` lists them. A new GA release replaces the previous
+  latest in that list unless the previous one is an LTS release.

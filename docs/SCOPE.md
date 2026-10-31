@@ -40,6 +40,12 @@ Goals are strictly ordered. When two goals conflict, the higher one wins.
 
 - **Java versions:** Java 8 through the latest generally available (GA) release. A Java version
   outside this range is a usage error.
+- **Primary releases:** the long-term support (LTS) releases from Java 8 (8, 11, 17, 21, and 25)
+  and the latest GA release. Test matrices, the corpus, javac comparisons, and fuzzing focus on
+  them. Every release in the supported range is still accepted and version-checked; the others are
+  tested where a language feature first appears in them (records in 16, for example). When a new
+  GA release ships, it becomes the latest, and the previous latest stays primary only if it is an
+  LTS release.
 - **Preview features:** not supported. A feature is supported once it ships as final (non-preview)
   in a GA release. Code that uses preview syntax gets a specific "preview feature, not supported"
   message rather than a generic syntax error.
@@ -553,8 +559,9 @@ These are out of scope for the first releases:
 - **Agreement with javac** is measured, not assumed to be perfect. Disagreements are allowed only as
   a documented, categorized list (javac error recovery, javac quirks, deliberate departures). Code
   where javac itself reports errors is excluded.
-- **Real-world corpus:** CI runs against a pinned set of real open-source projects spanning Java 8
-  through the latest GA release, including their test sources. For each project, the corpus records
+- **Real-world corpus:** CI runs against a pinned set of real open-source projects that target each
+  primary release (the LTS releases from Java 8 and the latest GA release), including their test
+  sources. For each project, the corpus records
   source roots, classpath, Java version, and JDK, and fetches its dependency jars.
 - **Formatter properties:** the four safety properties are checked in CI across the corpus and
   javac's own test inputs.
