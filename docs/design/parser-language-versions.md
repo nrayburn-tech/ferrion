@@ -63,55 +63,111 @@ file and the language server can show them distinctly.
 
 ### The feature table
 
-Each language feature that needs a release later than 8 is a row in one table, `version::Feature`,
-used by the version check and by later phases:
+Each language feature that needs a release later than 8 is a row in one table, `version::FEATURES`,
+indexed by `version::Feature` and used by the version check and by later phases:
 
 - **status:** final in release N, or preview;
 - **anchor:** the token the diagnostic points at, chosen to match javac's position;
 - **javac phase:** whether javac reports it while parsing, or in a later phase (see
   [syntax errors](parser-error-recovery.md#reported-earlier-than-javac));
+- **javac's diagnostic:** its code, and the feature name among its arguments;
 - **name:** the words used in the message.
 
-Rows checked against the oracle so far (javac 27; the anchor is javac's diagnostic position):
+The rows, each checked with the oracle (javac 27) at every release on an input in
+`crates/ferrion_parser/tests/version/`, which has javac's output beside it. The anchor is javac's
+diagnostic position; a test checks that this table and `version::FEATURES` agree.
 
 | Feature | Needs | Anchor | javac phase |
 | --- | --- | --- | --- |
-| modules (`module-info.java`) | 9 | `module` | parse |
+| modules | 9 | `module`, after any annotations and `open` | parse |
 | private interface methods | 9 | the `(` after the method's name | parse |
-| variables in try-with-resources (`try (r)`) | 9 | the `)` after the variable | parse |
-| diamond with anonymous classes | 9 | | later |
+| variables as try-with-resources resources | 9 | the token after the variable, `;` or `)` | parse |
+| '<>' with anonymous classes | 9 | the `<` | later (`cant.apply.diamond.1`) |
+| 'var' in lambda parameters | 11 | the parameter's name, at 10 only | parse |
 | switch expressions | 14 | `switch` | parse |
-| switch rules (`case ... ->`) | 14 | `->` | parse |
-| multiple case labels (`case 1, 2`) | 14 | the `,` | parse |
+| switch rules ('case ->') | 14 | `->` | parse |
+| multiple case labels | 14 | the first `,` in a switch expression, else the second label | parse |
 | text blocks | 15 | the text block | parse |
+| the '\s' escape sequence | 15 | the `s` | parse (javac calls it text blocks) |
 | records | 16 | `record` | parse |
-| pattern matching in `instanceof` | 16 | the binding's name | parse |
-| local enums | 16 | `enum` | parse ("enum classes must not be local") |
-| local interfaces, static members of inner classes | 16 | | later |
-| sealed classes | 17 | `sealed` or `non-sealed` | parse |
-| patterns in switch | 21 | the pattern | parse |
+| patterns in 'instanceof' | 16 | the binding's name | parse |
+| local enums | 16 | `enum` | parse (`local.enum`) |
+| local interfaces | 16 | `interface` | later (`intf.not.allowed.here`) |
+| static members of inner classes | 16 | a field's or method's name, `static`, or a type's keyword | later |
+| sealed classes | 17 | `sealed`, or the `non` of `non-sealed` | parse |
+| 'permits' clauses | 17 | the end of the token before `permits` | parse (`'{' expected`) |
+| patterns in switch | 21 | the pattern, or `default` in `case null, default` | parse |
+| 'case null' | 21 | `null` | later |
 | record patterns | 21 | the `(` | parse |
-| unnamed variables (`_`) | 22 | `_` | parse |
-| module imports (`import module`) | 25 | `module` | parse |
-| implicitly declared classes | 25 | the first member | parse |
-| flexible constructor bodies | 25 | | later |
-| primitive types in patterns | preview | | later |
+| unnamed variables ('_') | 22 | `_` | parse |
+| module imports | 25 | `module` | parse |
+| top-level methods and fields (implicitly declared classes) | 25 | the first, after its modifiers | parse |
+| statements before 'super()' or 'this()' | 25 | the call's `(` | later |
+| primitive types in patterns | preview | the type | later (`preview.feature.disabled.plural`) |
 
-The table is completed during implementation, one row per feature from the JLS and JEPs, each with
-an oracle input. javac reports each feature once per file, at its first use (three `case ->` rules
-in a Java 8 file give one error). Ferrion reports every use, which is more useful in an editor; the
-comparison with javac takes the first.
+javac reports each feature once per file, at its first use (three `case ->` rules in a Java 8 file
+give one error). Ferrion reports every use, which is more useful in an editor; the comparison with
+javac takes the first. javac also reports at most one error at a position, so where two features
+meet at one token (`case null, default` at 13 is both multiple labels and a pattern in a switch),
+the version check reports the one javac reports first, first.
+
+Some rows need a note:
+
+- **`var` in lambda parameters:** below 10, `var` is a type's name there, and the parameter only
+  gets the restricted-name warning below. From 11, `var` can't be mixed with declared types,
+  `(var a, int b)`, which javac 8 and 9 accept; the version check reports that
+  (`invalid.lambda.parameter.declaration` at the `(`). Mixing `var` with inferred parameters,
+  `(var a, b)`, is reported by the grammar at every release; at 10 javac reports only the
+  feature, and this one release is a listed difference.
+- **`permits` clauses:** below 17 `permits` isn't a keyword to javac, which expects the class body
+  after the name and reports `'{' expected` at the end of the token before `permits`, whether or
+  not the class is `sealed`. The tree has the clause at every release, and the version check
+  reports this row at javac's position, so no second release-dependent reading is needed. The
+  grammar's own error for a `permits` clause on a class that isn't sealed follows it.
+- **Local enums:** javac 27 accepts an annotated local enum, or one with modifiers, below 16; the
+  version check reports every local enum.
+- **Static members of inner classes:** inner classes are non-static member classes of classes,
+  enums, and records, local classes, and anonymous classes (enum constant bodies included). A
+  `static final` field of a primitive type or `String` with an initializer may be a constant
+  variable, which was always allowed, and whether it is needs names resolved; it isn't reported.
+- **The `\s` escape:** javac reports it with the text blocks feature. Unicode escapes are
+  translated first, so `\u005cs` is one too.
+- **Not decidable from syntax:** primitive patterns decided by the selector's or operand's type
+  (`switch` on a `long`, `i instanceof int j` with an `int` `i`), unconditional patterns in
+  `instanceof` (21), and `case` on a qualified enum constant (21) are left to semantic analysis.
+
+javac's older readings add errors the version check doesn't reproduce: below 16, a local record is
+read as a variable of type `record` (a warning at its name and two `';' expected`), and a member
+record as a method whose result type is `record` (a warning at `record`). They are listed as
+differences in the version check's tests.
 
 ### Restricted identifiers
 
 Some identifiers became restricted at a release: `var` (10), `yield` (14), `record` (16), `sealed`
-and `permits` (17) can't name a type, and `_` became a keyword at 9 and an unnamed variable at 22.
-These checks are in the version check too, since they depend on the release:
+and `permits` (17) can't name a type (`version::RestrictedName`), and `_` became a keyword at 9 and
+an unnamed variable at 22. `when` and `module` aren't restricted. These checks are in the version
+check too, since they depend on the release. At releases where the use is still allowed, javac
+warns; Ferrion produces the same warnings, only to compare them with javac's, and never shows
+them to users. At releases where it isn't, it is an error. Observed with the oracle:
 
-- at releases where the use is still allowed, javac warns (`var` as a type name at 8, `_` as an
-  identifier at 8, `yield(1)` at 13). Ferrion produces the same warnings, only to
-  compare them with javac's, and never shows them to users;
-- at releases where it isn't, it is an error, at javac's anchor (the declared name, or the `_`).
+| Use | Below the release | From the release |
+| --- | --- | --- |
+| a type's or type parameter's name (`class var`) | warning at the name | error at the name (`restricted.type.not.allowed`) |
+| a local variable's type (`var x`, `yield x`, `final sealed s`) | warning at the first variable's name | `var`: none; `var[] a` or `var a[]`: `.array` at `var`; `var a, b`: `.compound` at `var`; the others: `.here` at the type |
+| any other type (a field, parameter, result, cast, `catch`, type argument, `instanceof`) | warning at the type | error at the type (`restricted.type.not.allowed.here`) |
+| `var` as a lambda parameter's type | warning at `var` | at 10 the feature above; from 11, nothing |
+| an unqualified call `yield(...)` | warning at `yield` | error at `yield` (`invalid.yield`); at the start of a statement it is a `yield` statement |
+
+`var` in a record pattern and after `new` (an error after parsing), and a qualified name ending in
+`var`, get nothing while parsing. For `sealed int x;`, where `sealed` is read as a field's type,
+the restricted-type error comes before the grammar's `<identifier> expected`, as with javac.
+
+`_` is reported at every use, by where it is:
+
+| Where | 8 | 9 to 21 | 22 and later |
+| --- | --- | --- | --- |
+| a local variable, a lambda or `catch` parameter, a pattern variable, or a nested `_` pattern | warning | unnamed variables need 22 | allowed |
+| anywhere else, `case _` included | warning | error (`underscore.as.identifier`) | error (`use.of.underscore.not.allowed.non.variable`) |
 
 `var` and `_` are identifiers in the tree at every release. Whether `var x = 1;` declares an
 inferred local (10+) or a variable of a type named `var` (8 and 9) is semantic analysis's decision,
@@ -119,9 +175,10 @@ using the tree's release.
 
 ### Severity that depends on the release
 
-A `;` before the first import is a warning ("extraneous semicolon") at releases 8 through 20, and an
-error from 21. The parser reports the `;`, and the diagnostic's severity comes from the release, in
-the version module, with the other release-dependent rules.
+A `;` before an import is a warning ("extraneous semicolon") at releases 8 through 20, and an error
+from 21; javac reports the first `;` of each run. The tree keeps the `;` as a token of the
+compilation unit, and the version check reports it with the other release-dependent rules. A `;`
+after the last import is an empty declaration, at every release.
 
 ### Messages
 
