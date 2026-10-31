@@ -1,0 +1,87 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 20:
+  ERROR compiler.err.feature.not.supported.in.source.plural 159..159 @159 [compiler.misc.feature.pattern.switch, 20, 21] patterns in switch statements are not supported in -source 20
+  ERROR compiler.err.feature.not.supported.in.source.plural 198..198 @198 [compiler.misc.feature.deconstruction.patterns, 20, 21] deconstruction patterns are not supported in -source 20
+diagnostics at 21:
+  none
+tree at 21:
+  COMPILATION_UNIT 19..352 @19 "class A {\n  int f(Object o, int i) {\n   "…
+    CLASS 19..352 @19 "class A {\n  int f(Object o, int i) {\n   "…
+      MODIFIERS -1..-1 @-1
+      METHOD 31..319 @35 "int f(Object o, int i) {\n    switch (i) "…
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 31..34 @31 "int"
+        VARIABLE 37..45 @44 "Object o"
+          MODIFIERS -1..-1 @-1
+          IDENTIFIER 37..43 @37 "Object"
+        VARIABLE 47..52 @51 "int i"
+          MODIFIERS -1..-1 @-1
+          PRIMITIVE_TYPE 47..50 @47 "int"
+        BLOCK 54..319 @54 "{\n    switch (i) {\n      case 1: case 2:"…
+          SWITCH 60..122 @60 "switch (i) {\n      case 1: case 2: break"…
+            PARENTHESIZED 67..70 @67 "(i)"
+              IDENTIFIER 68..69 @68 "i"
+            CASE 79..86 @79 "case 1:"
+              CONSTANT_CASE_LABEL 84..85 @84 "1"
+                INT_LITERAL 84..85 @84 "1"
+            CASE 87..101 @87 "case 2: break;"
+              CONSTANT_CASE_LABEL 92..93 @92 "2"
+                INT_LITERAL 92..93 @92 "2"
+              BREAK 95..101 @95 "break;"
+            CASE 108..116 @108 "default:"
+              DEFAULT_CASE_LABEL 108..115 @108 "default"
+          VARIABLE 127..301 @131 "int y = switch (o) {\n      case Integer "…
+            MODIFIERS -1..-1 @-1
+            PRIMITIVE_TYPE 127..130 @127 "int"
+            SWITCH_EXPRESSION 135..300 @135 "switch (o) {\n      case Integer n when n"…
+              PARENTHESIZED 142..145 @142 "(o)"
+                IDENTIFIER 143..144 @143 "o"
+              CASE 154..185 @154 "case Integer n when n > 0 -> n;"
+                PATTERN_CASE_LABEL 159..168 @159 "Integer n"
+                  BINDING_PATTERN 159..168 @159 "Integer n"
+                    VARIABLE 159..168 @167 "Integer n"
+                      MODIFIERS -1..-1 @-1
+                      IDENTIFIER 159..166 @159 "Integer"
+                GREATER_THAN 174..179 @176 "n > 0"
+                  IDENTIFIER 174..175 @174 "n"
+                  INT_LITERAL 178..179 @178 "0"
+                IDENTIFIER 183..184 @183 "n"
+              CASE 192..218 @192 "case R(int x, var z) -> x;"
+                PATTERN_CASE_LABEL 197..212 @197 "R(int x, var z)"
+                  DECONSTRUCTION_PATTERN 197..212 @197 "R(int x, var z)"
+                    IDENTIFIER 197..198 @197 "R"
+                    BINDING_PATTERN 199..204 @199 "int x"
+                      VARIABLE 199..204 @203 "int x"
+                        MODIFIERS -1..-1 @-1
+                        PRIMITIVE_TYPE 199..202 @199 "int"
+                    BINDING_PATTERN 206..211 @206 "var z"
+                      VARIABLE 206..211 @210 "var z"
+                        MODIFIERS -1..-1 @-1
+                        VAR_TYPE 206..209 @206 "var"
+                IDENTIFIER 216..217 @216 "x"
+              CASE 225..263 @225 "case String s -> { yield s.length(); }"
+                PATTERN_CASE_LABEL 230..238 @230 "String s"
+                  BINDING_PATTERN 230..238 @230 "String s"
+                    VARIABLE 230..238 @237 "String s"
+                      MODIFIERS -1..-1 @-1
+                      IDENTIFIER 230..236 @230 "String"
+                BLOCK 242..263 @242 "{ yield s.length(); }"
+                  YIELD 244..261 @244 "yield s.length();"
+                    METHOD_INVOCATION 250..260 @258 "s.length()"
+                      MEMBER_SELECT 250..258 @251 "s.length"
+                        IDENTIFIER 250..251 @250 "s"
+              CASE 270..294 @270 "case null, default -> 0;"
+                CONSTANT_CASE_LABEL 275..279 @275 "null"
+                  NULL_LITERAL 275..279 @275 "null"
+                DEFAULT_CASE_LABEL 281..288 @281 "default"
+                INT_LITERAL 292..293 @292 "0"
+          RETURN 306..315 @306 "return y;"
+            IDENTIFIER 313..314 @313 "y"
+      RECORD 322..350 @322 "record R(int x, Object z) {}"
+        MODIFIERS -1..-1 @-1
+        VARIABLE 331..336 @335 "int x"
+          MODIFIERS -1..-1 @-1
+          PRIMITIVE_TYPE 331..334 @331 "int"
+        VARIABLE 338..346 @345 "Object z"
+          MODIFIERS -1..-1 @-1
+          IDENTIFIER 338..344 @338 "Object"

@@ -1,0 +1,29 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 8:
+  ERROR compiler.err.feature.not.supported.in.source.plural 27..27 @27 [compiler.misc.feature.sealed.classes, 8, 17] sealed classes are not supported in -source 8
+  ERROR compiler.err.expected 45..45 @45 ['{'] '{' expected
+  ERROR compiler.err.feature.not.supported.in.source.plural 101..101 @101 [compiler.misc.feature.text.blocks, 8, 15] text blocks are not supported in -source 8
+diagnostics at 14:
+  ERROR compiler.err.feature.not.supported.in.source.plural 27..27 @27 [compiler.misc.feature.sealed.classes, 14, 17] sealed classes are not supported in -source 14
+  ERROR compiler.err.expected 45..45 @45 ['{'] '{' expected
+  ERROR compiler.err.feature.not.supported.in.source.plural 101..101 @101 [compiler.misc.feature.text.blocks, 14, 15] text blocks are not supported in -source 14
+diagnostics at 15:
+  ERROR compiler.err.feature.not.supported.in.source.plural 27..27 @27 [compiler.misc.feature.sealed.classes, 15, 17] sealed classes are not supported in -source 15
+  ERROR compiler.err.expected 45..45 @45 ['{'] '{' expected
+diagnostics at 16:
+  ERROR compiler.err.feature.not.supported.in.source.plural 27..27 @27 [compiler.misc.feature.sealed.classes, 16, 17] sealed classes are not supported in -source 16
+  ERROR compiler.err.expected 45..45 @45 ['{'] '{' expected
+diagnostics at 17:
+  none
+tree at 17:
+  COMPILATION_UNIT 27..128 @27 "sealed interface S permits F {}\nfinal cl"…
+    INTERFACE 27..58 @34 "sealed interface S permits F {}"
+      MODIFIERS 27..33 @27 "sealed"
+      IDENTIFIER 54..55 @54 "F"
+    CLASS 59..128 @65 "final class F implements S {\n  String t "…
+      MODIFIERS 59..64 @59 "final"
+      IDENTIFIER 84..85 @84 "S"
+      VARIABLE 90..126 @97 "String t = \"\"\"\n      text\n      \"\"\";"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 90..96 @90 "String"
+        STRING_LITERAL 101..125 @101 "\"\"\"\n      text\n      \"\"\""

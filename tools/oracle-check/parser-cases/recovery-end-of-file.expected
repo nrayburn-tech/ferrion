@@ -1,0 +1,23 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  ERROR compiler.err.unclosed.str.lit 38..38 @38 [] unclosed string literal
+  ERROR compiler.err.premature.eof 79..79 @79 [] reached end of file while parsing
+tree at 27:
+  COMPILATION_UNIT 0..80 @0 "class A {\n  void f() {\n    String s = \"u"…
+    CLASS 0..80 @0 "class A {\n  void f() {\n    String s = \"u"…
+      MODIFIERS -1..-1 @-1
+      METHOD 12..80 @17 "void f() {\n    String s = \"unclosed;\n   "…
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 12..16 @12 "void"
+        BLOCK 21..80 @21 "{\n    String s = \"unclosed;\n    if (true"…
+          VARIABLE 27..38 @34 "String s = "
+            MODIFIERS -1..-1 @-1
+            IDENTIFIER 27..33 @27 "String"
+            ERRONEOUS 38..38 @38 ""
+          IF 53..79 @53 "if (true) {\n      x();\n  }"
+            PARENTHESIZED 56..62 @56 "(true)"
+              BOOLEAN_LITERAL 57..61 @57 "true"
+            BLOCK 63..79 @63 "{\n      x();\n  }"
+              EXPRESSION_STATEMENT 71..75 @71 "x();"
+                METHOD_INVOCATION 71..74 @72 "x()"
+                  IDENTIFIER 71..72 @71 "x"

@@ -1,0 +1,57 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  none
+tree at 27:
+  COMPILATION_UNIT 0..175 @0 "class A {\n  void f(String... args) {\n   "…
+    CLASS 0..175 @0 "class A {\n  void f(String... args) {\n   "…
+      MODIFIERS -1..-1 @-1
+      METHOD 12..173 @17 "void f(String... args) {\n    int @A [] @"…
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 12..16 @12 "void"
+        VARIABLE 19..33 @29 "String... args"
+          MODIFIERS -1..-1 @-1
+          ARRAY_TYPE 19..28 @25 "String..."
+            IDENTIFIER 19..25 @19 "String"
+        BLOCK 35..173 @35 "{\n    int @A [] @A [] y;\n    int[][] m ="…
+          VARIABLE 41..59 @57 "int @A [] @A [] y;"
+            MODIFIERS -1..-1 @-1
+            ANNOTATED_TYPE 41..56 @48 "int @A [] @A []"
+              TYPE_ANNOTATION 45..47 @45 "@A"
+                IDENTIFIER 46..47 @46 "A"
+              ARRAY_TYPE 41..56 @48 "int @A [] @A []"
+                ANNOTATED_TYPE 41..56 @54 "int @A [] @A []"
+                  TYPE_ANNOTATION 51..53 @51 "@A"
+                    IDENTIFIER 52..53 @52 "A"
+                  ARRAY_TYPE 41..56 @54 "int @A [] @A []"
+                    PRIMITIVE_TYPE 41..44 @41 "int"
+          VARIABLE 64..89 @72 "int[][] m = new int[3][];"
+            MODIFIERS -1..-1 @-1
+            ARRAY_TYPE 64..71 @67 "int[][]"
+              ARRAY_TYPE 64..71 @69 "int[][]"
+                PRIMITIVE_TYPE 64..67 @64 "int"
+            NEW_ARRAY 76..88 @76 "new int[3][]"
+              ARRAY_TYPE 80..88 @86 "int[3][]"
+                PRIMITIVE_TYPE 80..83 @80 "int"
+              INT_LITERAL 84..85 @84 "3"
+          VARIABLE 94..111 @100 "int[] n = {1, 2};"
+            MODIFIERS -1..-1 @-1
+            ARRAY_TYPE 94..99 @97 "int[]"
+              PRIMITIVE_TYPE 94..97 @94 "int"
+            NEW_ARRAY 104..110 @104 "{1, 2}"
+              INT_LITERAL 105..106 @105 "1"
+              INT_LITERAL 108..109 @108 "2"
+          VARIABLE 116..139 @123 "Object c = int[].class;"
+            MODIFIERS -1..-1 @-1
+            IDENTIFIER 116..122 @116 "Object"
+            MEMBER_SELECT 127..138 @132 "int[].class"
+              ARRAY_TYPE 127..132 @130 "int[]"
+                PRIMITIVE_TYPE 127..130 @127 "int"
+          VARIABLE 144..169 @151 "Object e = new @A int[3];"
+            MODIFIERS -1..-1 @-1
+            IDENTIFIER 144..150 @144 "Object"
+            NEW_ARRAY 155..168 @155 "new @A int[3]"
+              ANNOTATED_TYPE 159..165 @162 "@A int"
+                TYPE_ANNOTATION 159..161 @159 "@A"
+                  IDENTIFIER 160..161 @160 "A"
+                PRIMITIVE_TYPE 162..165 @162 "int"
+              INT_LITERAL 166..167 @166 "3"

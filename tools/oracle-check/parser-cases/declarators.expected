@@ -1,0 +1,55 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  none
+tree at 27:
+  COMPILATION_UNIT 0..146 @0 "class A {\n  int a[], b;\n  int[] c[];\n  i"…
+    CLASS 0..146 @0 "class A {\n  int a[], b;\n  int[] c[];\n  i"…
+      MODIFIERS -1..-1 @-1
+      VARIABLE 12..20 @16 "int a[],"
+        MODIFIERS -1..-1 @-1
+        ARRAY_TYPE 12..19 @17 "int a[]"
+          PRIMITIVE_TYPE 12..15 @12 "int"
+      VARIABLE 12..23 @21 "int a[], b;"
+        MODIFIERS -1..-1 @-1 shared
+        PRIMITIVE_TYPE 12..15 @12 shared "int"
+      VARIABLE 26..36 @32 "int[] c[];"
+        MODIFIERS -1..-1 @-1
+        ARRAY_TYPE 26..35 @33 "int[] c[]"
+          ARRAY_TYPE 26..31 @29 "int[]"
+            PRIMITIVE_TYPE 26..29 @26 "int"
+      VARIABLE 39..49 @47 "int[][] d;"
+        MODIFIERS -1..-1 @-1
+        ARRAY_TYPE 39..46 @42 "int[][]"
+          ARRAY_TYPE 39..46 @44 "int[][]"
+            PRIMITIVE_TYPE 39..42 @39 "int"
+      METHOD 52..78 @56 "int h()[] { return null; }"
+        MODIFIERS -1..-1 @-1
+        ARRAY_TYPE 52..61 @59 "int h()[]"
+          PRIMITIVE_TYPE 52..55 @52 "int"
+        BLOCK 62..78 @62 "{ return null; }"
+          RETURN 64..76 @64 "return null;"
+            NULL_LITERAL 71..75 @71 "null"
+      METHOD 81..144 @86 "void f(int x[]) {\n    for (int i = 0, j "…
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 81..85 @81 "void"
+        VARIABLE 88..95 @92 "int x[]"
+          MODIFIERS -1..-1 @-1
+          ARRAY_TYPE 88..95 @93 "int x[]"
+            PRIMITIVE_TYPE 88..91 @88 "int"
+        BLOCK 97..144 @97 "{\n    for (int i = 0, j = 1; i < j; i++)"…
+          FOR_LOOP 103..140 @103 "for (int i = 0, j = 1; i < j; i++) {}"
+            VARIABLE 108..118 @112 "int i = 0,"
+              MODIFIERS -1..-1 @-1
+              PRIMITIVE_TYPE 108..111 @108 "int"
+              INT_LITERAL 116..117 @116 "0"
+            VARIABLE 108..124 @119 "int i = 0, j = 1"
+              MODIFIERS -1..-1 @-1 shared
+              PRIMITIVE_TYPE 108..111 @108 shared "int"
+              INT_LITERAL 123..124 @123 "1"
+            LESS_THAN 126..131 @128 "i < j"
+              IDENTIFIER 126..127 @126 "i"
+              IDENTIFIER 130..131 @130 "j"
+            EXPRESSION_STATEMENT 133..136 @133 "i++"
+              POSTFIX_INCREMENT 133..136 @134 "i++"
+                IDENTIFIER 133..134 @133 "i"
+            BLOCK 138..140 @138 "{}"

@@ -1,0 +1,40 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  none
+tree at 27:
+  COMPILATION_UNIT 13..257 @13 "@Deprecated\nopen module com.example.m {\n"…
+    MODULE 13..257 @30 "@Deprecated\nopen module com.example.m {\n"…
+      ANNOTATION 13..24 @13 "@Deprecated"
+        IDENTIFIER 14..24 @14 "Deprecated"
+      MEMBER_SELECT 37..50 @48 "com.example.m"
+        MEMBER_SELECT 37..48 @40 "com.example"
+          IDENTIFIER 37..40 @37 "com"
+      REQUIRES 55..92 @55 "requires transitive static java.base;"
+        MEMBER_SELECT 82..91 @86 "java.base"
+          IDENTIFIER 82..86 @82 "java"
+      EXPORTS 95..139 @95 "exports com.example.a to java.sql, java."…
+        MEMBER_SELECT 103..116 @114 "com.example.a"
+          MEMBER_SELECT 103..114 @106 "com.example"
+            IDENTIFIER 103..106 @103 "com"
+        MEMBER_SELECT 120..128 @124 "java.sql"
+          IDENTIFIER 120..124 @120 "java"
+        MEMBER_SELECT 130..138 @134 "java.xml"
+          IDENTIFIER 130..134 @130 "java"
+      OPENS 142..162 @142 "opens com.example.b;"
+        MEMBER_SELECT 148..161 @159 "com.example.b"
+          MEMBER_SELECT 148..159 @151 "com.example"
+            IDENTIFIER 148..151 @148 "com"
+      USES 165..186 @165 "uses com.example.Spi;"
+        MEMBER_SELECT 170..185 @181 "com.example.Spi"
+          MEMBER_SELECT 170..181 @173 "com.example"
+            IDENTIFIER 170..173 @170 "com"
+      PROVIDES 189..255 @189 "provides com.example.Spi with com.exampl"…
+        MEMBER_SELECT 198..213 @209 "com.example.Spi"
+          MEMBER_SELECT 198..209 @201 "com.example"
+            IDENTIFIER 198..201 @198 "com"
+        MEMBER_SELECT 219..235 @230 "com.example.Impl"
+          MEMBER_SELECT 219..230 @222 "com.example"
+            IDENTIFIER 219..222 @219 "com"
+        MEMBER_SELECT 237..254 @248 "com.example.Impl2"
+          MEMBER_SELECT 237..248 @240 "com.example"
+            IDENTIFIER 237..240 @237 "com"

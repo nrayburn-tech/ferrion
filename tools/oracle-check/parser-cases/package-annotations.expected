@@ -1,0 +1,23 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  none
+tree at 27:
+  COMPILATION_UNIT 21..138 @21 "@Deprecated\n@SuppressWarnings(\"all\")\npac"…
+    PACKAGE 21..82 @58 "@Deprecated\n@SuppressWarnings(\"all\")\npac"…
+      ANNOTATION 21..32 @21 "@Deprecated"
+        IDENTIFIER 22..32 @22 "Deprecated"
+      ANNOTATION 33..57 @33 "@SuppressWarnings(\"all\")"
+        IDENTIFIER 34..50 @34 "SuppressWarnings"
+        STRING_LITERAL 51..56 @51 "\"all\""
+      MEMBER_SELECT 66..81 @77 "com.example.pkg"
+        MEMBER_SELECT 66..77 @69 "com.example"
+          IDENTIFIER 66..69 @66 "com"
+    IMPORT 84..106 @84 "import java.util.List;"
+      MEMBER_SELECT 91..105 @100 "java.util.List"
+        MEMBER_SELECT 91..100 @95 "java.util"
+          IDENTIFIER 91..95 @91 "java"
+    IMPORT 107..138 @107 "import static java.lang.Math.*;"
+      MEMBER_SELECT 121..137 @135 "java.lang.Math.*"
+        MEMBER_SELECT 121..135 @130 "java.lang.Math"
+          MEMBER_SELECT 121..130 @125 "java.lang"
+            IDENTIFIER 121..125 @121 "java"

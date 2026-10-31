@@ -1,0 +1,35 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  none
+tree at 27:
+  COMPILATION_UNIT 0..140 @0 "@Deprecated public final class A<T> {\n  "…
+    CLASS 0..124 @25 "@Deprecated public final class A<T> {\n  "…
+      MODIFIERS 0..24 @0 "@Deprecated public final"
+        ANNOTATION 0..11 @0 "@Deprecated"
+          IDENTIFIER 1..11 @1 "Deprecated"
+      TYPE_PARAMETER 33..34 @33 "T"
+      VARIABLE 40..59 @57 "@A public @B int x;"
+        MODIFIERS 40..52 @40 "@A public @B"
+          ANNOTATION 40..42 @40 "@A"
+            IDENTIFIER 41..42 @41 "A"
+          ANNOTATION 50..52 @50 "@B"
+            IDENTIFIER 51..52 @51 "B"
+        PRIMITIVE_TYPE 53..56 @53 "int"
+      VARIABLE 62..68 @66 "int y;"
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 62..65 @62 "int"
+      METHOD 71..86 @80 "<U> void m() {}"
+        MODIFIERS 71..71 @71 ""
+        PRIMITIVE_TYPE 75..79 @75 "void"
+        TYPE_PARAMETER 72..73 @72 "U"
+        BLOCK 84..86 @84 "{}"
+      METHOD 89..122 @105 "public <U> void n(final int p) {}"
+        MODIFIERS 89..95 @89 "public"
+        PRIMITIVE_TYPE 100..104 @100 "void"
+        TYPE_PARAMETER 97..98 @97 "U"
+        VARIABLE 107..118 @117 "final int p"
+          MODIFIERS 107..112 @107 "final"
+          PRIMITIVE_TYPE 113..116 @113 "int"
+        BLOCK 120..122 @120 "{}"
+    ANNOTATION_TYPE 125..140 @126 "@interface B {}"
+      MODIFIERS 125..126 @125 "@"

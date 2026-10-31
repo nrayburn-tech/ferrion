@@ -170,7 +170,8 @@ cargo corpus jdk-tests
 
 `cargo corpus jdk-tests list` prints each input with the releases its jtreg header compiles it
 at. `tools/corpus/jdk-tests-deep-nesting.txt` lists javac's deep-nesting stress tests among them,
-by path. Don't study the tests beyond what selecting and running them needs.
+by path; see [docs/design/parser-oracle-normalization.md](docs/design/parser-oracle-normalization.md)
+for how they were chosen. Don't study the tests beyond what selecting and running them needs.
 
 ### javac oracle
 
@@ -232,7 +233,16 @@ cargo oracle tree
 
 Besides corpus projects, both take `jdk-tests`, javac's tests fetched by `cargo corpus jdk-tests`,
 each compared at the releases its test compiles it at, and `jdk-deep-nesting`, javac's
-deep-nesting stress tests.
+deep-nesting stress tests. Snapshots of javac's parser output on small inputs, which
+[docs/design/parser-oracle-normalization.md](docs/design/parser-oracle-normalization.md) cites,
+are in `tools/oracle-check/parser-cases/`:
+
+```bash
+cargo oracle parser-cases
+```
+
+It fails if javac's output no longer matches a snapshot; `--bless` rewrites them, and the document
+is updated to match.
 
 ### Tests
 

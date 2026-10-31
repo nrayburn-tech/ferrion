@@ -1,5 +1,6 @@
 //! The parser checks: `oracle syntax` compares syntax errors with javac's parsing-phase errors,
-//! and `oracle tree` compares tree positions with javac's.
+//! and `oracle tree` compares tree positions with javac's. What javac reports, and the
+//! normalization, are in docs/design/parser-oracle-normalization.md.
 //!
 //! Ferrion's side is behind [`Parser`], which the parser implements when it exists. Until then,
 //! [`NoParser`] stands in: both checks run javac, cache its output, and summarize it (diagnostic

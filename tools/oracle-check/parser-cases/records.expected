@@ -1,0 +1,55 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 15:
+  ERROR compiler.err.feature.not.supported.in.source.plural 19..19 @19 [compiler.misc.feature.records, 15, 16] records are not supported in -source 15
+diagnostics at 16:
+  none
+tree at 16:
+  COMPILATION_UNIT 19..203 @19 "record R<T>(int x, @Deprecated String..."…
+    RECORD 19..203 @19 "record R<T>(int x, @Deprecated String..."…
+      MODIFIERS -1..-1 @-1
+      TYPE_PARAMETER 28..29 @28 "T"
+      PARAMETERIZED_TYPE 75..91 @85 "Comparable<R<T>>"
+        IDENTIFIER 75..85 @75 "Comparable"
+        PARAMETERIZED_TYPE 86..90 @87 "R<T>"
+          IDENTIFIER 86..87 @86 "R"
+          IDENTIFIER 88..89 @88 "T"
+      VARIABLE 31..36 @35 "int x"
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 31..34 @31 "int"
+      VARIABLE 38..62 @60 "@Deprecated String... ys"
+        MODIFIERS 38..49 @38 "@Deprecated"
+          ANNOTATION 38..49 @38 "@Deprecated"
+            IDENTIFIER 39..49 @39 "Deprecated"
+        ARRAY_TYPE 50..59 @56 "String..."
+          IDENTIFIER 50..56 @50 "String"
+      METHOD 96..156 @96 "R {\n    if (x < 0) throw new IllegalArgu"…
+        MODIFIERS -1..-1 @-1
+        VARIABLE 31..-1 @31
+          MODIFIERS -1..-1 @-1
+          PRIMITIVE_TYPE 31..-1 @31
+        VARIABLE 38..-1 @56
+          MODIFIERS 38..-1 @38
+            ANNOTATION 38..-1 @38
+              IDENTIFIER 39..-1 @39
+          ARRAY_TYPE 50..-1 @56
+            IDENTIFIER 50..-1 @50
+        BLOCK 98..156 @98 "{\n    if (x < 0) throw new IllegalArgume"…
+          IF 104..152 @104 "if (x < 0) throw new IllegalArgumentExce"…
+            PARENTHESIZED 107..114 @107 "(x < 0)"
+              LESS_THAN 108..113 @110 "x < 0"
+                IDENTIFIER 108..109 @108 "x"
+                INT_LITERAL 112..113 @112 "0"
+            THROW 115..152 @115 "throw new IllegalArgumentException();"
+              NEW_CLASS 121..151 @121 "new IllegalArgumentException()"
+                IDENTIFIER 125..149 @125 "IllegalArgumentException"
+      METHOD 159..201 @170 "public int compareTo(R<T> o) { return 0;"…
+        MODIFIERS 159..165 @159 "public"
+        PRIMITIVE_TYPE 166..169 @166 "int"
+        VARIABLE 180..186 @185 "R<T> o"
+          MODIFIERS -1..-1 @-1
+          PARAMETERIZED_TYPE 180..184 @181 "R<T>"
+            IDENTIFIER 180..181 @180 "R"
+            IDENTIFIER 182..183 @182 "T"
+        BLOCK 188..201 @188 "{ return 0; }"
+          RETURN 190..199 @190 "return 0;"
+            INT_LITERAL 197..198 @197 "0"

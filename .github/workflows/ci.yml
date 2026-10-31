@@ -121,3 +121,5 @@ jobs:
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
       - name: Check the known differences from javac
         run: cargo oracle differences
+      - name: Check the snapshots of javac's parser output
+        run: cargo oracle parser-cases

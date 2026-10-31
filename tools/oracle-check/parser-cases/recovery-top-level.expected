@@ -1,0 +1,37 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 8:
+  ERROR compiler.err.expected 49..49 @49 [token.identifier] <identifier> expected
+  ERROR compiler.err.not.stmt 45..49 @48 [] not a statement
+  ERROR compiler.err.array.dimension.missing 55..64 @64 [] array dimension missing
+  ERROR compiler.err.expected 75..75 @75 [token.identifier] <identifier> expected
+  ERROR compiler.err.feature.not.supported.in.source.plural 83..83 @83 [compiler.misc.feature.implicit.classes, 8, 25] implicitly declared classes are not supported in -source 8
+  ERROR compiler.err.bad.file.name 18..18 @18 [recovery-top-level] bad file name: recovery-top-level
+diagnostics at 27:
+  ERROR compiler.err.expected 49..49 @49 [token.identifier] <identifier> expected
+  ERROR compiler.err.not.stmt 45..49 @48 [] not a statement
+  ERROR compiler.err.array.dimension.missing 55..64 @64 [] array dimension missing
+  ERROR compiler.err.expected 75..75 @75 [token.identifier] <identifier> expected
+  ERROR compiler.err.bad.file.name 18..18 @18 [recovery-top-level] bad file name: recovery-top-level
+tree at 27:
+  COMPILATION_UNIT 18..107 @18 "class A {\n  void f() {\n    a.b.;\n    new"…
+    CLASS 18..107 @18 "class A {\n  void f() {\n    a.b.;\n    new"…
+      MODIFIERS -1..-1 @-1
+      CLASS 18..82 @18 "class A {\n  void f() {\n    a.b.;\n    new"…
+        MODIFIERS -1..-1 @-1
+        METHOD 30..69 @35 "void f() {\n    a.b.;\n    new int[];\n  }"
+          MODIFIERS -1..-1 @-1
+          PRIMITIVE_TYPE 30..34 @30 "void"
+          BLOCK 39..69 @39 "{\n    a.b.;\n    new int[];\n  }"
+            EXPRESSION_STATEMENT 45..50 @45 "a.b.;"
+              ERRONEOUS 45..49 @48 "a.b."
+            EXPRESSION_STATEMENT 55..65 @55 "new int[];"
+              ERRONEOUS 55..64 @64 "new int[]"
+        VARIABLE 72..80 @76 "int = 5;"
+          MODIFIERS -1..-1 @-1
+          PRIMITIVE_TYPE 72..75 @72 "int"
+          INT_LITERAL 78..79 @78 "5"
+      VARIABLE 83..96 @91 "garbage here;"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 83..90 @83 "garbage"
+      CLASS 97..107 @97 "class B {}"
+        MODIFIERS -1..-1 @-1
