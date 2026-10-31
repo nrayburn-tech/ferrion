@@ -1,0 +1,59 @@
+CompilationUnit 0..132 [error]
+  LineComment 0..68 "// A `throws` clause takes names: javac expects the body at the `<`."
+  LineTerminator 68..69 "\n"
+  ClassDecl 69..131 [error]
+    ClassKw 69..74 "class"
+    Whitespace 74..75 " "
+    Identifier 75..76 "A"
+    Whitespace 76..77 " "
+    ClassBody 77..131 [error]
+      LBrace 77..78 "{"
+      LineTerminator 78..79 "\n"
+      Whitespace 79..81 "  "
+      MethodDecl 81..98 [error]
+        VoidType 81..85
+          VoidKw 81..85 "void"
+        Whitespace 85..86 " "
+        Identifier 86..87 "f"
+        FormalParameters 87..89
+          LParen 87..88 "("
+          RParen 88..89 ")"
+        Whitespace 89..90 " "
+        ThrowsClause 90..98
+          ThrowsKw 90..96 "throws"
+          Whitespace 96..97 " "
+          ClassType 97..98
+            Identifier 97..98 "E"
+      Error 98..101 [error]
+        TypeParameters 98..101
+          Lt 98..99 "<"
+          TypeParameter 99..100
+            Identifier 99..100 "T"
+          Gt 100..101 ">"
+      Whitespace 101..102 " "
+      Initializer 102..129 [error]
+        Error 102..129 [error]
+          LBrace 102..103 "{"
+          RBrace 103..104 "}"
+          LineTerminator 104..105 "\n"
+          Whitespace 105..107 "  "
+          VoidKw 107..111 "void"
+          Whitespace 111..112 " "
+          Identifier 112..113 "g"
+          LParen 113..114 "("
+          RParen 114..115 ")"
+          Whitespace 115..116 " "
+          ThrowsKw 116..122 "throws"
+          Whitespace 122..123 " "
+          Identifier 123..124 "F"
+          LBracket 124..125 "["
+          RBracket 125..126 "]"
+          Whitespace 126..127 " "
+          LBrace 127..128 "{"
+          RBrace 128..129 "}"
+      LineTerminator 129..130 "\n"
+      RBrace 130..131 "}"
+  LineTerminator 131..132 "\n"
+  Eof 132..132 ""
+error 98..98 @98 Expected(OneOf([LBrace, Semi])): '{' or ';' expected
+error 102..103 @102 ExpectedMember(LBrace): unexpected '{': expected a member declaration

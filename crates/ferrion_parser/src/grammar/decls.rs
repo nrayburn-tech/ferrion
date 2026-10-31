@@ -491,13 +491,20 @@ fn type_decl_with(p: &mut Parser<'_>, m: Marker, info: ModifierInfo) -> Option<C
 }
 
 /// `extends A`, `implements A, B`, or `permits A, B`, at the keyword. A class's `extends` takes
-/// one type, so a `,` after it ends the clause.
+/// one type, so a `,` after it ends the clause. As with javac's parser, `extends` and
+/// `implements` take any type, even `int[]`, which is rejected after parsing; `permits` takes
+/// class types.
 fn type_list_clause(p: &mut Parser<'_>, keyword: SyntaxKind, kind: SyntaxKind, several: bool) {
     let m = p.start();
     p.bump_as(keyword);
     let mut progress = p.progress();
     loop {
-        if types::class_type(p).is_none() {
+        let ty = if keyword == PermitsKw {
+            types::class_type(p)
+        } else {
+            types::type_(p)
+        };
+        if ty.is_none() {
             error_at_current(p, ParseDiagnosticKind::TypeExpected(p.current()));
             break;
         }
@@ -879,7 +886,7 @@ fn method_rest(p: &mut Parser<'_>, m: Marker, kind: SyntaxKind, dims: bool) {
         p.bump();
         let mut progress = p.progress();
         loop {
-            if types::class_type(p).is_none() {
+            if throws_type(p).is_none() {
                 p.error_expected(Expected::Identifier);
                 break;
             }
@@ -904,6 +911,34 @@ fn method_rest(p: &mut Parser<'_>, m: Marker, kind: SyntaxKind, dims: bool) {
         p.error_expected(Expected::OneOf(&[LBrace, Semi]));
     }
     m.complete(p, kind);
+}
+
+/// A type in a `throws` clause. javac's parser takes a qualified name there, with annotations but
+/// without type arguments or dimensions, so `throws E<T>` and `throws E[]` end the clause at
+/// the `<` or `[`.
+fn throws_type(p: &mut Parser<'_>) -> Option<CompletedMarker> {
+    if !p.at_set(IDENT) && !(p.at(At) && p.nth(1) != InterfaceKw) {
+        return None;
+    }
+    let m = p.start();
+    types::annotations(p);
+    if p.at_set(IDENT) {
+        p.bump();
+    } else {
+        p.error_expected(Expected::Identifier);
+    }
+    let mut ty = m.complete(p, ClassType);
+    let mut progress = p.progress();
+    while p.at(Dot) && p.nth_at_set(1, IDENT) {
+        let m = ty.precede(p);
+        p.bump();
+        p.bump();
+        ty = m.complete(p, ClassType);
+        if !progress.advanced(p) {
+            break;
+        }
+    }
+    Some(ty)
 }
 
 /// `a = 1, b[] = {2}`: one or more `VariableDeclarator`s separated by commas, for fields and
