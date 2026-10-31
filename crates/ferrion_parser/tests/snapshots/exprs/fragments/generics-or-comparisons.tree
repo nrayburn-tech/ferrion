@@ -1,0 +1,137 @@
+CompilationUnit 0..90
+  BinaryExpr 0..5
+    NameExpr 0..1
+      Identifier 0..1 "a"
+    Whitespace 1..2 " "
+    Lt 2..3 "<"
+    Whitespace 3..4 " "
+    NameExpr 4..5
+      Identifier 4..5 "b"
+  Semi 5..6 ";"
+  LineTerminator 6..7 "\n"
+  BinaryExpr 7..16
+    BinaryExpr 7..12
+      NameExpr 7..8
+        Identifier 7..8 "a"
+      Whitespace 8..9 " "
+      Lt 9..10 "<"
+      Whitespace 10..11 " "
+      NameExpr 11..12
+        Identifier 11..12 "b"
+    Whitespace 12..13 " "
+    Gt 13..14 ">"
+    Whitespace 14..15 " "
+    NameExpr 15..16
+      Identifier 15..16 "c"
+  Semi 16..17 ";"
+  LineTerminator 17..18 "\n"
+  MethodCallExpr 18..33
+    Identifier 18..19 "f"
+    Arguments 19..33
+      LParen 19..20 "("
+      BinaryExpr 20..25
+        NameExpr 20..21
+          Identifier 20..21 "a"
+        Whitespace 21..22 " "
+        Lt 22..23 "<"
+        Whitespace 23..24 " "
+        NameExpr 24..25
+          Identifier 24..25 "b"
+      Comma 25..26 ","
+      Whitespace 26..27 " "
+      BinaryExpr 27..32
+        NameExpr 27..28
+          Identifier 27..28 "c"
+        Whitespace 28..29 " "
+        Gt 29..30 ">"
+        Whitespace 30..31 " "
+        NameExpr 31..32
+          Identifier 31..32 "d"
+      RParen 32..33 ")"
+  Semi 33..34 ";"
+  LineTerminator 34..35 "\n"
+  MethodCallExpr 35..51
+    Identifier 35..36 "f"
+    Arguments 36..51
+      LParen 36..37 "("
+      BinaryExpr 37..42
+        NameExpr 37..38
+          Identifier 37..38 "a"
+        Whitespace 38..39 " "
+        Lt 39..40 "<"
+        Whitespace 40..41 " "
+        NameExpr 41..42
+          Identifier 41..42 "b"
+      Comma 42..43 ","
+      Whitespace 43..44 " "
+      BinaryExpr 44..50
+        NameExpr 44..45
+          Identifier 44..45 "c"
+        Whitespace 45..46 " "
+        Gt 46..47 ">"
+        Gt 47..48 ">"
+        Whitespace 48..49 " "
+        NameExpr 49..50
+          Identifier 49..50 "d"
+      RParen 50..51 ")"
+  Semi 51..52 ";"
+  LineTerminator 52..53 "\n"
+  BinaryExpr 53..63
+    NameExpr 53..54
+      Identifier 53..54 "i"
+    Whitespace 54..55 " "
+    Lt 55..56 "<"
+    Whitespace 56..57 " "
+    BinaryExpr 57..63
+      NameExpr 57..58
+        Identifier 57..58 "n"
+      Whitespace 58..59 " "
+      Gt 59..60 ">"
+      Gt 60..61 ">"
+      Whitespace 61..62 " "
+      LiteralExpr 62..63
+        IntLiteral 62..63 "1"
+  Semi 63..64 ";"
+  LineTerminator 64..65 "\n"
+  MethodCallExpr 65..75
+    Identifier 65..66 "f"
+    Arguments 66..75
+      LParen 66..67 "("
+      BinaryExpr 67..70
+        NameExpr 67..68
+          Identifier 67..68 "a"
+        Lt 68..69 "<"
+        NameExpr 69..70
+          Identifier 69..70 "b"
+      Comma 70..71 ","
+      BinaryExpr 71..74
+        NameExpr 71..72
+          Identifier 71..72 "c"
+        Gt 72..73 ">"
+        NameExpr 73..74
+          Identifier 73..74 "d"
+      RParen 74..75 ")"
+  Semi 75..76 ";"
+  LineTerminator 76..77 "\n"
+  ParenExpr 77..88
+    LParen 77..78 "("
+    BinaryExpr 78..87
+      BinaryExpr 78..81
+        NameExpr 78..79
+          Identifier 78..79 "a"
+        Lt 79..80 "<"
+        NameExpr 80..81
+          Identifier 80..81 "b"
+      Lt 81..82 "<"
+      BinaryExpr 82..87
+        NameExpr 82..83
+          Identifier 82..83 "c"
+        Gt 83..84 ">"
+        Gt 84..85 ">"
+        Whitespace 85..86 " "
+        NameExpr 86..87
+          Identifier 86..87 "d"
+    RParen 87..88 ")"
+  Semi 88..89 ";"
+  LineTerminator 89..90 "\n"
+  Eof 90..90 ""

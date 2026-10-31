@@ -1,0 +1,169 @@
+CompilationUnit 0..137 [error]
+  FieldAccessExpr 0..2 [error]
+    NameExpr 0..1
+      Identifier 0..1 "a"
+    Dot 1..2 "."
+  Semi 2..3 ";"
+  LineTerminator 3..4 "\n"
+  FieldAccessExpr 4..9 [error]
+    ThisExpr 4..8
+      ThisKw 4..8 "this"
+    Dot 8..9 "."
+  Semi 9..10 ";"
+  LineTerminator 10..11 "\n"
+  SuperExpr 11..16 [error]
+    SuperKw 11..16 "super"
+  Semi 16..17 ";"
+  LineTerminator 17..18 "\n"
+  FieldAccessExpr 18..24 [error]
+    SuperExpr 18..23
+      SuperKw 18..23 "super"
+    Dot 23..24 "."
+  Semi 24..25 ";"
+  LineTerminator 25..26 "\n"
+  MethodCallExpr 26..31 [error]
+    NameExpr 26..27
+      Identifier 26..27 "a"
+    Dot 27..28 "."
+    TypeArguments 28..31
+      Lt 28..29 "<"
+      ClassType 29..30
+        Identifier 29..30 "T"
+      Gt 30..31 ">"
+  Semi 31..32 ";"
+  LineTerminator 32..33 "\n"
+  MethodCallExpr 33..39 [error]
+    NameExpr 33..34
+      Identifier 33..34 "a"
+    Dot 34..35 "."
+    TypeArguments 35..38
+      Lt 35..36 "<"
+      ClassType 36..37
+        Identifier 36..37 "T"
+      Gt 37..38 ">"
+    Identifier 38..39 "b"
+  Semi 39..40 ";"
+  LineTerminator 40..41 "\n"
+  ArrayAccessExpr 41..43 [error]
+    NameExpr 41..42
+      Identifier 41..42 "a"
+    LBracket 42..43 "["
+  Semi 43..44 ";"
+  LineTerminator 44..45 "\n"
+  ArrayAccessExpr 45..48 [error]
+    NameExpr 45..46
+      Identifier 45..46 "a"
+    LBracket 46..47 "["
+    LiteralExpr 47..48
+      IntLiteral 47..48 "1"
+  Whitespace 48..49 " "
+  Error 49..50 [error]
+    IntLiteral 49..50 "2"
+  Error 50..51 [error]
+    RBracket 50..51 "]"
+  Semi 51..52 ";"
+  LineTerminator 52..53 "\n"
+  MethodRefExpr 53..56 [error]
+    NameExpr 53..54
+      Identifier 53..54 "a"
+    ColonColon 54..56 "::"
+  Semi 56..57 ";"
+  LineTerminator 57..58 "\n"
+  MethodCallExpr 58..65 [error]
+    NameExpr 58..59
+      Identifier 58..59 "a"
+    Dot 59..60 "."
+    TypeArguments 60..62 [error]
+      Lt 60..61 "<"
+      Gt 61..62 ">"
+    Identifier 62..63 "b"
+    Arguments 63..65
+      LParen 63..64 "("
+      RParen 64..65 ")"
+  Semi 65..66 ";"
+  LineTerminator 66..67 "\n"
+  PrimitiveType 67..70
+    IntKw 67..70 "int"
+  Semi 70..71 ";"
+  LineTerminator 71..72 "\n"
+  ClassLiteralExpr 72..76 [error]
+    PrimitiveType 72..75
+      IntKw 72..75 "int"
+    Dot 75..76 "."
+  Semi 76..77 ";"
+  LineTerminator 77..78 "\n"
+  ArrayType 78..81
+    ClassType 78..79
+      Identifier 78..79 "a"
+    Dim 79..81
+      LBracket 79..80 "["
+      RBracket 80..81 "]"
+  Semi 81..82 ";"
+  LineTerminator 82..83 "\n"
+  ClassLiteralExpr 83..89 [error]
+    ArrayType 83..88
+      PrimitiveType 83..86
+        IntKw 83..86 "int"
+      Dim 86..88
+        LBracket 86..87 "["
+        RBracket 87..88 "]"
+    Dot 88..89 "."
+  Error 89..95 [error]
+    Identifier 89..95 "length"
+  Semi 95..96 ";"
+  LineTerminator 96..97 "\n"
+  ArrayType 97..102
+    ClassType 97..100
+      ClassType 97..98
+        Identifier 97..98 "a"
+      Dot 98..99 "."
+      Identifier 99..100 "b"
+    Dim 100..102
+      LBracket 100..101 "["
+      RBracket 101..102 "]"
+  Whitespace 102..103 " "
+  Error 103..104 [error]
+    Identifier 103..104 "c"
+  Semi 104..105 ";"
+  LineTerminator 105..106 "\n"
+  ClassType 106..119 [error]
+    ClassType 106..118
+      Identifier 106..110 "List"
+      TypeArguments 110..118
+        Lt 110..111 "<"
+        ClassType 111..117
+          Identifier 111..117 "String"
+        Gt 117..118 ">"
+    Dot 118..119 "."
+  Error 119..124 [error]
+    ClassKw 119..124 "class"
+  Semi 124..125 ";"
+  LineTerminator 125..126 "\n"
+  MethodRefExpr 126..135 [error]
+    ClassType 126..132 [error]
+      Identifier 126..130 "List"
+      TypeArguments 130..132 [error]
+        Lt 130..131 "<"
+        Gt 131..132 ">"
+    ColonColon 132..134 "::"
+    Identifier 134..135 "m"
+  Semi 135..136 ";"
+  LineTerminator 136..137 "\n"
+  Eof 137..137 ""
+error 2..2 @2 Expected(Identifier): name expected
+error 9..9 @9 Expected(Identifier): name expected
+error 16..16 @16 Expected(Token(Dot)): '.' expected
+error 24..24 @24 Expected(Identifier): name expected
+error 31..31 @31 Expected(Identifier): name expected
+error 39..40 @39 ExpressionExpected(Semi): expected an expression, found ';'
+error 43..44 @43 ExpressionExpected(Semi): expected an expression, found ';'
+error 48..48 @48 Expected(Token(RBracket)): ']' expected
+error 56..56 @56 Expected(Identifier): name expected
+error 61..62 @61 TypeExpected(Gt): expected a type, found '>'
+error 70..71 @70 ClassLiteralExpected: a type in an expression must be followed by '.class' or '::'
+error 76..76 @76 Expected(Token(ClassKw)): 'class' expected
+error 81..82 @81 ClassLiteralExpected: a type in an expression must be followed by '.class' or '::'
+error 89..89 @89 Expected(Token(ClassKw)): 'class' expected
+error 103..104 @103 ClassLiteralExpected: a type in an expression must be followed by '.class' or '::'
+error 119..119 @119 Expected(Identifier): name expected
+error 131..132 @131 TypeExpected(Gt): expected a type, found '>'

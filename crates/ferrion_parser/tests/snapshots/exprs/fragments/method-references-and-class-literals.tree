@@ -1,0 +1,220 @@
+CompilationUnit 0..267
+  MethodRefExpr 0..14
+    NameExpr 0..6
+      Identifier 0..6 "String"
+    ColonColon 6..8 "::"
+    Identifier 8..14 "length"
+  Semi 14..15 ";"
+  LineTerminator 15..16 "\n"
+  MethodRefExpr 16..22
+    NameExpr 16..17
+      Identifier 16..17 "A"
+    ColonColon 17..19 "::"
+    NewKw 19..22 "new"
+  Semi 22..23 ";"
+  LineTerminator 23..24 "\n"
+  MethodRefExpr 24..36
+    ArrayType 24..29
+      PrimitiveType 24..27
+        IntKw 24..27 "int"
+      Dim 27..29
+        LBracket 27..28 "["
+        RBracket 28..29 "]"
+    ColonColon 29..31 "::"
+    Identifier 31..36 "clone"
+  Semi 36..37 ";"
+  LineTerminator 37..38 "\n"
+  MethodRefExpr 38..44
+    PrimitiveType 38..41
+      IntKw 38..41 "int"
+    ColonColon 41..43 "::"
+    Identifier 43..44 "m"
+  Semi 44..45 ";"
+  LineTerminator 45..46 "\n"
+  MethodRefExpr 46..74
+    ClassType 46..68
+      ClassType 46..55
+        ClassType 46..50
+          Identifier 46..50 "java"
+        Dot 50..51 "."
+        Identifier 51..55 "util"
+      Dot 55..56 "."
+      Identifier 56..60 "List"
+      TypeArguments 60..68
+        Lt 60..61 "<"
+        ClassType 61..67
+          Identifier 61..67 "String"
+        Gt 67..68 ">"
+    ColonColon 68..70 "::"
+    Identifier 70..74 "size"
+  Semi 74..75 ";"
+  LineTerminator 75..76 "\n"
+  MethodRefExpr 76..88
+    ClassType 76..85
+      ClassType 76..80
+        Identifier 76..77 "a"
+        TypeArguments 77..80
+          Lt 77..78 "<"
+          ClassType 78..79
+            Identifier 78..79 "b"
+          Gt 79..80 ">"
+      Dot 80..81 "."
+      Identifier 81..82 "c"
+      TypeArguments 82..85
+        Lt 82..83 "<"
+        ClassType 83..84
+          Identifier 83..84 "d"
+        Gt 84..85 ">"
+    ColonColon 85..87 "::"
+    Identifier 87..88 "e"
+  Semi 88..89 ";"
+  LineTerminator 89..90 "\n"
+  MethodRefExpr 90..109
+    ArrayType 90..104
+      ClassType 90..102
+        Identifier 90..94 "List"
+        TypeArguments 94..102
+          Lt 94..95 "<"
+          ClassType 95..101
+            Identifier 95..101 "String"
+          Gt 101..102 ">"
+      Dim 102..104
+        LBracket 102..103 "["
+        RBracket 103..104 "]"
+    ColonColon 104..106 "::"
+    NewKw 106..109 "new"
+  Semi 109..110 ";"
+  LineTerminator 110..111 "\n"
+  MethodRefExpr 111..121
+    ArrayType 111..116
+      ClassType 111..114
+        ClassType 111..112
+          Identifier 111..112 "a"
+        Dot 112..113 "."
+        Identifier 113..114 "b"
+      Dim 114..116
+        LBracket 114..115 "["
+        RBracket 115..116 "]"
+    ColonColon 116..118 "::"
+    NewKw 118..121 "new"
+  Semi 121..122 ";"
+  LineTerminator 122..123 "\n"
+  MethodRefExpr 123..138
+    SuperExpr 123..128
+      SuperKw 123..128 "super"
+    ColonColon 128..130 "::"
+    Identifier 130..138 "hashCode"
+  Semi 138..139 ";"
+  LineTerminator 139..140 "\n"
+  MethodRefExpr 140..147
+    ThisExpr 140..144
+      ThisKw 140..144 "this"
+    ColonColon 144..146 "::"
+    Identifier 146..147 "m"
+  Semi 147..148 ";"
+  LineTerminator 148..149 "\n"
+  MethodRefExpr 149..159
+    SuperExpr 149..156
+      NameExpr 149..150
+        Identifier 149..150 "X"
+      Dot 150..151 "."
+      SuperKw 151..156 "super"
+    ColonColon 156..158 "::"
+    Identifier 158..159 "m"
+  Semi 159..160 ";"
+  LineTerminator 160..161 "\n"
+  MethodRefExpr 161..167
+    FieldAccessExpr 161..164
+      NameExpr 161..162
+        Identifier 161..162 "a"
+      Dot 162..163 "."
+      Identifier 163..164 "b"
+    ColonColon 164..166 "::"
+    Identifier 166..167 "c"
+  Semi 167..168 ";"
+  LineTerminator 168..169 "\n"
+  MethodRefExpr 169..176
+    NameExpr 169..170
+      Identifier 169..170 "a"
+    ColonColon 170..172 "::"
+    TypeArguments 172..175
+      Lt 172..173 "<"
+      ClassType 173..174
+        Identifier 173..174 "T"
+      Gt 174..175 ">"
+    Identifier 175..176 "m"
+  Semi 176..177 ";"
+  LineTerminator 177..178 "\n"
+  MethodRefExpr 178..188
+    MethodCallExpr 178..183
+      Identifier 178..181 "foo"
+      Arguments 181..183
+        LParen 181..182 "("
+        RParen 182..183 ")"
+    ColonColon 183..185 "::"
+    Identifier 185..188 "bar"
+  Semi 188..189 ";"
+  LineTerminator 189..190 "\n"
+  ClassLiteralExpr 190..199
+    NameExpr 190..193
+      Identifier 190..193 "Foo"
+    Dot 193..194 "."
+    ClassKw 194..199 "class"
+  Semi 199..200 ";"
+  LineTerminator 200..201 "\n"
+  ClassLiteralExpr 201..214
+    FieldAccessExpr 201..208
+      FieldAccessExpr 201..204
+        NameExpr 201..202
+          Identifier 201..202 "a"
+        Dot 202..203 "."
+        Identifier 203..204 "b"
+      Dot 204..205 "."
+      Identifier 205..208 "Foo"
+    Dot 208..209 "."
+    ClassKw 209..214 "class"
+  Semi 214..215 ";"
+  LineTerminator 215..216 "\n"
+  ClassLiteralExpr 216..225
+    PrimitiveType 216..219
+      IntKw 216..219 "int"
+    Dot 219..220 "."
+    ClassKw 220..225 "class"
+  Semi 225..226 ";"
+  LineTerminator 226..227 "\n"
+  ClassLiteralExpr 227..240
+    ArrayType 227..234
+      PrimitiveType 227..230
+        IntKw 227..230 "int"
+      Dim 230..232
+        LBracket 230..231 "["
+        RBracket 231..232 "]"
+      Dim 232..234
+        LBracket 232..233 "["
+        RBracket 233..234 "]"
+    Dot 234..235 "."
+    ClassKw 235..240 "class"
+  Semi 240..241 ";"
+  LineTerminator 241..242 "\n"
+  ClassLiteralExpr 242..253
+    ArrayType 242..247
+      ClassType 242..245
+        ClassType 242..243
+          Identifier 242..243 "a"
+        Dot 243..244 "."
+        Identifier 244..245 "b"
+      Dim 245..247
+        LBracket 245..246 "["
+        RBracket 246..247 "]"
+    Dot 247..248 "."
+    ClassKw 248..253 "class"
+  Semi 253..254 ";"
+  LineTerminator 254..255 "\n"
+  ClassLiteralExpr 255..265
+    VoidType 255..259
+      VoidKw 255..259 "void"
+    Dot 259..260 "."
+    ClassKw 260..265 "class"
+  Semi 265..266 ";"
+  LineTerminator 266..267 "\n"
+  Eof 267..267 ""

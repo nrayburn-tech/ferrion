@@ -1,0 +1,94 @@
+CompilationUnit 0..133
+  InstanceofExpr 0..19
+    NameExpr 0..1
+      Identifier 0..1 "x"
+    Whitespace 1..2 " "
+    InstanceofKw 2..12 "instanceof"
+    Whitespace 12..13 " "
+    ClassType 13..19
+      Identifier 13..19 "String"
+  Semi 19..20 ";"
+  LineTerminator 20..21 "\n"
+  InstanceofExpr 21..51
+    NameExpr 21..22
+      Identifier 21..22 "x"
+    Whitespace 22..23 " "
+    InstanceofKw 23..33 "instanceof"
+    Whitespace 33..34 " "
+    ClassType 34..51
+      ClassType 34..43
+        ClassType 34..38
+          Identifier 34..38 "java"
+        Dot 38..39 "."
+        Identifier 39..43 "util"
+      Dot 43..44 "."
+      Identifier 44..48 "List"
+      TypeArguments 48..51
+        Lt 48..49 "<"
+        Wildcard 49..50
+          Question 49..50 "?"
+        Gt 50..51 ">"
+  Semi 51..52 ";"
+  LineTerminator 52..53 "\n"
+  InstanceofExpr 53..71
+    NameExpr 53..54
+      Identifier 53..54 "x"
+    Whitespace 54..55 " "
+    InstanceofKw 55..65 "instanceof"
+    Whitespace 65..66 " "
+    ArrayType 66..71
+      PrimitiveType 66..69
+        IntKw 66..69 "int"
+      Dim 69..71
+        LBracket 69..70 "["
+        RBracket 70..71 "]"
+  Semi 71..72 ";"
+  LineTerminator 72..73 "\n"
+  InstanceofExpr 73..90
+    NameExpr 73..74
+      Identifier 73..74 "x"
+    Whitespace 74..75 " "
+    InstanceofKw 75..85 "instanceof"
+    Whitespace 85..86 " "
+    ClassType 86..90
+      Annotation 86..88
+        At 86..87 "@"
+        Name 87..88
+          Identifier 87..88 "A"
+      Whitespace 88..89 " "
+      Identifier 89..90 "T"
+  Semi 90..91 ";"
+  LineTerminator 91..92 "\n"
+  BinaryExpr 92..111
+    InstanceofExpr 92..106
+      NameExpr 92..93
+        Identifier 92..93 "a"
+      Whitespace 93..94 " "
+      InstanceofKw 94..104 "instanceof"
+      Whitespace 104..105 " "
+      ClassType 105..106
+        Identifier 105..106 "T"
+    Whitespace 106..107 " "
+    EqEq 107..109 "=="
+    Whitespace 109..110 " "
+    NameExpr 110..111
+      Identifier 110..111 "b"
+  Semi 111..112 ";"
+  LineTerminator 112..113 "\n"
+  InstanceofExpr 113..131
+    BinaryExpr 113..118
+      NameExpr 113..114
+        Identifier 113..114 "a"
+      Whitespace 114..115 " "
+      Lt 115..116 "<"
+      Whitespace 116..117 " "
+      NameExpr 117..118
+        Identifier 117..118 "b"
+    Whitespace 118..119 " "
+    InstanceofKw 119..129 "instanceof"
+    Whitespace 129..130 " "
+    ClassType 130..131
+      Identifier 130..131 "T"
+  Semi 131..132 ";"
+  LineTerminator 132..133 "\n"
+  Eof 133..133 ""

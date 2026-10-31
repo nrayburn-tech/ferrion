@@ -1,0 +1,338 @@
+CompilationUnit 0..287
+  LambdaExpr 0..6
+    LambdaParameters 0..1
+      LambdaParameter 0..1
+        Identifier 0..1 "x"
+    Whitespace 1..2 " "
+    Arrow 2..4 "->"
+    Whitespace 4..5 " "
+    NameExpr 5..6
+      Identifier 5..6 "x"
+  Semi 6..7 ";"
+  LineTerminator 7..8 "\n"
+  LambdaExpr 8..14
+    LambdaParameters 8..9
+      LambdaParameter 8..9
+        Underscore 8..9 "_"
+    Whitespace 9..10 " "
+    Arrow 10..12 "->"
+    Whitespace 12..13 " "
+    LiteralExpr 13..14
+      IntLiteral 13..14 "1"
+  Semi 14..15 ";"
+  LineTerminator 15..16 "\n"
+  LambdaExpr 16..23
+    LambdaParameters 16..18
+      LParen 16..17 "("
+      RParen 17..18 ")"
+    Whitespace 18..19 " "
+    Arrow 19..21 "->"
+    Whitespace 21..22 " "
+    LiteralExpr 22..23
+      IntLiteral 22..23 "1"
+  Semi 23..24 ";"
+  LineTerminator 24..25 "\n"
+  LambdaExpr 25..40
+    LambdaParameters 25..31
+      LParen 25..26 "("
+      LambdaParameter 26..27
+        Identifier 26..27 "a"
+      Comma 27..28 ","
+      Whitespace 28..29 " "
+      LambdaParameter 29..30
+        Identifier 29..30 "b"
+      RParen 30..31 ")"
+    Whitespace 31..32 " "
+    Arrow 32..34 "->"
+    Whitespace 34..35 " "
+    BinaryExpr 35..40
+      NameExpr 35..36
+        Identifier 35..36 "a"
+      Whitespace 36..37 " "
+      Plus 37..38 "+"
+      Whitespace 38..39 " "
+      NameExpr 39..40
+        Identifier 39..40 "b"
+  Semi 40..41 ";"
+  LineTerminator 41..42 "\n"
+  LambdaExpr 42..61
+    LambdaParameters 42..56
+      LParen 42..43 "("
+      LambdaParameter 43..48
+        PrimitiveType 43..46
+          IntKw 43..46 "int"
+        Whitespace 46..47 " "
+        Identifier 47..48 "a"
+      Comma 48..49 ","
+      Whitespace 49..50 " "
+      LambdaParameter 50..55
+        PrimitiveType 50..53
+          IntKw 50..53 "int"
+        Whitespace 53..54 " "
+        Identifier 54..55 "b"
+      RParen 55..56 ")"
+    Whitespace 56..57 " "
+    Arrow 57..59 "->"
+    Whitespace 59..60 " "
+    NameExpr 60..61
+      Identifier 60..61 "a"
+  Semi 61..62 ";"
+  LineTerminator 62..63 "\n"
+  LambdaExpr 63..82
+    LambdaParameters 63..77
+      LParen 63..64 "("
+      LambdaParameter 64..69
+        ClassType 64..67
+          Identifier 64..67 "var"
+        Whitespace 67..68 " "
+        Identifier 68..69 "a"
+      Comma 69..70 ","
+      Whitespace 70..71 " "
+      LambdaParameter 71..76
+        ClassType 71..74
+          Identifier 71..74 "var"
+        Whitespace 74..75 " "
+        Identifier 75..76 "b"
+      RParen 76..77 ")"
+    Whitespace 77..78 " "
+    Arrow 78..80 "->"
+    Whitespace 80..81 " "
+    NameExpr 81..82
+      Identifier 81..82 "a"
+  Semi 82..83 ";"
+  LineTerminator 83..84 "\n"
+  LambdaExpr 84..102
+    LambdaParameters 84..97
+      LParen 84..85 "("
+      LambdaParameter 85..96
+        Modifiers 85..90
+          FinalKw 85..90 "final"
+        Whitespace 90..91 " "
+        PrimitiveType 91..94
+          IntKw 91..94 "int"
+        Whitespace 94..95 " "
+        Identifier 95..96 "a"
+      RParen 96..97 ")"
+    Whitespace 97..98 " "
+    Arrow 98..100 "->"
+    Whitespace 100..101 " "
+    NameExpr 101..102
+      Identifier 101..102 "a"
+  Semi 102..103 ";"
+  LineTerminator 103..104 "\n"
+  LambdaExpr 104..125
+    LambdaParameters 104..120
+      LParen 104..105 "("
+      LambdaParameter 105..119
+        Modifiers 105..107
+          Annotation 105..107
+            At 105..106 "@"
+            Name 106..107
+              Identifier 106..107 "A"
+        Whitespace 107..108 " "
+        ClassType 108..114
+          Identifier 108..114 "String"
+        Varargs 114..117
+          Ellipsis 114..117 "..."
+        Whitespace 117..118 " "
+        Identifier 118..119 "a"
+      RParen 119..120 ")"
+    Whitespace 120..121 " "
+    Arrow 121..123 "->"
+    Whitespace 123..124 " "
+    NameExpr 124..125
+      Identifier 124..125 "a"
+  Semi 125..126 ";"
+  LineTerminator 126..127 "\n"
+  LambdaExpr 127..141
+    LambdaParameters 127..136
+      LParen 127..128 "("
+      LambdaParameter 128..135
+        PrimitiveType 128..131
+          IntKw 128..131 "int"
+        Whitespace 131..132 " "
+        Identifier 132..133 "a"
+        Dim 133..135
+          LBracket 133..134 "["
+          RBracket 134..135 "]"
+      RParen 135..136 ")"
+    Whitespace 136..137 " "
+    Arrow 137..139 "->"
+    Whitespace 139..140 " "
+    NameExpr 140..141
+      Identifier 140..141 "a"
+  Semi 141..142 ";"
+  LineTerminator 142..143 "\n"
+  LambdaExpr 143..174
+    LambdaParameters 143..169
+      LParen 143..144 "("
+      LambdaParameter 144..168
+        ClassType 144..166
+          ClassType 144..153
+            ClassType 144..148
+              Identifier 144..148 "java"
+            Dot 148..149 "."
+            Identifier 149..153 "util"
+          Dot 153..154 "."
+          Identifier 154..158 "List"
+          TypeArguments 158..166
+            Lt 158..159 "<"
+            ClassType 159..165
+              Identifier 159..165 "String"
+            Gt 165..166 ">"
+        Whitespace 166..167 " "
+        Identifier 167..168 "a"
+      RParen 168..169 ")"
+    Whitespace 169..170 " "
+    Arrow 170..172 "->"
+    Whitespace 172..173 " "
+    NameExpr 173..174
+      Identifier 173..174 "a"
+  Semi 174..175 ";"
+  LineTerminator 175..176 "\n"
+  LambdaExpr 176..189
+    LambdaParameters 176..184
+      LParen 176..177 "("
+      LambdaParameter 177..183
+        ClassType 177..181
+          Identifier 177..178 "a"
+          TypeArguments 178..181
+            Lt 178..179 "<"
+            ClassType 179..180
+              Identifier 179..180 "b"
+            Gt 180..181 ">"
+        Whitespace 181..182 " "
+        Identifier 182..183 "c"
+      RParen 183..184 ")"
+    Whitespace 184..185 " "
+    Arrow 185..187 "->"
+    Whitespace 187..188 " "
+    LiteralExpr 188..189
+      IntLiteral 188..189 "1"
+  Semi 189..190 ";"
+  LineTerminator 190..191 "\n"
+  ParenExpr 191..199
+    LParen 191..192 "("
+    BinaryExpr 192..198
+      BinaryExpr 192..195
+        NameExpr 192..193
+          Identifier 192..193 "a"
+        Lt 193..194 "<"
+        NameExpr 194..195
+          Identifier 194..195 "b"
+      Gt 195..196 ">"
+      Whitespace 196..197 " "
+      NameExpr 197..198
+        Identifier 197..198 "c"
+    RParen 198..199 ")"
+  Semi 199..200 ";"
+  LineTerminator 200..201 "\n"
+  LambdaExpr 201..212
+    LambdaParameters 201..202
+      LambdaParameter 201..202
+        Identifier 201..202 "a"
+    Whitespace 202..203 " "
+    Arrow 203..205 "->"
+    Whitespace 205..206 " "
+    LambdaExpr 206..212
+      LambdaParameters 206..207
+        LambdaParameter 206..207
+          Identifier 206..207 "b"
+      Whitespace 207..208 " "
+      Arrow 208..210 "->"
+      Whitespace 210..211 " "
+      NameExpr 211..212
+        Identifier 211..212 "c"
+  Semi 212..213 ";"
+  LineTerminator 213..214 "\n"
+  MethodCallExpr 214..232
+    Identifier 214..215 "f"
+    Arguments 215..232
+      LParen 215..216 "("
+      LambdaExpr 216..222
+        LambdaParameters 216..217
+          LambdaParameter 216..217
+            Identifier 216..217 "x"
+        Whitespace 217..218 " "
+        Arrow 218..220 "->"
+        Whitespace 220..221 " "
+        LiteralExpr 221..222
+          IntLiteral 221..222 "1"
+      Comma 222..223 ","
+      Whitespace 223..224 " "
+      LambdaExpr 224..231
+        LambdaParameters 224..226
+          LParen 224..225 "("
+          RParen 225..226 ")"
+        Whitespace 226..227 " "
+        Arrow 227..229 "->"
+        Whitespace 229..230 " "
+        LiteralExpr 230..231
+          IntLiteral 230..231 "2"
+      RParen 231..232 ")"
+  Semi 232..233 ";"
+  LineTerminator 233..234 "\n"
+  CastExpr 234..252
+    LParen 234..235 "("
+    ClassType 235..243
+      Identifier 235..243 "Runnable"
+    RParen 243..244 ")"
+    Whitespace 244..245 " "
+    LambdaExpr 245..252
+      LambdaParameters 245..247
+        LParen 245..246 "("
+        RParen 246..247 ")"
+      Whitespace 247..248 " "
+      Arrow 248..250 "->"
+      Whitespace 250..251 " "
+      LiteralExpr 251..252
+        IntLiteral 251..252 "1"
+  Semi 252..253 ";"
+  LineTerminator 253..254 "\n"
+  ConditionalExpr 254..273
+    NameExpr 254..255
+      Identifier 254..255 "a"
+    Whitespace 255..256 " "
+    Question 256..257 "?"
+    Whitespace 257..258 " "
+    LambdaExpr 258..264
+      LambdaParameters 258..259
+        LambdaParameter 258..259
+          Identifier 258..259 "x"
+      Whitespace 259..260 " "
+      Arrow 260..262 "->"
+      Whitespace 262..263 " "
+      LiteralExpr 263..264
+        IntLiteral 263..264 "1"
+    Whitespace 264..265 " "
+    Colon 265..266 ":"
+    Whitespace 266..267 " "
+    LambdaExpr 267..273
+      LambdaParameters 267..268
+        LambdaParameter 267..268
+          Identifier 267..268 "y"
+      Whitespace 268..269 " "
+      Arrow 269..271 "->"
+      Whitespace 271..272 " "
+      LiteralExpr 272..273
+        IntLiteral 272..273 "2"
+  Semi 273..274 ";"
+  LineTerminator 274..275 "\n"
+  BinaryExpr 275..285
+    NameExpr 275..276
+      Identifier 275..276 "a"
+    Whitespace 276..277 " "
+    Plus 277..278 "+"
+    Whitespace 278..279 " "
+    LambdaExpr 279..285
+      LambdaParameters 279..280
+        LambdaParameter 279..280
+          Identifier 279..280 "x"
+      Whitespace 280..281 " "
+      Arrow 281..283 "->"
+      Whitespace 283..284 " "
+      LiteralExpr 284..285
+        IntLiteral 284..285 "1"
+  Semi 285..286 ";"
+  LineTerminator 286..287 "\n"
+  Eof 287..287 ""

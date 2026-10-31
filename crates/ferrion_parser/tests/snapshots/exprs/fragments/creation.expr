@@ -1,0 +1,17 @@
+new A();
+new A<>();
+new <T>A<String>();
+new a.b.C<D>.E(1, 2);
+new @A X();
+outer.new Inner();
+a.new <T>X<U>();
+f().new X<>();
+new int[3];
+new int[3][];
+new int[a][b][];
+new int[][] {{1}, {2,}};
+new String[] {};
+new int[] {,};
+new int @A [3] @B [];
+new X @A [] {};
+new int[] {1}[0];

@@ -1,0 +1,9 @@
+x instanceof String s;
+x instanceof final T t;
+x instanceof R(int a);
+() -> {};
+x -> { return x; };
+new A() {};
+new A<>() { void m() {} };
+switch (x) { default -> 1; };
+switch (x) { default -> 1; } + 1;

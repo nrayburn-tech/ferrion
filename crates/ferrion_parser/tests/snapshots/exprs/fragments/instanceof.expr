@@ -1,0 +1,6 @@
+x instanceof String;
+x instanceof java.util.List<?>;
+x instanceof int[];
+x instanceof @A T;
+a instanceof T == b;
+a < b instanceof T;

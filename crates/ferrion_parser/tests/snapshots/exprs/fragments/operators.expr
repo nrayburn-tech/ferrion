@@ -1,0 +1,12 @@
+a || b && c | d ^ e & f == g != h < i > j <= k >= l << m >> n >>> o + p - q * r / s % t;
+-a + +b - ~c + !d;
+++a - --b;
+a++ + b--;
+- -a;
+--a++;
+a = b;
+a += b -= c *= d /= e %= f &= g |= h ^= i <<= j >>= k >>>= l;
+a ? b : c;
+a ? b ? c : d : e ? f : g;
+a ? b : c = d;
+a > b == c < d;
