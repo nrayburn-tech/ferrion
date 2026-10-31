@@ -12,8 +12,8 @@ use crate::Span;
 /// An [`Inline::Text`], a name, or a reference part is on one line, and its value is exactly what
 /// its span covers with Unicode escapes translated, so where the two differ, the text has escapes.
 /// Quoted values (`@see "..."`, a snippet attribute's `"..."`) leave out the quotes their span
-/// covers. In Markdown content, the value is what the Markdown parser reads, with backslash
-/// escapes and entities resolved.
+/// covers. In Markdown content ([`markdown::Inline`](crate::markdown::Inline)), the value is what
+/// the Markdown parser reads, with backslash escapes and entities resolved.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Text {
     pub span: Span,
@@ -239,8 +239,8 @@ pub struct SnippetAttribute {
 }
 
 /// A block tag, `@name ...`, which runs to the next block tag or the end of the comment. `B` is
-/// the body: [`Inline`] content in a traditional comment, and Markdown blocks in a Markdown
-/// comment.
+/// the body: [`Inline`] content in a traditional comment, and Markdown
+/// [`Block`](crate::markdown::Block)s in a Markdown comment.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BlockTag<B> {
     /// From the `@` to the end of the body, leaving out trailing whitespace and line breaks.

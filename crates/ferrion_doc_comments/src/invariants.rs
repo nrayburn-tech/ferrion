@@ -11,11 +11,12 @@ use ferrion_diagnostics::SourceText;
 use ferrion_lexer::{TokenKind, lex};
 
 use crate::escape;
+use crate::markdown::{self, Block, LinkTarget};
 use crate::model::{
     Attribute, BlockTag, Diagnostic, Inline, InlineTag, InlineTagContent, Reference, TagArgument,
     Text, TypeArgument,
 };
-use crate::{Javadoc, Span, parse_javadoc};
+use crate::{Javadoc, MarkdownComment, Span, markdown_comment_runs, parse_javadoc, parse_markdown};
 
 /// Reads `bytes` as a source file (or as lossy UTF-8 when it isn't one), wraps the text in `/**`
 /// and `*/`, and checks every traditional comment the lexer finds with [`check_javadoc`]. The
@@ -41,6 +42,39 @@ pub fn check_javadoc_text(text: &str) -> Result<(), String> {
         if parse_javadoc(text, span) != javadoc {
             return Err(format!(
                 "comment at {span:?}: parsing again gives another result"
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Reads `bytes` as a source file (or as lossy UTF-8 when it isn't one), puts `///` before each
+/// line, and checks every Markdown comment the lexer finds with [`check_markdown`]. All the `///`
+/// lines are parsed and checked as one comment too, to try lines that aren't a run.
+pub fn check_markdown_bytes(bytes: &[u8]) -> Result<(), String> {
+    let text = decode(bytes);
+    let text: Vec<String> = text.split('\n').map(|line| format!("///{line}")).collect();
+    check_markdown_text(&text.join("\n"))
+}
+
+/// Checks every Markdown comment in `text`, and all its `///` lines read as one comment.
+pub fn check_markdown_text(text: &str) -> Result<(), String> {
+    let lexed = lex(text);
+    let all: Vec<Span> = lexed
+        .tokens
+        .iter()
+        .filter(|t| t.kind == TokenKind::DocLineComment)
+        .map(|t| t.span)
+        .collect();
+    let runs = markdown_comment_runs(&lexed.tokens);
+    let lines = runs.iter().map(|run| (run, true)).chain([(&all, false)]);
+    for (lines, run) in lines {
+        let comment = parse_markdown(text, lines);
+        let at = lines.first().copied().unwrap_or_default();
+        check_markdown_lines(text, &comment, run).map_err(|e| format!("comment at {at:?}: {e}"))?;
+        if parse_markdown(text, lines) != comment {
+            return Err(format!(
+                "comment at {at:?}: parsing again gives another result"
             ));
         }
     }
@@ -76,6 +110,35 @@ pub fn check_javadoc(text: &str, javadoc: &Javadoc) -> Result<(), String> {
     checker.diagnostics(&javadoc.diagnostics)
 }
 
+/// Checks a Markdown comment parsed from `text`, from the lines of a run that
+/// [`markdown_comment_runs`] found.
+pub fn check_markdown(text: &str, comment: &MarkdownComment) -> Result<(), String> {
+    check_markdown_lines(text, comment, true)
+}
+
+/// Checks a Markdown comment parsed from `text`. Unless its lines are a `run`, what is between
+/// them, and so a line break, may be anything.
+fn check_markdown_lines(text: &str, comment: &MarkdownComment, run: bool) -> Result<(), String> {
+    let checker = Checker::new(text, comment.span, false, run)?;
+    let mut siblings = Siblings::new(comment.span);
+    for block in &comment.description {
+        checker.markdown_block(block, comment.span, 0)?;
+        siblings.next(block.span(), "description block")?;
+    }
+    for tag in &comment.tags {
+        checker.block_tag(tag, comment.span, |body, span| {
+            let mut siblings = Siblings::new(span);
+            for block in body {
+                checker.markdown_block(block, span, 0)?;
+                siblings.next(block.span(), "body block")?;
+            }
+            Ok(())
+        })?;
+        siblings.next(tag.span, "block tag")?;
+    }
+    checker.diagnostics(&comment.diagnostics)
+}
+
 /// How deep the structure may go: the parsers' limit, and a few levels for the nodes around
 /// each level of nesting.
 const MAX_DEPTH: usize = 4 * crate::MAX_NESTING + 16;
@@ -88,7 +151,8 @@ struct Checker<'a> {
     escapes: Vec<(u32, u32)>,
     /// Whether text values are what their spans cover, as in traditional comments.
     exact_text: bool,
-    /// Whether a line break covers one line terminator only.
+    /// Whether a line break covers one line terminator only. When a Markdown comment's lines
+    /// aren't a run, what is between them is a line break, whatever it is.
     one_line_break: bool,
 }
 
@@ -423,6 +487,93 @@ impl<'a> Checker<'a> {
         body(&tag.body, body_span)
     }
 
+    fn markdown_block(&self, block: &Block, parent: Span, depth: usize) -> Result<(), String> {
+        let span = block.span();
+        self.depth(depth, span)?;
+        self.span(span, parent, "block")?;
+        match block {
+            Block::Paragraph { content, .. }
+            | Block::Heading { content, .. }
+            | Block::Html { content, .. } => self.markdown_inlines(content, span, depth + 1),
+            Block::BlockQuote { blocks, .. } => self.markdown_blocks(blocks, span, depth + 1),
+            Block::List { items, .. } => {
+                let mut siblings = Siblings::new(span);
+                for item in items {
+                    self.span(item.span, span, "list item")?;
+                    siblings.next(item.span, "list item")?;
+                    self.markdown_blocks(&item.blocks, item.span, depth + 2)?;
+                }
+                Ok(())
+            }
+            Block::Table { head, rows, .. } => {
+                let mut siblings = Siblings::new(span);
+                for row in std::iter::once(head).chain(rows) {
+                    self.span(row.span, span, "table row")?;
+                    siblings.next(row.span, "table row")?;
+                    let mut cells = Siblings::new(row.span);
+                    for cell in &row.cells {
+                        self.span(cell.span, row.span, "table cell")?;
+                        cells.next(cell.span, "table cell")?;
+                        self.markdown_inlines(&cell.content, cell.span, depth + 3)?;
+                    }
+                }
+                Ok(())
+            }
+            Block::CodeBlock { .. }
+            | Block::ThematicBreak { .. }
+            | Block::LinkDefinition { .. } => Ok(()),
+        }
+    }
+
+    fn markdown_blocks(&self, blocks: &[Block], parent: Span, depth: usize) -> Result<(), String> {
+        let mut siblings = Siblings::new(parent);
+        for block in blocks {
+            self.markdown_block(block, parent, depth)?;
+            siblings.next(block.span(), "block")?;
+        }
+        Ok(())
+    }
+
+    fn markdown_inlines(
+        &self,
+        nodes: &[markdown::Inline],
+        parent: Span,
+        depth: usize,
+    ) -> Result<(), String> {
+        let mut siblings = Siblings::new(parent);
+        for node in nodes {
+            let span = node.span();
+            self.depth(depth, span)?;
+            self.span(span, parent, "Markdown inline node")?;
+            siblings.next(span, "Markdown inline node")?;
+            match node {
+                markdown::Inline::Text(text) | markdown::Inline::Html(text) => {
+                    if text.text.is_empty() {
+                        return Err(format!("empty text at {span:?}"));
+                    }
+                }
+                markdown::Inline::Code(_)
+                | markdown::Inline::SoftBreak(_)
+                | markdown::Inline::HardBreak(_) => {}
+                markdown::Inline::Emphasis { content, .. }
+                | markdown::Inline::Strong { content, .. }
+                | markdown::Inline::Image { content, .. } => {
+                    self.markdown_inlines(content, span, depth + 1)?;
+                }
+                markdown::Inline::Link {
+                    target, content, ..
+                } => {
+                    if let LinkTarget::Element(reference) = target {
+                        self.reference(reference, span)?;
+                    }
+                    self.markdown_inlines(content, span, depth + 1)?;
+                }
+                markdown::Inline::Tag(tag) => self.inline_tag(tag, depth + 1)?,
+            }
+        }
+        Ok(())
+    }
+
     fn diagnostics(&self, diagnostics: &[Diagnostic]) -> Result<(), String> {
         let mut previous = self.bounds.start;
         for diagnostic in diagnostics {
@@ -457,6 +608,15 @@ mod tests {
         ] {
             check_javadoc_text(text).unwrap();
             check_javadoc_bytes(text.as_bytes()).unwrap();
+        }
+        for text in [
+            "",
+            "x",
+            "/// a\n/// b",
+            "/// - [List]\n///   {@code x}\n/// @return y",
+        ] {
+            check_markdown_text(text).unwrap();
+            check_markdown_bytes(text.as_bytes()).unwrap();
         }
     }
 
