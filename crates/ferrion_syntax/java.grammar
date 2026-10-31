@@ -409,7 +409,10 @@ node RecordDecl = Modifiers? 'record' name:Ident TypeParameters? RecordHeader Im
     body:ClassBody
 
 /// `@interface A { ... }`. The `@` is a token of the declaration; javac's modifiers include it.
-node AnnotationTypeDecl = Modifiers? '@' 'interface' name:Ident body:ClassBody
+/// javac parses an annotation interface's header like an interface's, and rejects type parameters,
+/// `extends`, and `permits` only after parsing, so the tree has them too.
+node AnnotationTypeDecl = Modifiers? '@' 'interface' name:Ident TypeParameters? ExtendsClause?
+    PermitsClause? body:ClassBody
 
 /// A class's `extends` has one type, an interface's any number.
 node ExtendsClause = 'extends' types:Type (',' types:Type)*
