@@ -1,4 +1,4 @@
-CompilationUnit 0..191 [error]
+CompilationUnit 0..191
   LineComment 0..96 "// javac parses any type after `extends` and `implements`, and rejects these only after parsing."
   LineTerminator 96..97 "\n"
   ClassDecl 97..144
@@ -43,16 +43,16 @@ CompilationUnit 0..191 [error]
       RBrace 143..144 "}"
   LineTerminator 144..145 "\n"
   LineTerminator 145..146 "\n"
-  ClassDecl 146..190 [error]
+  ClassDecl 146..190
     ClassKw 146..151 "class"
     Whitespace 151..152 " "
     Identifier 152..153 "F"
     Whitespace 153..154 " "
-    ClassBody 154..190 [error]
+    ClassBody 154..190
       LBrace 154..155 "{"
       LineTerminator 155..156 "\n"
       Whitespace 156..158 "  "
-      MethodDecl 158..188 [error]
+      MethodDecl 158..188
         VoidType 158..162
           VoidKw 158..162 "void"
         Whitespace 162..163 " "
@@ -82,11 +82,10 @@ CompilationUnit 0..191 [error]
             Dot 183..184 "."
             Identifier 184..185 "I"
         Whitespace 185..186 " "
-        Error 186..188 [error]
+        Block 186..188
           LBrace 186..187 "{"
           RBrace 187..188 "}"
       LineTerminator 188..189 "\n"
       RBrace 189..190 "}"
   LineTerminator 190..191 "\n"
   Eof 191..191 ""
-error 186..187 @186 UnexpectedToken(LBrace): unexpected '{'

@@ -54,12 +54,14 @@ the same way, so `import a.#b;` gets one error, for the `#`, and its import is s
 
 ### Unclosed blocks
 
-An unclosed `{` would otherwise swallow the rest of the file into one method. Inside a block, a
-token that can only start a member, not a statement (an access modifier or `static`), closes the
-block, with a "`}` expected" error. javac does the same: given a method missing its `}` followed by
-`private void b()`, it reports "illegal start of expression" at `private` and then parses `b` as a
-method. Further heuristics (indentation of a `}` compared with its block's first line, for example)
-are added only when the quality metric below shows they help.
+An unclosed `{` would otherwise swallow the rest of the file into one method. Inside a block or a
+switch block, a token that can only start a member, not a statement (an access modifier, `static`,
+`native`, `transient`, or `volatile`), closes the block, with an error at that token. javac does the
+same: given a method missing its `}` followed by `private void b()`, it reports "illegal start of
+expression" at `private` and then parses `b` as a method. `abstract`, `final`, and `strictfp` can
+start a local class, so they don't close a block. Further heuristics (indentation of a `}`
+compared with its block's first line, for example) are added only when the quality metric below
+shows they help.
 
 ### Progress
 

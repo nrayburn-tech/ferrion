@@ -1,0 +1,89 @@
+CompilationUnit 0..137
+  LineComment 0..14 "// release: 13"
+  LineTerminator 14..15 "\n"
+  ClassDecl 15..136
+    ClassKw 15..20 "class"
+    Whitespace 20..21 " "
+    Identifier 21..26 "Yield"
+    Whitespace 26..27 " "
+    ClassBody 27..136
+      LBrace 27..28 "{"
+      LineTerminator 28..29 "\n"
+      Whitespace 29..33 "    "
+      MethodDecl 33..91
+        VoidType 33..37
+          VoidKw 33..37 "void"
+        Whitespace 37..38 " "
+        Identifier 38..39 "m"
+        FormalParameters 39..46
+          LParen 39..40 "("
+          FormalParameter 40..45
+            PrimitiveType 40..43
+              IntKw 40..43 "int"
+            Whitespace 43..44 " "
+            Identifier 44..45 "x"
+          RParen 45..46 ")"
+        Whitespace 46..47 " "
+        Block 47..91
+          LBrace 47..48 "{"
+          LineTerminator 48..49 "\n"
+          Whitespace 49..57 "        "
+          ExprStmt 57..66
+            MethodCallExpr 57..65
+              Identifier 57..62 "yield"
+              Arguments 62..65
+                LParen 62..63 "("
+                LiteralExpr 63..64
+                  IntLiteral 63..64 "1"
+                RParen 64..65 ")"
+            Semi 65..66 ";"
+          LineTerminator 66..67 "\n"
+          Whitespace 67..75 "        "
+          ExprStmt 75..85
+            AssignExpr 75..84
+              NameExpr 75..80
+                Identifier 75..80 "yield"
+              Whitespace 80..81 " "
+              Eq 81..82 "="
+              Whitespace 82..83 " "
+              LiteralExpr 83..84
+                IntLiteral 83..84 "1"
+            Semi 84..85 ";"
+          LineTerminator 85..86 "\n"
+          Whitespace 86..90 "    "
+          RBrace 90..91 "}"
+      LineTerminator 91..92 "\n"
+      LineTerminator 92..93 "\n"
+      Whitespace 93..97 "    "
+      MethodDecl 97..118
+        VoidType 97..101
+          VoidKw 97..101 "void"
+        Whitespace 101..102 " "
+        Identifier 102..107 "yield"
+        FormalParameters 107..114
+          LParen 107..108 "("
+          FormalParameter 108..113
+            PrimitiveType 108..111
+              IntKw 108..111 "int"
+            Whitespace 111..112 " "
+            Identifier 112..113 "x"
+          RParen 113..114 ")"
+        Whitespace 114..115 " "
+        Block 115..118
+          LBrace 115..116 "{"
+          Whitespace 116..117 " "
+          RBrace 117..118 "}"
+      LineTerminator 118..119 "\n"
+      LineTerminator 119..120 "\n"
+      Whitespace 120..124 "    "
+      FieldDecl 124..134
+        PrimitiveType 124..127
+          IntKw 124..127 "int"
+        Whitespace 127..128 " "
+        VariableDeclarator 128..133
+          Identifier 128..133 "yield"
+        Semi 133..134 ";"
+      LineTerminator 134..135 "\n"
+      RBrace 135..136 "}"
+  LineTerminator 136..137 "\n"
+  Eof 137..137 ""

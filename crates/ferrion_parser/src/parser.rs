@@ -378,7 +378,6 @@ impl<'t> Parser<'t> {
     /// `node` must be the node completed last: nothing may have been consumed or completed since,
     /// though errors may have been reported. Walks the node's events backwards, so it costs time
     /// in proportion to the node's size.
-    #[allow(dead_code, reason = "for the grammar areas still to come")]
     pub fn last_node_anchors(&self, node: CompletedMarker) -> NodeAnchors {
         let mut anchors = NodeAnchors {
             start: self.tokens[self.significant(0).raw as usize].span,

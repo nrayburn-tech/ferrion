@@ -1,0 +1,517 @@
+CompilationUnit 0..864
+  ClassDecl 0..863
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..14 "Patterns"
+    Whitespace 14..15 " "
+    ClassBody 15..863
+      LBrace 15..16 "{"
+      LineTerminator 16..17 "\n"
+      Whitespace 17..21 "    "
+      RecordDecl 21..51
+        RecordKw 21..27 "record"
+        Whitespace 27..28 " "
+        Identifier 28..33 "Point"
+        RecordHeader 33..47
+          LParen 33..34 "("
+          RecordComponent 34..39
+            PrimitiveType 34..37
+              IntKw 34..37 "int"
+            Whitespace 37..38 " "
+            Identifier 38..39 "x"
+          Comma 39..40 ","
+          Whitespace 40..41 " "
+          RecordComponent 41..46
+            PrimitiveType 41..44
+              IntKw 41..44 "int"
+            Whitespace 44..45 " "
+            Identifier 45..46 "y"
+          RParen 46..47 ")"
+        Whitespace 47..48 " "
+        ClassBody 48..51
+          LBrace 48..49 "{"
+          Whitespace 49..50 " "
+          RBrace 50..51 "}"
+      LineTerminator 51..52 "\n"
+      Whitespace 52..56 "    "
+      RecordDecl 56..80
+        RecordKw 56..62 "record"
+        Whitespace 62..63 " "
+        Identifier 63..66 "Box"
+        RecordHeader 66..76
+          LParen 66..67 "("
+          RecordComponent 67..75
+            ClassType 67..73
+              Identifier 67..73 "Object"
+            Whitespace 73..74 " "
+            Identifier 74..75 "o"
+          RParen 75..76 ")"
+        Whitespace 76..77 " "
+        ClassBody 77..80
+          LBrace 77..78 "{"
+          Whitespace 78..79 " "
+          RBrace 79..80 "}"
+      LineTerminator 80..81 "\n"
+      LineTerminator 81..82 "\n"
+      Whitespace 82..86 "    "
+      MethodDecl 86..639
+        ClassType 86..92
+          Identifier 86..92 "String"
+        Whitespace 92..93 " "
+        Identifier 93..94 "m"
+        FormalParameters 94..104
+          LParen 94..95 "("
+          FormalParameter 95..103
+            ClassType 95..101
+              Identifier 95..101 "Object"
+            Whitespace 101..102 " "
+            Identifier 102..103 "o"
+          RParen 103..104 ")"
+        Whitespace 104..105 " "
+        Block 105..639
+          LBrace 105..106 "{"
+          LineTerminator 106..107 "\n"
+          Whitespace 107..115 "        "
+          IfStmt 115..172
+            IfKw 115..117 "if"
+            Whitespace 117..118 " "
+            LParen 118..119 "("
+            BinaryExpr 119..161
+              InstanceofExpr 119..146
+                NameExpr 119..120
+                  Identifier 119..120 "o"
+                Whitespace 120..121 " "
+                InstanceofKw 121..131 "instanceof"
+                Whitespace 131..132 " "
+                TypePattern 132..146
+                  Modifiers 132..137
+                    FinalKw 132..137 "final"
+                  Whitespace 137..138 " "
+                  ClassType 138..144
+                    Identifier 138..144 "String"
+                  Whitespace 144..145 " "
+                  Identifier 145..146 "s"
+              Whitespace 146..147 " "
+              AmpAmp 147..149 "&&"
+              Whitespace 149..150 " "
+              MethodCallExpr 150..161
+                NameExpr 150..151
+                  Identifier 150..151 "s"
+                Dot 151..152 "."
+                Identifier 152..159 "isEmpty"
+                Arguments 159..161
+                  LParen 159..160 "("
+                  RParen 160..161 ")"
+            RParen 161..162 ")"
+            Whitespace 162..163 " "
+            ReturnStmt 163..172
+              ReturnKw 163..169 "return"
+              Whitespace 169..170 " "
+              NameExpr 170..171
+                Identifier 170..171 "s"
+              Semi 171..172 ";"
+          LineTerminator 172..173 "\n"
+          Whitespace 173..181 "        "
+          IfStmt 181..230
+            IfKw 181..183 "if"
+            Whitespace 183..184 " "
+            LParen 184..185 "("
+            InstanceofExpr 185..213
+              NameExpr 185..186
+                Identifier 185..186 "o"
+              Whitespace 186..187 " "
+              InstanceofKw 187..197 "instanceof"
+              Whitespace 197..198 " "
+              RecordPattern 198..213
+                ClassType 198..203
+                  Identifier 198..203 "Point"
+                LParen 203..204 "("
+                TypePattern 204..209
+                  ClassType 204..207
+                    Identifier 204..207 "var"
+                  Whitespace 207..208 " "
+                  Identifier 208..209 "x"
+                Comma 209..210 ","
+                Whitespace 210..211 " "
+                UnnamedPattern 211..212
+                  Underscore 211..212 "_"
+                RParen 212..213 ")"
+            RParen 213..214 ")"
+            Whitespace 214..215 " "
+            ReturnStmt 215..230
+              ReturnKw 215..221 "return"
+              Whitespace 221..222 " "
+              LiteralExpr 222..229
+                StringLiteral 222..229 "\"point\""
+              Semi 229..230 ";"
+          LineTerminator 230..231 "\n"
+          Whitespace 231..239 "        "
+          IfStmt 239..276
+            IfKw 239..241 "if"
+            Whitespace 241..242 " "
+            LParen 242..243 "("
+            InstanceofExpr 243..261
+              NameExpr 243..244
+                Identifier 243..244 "o"
+              Whitespace 244..245 " "
+              InstanceofKw 245..255 "instanceof"
+              Whitespace 255..256 " "
+              TypePattern 256..261
+                PrimitiveType 256..259
+                  IntKw 256..259 "int"
+                Whitespace 259..260 " "
+                Identifier 260..261 "i"
+            RParen 261..262 ")"
+            Whitespace 262..263 " "
+            ReturnStmt 263..276
+              ReturnKw 263..269 "return"
+              Whitespace 269..270 " "
+              LiteralExpr 270..275
+                StringLiteral 270..275 "\"int\""
+              Semi 275..276 ";"
+          LineTerminator 276..277 "\n"
+          Whitespace 277..285 "        "
+          ReturnStmt 285..633
+            ReturnKw 285..291 "return"
+            Whitespace 291..292 " "
+            SwitchExpr 292..632
+              SwitchKw 292..298 "switch"
+              Whitespace 298..299 " "
+              LParen 299..300 "("
+              NameExpr 300..301
+                Identifier 300..301 "o"
+              RParen 301..302 ")"
+              Whitespace 302..303 " "
+              SwitchBlock 303..632
+                LBrace 303..304 "{"
+                LineTerminator 304..305 "\n"
+                Whitespace 305..317 "            "
+                SwitchRule 317..336
+                  SwitchLabel 317..330
+                    CaseKw 317..321 "case"
+                    Whitespace 321..322 " "
+                    TypePattern 322..330
+                      ClassType 322..328
+                        Identifier 322..328 "String"
+                      Whitespace 328..329 " "
+                      Identifier 329..330 "s"
+                  Whitespace 330..331 " "
+                  Arrow 331..333 "->"
+                  Whitespace 333..334 " "
+                  NameExpr 334..335
+                    Identifier 334..335 "s"
+                  Semi 335..336 ";"
+                LineTerminator 336..337 "\n"
+                Whitespace 337..349 "            "
+                SwitchRule 349..389
+                  SwitchLabel 349..374
+                    CaseKw 349..353 "case"
+                    Whitespace 353..354 " "
+                    TypePattern 354..363
+                      ClassType 354..361
+                        Identifier 354..361 "Integer"
+                      Whitespace 361..362 " "
+                      Identifier 362..363 "i"
+                    Whitespace 363..364 " "
+                    Guard 364..374
+                      WhenKw 364..368 "when"
+                      Whitespace 368..369 " "
+                      BinaryExpr 369..374
+                        NameExpr 369..370
+                          Identifier 369..370 "i"
+                        Whitespace 370..371 " "
+                        Gt 371..372 ">"
+                        Whitespace 372..373 " "
+                        LiteralExpr 373..374
+                          IntLiteral 373..374 "0"
+                  Whitespace 374..375 " "
+                  Arrow 375..377 "->"
+                  Whitespace 377..378 " "
+                  LiteralExpr 378..388
+                    StringLiteral 378..388 "\"positive\""
+                  Semi 388..389 ";"
+                LineTerminator 389..390 "\n"
+                Whitespace 390..402 "            "
+                SwitchRule 402..455
+                  SwitchLabel 402..440
+                    CaseKw 402..406 "case"
+                    Whitespace 406..407 " "
+                    RecordPattern 407..426
+                      ClassType 407..412
+                        Identifier 407..412 "Point"
+                      LParen 412..413 "("
+                      TypePattern 413..418
+                        PrimitiveType 413..416
+                          IntKw 413..416 "int"
+                        Whitespace 416..417 " "
+                        Identifier 417..418 "x"
+                      Comma 418..419 ","
+                      Whitespace 419..420 " "
+                      TypePattern 420..425
+                        PrimitiveType 420..423
+                          IntKw 420..423 "int"
+                        Whitespace 423..424 " "
+                        Identifier 424..425 "y"
+                      RParen 425..426 ")"
+                    Whitespace 426..427 " "
+                    Guard 427..440
+                      WhenKw 427..431 "when"
+                      Whitespace 431..432 " "
+                      ParenExpr 432..440
+                        LParen 432..433 "("
+                        BinaryExpr 433..439
+                          NameExpr 433..434
+                            Identifier 433..434 "x"
+                          Whitespace 434..435 " "
+                          EqEq 435..437 "=="
+                          Whitespace 437..438 " "
+                          NameExpr 438..439
+                            Identifier 438..439 "y"
+                        RParen 439..440 ")"
+                  Whitespace 440..441 " "
+                  Arrow 441..443 "->"
+                  Whitespace 443..444 " "
+                  LiteralExpr 444..454
+                    StringLiteral 444..454 "\"diagonal\""
+                  Semi 454..455 ";"
+                LineTerminator 455..456 "\n"
+                Whitespace 456..468 "            "
+                SwitchRule 468..509
+                  SwitchLabel 468..497
+                    CaseKw 468..472 "case"
+                    Whitespace 472..473 " "
+                    RecordPattern 473..497
+                      ClassType 473..476
+                        Identifier 473..476 "Box"
+                      LParen 476..477 "("
+                      RecordPattern 477..496
+                        ClassType 477..482
+                          Identifier 477..482 "Point"
+                        LParen 482..483 "("
+                        TypePattern 483..488
+                          ClassType 483..486
+                            Identifier 483..486 "var"
+                          Whitespace 486..487 " "
+                          Identifier 487..488 "x"
+                        Comma 488..489 ","
+                        Whitespace 489..490 " "
+                        TypePattern 490..495
+                          ClassType 490..493
+                            Identifier 490..493 "var"
+                          Whitespace 493..494 " "
+                          Identifier 494..495 "y"
+                        RParen 495..496 ")"
+                      RParen 496..497 ")"
+                  Whitespace 497..498 " "
+                  Arrow 498..500 "->"
+                  Whitespace 500..501 " "
+                  LiteralExpr 501..508
+                    StringLiteral 501..508 "\"boxed\""
+                  Semi 508..509 ";"
+                LineTerminator 509..510 "\n"
+                Whitespace 510..522 "            "
+                SwitchRule 522..543
+                  SwitchLabel 522..533
+                    CaseKw 522..526 "case"
+                    Whitespace 526..527 " "
+                    RecordPattern 527..533
+                      ClassType 527..530
+                        Identifier 527..530 "Box"
+                      LParen 530..531 "("
+                      UnnamedPattern 531..532
+                        Underscore 531..532 "_"
+                      RParen 532..533 ")"
+                  Whitespace 533..534 " "
+                  Arrow 534..536 "->"
+                  Whitespace 536..537 " "
+                  LiteralExpr 537..542
+                    StringLiteral 537..542 "\"box\""
+                  Semi 542..543 ";"
+                LineTerminator 543..544 "\n"
+                Whitespace 544..556 "            "
+                SwitchRule 556..579
+                  SwitchLabel 556..568
+                    CaseKw 556..560 "case"
+                    Whitespace 560..561 " "
+                    TypePattern 561..568
+                      ArrayType 561..566
+                        PrimitiveType 561..564
+                          IntKw 561..564 "int"
+                        Dim 564..566
+                          LBracket 564..565 "["
+                          RBracket 565..566 "]"
+                      Whitespace 566..567 " "
+                      Identifier 567..568 "a"
+                  Whitespace 568..569 " "
+                  Arrow 569..571 "->"
+                  Whitespace 571..572 " "
+                  LiteralExpr 572..578
+                    StringLiteral 572..578 "\"ints\""
+                  Semi 578..579 ";"
+                LineTerminator 579..580 "\n"
+                Whitespace 580..592 "            "
+                SwitchRule 592..622
+                  SwitchLabel 592..610
+                    CaseKw 592..596 "case"
+                    Whitespace 596..597 " "
+                    LiteralExpr 597..601
+                      NullKw 597..601 "null"
+                    Comma 601..602 ","
+                    Whitespace 602..603 " "
+                    DefaultKw 603..610 "default"
+                  Whitespace 610..611 " "
+                  Arrow 611..613 "->"
+                  Whitespace 613..614 " "
+                  LiteralExpr 614..621
+                    StringLiteral 614..621 "\"other\""
+                  Semi 621..622 ";"
+                LineTerminator 622..623 "\n"
+                Whitespace 623..631 "        "
+                RBrace 631..632 "}"
+            Semi 632..633 ";"
+          LineTerminator 633..634 "\n"
+          Whitespace 634..638 "    "
+          RBrace 638..639 "}"
+      LineTerminator 639..640 "\n"
+      LineTerminator 640..641 "\n"
+      Whitespace 641..645 "    "
+      MethodDecl 645..818
+        PrimitiveType 645..648
+          IntKw 645..648 "int"
+        Whitespace 648..649 " "
+        Identifier 649..658 "constants"
+        FormalParameters 658..665
+          LParen 658..659 "("
+          FormalParameter 659..664
+            PrimitiveType 659..662
+              IntKw 659..662 "int"
+            Whitespace 662..663 " "
+            Identifier 663..664 "x"
+          RParen 664..665 ")"
+        Whitespace 665..666 " "
+        Block 666..818
+          LBrace 666..667 "{"
+          LineTerminator 667..668 "\n"
+          Whitespace 668..676 "        "
+          ReturnStmt 676..812
+            ReturnKw 676..682 "return"
+            Whitespace 682..683 " "
+            SwitchExpr 683..811
+              SwitchKw 683..689 "switch"
+              Whitespace 689..690 " "
+              LParen 690..691 "("
+              NameExpr 691..692
+                Identifier 691..692 "x"
+              RParen 692..693 ")"
+              Whitespace 693..694 " "
+              SwitchBlock 694..811
+                LBrace 694..695 "{"
+                LineTerminator 695..696 "\n"
+                Whitespace 696..708 "            "
+                SwitchRule 708..720
+                  SwitchLabel 708..714
+                    CaseKw 708..712 "case"
+                    Whitespace 712..713 " "
+                    NameExpr 713..714
+                      Identifier 713..714 "A"
+                  Whitespace 714..715 " "
+                  Arrow 715..717 "->"
+                  Whitespace 717..718 " "
+                  LiteralExpr 718..719
+                    IntLiteral 718..719 "1"
+                  Semi 719..720 ";"
+                LineTerminator 720..721 "\n"
+                Whitespace 721..733 "            "
+                SwitchRule 733..748
+                  SwitchLabel 733..742
+                    CaseKw 733..737 "case"
+                    Whitespace 737..738 " "
+                    NameExpr 738..739
+                      Identifier 738..739 "B"
+                    Comma 739..740 ","
+                    Whitespace 740..741 " "
+                    NameExpr 741..742
+                      Identifier 741..742 "C"
+                  Whitespace 742..743 " "
+                  Arrow 743..745 "->"
+                  Whitespace 745..746 " "
+                  LiteralExpr 746..747
+                    IntLiteral 746..747 "2"
+                  Semi 747..748 ";"
+                LineTerminator 748..749 "\n"
+                Whitespace 749..761 "            "
+                SwitchRule 761..775
+                  SwitchLabel 761..769
+                    CaseKw 761..765 "case"
+                    Whitespace 765..766 " "
+                    ParenExpr 766..769
+                      LParen 766..767 "("
+                      LiteralExpr 767..768
+                        IntLiteral 767..768 "1"
+                      RParen 768..769 ")"
+                  Whitespace 769..770 " "
+                  Arrow 770..772 "->"
+                  Whitespace 772..773 " "
+                  LiteralExpr 773..774
+                    IntLiteral 773..774 "3"
+                  Semi 774..775 ";"
+                LineTerminator 775..776 "\n"
+                Whitespace 776..788 "            "
+                SwitchRule 788..801
+                  SwitchLabel 788..795
+                    DefaultKw 788..795 "default"
+                  Whitespace 795..796 " "
+                  Arrow 796..798 "->"
+                  Whitespace 798..799 " "
+                  LiteralExpr 799..800
+                    IntLiteral 799..800 "0"
+                  Semi 800..801 ";"
+                LineTerminator 801..802 "\n"
+                Whitespace 802..810 "        "
+                RBrace 810..811 "}"
+            Semi 811..812 ";"
+          LineTerminator 812..813 "\n"
+          Whitespace 813..817 "    "
+          RBrace 817..818 "}"
+      LineTerminator 818..819 "\n"
+      LineTerminator 819..820 "\n"
+      Whitespace 820..824 "    "
+      FieldDecl 824..861
+        Modifiers 824..836
+          StaticKw 824..830 "static"
+          Whitespace 830..831 " "
+          FinalKw 831..836 "final"
+        Whitespace 836..837 " "
+        PrimitiveType 837..840
+          IntKw 837..840 "int"
+        Whitespace 840..841 " "
+        VariableDeclarator 841..846
+          Identifier 841..842 "A"
+          Whitespace 842..843 " "
+          Eq 843..844 "="
+          Whitespace 844..845 " "
+          LiteralExpr 845..846
+            IntLiteral 845..846 "0"
+        Comma 846..847 ","
+        Whitespace 847..848 " "
+        VariableDeclarator 848..853
+          Identifier 848..849 "B"
+          Whitespace 849..850 " "
+          Eq 850..851 "="
+          Whitespace 851..852 " "
+          LiteralExpr 852..853
+            IntLiteral 852..853 "1"
+        Comma 853..854 ","
+        Whitespace 854..855 " "
+        VariableDeclarator 855..860
+          Identifier 855..856 "C"
+          Whitespace 856..857 " "
+          Eq 857..858 "="
+          Whitespace 858..859 " "
+          LiteralExpr 859..860
+            IntLiteral 859..860 "2"
+        Semi 860..861 ";"
+      LineTerminator 861..862 "\n"
+      RBrace 862..863 "}"
+  LineTerminator 863..864 "\n"
+  Eof 864..864 ""

@@ -17,94 +17,133 @@ CompilationUnit 0..162 [error]
           LParen 25..26 "("
           RParen 26..27 ")"
         Whitespace 27..28 " "
-        Error 28..159 [error]
+        Block 28..159 [error]
           LBrace 28..29 "{"
           LineTerminator 29..30 "\n"
           Whitespace 30..34 "    "
-          IntKw 34..37 "int"
-          Whitespace 37..38 " "
-          Identifier 38..39 "a"
-          Whitespace 39..40 " "
-          Eq 40..41 "="
-          Whitespace 41..42 " "
-          IntLiteral 42..43 "1"
-          Whitespace 43..44 " "
-          Plus 44..45 "+"
-          Whitespace 45..46 " "
-          Semi 46..47 ";"
+          LocalVarDecl 34..47 [error]
+            PrimitiveType 34..37
+              IntKw 34..37 "int"
+            Whitespace 37..38 " "
+            VariableDeclarator 38..45 [error]
+              Identifier 38..39 "a"
+              Whitespace 39..40 " "
+              Eq 40..41 "="
+              Whitespace 41..42 " "
+              BinaryExpr 42..45 [error]
+                LiteralExpr 42..43
+                  IntLiteral 42..43 "1"
+                Whitespace 43..44 " "
+                Plus 44..45 "+"
+            Whitespace 45..46 " "
+            Semi 46..47 ";"
           LineTerminator 47..48 "\n"
           Whitespace 48..52 "    "
-          Identifier 52..53 "f"
-          LParen 53..54 "("
-          Identifier 54..55 "a"
-          Whitespace 55..56 " "
-          Identifier 56..57 "b"
-          RParen 57..58 ")"
-          Semi 58..59 ";"
+          ExprStmt 52..59 [error]
+            MethodCallExpr 52..58 [error]
+              Identifier 52..53 "f"
+              Arguments 53..58 [error]
+                LParen 53..54 "("
+                NameExpr 54..55
+                  Identifier 54..55 "a"
+                Whitespace 55..56 " "
+                Error 56..57 [error]
+                  Identifier 56..57 "b"
+                RParen 57..58 ")"
+            Semi 58..59 ";"
           LineTerminator 59..60 "\n"
           Whitespace 60..64 "    "
-          Identifier 64..65 "g"
-          LParen 65..66 "("
-          IntLiteral 66..67 "1"
-          Comma 67..68 ","
-          Whitespace 68..69 " "
-          Semi 69..70 ";"
+          ExprStmt 64..70 [error]
+            MethodCallExpr 64..68 [error]
+              Identifier 64..65 "g"
+              Arguments 65..68 [error]
+                LParen 65..66 "("
+                LiteralExpr 66..67
+                  IntLiteral 66..67 "1"
+                Comma 67..68 ","
+            Whitespace 68..69 " "
+            Semi 69..70 ";"
           LineTerminator 70..71 "\n"
           Whitespace 71..75 "    "
-          Identifier 75..81 "Object"
-          Whitespace 81..82 " "
-          Identifier 82..83 "o"
-          Whitespace 83..84 " "
-          Eq 84..85 "="
-          Whitespace 85..86 " "
-          NewKw 86..89 "new"
-          Whitespace 89..90 " "
-          IntKw 90..93 "int"
-          LBracket 93..94 "["
-          RBracket 94..95 "]"
-          Semi 95..96 ";"
+          LocalVarDecl 75..96 [error]
+            ClassType 75..81
+              Identifier 75..81 "Object"
+            Whitespace 81..82 " "
+            VariableDeclarator 82..95 [error]
+              Identifier 82..83 "o"
+              Whitespace 83..84 " "
+              Eq 84..85 "="
+              Whitespace 85..86 " "
+              ArrayCreationExpr 86..95 [error]
+                NewKw 86..89 "new"
+                Whitespace 89..90 " "
+                PrimitiveType 90..93
+                  IntKw 90..93 "int"
+                Dim 93..95
+                  LBracket 93..94 "["
+                  RBracket 94..95 "]"
+            Semi 95..96 ";"
           LineTerminator 96..97 "\n"
           Whitespace 97..101 "    "
-          Identifier 101..102 "o"
-          Whitespace 102..103 " "
-          Eq 103..104 "="
-          Whitespace 104..105 " "
-          LParen 105..106 "("
-          Identifier 106..107 "a"
-          Comma 107..108 ","
-          Whitespace 108..109 " "
-          IntKw 109..112 "int"
-          Whitespace 112..113 " "
-          Identifier 113..114 "b"
-          RParen 114..115 ")"
-          Whitespace 115..116 " "
-          Arrow 116..118 "->"
-          Whitespace 118..119 " "
-          IntLiteral 119..120 "1"
-          Semi 120..121 ";"
+          ExprStmt 101..121 [error]
+            AssignExpr 101..120 [error]
+              NameExpr 101..102
+                Identifier 101..102 "o"
+              Whitespace 102..103 " "
+              Eq 103..104 "="
+              Whitespace 104..105 " "
+              LambdaExpr 105..120 [error]
+                LambdaParameters 105..115 [error]
+                  LParen 105..106 "("
+                  LambdaParameter 106..107
+                    Identifier 106..107 "a"
+                  Comma 107..108 ","
+                  Whitespace 108..109 " "
+                  LambdaParameter 109..114
+                    PrimitiveType 109..112
+                      IntKw 109..112 "int"
+                    Whitespace 112..113 " "
+                    Identifier 113..114 "b"
+                  RParen 114..115 ")"
+                Whitespace 115..116 " "
+                Arrow 116..118 "->"
+                Whitespace 118..119 " "
+                LiteralExpr 119..120
+                  IntLiteral 119..120 "1"
+            Semi 120..121 ";"
           LineTerminator 121..122 "\n"
           Whitespace 122..126 "    "
-          Identifier 126..127 "o"
-          Whitespace 127..128 " "
-          Eq 128..129 "="
-          Whitespace 129..130 " "
-          Identifier 130..131 "x"
-          Dot 131..132 "."
-          Semi 132..133 ";"
+          ExprStmt 126..133 [error]
+            AssignExpr 126..132 [error]
+              NameExpr 126..127
+                Identifier 126..127 "o"
+              Whitespace 127..128 " "
+              Eq 128..129 "="
+              Whitespace 129..130 " "
+              FieldAccessExpr 130..132 [error]
+                NameExpr 130..131
+                  Identifier 130..131 "x"
+                Dot 131..132 "."
+            Semi 132..133 ";"
           LineTerminator 133..134 "\n"
           Whitespace 134..138 "    "
-          Identifier 138..139 "h"
-          LParen 139..140 "("
-          LineTerminator 140..141 "\n"
-          Whitespace 141..145 "    "
-          IntKw 145..148 "int"
-          Whitespace 148..149 " "
-          Identifier 149..150 "c"
-          Whitespace 150..151 " "
-          Eq 151..152 "="
-          Whitespace 152..153 " "
-          IntLiteral 153..154 "2"
-          Semi 154..155 ";"
+          ExprStmt 138..155 [error]
+            MethodCallExpr 138..154 [error]
+              Identifier 138..139 "h"
+              Arguments 139..154 [error]
+                LParen 139..140 "("
+                LineTerminator 140..141 "\n"
+                Whitespace 141..145 "    "
+                PrimitiveType 145..148
+                  IntKw 145..148 "int"
+                Whitespace 148..149 " "
+                Error 149..154 [error]
+                  Identifier 149..150 "c"
+                  Whitespace 150..151 " "
+                  Eq 151..152 "="
+                  Whitespace 152..153 " "
+                  IntLiteral 153..154 "2"
+            Semi 154..155 ";"
           LineTerminator 155..156 "\n"
           Whitespace 156..158 "  "
           RBrace 158..159 "}"
@@ -112,4 +151,10 @@ CompilationUnit 0..162 [error]
       RBrace 160..161 "}"
   LineTerminator 161..162 "\n"
   Eof 162..162 ""
-error 28..29 @28 UnexpectedToken(LBrace): unexpected '{'
+error 46..47 @46 ExpressionExpected(Semi): expected an expression, found ';'
+error 55..55 @55 Expected(OneOf([RParen, Comma])): ')' or ',' expected
+error 69..70 @69 ExpressionExpected(Semi): expected an expression, found ';'
+error 86..95 @95 ArrayDimensionMissing: an array creation needs a dimension or an initializer
+error 105..115 @105 MixedLambdaParameters: a lambda's parameters must all have types or all be inferred
+error 132..132 @132 Expected(Identifier): name expected
+error 149..150 @149 ClassLiteralExpected: a type in an expression must be followed by '.class' or '::'

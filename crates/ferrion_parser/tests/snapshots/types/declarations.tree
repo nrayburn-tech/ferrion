@@ -1,4 +1,4 @@
-CompilationUnit 0..464 [error]
+CompilationUnit 0..464
   ImportDecl 0..19
     ImportKw 0..6 "import"
     Whitespace 6..7 " "
@@ -12,7 +12,7 @@ CompilationUnit 0..464 [error]
     Semi 18..19 ";"
   LineTerminator 19..20 "\n"
   LineTerminator 20..21 "\n"
-  ClassDecl 21..463 [error]
+  ClassDecl 21..463
     ClassKw 21..26 "class"
     Whitespace 26..27 " "
     Identifier 27..32 "Types"
@@ -52,7 +52,7 @@ CompilationUnit 0..464 [error]
         Identifier 89..90 "U"
       Gt 90..91 ">"
     Whitespace 91..92 " "
-    ClassBody 92..463 [error]
+    ClassBody 92..463
       LBrace 92..93 "{"
       LineTerminator 93..94 "\n"
       Whitespace 94..96 "  "
@@ -182,7 +182,7 @@ CompilationUnit 0..464 [error]
       LineTerminator 250..251 "\n"
       LineTerminator 251..252 "\n"
       Whitespace 252..254 "  "
-      MethodDecl 254..461 [error]
+      MethodDecl 254..360
         TypeParameters 254..267
           Lt 254..255 "<"
           TypeParameter 255..266
@@ -242,52 +242,66 @@ CompilationUnit 0..464 [error]
           ClassType 332..337
             Identifier 332..337 "Error"
         Whitespace 337..338 " "
-        Error 338..461 [error]
+        Block 338..360
           LBrace 338..339 "{"
           LineTerminator 339..340 "\n"
           Whitespace 340..344 "    "
-          ReturnKw 344..350 "return"
-          Whitespace 350..351 " "
-          NullKw 351..355 "null"
-          Semi 355..356 ";"
+          ReturnStmt 344..356
+            ReturnKw 344..350 "return"
+            Whitespace 350..351 " "
+            LiteralExpr 351..355
+              NullKw 351..355 "null"
+            Semi 355..356 ";"
           LineTerminator 356..357 "\n"
           Whitespace 357..359 "  "
           RBrace 359..360 "}"
-          LineTerminator 360..361 "\n"
-          LineTerminator 361..362 "\n"
-          Whitespace 362..364 "  "
+      LineTerminator 360..361 "\n"
+      LineTerminator 361..362 "\n"
+      Whitespace 362..364 "  "
+      MethodDecl 364..461
+        VoidType 364..368
           VoidKw 364..368 "void"
-          Whitespace 368..369 " "
-          Identifier 369..370 "n"
+        Whitespace 368..369 " "
+        Identifier 369..370 "n"
+        FormalParameters 370..372
           LParen 370..371 "("
           RParen 371..372 ")"
-          Whitespace 372..373 " "
+        Whitespace 372..373 " "
+        Block 373..461
           LBrace 373..374 "{"
           LineTerminator 374..375 "\n"
           Whitespace 375..379 "    "
-          TryKw 379..382 "try"
-          Whitespace 382..383 " "
-          LBrace 383..384 "{"
-          LineTerminator 384..385 "\n"
-          Whitespace 385..389 "    "
-          RBrace 389..390 "}"
-          Whitespace 390..391 " "
-          CatchKw 391..396 "catch"
-          Whitespace 396..397 " "
-          LParen 397..398 "("
-          Identifier 398..419 "IllegalStateException"
-          Whitespace 419..420 " "
-          Pipe 420..421 "|"
-          Whitespace 421..422 " "
-          Identifier 422..446 "IllegalArgumentException"
-          Whitespace 446..447 " "
-          Identifier 447..448 "e"
-          RParen 448..449 ")"
-          Whitespace 449..450 " "
-          LBrace 450..451 "{"
-          LineTerminator 451..452 "\n"
-          Whitespace 452..456 "    "
-          RBrace 456..457 "}"
+          TryStmt 379..457
+            TryKw 379..382 "try"
+            Whitespace 382..383 " "
+            Block 383..390
+              LBrace 383..384 "{"
+              LineTerminator 384..385 "\n"
+              Whitespace 385..389 "    "
+              RBrace 389..390 "}"
+            Whitespace 390..391 " "
+            CatchClause 391..457
+              CatchKw 391..396 "catch"
+              Whitespace 396..397 " "
+              LParen 397..398 "("
+              CatchParameter 398..448
+                UnionType 398..446
+                  ClassType 398..419
+                    Identifier 398..419 "IllegalStateException"
+                  Whitespace 419..420 " "
+                  Pipe 420..421 "|"
+                  Whitespace 421..422 " "
+                  ClassType 422..446
+                    Identifier 422..446 "IllegalArgumentException"
+                Whitespace 446..447 " "
+                Identifier 447..448 "e"
+              RParen 448..449 ")"
+              Whitespace 449..450 " "
+              Block 450..457
+                LBrace 450..451 "{"
+                LineTerminator 451..452 "\n"
+                Whitespace 452..456 "    "
+                RBrace 456..457 "}"
           LineTerminator 457..458 "\n"
           Whitespace 458..460 "  "
           RBrace 460..461 "}"
@@ -295,4 +309,3 @@ CompilationUnit 0..464 [error]
       RBrace 462..463 "}"
   LineTerminator 463..464 "\n"
   Eof 464..464 ""
-error 338..339 @338 UnexpectedToken(LBrace): unexpected '{'

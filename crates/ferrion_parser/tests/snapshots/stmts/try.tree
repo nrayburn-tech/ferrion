@@ -1,0 +1,209 @@
+CompilationUnit 0..371
+  ClassDecl 0..370
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..9 "Try"
+    Whitespace 9..10 " "
+    ClassBody 10..370
+      LBrace 10..11 "{"
+      LineTerminator 11..12 "\n"
+      Whitespace 12..16 "    "
+      MethodDecl 16..342
+        VoidType 16..20
+          VoidKw 16..20 "void"
+        Whitespace 20..21 " "
+        Identifier 21..22 "m"
+        FormalParameters 22..39
+          LParen 22..23 "("
+          FormalParameter 23..38
+            ClassType 23..36
+              Identifier 23..36 "AutoCloseable"
+            Whitespace 36..37 " "
+            Identifier 37..38 "r"
+          RParen 38..39 ")"
+        Whitespace 39..40 " "
+        ThrowsClause 40..56
+          ThrowsKw 40..46 "throws"
+          Whitespace 46..47 " "
+          ClassType 47..56
+            Identifier 47..56 "Exception"
+        Whitespace 56..57 " "
+        Block 57..342
+          LBrace 57..58 "{"
+          LineTerminator 58..59 "\n"
+          Whitespace 59..67 "        "
+          TryStmt 67..105
+            TryKw 67..70 "try"
+            Whitespace 70..71 " "
+            Block 71..74
+              LBrace 71..72 "{"
+              Whitespace 72..73 " "
+              RBrace 73..74 "}"
+            Whitespace 74..75 " "
+            CatchClause 75..105
+              CatchKw 75..80 "catch"
+              Whitespace 80..81 " "
+              LParen 81..82 "("
+              CatchParameter 82..100
+                ClassType 82..98
+                  Identifier 82..98 "RuntimeException"
+                Whitespace 98..99 " "
+                Identifier 99..100 "e"
+              RParen 100..101 ")"
+              Whitespace 101..102 " "
+              Block 102..105
+                LBrace 102..103 "{"
+                Whitespace 103..104 " "
+                RBrace 104..105 "}"
+          LineTerminator 105..106 "\n"
+          Whitespace 106..114 "        "
+          TryStmt 114..202
+            TryKw 114..117 "try"
+            Whitespace 117..118 " "
+            Block 118..121
+              LBrace 118..119 "{"
+              Whitespace 119..120 " "
+              RBrace 120..121 "}"
+            Whitespace 121..122 " "
+            CatchClause 122..190
+              CatchKw 122..127 "catch"
+              Whitespace 127..128 " "
+              LParen 128..129 "("
+              CatchParameter 129..185
+                Modifiers 129..134
+                  FinalKw 129..134 "final"
+                Whitespace 134..135 " "
+                UnionType 135..183
+                  ClassType 135..156
+                    Identifier 135..156 "IllegalStateException"
+                  Whitespace 156..157 " "
+                  Pipe 157..158 "|"
+                  Whitespace 158..159 " "
+                  ClassType 159..183
+                    Identifier 159..183 "IllegalArgumentException"
+                Whitespace 183..184 " "
+                Identifier 184..185 "e"
+              RParen 185..186 ")"
+              Whitespace 186..187 " "
+              Block 187..190
+                LBrace 187..188 "{"
+                Whitespace 188..189 " "
+                RBrace 189..190 "}"
+            Whitespace 190..191 " "
+            FinallyClause 191..202
+              FinallyKw 191..198 "finally"
+              Whitespace 198..199 " "
+              Block 199..202
+                LBrace 199..200 "{"
+                Whitespace 200..201 " "
+                RBrace 201..202 "}"
+          LineTerminator 202..203 "\n"
+          Whitespace 203..211 "        "
+          TryStmt 211..230
+            TryKw 211..214 "try"
+            Whitespace 214..215 " "
+            Block 215..218
+              LBrace 215..216 "{"
+              Whitespace 216..217 " "
+              RBrace 217..218 "}"
+            Whitespace 218..219 " "
+            FinallyClause 219..230
+              FinallyKw 219..226 "finally"
+              Whitespace 226..227 " "
+              Block 227..230
+                LBrace 227..228 "{"
+                Whitespace 228..229 " "
+                RBrace 229..230 "}"
+          LineTerminator 230..231 "\n"
+          Whitespace 231..239 "        "
+          TryStmt 239..279
+            TryKw 239..242 "try"
+            Whitespace 242..243 " "
+            ResourceSpecification 243..275
+              LParen 243..244 "("
+              LocalVarDecl 244..263
+                ClassType 244..257
+                  Identifier 244..257 "AutoCloseable"
+                Whitespace 257..258 " "
+                VariableDeclarator 258..263
+                  Identifier 258..259 "a"
+                  Whitespace 259..260 " "
+                  Eq 260..261 "="
+                  Whitespace 261..262 " "
+                  NameExpr 262..263
+                    Identifier 262..263 "r"
+              Semi 263..264 ";"
+              Whitespace 264..265 " "
+              LocalVarDecl 265..274
+                ClassType 265..268
+                  Identifier 265..268 "var"
+                Whitespace 268..269 " "
+                VariableDeclarator 269..274
+                  Identifier 269..270 "b"
+                  Whitespace 270..271 " "
+                  Eq 271..272 "="
+                  Whitespace 272..273 " "
+                  NameExpr 273..274
+                    Identifier 273..274 "r"
+              RParen 274..275 ")"
+            Whitespace 275..276 " "
+            Block 276..279
+              LBrace 276..277 "{"
+              Whitespace 277..278 " "
+              RBrace 278..279 "}"
+          LineTerminator 279..280 "\n"
+          Whitespace 280..288 "        "
+          TryStmt 288..336
+            TryKw 288..291 "try"
+            Whitespace 291..292 " "
+            ResourceSpecification 292..308
+              LParen 292..293 "("
+              NameExpr 293..294
+                Identifier 293..294 "r"
+              Semi 294..295 ";"
+              Whitespace 295..296 " "
+              FieldAccessExpr 296..306
+                ThisExpr 296..300
+                  ThisKw 296..300 "this"
+                Dot 300..301 "."
+                Identifier 301..306 "field"
+              Semi 306..307 ";"
+              RParen 307..308 ")"
+            Whitespace 308..309 " "
+            Block 309..312
+              LBrace 309..310 "{"
+              Whitespace 310..311 " "
+              RBrace 311..312 "}"
+            Whitespace 312..313 " "
+            CatchClause 313..336
+              CatchKw 313..318 "catch"
+              Whitespace 318..319 " "
+              LParen 319..320 "("
+              CatchParameter 320..331
+                ClassType 320..329
+                  Identifier 320..329 "Exception"
+                Whitespace 329..330 " "
+                Identifier 330..331 "e"
+              RParen 331..332 ")"
+              Whitespace 332..333 " "
+              Block 333..336
+                LBrace 333..334 "{"
+                Whitespace 334..335 " "
+                RBrace 335..336 "}"
+          LineTerminator 336..337 "\n"
+          Whitespace 337..341 "    "
+          RBrace 341..342 "}"
+      LineTerminator 342..343 "\n"
+      LineTerminator 343..344 "\n"
+      Whitespace 344..348 "    "
+      FieldDecl 348..368
+        ClassType 348..361
+          Identifier 348..361 "AutoCloseable"
+        Whitespace 361..362 " "
+        VariableDeclarator 362..367
+          Identifier 362..367 "field"
+        Semi 367..368 ";"
+      LineTerminator 368..369 "\n"
+      RBrace 369..370 "}"
+  LineTerminator 370..371 "\n"
+  Eof 371..371 ""

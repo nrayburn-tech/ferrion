@@ -1,5 +1,5 @@
-CompilationUnit 0..502 [error]
-  ClassDecl 0..290 [error]
+CompilationUnit 0..502
+  ClassDecl 0..290
     Modifiers 0..94
       PublicKw 0..6 "public"
       Whitespace 6..7 " "
@@ -27,7 +27,7 @@ CompilationUnit 0..502 [error]
     Whitespace 100..101 " "
     Identifier 101..102 "A"
     Whitespace 102..103 " "
-    ClassBody 103..290 [error]
+    ClassBody 103..290
       LBrace 103..104 "{"
       LineTerminator 104..105 "\n"
       Whitespace 105..107 "  "
@@ -53,7 +53,7 @@ CompilationUnit 0..502 [error]
       LineTerminator 137..138 "\n"
       LineTerminator 138..139 "\n"
       Whitespace 139..141 "  "
-      MethodDecl 141..230 [error]
+      MethodDecl 141..202
         Modifiers 141..167
           Annotation 141..150
             At 141..142 "@"
@@ -75,26 +75,32 @@ CompilationUnit 0..502 [error]
           LParen 183..184 "("
           RParen 184..185 ")"
         Whitespace 185..186 " "
-        Error 186..230 [error]
+        Block 186..202
           LBrace 186..187 "{"
           Whitespace 187..188 " "
-          ReturnKw 188..194 "return"
-          Whitespace 194..195 " "
-          NullKw 195..199 "null"
-          Semi 199..200 ";"
+          ReturnStmt 188..200
+            ReturnKw 188..194 "return"
+            Whitespace 194..195 " "
+            LiteralExpr 195..199
+              NullKw 195..199 "null"
+            Semi 199..200 ";"
           Whitespace 200..201 " "
           RBrace 201..202 "}"
-          LineTerminator 202..203 "\n"
-          LineTerminator 203..204 "\n"
-          Whitespace 204..206 "  "
+      LineTerminator 202..203 "\n"
+      LineTerminator 203..204 "\n"
+      Whitespace 204..206 "  "
+      FieldDecl 206..231
+        Modifiers 206..224
           TransientKw 206..215 "transient"
           Whitespace 215..216 " "
           VolatileKw 216..224 "volatile"
-          Whitespace 224..225 " "
+        Whitespace 224..225 " "
+        PrimitiveType 225..228
           IntKw 225..228 "int"
-          Whitespace 228..229 " "
+        Whitespace 228..229 " "
+        VariableDeclarator 229..230
           Identifier 229..230 "y"
-      Semi 230..231 ";"
+        Semi 230..231 ";"
       LineTerminator 231..232 "\n"
       LineTerminator 232..233 "\n"
       Whitespace 233..235 "  "
@@ -115,7 +121,7 @@ CompilationUnit 0..502 [error]
       LineTerminator 264..265 "\n"
       LineTerminator 265..266 "\n"
       Whitespace 266..268 "  "
-      MethodDecl 268..288 [error]
+      MethodDecl 268..288
         Modifiers 268..276
           StrictfpKw 268..276 "strictfp"
         Whitespace 276..277 " "
@@ -127,7 +133,7 @@ CompilationUnit 0..502 [error]
           LParen 283..284 "("
           RParen 284..285 ")"
         Whitespace 285..286 " "
-        Error 286..288 [error]
+        Block 286..288
           LBrace 286..287 "{"
           RBrace 287..288 "}"
       LineTerminator 288..289 "\n"
@@ -236,16 +242,16 @@ CompilationUnit 0..502 [error]
       RBrace 461..462 "}"
   LineTerminator 462..463 "\n"
   LineTerminator 463..464 "\n"
-  InterfaceDecl 464..501 [error]
+  InterfaceDecl 464..501
     InterfaceKw 464..473 "interface"
     Whitespace 473..474 " "
     Identifier 474..475 "I"
     Whitespace 475..476 " "
-    ClassBody 476..501 [error]
+    ClassBody 476..501
       LBrace 476..477 "{"
       LineTerminator 477..478 "\n"
       Whitespace 478..480 "  "
-      MethodDecl 480..499 [error]
+      MethodDecl 480..499
         Modifiers 480..487
           DefaultKw 480..487 "default"
         Whitespace 487..488 " "
@@ -257,13 +263,10 @@ CompilationUnit 0..502 [error]
           LParen 494..495 "("
           RParen 495..496 ")"
         Whitespace 496..497 " "
-        Error 497..499 [error]
+        Block 497..499
           LBrace 497..498 "{"
           RBrace 498..499 "}"
       LineTerminator 499..500 "\n"
       RBrace 500..501 "}"
   LineTerminator 501..502 "\n"
   Eof 502..502 ""
-error 186..187 @186 UnexpectedToken(LBrace): unexpected '{'
-error 286..287 @286 UnexpectedToken(LBrace): unexpected '{'
-error 497..498 @497 UnexpectedToken(LBrace): unexpected '{'

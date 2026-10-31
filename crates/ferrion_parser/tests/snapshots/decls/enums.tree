@@ -1,4 +1,4 @@
-CompilationUnit 0..349 [error]
+CompilationUnit 0..349
   EnumDecl 0..13
     EnumKw 0..4 "enum"
     Whitespace 4..5 " "
@@ -58,7 +58,7 @@ CompilationUnit 0..349 [error]
       RBrace 94..95 "}"
   LineTerminator 95..96 "\n"
   LineTerminator 96..97 "\n"
-  EnumDecl 97..348 [error]
+  EnumDecl 97..348
     EnumKw 97..101 "enum"
     Whitespace 101..102 " "
     Identifier 102..108 "Planet"
@@ -69,7 +69,7 @@ CompilationUnit 0..349 [error]
       ClassType 120..124
         Identifier 120..124 "Body"
     Whitespace 124..125 " "
-    EnumBody 125..348 [error]
+    EnumBody 125..348
       LBrace 125..126 "{"
       LineTerminator 126..127 "\n"
       Whitespace 127..129 "  "
@@ -93,7 +93,7 @@ CompilationUnit 0..349 [error]
       Comma 163..164 ","
       LineTerminator 164..165 "\n"
       Whitespace 165..167 "  "
-      EnumConstant 167..240 [error]
+      EnumConstant 167..240
         Identifier 167..172 "EARTH"
         Arguments 172..187
           LParen 172..173 "("
@@ -105,11 +105,11 @@ CompilationUnit 0..349 [error]
             DoubleLiteral 181..186 "6.3e6"
           RParen 186..187 ")"
         Whitespace 187..188 " "
-        ClassBody 188..240 [error]
+        ClassBody 188..240
           LBrace 188..189 "{"
           LineTerminator 189..190 "\n"
           Whitespace 190..194 "    "
-          MethodDecl 194..236 [error]
+          MethodDecl 194..236
             Modifiers 194..203
               Annotation 194..203
                 At 194..195 "@"
@@ -124,13 +124,15 @@ CompilationUnit 0..349 [error]
               LParen 218..219 "("
               RParen 219..220 ")"
             Whitespace 220..221 " "
-            Error 221..236 [error]
+            Block 221..236
               LBrace 221..222 "{"
               Whitespace 222..223 " "
-              ReturnKw 223..229 "return"
-              Whitespace 229..230 " "
-              DoubleLiteral 230..233 "9.8"
-              Semi 233..234 ";"
+              ReturnStmt 223..234
+                ReturnKw 223..229 "return"
+                Whitespace 229..230 " "
+                LiteralExpr 230..233
+                  DoubleLiteral 230..233 "9.8"
+                Semi 233..234 ";"
               Whitespace 234..235 " "
               RBrace 235..236 "}"
           LineTerminator 236..237 "\n"
@@ -155,7 +157,7 @@ CompilationUnit 0..349 [error]
       LineTerminator 271..272 "\n"
       LineTerminator 272..273 "\n"
       Whitespace 273..275 "  "
-      ConstructorDecl 275..346 [error]
+      ConstructorDecl 275..312
         Identifier 275..281 "Planet"
         FormalParameters 281..309
           LParen 281..282 "("
@@ -173,29 +175,33 @@ CompilationUnit 0..349 [error]
             Identifier 302..308 "radius"
           RParen 308..309 ")"
         Whitespace 309..310 " "
-        Error 310..346 [error]
+        Block 310..312
           LBrace 310..311 "{"
           RBrace 311..312 "}"
-          LineTerminator 312..313 "\n"
-          LineTerminator 313..314 "\n"
-          Whitespace 314..316 "  "
+      LineTerminator 312..313 "\n"
+      LineTerminator 313..314 "\n"
+      Whitespace 314..316 "  "
+      MethodDecl 316..346
+        PrimitiveType 316..322
           DoubleKw 316..322 "double"
-          Whitespace 322..323 " "
-          Identifier 323..330 "gravity"
+        Whitespace 322..323 " "
+        Identifier 323..330 "gravity"
+        FormalParameters 330..332
           LParen 330..331 "("
           RParen 331..332 ")"
-          Whitespace 332..333 " "
+        Whitespace 332..333 " "
+        Block 333..346
           LBrace 333..334 "{"
           Whitespace 334..335 " "
-          ReturnKw 335..341 "return"
-          Whitespace 341..342 " "
-          IntLiteral 342..343 "0"
-          Semi 343..344 ";"
+          ReturnStmt 335..344
+            ReturnKw 335..341 "return"
+            Whitespace 341..342 " "
+            LiteralExpr 342..343
+              IntLiteral 342..343 "0"
+            Semi 343..344 ";"
           Whitespace 344..345 " "
           RBrace 345..346 "}"
       LineTerminator 346..347 "\n"
       RBrace 347..348 "}"
   LineTerminator 348..349 "\n"
   Eof 349..349 ""
-error 221..222 @221 UnexpectedToken(LBrace): unexpected '{'
-error 310..311 @310 UnexpectedToken(LBrace): unexpected '{'

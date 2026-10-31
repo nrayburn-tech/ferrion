@@ -8,7 +8,7 @@ CompilationUnit 0..145 [error]
       LBrace 8..9 "{"
       LineTerminator 9..10 "\n"
       Whitespace 10..12 "  "
-      ConstructorDecl 12..80 [error]
+      ConstructorDecl 12..23
         Identifier 12..13 "A"
         FormalParameters 13..20
           LParen 13..14 "("
@@ -19,44 +19,57 @@ CompilationUnit 0..145 [error]
             Identifier 18..19 "x"
           RParen 19..20 ")"
         Whitespace 20..21 " "
-        Error 21..80 [error]
+        Block 21..23
           LBrace 21..22 "{"
           RBrace 22..23 "}"
-          LineTerminator 23..24 "\n"
-          Whitespace 24..26 "  "
-          Identifier 26..27 "B"
+      LineTerminator 23..24 "\n"
+      Whitespace 24..26 "  "
+      ConstructorDecl 26..32 [error]
+        Identifier 26..27 "B"
+        FormalParameters 27..29
           LParen 27..28 "("
           RParen 28..29 ")"
-          Whitespace 29..30 " "
+        Whitespace 29..30 " "
+        Block 30..32
           LBrace 30..31 "{"
           RBrace 31..32 "}"
-          LineTerminator 32..33 "\n"
-          Whitespace 33..35 "  "
+      LineTerminator 32..33 "\n"
+      Whitespace 33..35 "  "
+      FieldDecl 35..81 [error]
+        ClassType 35..41
           Identifier 35..41 "Object"
-          Whitespace 41..42 " "
+        Whitespace 41..42 " "
+        VariableDeclarator 42..80 [error]
           Identifier 42..43 "o"
           Whitespace 43..44 " "
           Eq 44..45 "="
           Whitespace 45..46 " "
-          NewKw 46..49 "new"
-          Whitespace 49..50 " "
-          Identifier 50..56 "Object"
-          LParen 56..57 "("
-          RParen 57..58 ")"
-          Whitespace 58..59 " "
-          LBrace 59..60 "{"
-          LineTerminator 60..61 "\n"
-          Whitespace 61..65 "    "
-          Identifier 65..71 "Object"
-          LParen 71..72 "("
-          RParen 72..73 ")"
-          Whitespace 73..74 " "
-          LBrace 74..75 "{"
-          RBrace 75..76 "}"
-          LineTerminator 76..77 "\n"
-          Whitespace 77..79 "  "
-          RBrace 79..80 "}"
-      Semi 80..81 ";"
+          NewExpr 46..80 [error]
+            NewKw 46..49 "new"
+            Whitespace 49..50 " "
+            ClassType 50..56
+              Identifier 50..56 "Object"
+            Arguments 56..58
+              LParen 56..57 "("
+              RParen 57..58 ")"
+            Whitespace 58..59 " "
+            ClassBody 59..80 [error]
+              LBrace 59..60 "{"
+              LineTerminator 60..61 "\n"
+              Whitespace 61..65 "    "
+              ConstructorDecl 65..76 [error]
+                Identifier 65..71 "Object"
+                FormalParameters 71..73
+                  LParen 71..72 "("
+                  RParen 72..73 ")"
+                Whitespace 73..74 " "
+                Block 74..76
+                  LBrace 74..75 "{"
+                  RBrace 75..76 "}"
+              LineTerminator 76..77 "\n"
+              Whitespace 77..79 "  "
+              RBrace 79..80 "}"
+        Semi 80..81 ";"
       LineTerminator 81..82 "\n"
       RBrace 82..83 "}"
   LineTerminator 83..84 "\n"
@@ -77,7 +90,7 @@ CompilationUnit 0..145 [error]
           LParen 102..103 "("
           RParen 103..104 ")"
         Whitespace 104..105 " "
-        Error 105..107 [error]
+        Block 105..107
           LBrace 105..106 "{"
           RBrace 106..107 "}"
       LineTerminator 107..108 "\n"
@@ -98,28 +111,31 @@ CompilationUnit 0..145 [error]
       Semi 123..124 ";"
       LineTerminator 124..125 "\n"
       Whitespace 125..127 "  "
-      ConstructorDecl 127..142 [error]
+      ConstructorDecl 127..133
         Identifier 127..128 "E"
         FormalParameters 128..130
           LParen 128..129 "("
           RParen 129..130 ")"
         Whitespace 130..131 " "
-        Error 131..142 [error]
+        Block 131..133
           LBrace 131..132 "{"
           RBrace 132..133 "}"
-          LineTerminator 133..134 "\n"
-          Whitespace 134..136 "  "
-          Identifier 136..137 "F"
+      LineTerminator 133..134 "\n"
+      Whitespace 134..136 "  "
+      ConstructorDecl 136..142 [error]
+        Identifier 136..137 "F"
+        FormalParameters 137..139
           LParen 137..138 "("
           RParen 138..139 ")"
-          Whitespace 139..140 " "
+        Whitespace 139..140 " "
+        Block 140..142
           LBrace 140..141 "{"
           RBrace 141..142 "}"
       LineTerminator 142..143 "\n"
       RBrace 143..144 "}"
   LineTerminator 144..145 "\n"
   Eof 145..145 ""
-error 21..22 @21 UnexpectedToken(LBrace): unexpected '{'
+error 26..27 @26 MissingReturnType: a method needs a result type; a constructor takes its class's name
+error 65..71 @65 MissingReturnType: a method needs a result type; a constructor takes its class's name
 error 102..102 @102 Expected(Identifier): name expected
-error 105..106 @105 UnexpectedToken(LBrace): unexpected '{'
-error 131..132 @131 UnexpectedToken(LBrace): unexpected '{'
+error 136..137 @136 MisplacedEnumConstant: enum constants come before the enum's ';'; a method needs a result type

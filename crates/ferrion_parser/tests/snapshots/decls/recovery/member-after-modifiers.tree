@@ -17,7 +17,7 @@ CompilationUnit 0..39 [error]
       Semi 20..21 ";"
       LineTerminator 21..22 "\n"
       Whitespace 22..24 "  "
-      MethodDecl 24..36 [error]
+      MethodDecl 24..36
         VoidType 24..28
           VoidKw 24..28 "void"
         Whitespace 28..29 " "
@@ -26,7 +26,7 @@ CompilationUnit 0..39 [error]
           LParen 31..32 "("
           RParen 32..33 ")"
         Whitespace 33..34 " "
-        Error 34..36 [error]
+        Block 34..36
           LBrace 34..35 "{"
           RBrace 35..36 "}"
       LineTerminator 36..37 "\n"
@@ -34,4 +34,3 @@ CompilationUnit 0..39 [error]
   LineTerminator 38..39 "\n"
   Eof 39..39 ""
 error 19..20 @19 ExpectedMember(IntLiteral): unexpected literal: expected a member declaration
-error 34..35 @34 UnexpectedToken(LBrace): unexpected '{'

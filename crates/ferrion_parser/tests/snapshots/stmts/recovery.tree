@@ -1,0 +1,440 @@
+CompilationUnit 0..604 [error]
+  ClassDecl 0..603 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..14 "Recovery"
+    Whitespace 14..15 " "
+    ClassBody 15..603 [error]
+      LBrace 15..16 "{"
+      LineTerminator 16..17 "\n"
+      Whitespace 17..21 "    "
+      MethodDecl 21..286 [error]
+        VoidType 21..25
+          VoidKw 21..25 "void"
+        Whitespace 25..26 " "
+        Identifier 26..36 "statements"
+        FormalParameters 36..43
+          LParen 36..37 "("
+          FormalParameter 37..42
+            PrimitiveType 37..40
+              IntKw 37..40 "int"
+            Whitespace 40..41 " "
+            Identifier 41..42 "a"
+          RParen 42..43 ")"
+        Whitespace 43..44 " "
+        Block 44..286 [error]
+          LBrace 44..45 "{"
+          LineTerminator 45..46 "\n"
+          Whitespace 46..54 "        "
+          ExprStmt 54..60 [error]
+            BinaryExpr 54..59
+              NameExpr 54..55
+                Identifier 54..55 "a"
+              Whitespace 55..56 " "
+              Plus 56..57 "+"
+              Whitespace 57..58 " "
+              LiteralExpr 58..59
+                IntLiteral 58..59 "1"
+            Semi 59..60 ";"
+          LineTerminator 60..61 "\n"
+          Whitespace 61..69 "        "
+          Error 69..73 [error]
+            ElseKw 69..73 "else"
+          Whitespace 73..74 " "
+          ExprStmt 74..78
+            PostfixExpr 74..77
+              NameExpr 74..75
+                Identifier 74..75 "a"
+              PlusPlus 75..77 "++"
+            Semi 77..78 ";"
+          LineTerminator 78..79 "\n"
+          Whitespace 79..87 "        "
+          Error 87..94 [error]
+            SwitchLabel 87..93
+              CaseKw 87..91 "case"
+              Whitespace 91..92 " "
+              LiteralExpr 92..93
+                IntLiteral 92..93 "1"
+            Colon 93..94 ":"
+          Whitespace 94..95 " "
+          ExprStmt 95..99
+            PostfixExpr 95..98
+              NameExpr 95..96
+                Identifier 95..96 "a"
+              PlusPlus 96..98 "++"
+            Semi 98..99 ";"
+          LineTerminator 99..100 "\n"
+          Whitespace 100..108 "        "
+          Error 108..131 [error]
+            CatchClause 108..131
+              CatchKw 108..113 "catch"
+              Whitespace 113..114 " "
+              LParen 114..115 "("
+              CatchParameter 115..126
+                ClassType 115..124
+                  Identifier 115..124 "Exception"
+                Whitespace 124..125 " "
+                Identifier 125..126 "e"
+              RParen 126..127 ")"
+              Whitespace 127..128 " "
+              Block 128..131
+                LBrace 128..129 "{"
+                Whitespace 129..130 " "
+                RBrace 130..131 "}"
+          LineTerminator 131..132 "\n"
+          Whitespace 132..140 "        "
+          TryStmt 140..147 [error]
+            TryKw 140..143 "try"
+            Whitespace 143..144 " "
+            Block 144..147
+              LBrace 144..145 "{"
+              Whitespace 145..146 " "
+              RBrace 146..147 "}"
+          LineTerminator 147..148 "\n"
+          Whitespace 148..156 "        "
+          IfStmt 156..177 [error]
+            IfKw 156..158 "if"
+            Whitespace 158..159 " "
+            LParen 159..160 "("
+            BinaryExpr 160..165
+              NameExpr 160..161
+                Identifier 160..161 "a"
+              Whitespace 161..162 " "
+              Gt 162..163 ">"
+              Whitespace 163..164 " "
+              LiteralExpr 164..165
+                IntLiteral 164..165 "0"
+            RParen 165..166 ")"
+            Whitespace 166..167 " "
+            LocalVarDecl 167..177 [error]
+              PrimitiveType 167..170
+                IntKw 167..170 "int"
+              Whitespace 170..171 " "
+              VariableDeclarator 171..176
+                Identifier 171..172 "b"
+                Whitespace 172..173 " "
+                Eq 173..174 "="
+                Whitespace 174..175 " "
+                LiteralExpr 175..176
+                  IntLiteral 175..176 "1"
+              Semi 176..177 ";"
+          LineTerminator 177..178 "\n"
+          Whitespace 178..186 "        "
+          WhileStmt 186..211 [error]
+            WhileKw 186..191 "while"
+            Whitespace 191..192 " "
+            LParen 192..193 "("
+            BinaryExpr 193..198
+              NameExpr 193..194
+                Identifier 193..194 "a"
+              Whitespace 194..195 " "
+              Gt 195..196 ">"
+              Whitespace 196..197 " "
+              LiteralExpr 197..198
+                IntLiteral 197..198 "0"
+            RParen 198..199 ")"
+            Whitespace 199..200 " "
+            ClassDecl 200..211 [error]
+              ClassKw 200..205 "class"
+              Whitespace 205..206 " "
+              Identifier 206..207 "C"
+              Whitespace 207..208 " "
+              ClassBody 208..211
+                LBrace 208..209 "{"
+                Whitespace 209..210 " "
+                RBrace 210..211 "}"
+          LineTerminator 211..212 "\n"
+          Whitespace 212..220 "        "
+          ForEachStmt 220..238 [error]
+            ForKw 220..223 "for"
+            Whitespace 223..224 " "
+            LParen 224..225 "("
+            Error 225..226 [error]
+              NameExpr 225..226
+                Identifier 225..226 "a"
+            Whitespace 226..227 " "
+            Colon 227..228 ":"
+            Whitespace 228..229 " "
+            NameExpr 229..233
+              Identifier 229..233 "list"
+            RParen 233..234 ")"
+            Whitespace 234..235 " "
+            Block 235..238
+              LBrace 235..236 "{"
+              Whitespace 236..237 " "
+              RBrace 237..238 "}"
+          LineTerminator 238..239 "\n"
+          Whitespace 239..247 "        "
+          TryStmt 247..263 [error]
+            TryKw 247..250 "try"
+            Whitespace 250..251 " "
+            ResourceSpecification 251..259 [error]
+              LParen 251..252 "("
+              MethodCallExpr 252..258
+                Identifier 252..256 "open"
+                Arguments 256..258
+                  LParen 256..257 "("
+                  RParen 257..258 ")"
+              RParen 258..259 ")"
+            Whitespace 259..260 " "
+            Block 260..263
+              LBrace 260..261 "{"
+              Whitespace 261..262 " "
+              RBrace 262..263 "}"
+          LineTerminator 263..264 "\n"
+          Whitespace 264..272 "        "
+          ExprStmt 272..275 [error]
+            MethodCallExpr 272..275
+              Identifier 272..273 "f"
+              Arguments 273..275
+                LParen 273..274 "("
+                RParen 274..275 ")"
+          Whitespace 275..276 " "
+          ExprStmt 276..280
+            MethodCallExpr 276..279
+              Identifier 276..277 "g"
+              Arguments 277..279
+                LParen 277..278 "("
+                RParen 278..279 ")"
+            Semi 279..280 ";"
+          LineTerminator 280..281 "\n"
+          Whitespace 281..285 "    "
+          RBrace 285..286 "}"
+      LineTerminator 286..287 "\n"
+      LineTerminator 287..288 "\n"
+      Whitespace 288..292 "    "
+      MethodDecl 292..516 [error]
+        VoidType 292..296
+          VoidKw 292..296 "void"
+        Whitespace 296..297 " "
+        Identifier 297..305 "switches"
+        FormalParameters 305..312
+          LParen 305..306 "("
+          FormalParameter 306..311
+            PrimitiveType 306..309
+              IntKw 306..309 "int"
+            Whitespace 309..310 " "
+            Identifier 310..311 "a"
+          RParen 311..312 ")"
+        Whitespace 312..313 " "
+        Block 313..516 [error]
+          LBrace 313..314 "{"
+          LineTerminator 314..315 "\n"
+          Whitespace 315..323 "        "
+          SwitchStmt 323..360 [error]
+            SwitchKw 323..329 "switch"
+            Whitespace 329..330 " "
+            LParen 330..331 "("
+            NameExpr 331..332
+              Identifier 331..332 "a"
+            RParen 332..333 ")"
+            Whitespace 333..334 " "
+            SwitchBlock 334..360 [error]
+              LBrace 334..335 "{"
+              Whitespace 335..336 " "
+              Error 336..340 [error]
+                Identifier 336..337 "a"
+                PlusPlus 337..339 "++"
+                Semi 339..340 ";"
+              Whitespace 340..341 " "
+              SwitchRule 341..358 [error]
+                SwitchLabel 341..347
+                  CaseKw 341..345 "case"
+                  Whitespace 345..346 " "
+                  LiteralExpr 346..347
+                    IntLiteral 346..347 "1"
+                Whitespace 347..348 " "
+                Arrow 348..350 "->"
+                Whitespace 350..351 " "
+                ReturnStmt 351..358
+                  ReturnKw 351..357 "return"
+                  Semi 357..358 ";"
+              Whitespace 358..359 " "
+              RBrace 359..360 "}"
+          LineTerminator 360..361 "\n"
+          Whitespace 361..369 "        "
+          SwitchStmt 369..426 [error]
+            SwitchKw 369..375 "switch"
+            Whitespace 375..376 " "
+            LParen 376..377 "("
+            NameExpr 377..378
+              Identifier 377..378 "a"
+            RParen 378..379 ")"
+            Whitespace 379..380 " "
+            SwitchBlock 380..426 [error]
+              LBrace 380..381 "{"
+              Whitespace 381..382 " "
+              SwitchRule 382..401 [error]
+                SwitchLabel 382..394 [error]
+                  CaseKw 382..386 "case"
+                  Whitespace 386..387 " "
+                  DefaultKw 387..394 "default"
+                Whitespace 394..395 " "
+                Arrow 395..397 "->"
+                Whitespace 397..398 " "
+                Block 398..401
+                  LBrace 398..399 "{"
+                  Whitespace 399..400 " "
+                  RBrace 400..401 "}"
+              Whitespace 401..402 " "
+              SwitchRule 402..424 [error]
+                SwitchLabel 402..417 [error]
+                  CaseKw 402..406 "case"
+                  Whitespace 406..407 " "
+                  LiteralExpr 407..408
+                    IntLiteral 407..408 "1"
+                  Comma 408..409 ","
+                  Whitespace 409..410 " "
+                  DefaultKw 410..417 "default"
+                Whitespace 417..418 " "
+                Arrow 418..420 "->"
+                Whitespace 420..421 " "
+                Block 421..424
+                  LBrace 421..422 "{"
+                  Whitespace 422..423 " "
+                  RBrace 423..424 "}"
+              Whitespace 424..425 " "
+              RBrace 425..426 "}"
+          LineTerminator 426..427 "\n"
+          Whitespace 427..435 "        "
+          SwitchStmt 435..475 [error]
+            SwitchKw 435..441 "switch"
+            Whitespace 441..442 " "
+            LParen 442..443 "("
+            NameExpr 443..444
+              Identifier 443..444 "a"
+            RParen 444..445 ")"
+            Whitespace 445..446 " "
+            SwitchBlock 446..475 [error]
+              LBrace 446..447 "{"
+              Whitespace 447..448 " "
+              SwitchRule 448..473 [error]
+                SwitchLabel 448..466 [error]
+                  DefaultKw 448..455 "default"
+                  Whitespace 455..456 " "
+                  Guard 456..466 [error]
+                    WhenKw 456..460 "when"
+                    Whitespace 460..461 " "
+                    BinaryExpr 461..466
+                      NameExpr 461..462
+                        Identifier 461..462 "a"
+                      Whitespace 462..463 " "
+                      Gt 463..464 ">"
+                      Whitespace 464..465 " "
+                      LiteralExpr 465..466
+                        IntLiteral 465..466 "0"
+                Whitespace 466..467 " "
+                Arrow 467..469 "->"
+                Whitespace 469..470 " "
+                Block 470..473
+                  LBrace 470..471 "{"
+                  Whitespace 471..472 " "
+                  RBrace 472..473 "}"
+              Whitespace 473..474 " "
+              RBrace 474..475 "}"
+          LineTerminator 475..476 "\n"
+          Whitespace 476..484 "        "
+          SwitchStmt 484..510 [error]
+            SwitchKw 484..490 "switch"
+            Whitespace 490..491 " "
+            LParen 491..492 "("
+            NameExpr 492..493
+              Identifier 492..493 "a"
+            RParen 493..494 ")"
+            Whitespace 494..495 " "
+            SwitchBlock 495..510 [error]
+              LBrace 495..496 "{"
+              Whitespace 496..497 " "
+              SwitchGroup 497..508 [error]
+                SwitchLabel 497..503
+                  CaseKw 497..501 "case"
+                  Whitespace 501..502 " "
+                  LiteralExpr 502..503
+                    IntLiteral 502..503 "1"
+                Whitespace 503..504 " "
+                ExprStmt 504..508
+                  MethodCallExpr 504..507
+                    Identifier 504..505 "f"
+                    Arguments 505..507
+                      LParen 505..506 "("
+                      RParen 506..507 ")"
+                  Semi 507..508 ";"
+              Whitespace 508..509 " "
+              RBrace 509..510 "}"
+          LineTerminator 510..511 "\n"
+          Whitespace 511..515 "    "
+          RBrace 515..516 "}"
+      LineTerminator 516..517 "\n"
+      LineTerminator 517..518 "\n"
+      Whitespace 518..522 "    "
+      MethodDecl 522..577 [error]
+        VoidType 522..526
+          VoidKw 522..526 "void"
+        Whitespace 526..527 " "
+        Identifier 527..535 "unclosed"
+        FormalParameters 535..537
+          LParen 535..536 "("
+          RParen 536..537 ")"
+        Whitespace 537..538 " "
+        Block 538..577 [error]
+          LBrace 538..539 "{"
+          LineTerminator 539..540 "\n"
+          Whitespace 540..548 "        "
+          IfStmt 548..577 [error]
+            IfKw 548..550 "if"
+            Whitespace 550..551 " "
+            LParen 551..552 "("
+            BinaryExpr 552..557
+              NameExpr 552..553
+                Identifier 552..553 "a"
+              Whitespace 553..554 " "
+              Gt 554..555 ">"
+              Whitespace 555..556 " "
+              LiteralExpr 556..557
+                IntLiteral 556..557 "0"
+            RParen 557..558 ")"
+            Whitespace 558..559 " "
+            Block 559..577 [error]
+              LBrace 559..560 "{"
+              LineTerminator 560..561 "\n"
+              Whitespace 561..573 "            "
+              ExprStmt 573..577
+                PostfixExpr 573..576
+                  NameExpr 573..574
+                    Identifier 573..574 "a"
+                  PlusPlus 574..576 "++"
+                Semi 576..577 ";"
+      LineTerminator 577..578 "\n"
+      LineTerminator 578..579 "\n"
+      Whitespace 579..583 "    "
+      FieldDecl 583..601
+        Modifiers 583..590
+          PrivateKw 583..590 "private"
+        Whitespace 590..591 " "
+        PrimitiveType 591..594
+          IntKw 591..594 "int"
+        Whitespace 594..595 " "
+        VariableDeclarator 595..600
+          Identifier 595..600 "field"
+        Semi 600..601 ";"
+      LineTerminator 601..602 "\n"
+      RBrace 602..603 "}"
+  LineTerminator 603..604 "\n"
+  Eof 604..604 ""
+error 54..59 @56 NotAStatement: this expression can't be used as a statement
+error 69..73 @69 ElseWithoutIf: 'else' without 'if'
+error 87..91 @87 CaseOutsideSwitch: case label outside a switch
+error 108..113 @108 CatchWithoutTry: 'catch' without 'try'
+error 140..143 @140 TryWithoutCatch: 'try' needs resources, a 'catch', or a 'finally'
+error 171..172 @171 LocalVariableNotAllowed: a variable can't be declared here; put the statement in a block
+error 200..205 @200 LocalClassNotAllowed: a class can't be declared here; put the statement in a block
+error 225..226 @225 ForEachWithoutDeclaration: the variable of an enhanced 'for' must be declared here
+error 252..258 @256 ResourceNotAVariable: a resource must be a declaration, a variable, or a field
+error 275..275 @275 Expected(Token(Semi)): ';' expected
+error 336..337 @336 CaseExpected: 'case', 'default', or '}' expected
+error 351..357 @351 StatementNotAllowedInRule: a switch rule's body must be an expression, a block, or 'throw'
+error 387..394 @387 DefaultNotAllowed: 'default' can only follow 'null' in a case label
+error 410..417 @410 DefaultNotAllowed: 'default' can only follow 'null' in a case label
+error 456..460 @456 GuardNotAllowed: only a case label with a pattern can have a guard
+error 503..503 @503 Expected(OneOf([Colon, Arrow])): ':' or '->' expected
+error 583..590 @583 ExpressionExpected(PrivateKw): expected an expression, found 'private'

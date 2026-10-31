@@ -391,10 +391,6 @@ fn at_record(p: &Parser<'_>) -> bool {
 
 /// A type declaration after its modifiers; `m` was started before them. `None`, abandoning `m`,
 /// if none starts here.
-#[allow(
-    dead_code,
-    reason = "for local declarations, with the statement grammar"
-)]
 pub(crate) fn type_decl(p: &mut Parser<'_>, m: Marker) -> Option<CompletedMarker> {
     type_decl_with(p, m, ModifierInfo::default())
 }

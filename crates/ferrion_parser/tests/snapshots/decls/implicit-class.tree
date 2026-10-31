@@ -1,4 +1,4 @@
-CompilationUnit 0..156 [error]
+CompilationUnit 0..156
   LineComment 0..14 "// release: 25"
   LineTerminator 14..15 "\n"
   ImportDecl 15..39
@@ -28,7 +28,7 @@ CompilationUnit 0..156 [error]
     Semi 66..67 ";"
   LineTerminator 67..68 "\n"
   LineTerminator 68..69 "\n"
-  MethodDecl 69..136 [error]
+  MethodDecl 69..116
     VoidType 69..73
       VoidKw 69..73 "void"
     Whitespace 73..74 " "
@@ -37,29 +37,38 @@ CompilationUnit 0..156 [error]
       LParen 78..79 "("
       RParen 79..80 ")"
     Whitespace 80..81 " "
-    Error 81..136 [error]
+    Block 81..116
       LBrace 81..82 "{"
       LineTerminator 82..83 "\n"
       Whitespace 83..85 "  "
-      Identifier 85..91 "System"
-      Dot 91..92 "."
-      Identifier 92..95 "out"
-      Dot 95..96 "."
-      Identifier 96..103 "println"
-      LParen 103..104 "("
-      Identifier 104..112 "greeting"
-      RParen 112..113 ")"
-      Semi 113..114 ";"
+      ExprStmt 85..114
+        MethodCallExpr 85..113
+          FieldAccessExpr 85..95
+            NameExpr 85..91
+              Identifier 85..91 "System"
+            Dot 91..92 "."
+            Identifier 92..95 "out"
+          Dot 95..96 "."
+          Identifier 96..103 "println"
+          Arguments 103..113
+            LParen 103..104 "("
+            NameExpr 104..112
+              Identifier 104..112 "greeting"
+            RParen 112..113 ")"
+        Semi 113..114 ";"
       LineTerminator 114..115 "\n"
       RBrace 115..116 "}"
-      LineTerminator 116..117 "\n"
-      LineTerminator 117..118 "\n"
-      Identifier 118..124 "record"
-      Whitespace 124..125 " "
-      Identifier 125..131 "Helper"
+  LineTerminator 116..117 "\n"
+  LineTerminator 117..118 "\n"
+  RecordDecl 118..136
+    RecordKw 118..124 "record"
+    Whitespace 124..125 " "
+    Identifier 125..131 "Helper"
+    RecordHeader 131..133
       LParen 131..132 "("
       RParen 132..133 ")"
-      Whitespace 133..134 " "
+    Whitespace 133..134 " "
+    ClassBody 134..136
       LBrace 134..135 "{"
       RBrace 135..136 "}"
   LineTerminator 136..137 "\n"
@@ -77,4 +86,3 @@ CompilationUnit 0..156 [error]
       RBrace 154..155 "}"
   LineTerminator 155..156 "\n"
   Eof 156..156 ""
-error 81..82 @81 UnexpectedToken(LBrace): unexpected '{'

@@ -1,0 +1,275 @@
+CompilationUnit 0..340 [error]
+  Block 0..312 [error]
+    LBrace 0..1 "{"
+    LineTerminator 1..2 "\n"
+    Whitespace 2..6 "    "
+    Error 6..10 [error]
+      ElseKw 6..10 "else"
+    Whitespace 10..11 " "
+    EmptyStmt 11..12
+      Semi 11..12 ";"
+    LineTerminator 12..13 "\n"
+    Whitespace 13..17 "    "
+    Error 17..24 [error]
+      SwitchLabel 17..23
+        CaseKw 17..21 "case"
+        Whitespace 21..22 " "
+        NameExpr 22..23
+          Identifier 22..23 "X"
+      Colon 23..24 ":"
+    Whitespace 24..25 " "
+    EmptyStmt 25..26
+      Semi 25..26 ";"
+    LineTerminator 26..27 "\n"
+    Whitespace 27..31 "    "
+    Error 31..41 [error]
+      SwitchLabel 31..38
+        DefaultKw 31..38 "default"
+      Whitespace 38..39 " "
+      Arrow 39..41 "->"
+    Whitespace 41..42 " "
+    EmptyStmt 42..43
+      Semi 42..43 ";"
+    LineTerminator 43..44 "\n"
+    Whitespace 44..48 "    "
+    Error 48..63 [error]
+      CatchClause 48..63
+        CatchKw 48..53 "catch"
+        Whitespace 53..54 " "
+        LParen 54..55 "("
+        CatchParameter 55..58
+          ClassType 55..56
+            Identifier 55..56 "E"
+          Whitespace 56..57 " "
+          Identifier 57..58 "e"
+        RParen 58..59 ")"
+        Whitespace 59..60 " "
+        Block 60..63
+          LBrace 60..61 "{"
+          Whitespace 61..62 " "
+          RBrace 62..63 "}"
+    LineTerminator 63..64 "\n"
+    Whitespace 64..68 "    "
+    Error 68..79 [error]
+      FinallyClause 68..79
+        FinallyKw 68..75 "finally"
+        Whitespace 75..76 " "
+        Block 76..79
+          LBrace 76..77 "{"
+          Whitespace 77..78 " "
+          RBrace 78..79 "}"
+    LineTerminator 79..80 "\n"
+    Whitespace 80..84 "    "
+    TryStmt 84..91 [error]
+      TryKw 84..87 "try"
+      Whitespace 87..88 " "
+      Block 88..91
+        LBrace 88..89 "{"
+        Whitespace 89..90 " "
+        RBrace 90..91 "}"
+    LineTerminator 91..92 "\n"
+    Whitespace 92..96 "    "
+    TryStmt 96..99 [error]
+      TryKw 96..99 "try"
+    Whitespace 99..100 " "
+    ExprStmt 100..104
+      MethodCallExpr 100..103
+        Identifier 100..101 "f"
+        Arguments 101..103
+          LParen 101..102 "("
+          RParen 102..103 ")"
+      Semi 103..104 ";"
+    LineTerminator 104..105 "\n"
+    Whitespace 105..109 "    "
+    IfStmt 109..122 [error]
+      IfKw 109..111 "if"
+      Whitespace 111..112 " "
+      LParen 112..113 "("
+      NameExpr 113..114
+        Identifier 113..114 "a"
+      RParen 114..115 ")"
+      Whitespace 115..116 " "
+      Error 116..120 [error]
+        ElseKw 116..120 "else"
+      Whitespace 120..121 " "
+      EmptyStmt 121..122
+        Semi 121..122 ";"
+    LineTerminator 122..123 "\n"
+    Whitespace 123..127 "    "
+    WhileStmt 127..148 [error]
+      WhileKw 127..132 "while"
+      Whitespace 132..133 " "
+      LParen 133..134 "("
+      NameExpr 134..135
+        Identifier 134..135 "a"
+      RParen 135..136 ")"
+      Whitespace 136..137 " "
+      ClassDecl 137..148 [error]
+        ClassKw 137..142 "class"
+        Whitespace 142..143 " "
+        Identifier 143..144 "C"
+        Whitespace 144..145 " "
+        ClassBody 145..148
+          LBrace 145..146 "{"
+          Whitespace 146..147 " "
+          RBrace 147..148 "}"
+    LineTerminator 148..149 "\n"
+    Whitespace 149..153 "    "
+    SwitchStmt 153..209 [error]
+      SwitchKw 153..159 "switch"
+      Whitespace 159..160 " "
+      LParen 160..161 "("
+      NameExpr 161..162
+        Identifier 161..162 "x"
+      RParen 162..163 ")"
+      Whitespace 163..164 " "
+      SwitchBlock 164..209 [error]
+        LBrace 164..165 "{"
+        Whitespace 165..166 " "
+        Error 166..167 [error]
+          Semi 166..167 ";"
+        Whitespace 167..168 " "
+        SwitchRule 168..185 [error]
+          SwitchLabel 168..174
+            CaseKw 168..172 "case"
+            Whitespace 172..173 " "
+            NameExpr 173..174
+              Identifier 173..174 "X"
+          Whitespace 174..175 " "
+          Arrow 175..177 "->"
+          Whitespace 177..178 " "
+          ReturnStmt 178..185
+            ReturnKw 178..184 "return"
+            Semi 184..185 ";"
+        Whitespace 185..186 " "
+        SwitchRule 186..207 [error]
+          SwitchLabel 186..200 [error]
+            DefaultKw 186..193 "default"
+            Whitespace 193..194 " "
+            Guard 194..200 [error]
+              WhenKw 194..198 "when"
+              Whitespace 198..199 " "
+              NameExpr 199..200
+                Identifier 199..200 "a"
+          Whitespace 200..201 " "
+          Arrow 201..203 "->"
+          Whitespace 203..204 " "
+          Block 204..207
+            LBrace 204..205 "{"
+            Whitespace 205..206 " "
+            RBrace 206..207 "}"
+        Whitespace 207..208 " "
+        RBrace 208..209 "}"
+    LineTerminator 209..210 "\n"
+    Whitespace 210..214 "    "
+    SwitchStmt 214..271 [error]
+      SwitchKw 214..220 "switch"
+      Whitespace 220..221 " "
+      LParen 221..222 "("
+      NameExpr 222..223
+        Identifier 222..223 "x"
+      RParen 223..224 ")"
+      Whitespace 224..225 " "
+      SwitchBlock 225..271 [error]
+        LBrace 225..226 "{"
+        Whitespace 226..227 " "
+        SwitchRule 227..246 [error]
+          SwitchLabel 227..239 [error]
+            CaseKw 227..231 "case"
+            Whitespace 231..232 " "
+            DefaultKw 232..239 "default"
+          Whitespace 239..240 " "
+          Arrow 240..242 "->"
+          Whitespace 242..243 " "
+          Block 243..246
+            LBrace 243..244 "{"
+            Whitespace 244..245 " "
+            RBrace 245..246 "}"
+        Whitespace 246..247 " "
+        SwitchRule 247..269 [error]
+          SwitchLabel 247..262 [error]
+            CaseKw 247..251 "case"
+            Whitespace 251..252 " "
+            NameExpr 252..253
+              Identifier 252..253 "X"
+            Comma 253..254 ","
+            Whitespace 254..255 " "
+            DefaultKw 255..262 "default"
+          Whitespace 262..263 " "
+          Arrow 263..265 "->"
+          Whitespace 265..266 " "
+          Block 266..269
+            LBrace 266..267 "{"
+            Whitespace 267..268 " "
+            RBrace 268..269 "}"
+        Whitespace 269..270 " "
+        RBrace 270..271 "}"
+    LineTerminator 271..272 "\n"
+    Whitespace 272..276 "    "
+    Error 276..277 [error]
+      RParen 276..277 ")"
+    Whitespace 277..278 " "
+    EmptyStmt 278..279
+      Semi 278..279 ";"
+    LineTerminator 279..280 "\n"
+    Whitespace 280..284 "    "
+    ClassDecl 284..302 [error]
+      Modifiers 284..290
+        SealedKw 284..290 "sealed"
+      Whitespace 290..291 " "
+      ClassKw 291..296 "class"
+      Whitespace 296..297 " "
+      Identifier 297..298 "S"
+      Whitespace 298..299 " "
+      ClassBody 299..302
+        LBrace 299..300 "{"
+        Whitespace 300..301 " "
+        RBrace 301..302 "}"
+    LineTerminator 302..303 "\n"
+    Whitespace 303..307 "    "
+    IfStmt 307..312 [error]
+      IfKw 307..309 "if"
+      Whitespace 309..310 " "
+      LParen 310..311 "("
+      NameExpr 311..312
+        Identifier 311..312 "a"
+  LineTerminator 312..313 "\n"
+  Whitespace 313..317 "    "
+  Error 317..324 [error]
+    PrivateKw 317..324 "private"
+  Whitespace 324..325 " "
+  Error 325..329 [error]
+    VoidKw 325..329 "void"
+  Whitespace 329..330 " "
+  Error 330..331 [error]
+    Identifier 330..331 "m"
+  Error 331..333 [error]
+    LParen 331..332 "("
+    RParen 332..333 ")"
+  Whitespace 333..334 " "
+  Error 334..337 [error]
+    LBrace 334..335 "{"
+    Whitespace 335..336 " "
+    RBrace 336..337 "}"
+  LineTerminator 337..338 "\n"
+  Error 338..339 [error]
+    RBrace 338..339 "}"
+  LineTerminator 339..340 "\n"
+  Eof 340..340 ""
+error 6..10 @6 ElseWithoutIf: 'else' without 'if'
+error 17..21 @17 CaseOutsideSwitch: case label outside a switch
+error 31..38 @31 CaseOutsideSwitch: case label outside a switch
+error 48..53 @48 CatchWithoutTry: 'catch' without 'try'
+error 68..75 @68 FinallyWithoutTry: 'finally' without 'try'
+error 84..87 @84 TryWithoutCatch: 'try' needs resources, a 'catch', or a 'finally'
+error 96..99 @96 TryWithoutCatch: 'try' needs resources, a 'catch', or a 'finally'
+error 116..120 @116 ElseWithoutIf: 'else' without 'if'
+error 137..142 @137 LocalClassNotAllowed: a class can't be declared here; put the statement in a block
+error 166..167 @166 CaseExpected: 'case', 'default', or '}' expected
+error 178..184 @178 StatementNotAllowedInRule: a switch rule's body must be an expression, a block, or 'throw'
+error 194..198 @194 GuardNotAllowed: only a case label with a pattern can have a guard
+error 232..239 @232 DefaultNotAllowed: 'default' can only follow 'null' in a case label
+error 255..262 @255 DefaultNotAllowed: 'default' can only follow 'null' in a case label
+error 276..277 @276 ExpressionExpected(RParen): expected an expression, found ')'
+error 284..290 @284 SealedLocalClass: a local class can't be sealed or non-sealed
+error 312..312 @312 Expected(Token(RParen)): ')' expected

@@ -41,30 +41,37 @@ CompilationUnit 0..100 [error]
         Semi 39..40 ";"
       LineTerminator 40..41 "\n"
       Whitespace 41..43 "  "
-      ConstructorDecl 43..74 [error]
+      ConstructorDecl 43..49 [error]
         Identifier 43..44 "f"
         FormalParameters 44..46
           LParen 44..45 "("
           RParen 45..46 ")"
         Whitespace 46..47 " "
-        Error 47..74 [error]
+        Block 47..49
           LBrace 47..48 "{"
           RBrace 48..49 "}"
-          LineTerminator 49..50 "\n"
-          Whitespace 50..52 "  "
+      LineTerminator 49..50 "\n"
+      Whitespace 50..52 "  "
+      MethodDecl 52..60 [error]
+        VoidType 52..56
           VoidKw 52..56 "void"
-          Whitespace 56..57 " "
-          Identifier 57..58 "g"
+        Whitespace 56..57 " "
+        Identifier 57..58 "g"
+        FormalParameters 58..60
           LParen 58..59 "("
           RParen 59..60 ")"
-          LineTerminator 60..61 "\n"
-          Whitespace 61..63 "  "
+      LineTerminator 60..61 "\n"
+      Whitespace 61..63 "  "
+      MethodDecl 63..74
+        VoidType 63..67
           VoidKw 63..67 "void"
-          Whitespace 67..68 " "
-          Identifier 68..69 "h"
+        Whitespace 67..68 " "
+        Identifier 68..69 "h"
+        FormalParameters 69..71
           LParen 69..70 "("
           RParen 70..71 ")"
-          Whitespace 71..72 " "
+        Whitespace 71..72 " "
+        Block 72..74
           LBrace 72..73 "{"
           RBrace 73..74 "}"
       Whitespace 74..75 " "
@@ -89,5 +96,6 @@ error 12..13 @12 ExpectedMember(IntLiteral): unexpected literal: expected a memb
 error 21..21 @21 Expected(Token(Semi)): ';' expected
 error 33..33 @33 Expected(Token(Semi)): ';' expected
 error 43..44 @43 MissingReturnType: a method needs a result type; a constructor takes its class's name
-error 47..48 @47 UnexpectedToken(LBrace): unexpected '{'
+error 60..60 @60 Expected(OneOf([LBrace, Semi])): '{' or ';' expected
+error 75..76 @75 ExpectedMember(RParen): unexpected ')': expected a member declaration
 error 98..99 @98 ExpectedMember(RBrace): unexpected '}': expected a member declaration
