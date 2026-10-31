@@ -314,6 +314,43 @@ fn nesting_too_deep_without_a_group() {
 }
 
 #[test]
+fn anchors_of_the_last_node() {
+    run("a + b.c(d) ;", |p| {
+        let m = p.start();
+        p.bump();
+        let a = m.complete(p, NameExpr);
+        let binary = a.precede(p);
+        p.bump();
+        let m = p.start();
+        p.bump();
+        let b = m.complete(p, NameExpr);
+        let call = b.precede(p);
+        p.bump();
+        p.bump();
+        let args = p.start();
+        p.bump();
+        p.bump();
+        p.bump();
+        args.complete(p, Arguments);
+        let call = call.complete(p, MethodCallExpr);
+        let anchors = p.last_node_anchors(call);
+        assert_eq!(anchors.start, Span::new(4, 5));
+        assert_eq!(anchors.end, 10);
+        assert_eq!(anchors.first_direct_token, Some(Span::new(5, 6)));
+        assert_eq!(anchors.after_last_direct_token, Some(Span::new(7, 8)));
+        // Errors may follow.
+        p.error_expected(Expected::Token(Semi));
+        let binary = binary.complete(p, BinaryExpr);
+        let anchors = p.last_node_anchors(binary);
+        assert_eq!(anchors.start, Span::new(0, 1));
+        assert_eq!(anchors.end, 10);
+        assert_eq!(anchors.first_direct_token, Some(Span::new(2, 3)));
+        assert_eq!(anchors.after_last_direct_token, Some(Span::new(4, 5)));
+        p.bump();
+    });
+}
+
+#[test]
 #[cfg(debug_assertions)]
 #[should_panic(expected = "made no progress")]
 fn a_stalled_loop_is_a_bug() {

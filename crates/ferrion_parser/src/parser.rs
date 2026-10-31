@@ -369,6 +369,62 @@ impl<'t> Parser<'t> {
         }
     }
 
+    /// Where `node` starts and ends, and where its direct tokens are (those not inside a child
+    /// node), for diagnostics javac positions inside a node, such as at a binary operator.
+    /// `node` must be the node completed last: nothing may have been consumed or completed since,
+    /// though errors may have been reported. Walks the node's events backwards, so it costs time
+    /// in proportion to the node's size.
+    #[allow(dead_code, reason = "for the grammar areas still to come")]
+    pub fn last_node_anchors(&self, node: CompletedMarker) -> NodeAnchors {
+        let mut anchors = NodeAnchors {
+            start: self.tokens[self.significant(0).raw as usize].span,
+            end: self.previous_end(),
+            first_direct_token: None,
+            after_last_direct_token: None,
+        };
+        if let Some(start) = self.significant.get(node.start) {
+            anchors.start = self.tokens[start.raw as usize].span;
+        }
+        if !matches!(
+            self.events.get(node.event as usize),
+            Some(Event::Start { .. })
+        ) {
+            return anchors;
+        }
+        // Inside the walk, `depth` is 1 between the node's `Start` and `Finish`, and more inside
+        // its children. Each `Token` event is the token before `token`.
+        let mut depth = 0u32;
+        let mut token = self.pos;
+        let mut last_direct = None;
+        for event in self.events[node.event as usize + 1..].iter().rev() {
+            match event {
+                Event::Finish => depth += 1,
+                Event::Start { .. } => depth = depth.saturating_sub(1),
+                Event::Token { .. } => {
+                    token = token.saturating_sub(1);
+                    debug_assert!(depth > 0, "a token after the last node completed");
+                    if depth == 1 {
+                        anchors.first_direct_token = Some(self.span_of(token));
+                        last_direct.get_or_insert(token);
+                    }
+                }
+                Event::Error | Event::Tombstone => {}
+            }
+        }
+        if let Some(last) = last_direct
+            && last + 1 < self.significant.len()
+        {
+            anchors.after_last_direct_token = Some(self.span_of(last + 1));
+        }
+        anchors
+    }
+
+    /// The span of the token at index `index` among the non-trivia tokens.
+    fn span_of(&self, index: usize) -> Span {
+        let last = self.significant.len() - 1;
+        self.tokens[self.significant[index.min(last)].raw as usize].span
+    }
+
     // ----- Loops and nesting -----
 
     /// A progress guard for a loop: see [`Progress::advanced`].
@@ -536,6 +592,19 @@ impl CompletedMarker {
         }
         self.kind = kind;
     }
+}
+
+/// See [`Parser::last_node_anchors`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct NodeAnchors {
+    /// The node's first token.
+    pub start: Span,
+    /// The end of the node's last token.
+    pub end: u32,
+    /// The node's first direct token: in `a + b`, the `+`.
+    pub first_direct_token: Option<Span>,
+    /// The token after the node's last direct token: in `a.m(1)`, the `(` after `m`.
+    pub after_last_direct_token: Option<Span>,
 }
 
 /// See [`Parser::progress`].
