@@ -1,2 +1,26 @@
 # javac's deep-nesting stress tests among the inputs in jdk-tests.toml, relative to the checkout.
-# None are listed yet.
+#
+# Selected by measurement, not by reading the tests: these are the inputs whose javac tree is more
+# than 50 levels deep (`cargo oracle tree jdk-tests` reports the deepest), with the depth at
+# jdk-27-ga. The next deepest input is 50 levels deep; the deepest corpus file is 187. Recheck when
+# the tag changes.
+
+test/langtools/tools/javac/parser/8134007/T8134007.java                 # 302
+test/langtools/tools/javac/limits/ArrayDims1.java                       # 258
+test/langtools/tools/javac/limits/ArrayDims2.java                       # 259
+test/langtools/tools/javac/limits/ArrayDims3.java                       # 258
+test/langtools/tools/javac/limits/ArrayDims4.java                       # 259
+test/langtools/tools/javac/limits/ArrayDims5.java                       # 259
+test/langtools/tools/javac/lambda/speculative/InferWeak.java            # 178
+test/langtools/tools/javac/lambda/speculative/NestedLambdaGenerics.java # 68
+test/langtools/tools/javac/lambda/speculative/NestedLambdaNoGenerics.java # 68
+test/langtools/tools/javac/lambda/speculative/T8046685.java             # 54
+
+# Tests whose names say they're about deep nesting, but whose files are shallow (less than 36
+# levels): they build their deeply nested input when they run, so they aren't inputs here. Ferrion's
+# own stress tests should generate input of the same shapes.
+#
+#   test/langtools/tools/javac/DeepStringConcat.java
+#   test/langtools/tools/javac/expression/DeeplyChainedNonPolyExpressionTest.java
+#   test/langtools/tools/javac/patterns/SOEDeeplyNestedBlocksTest.java
+#   test/langtools/tools/javac/types/SOEForDeeplyNestedTypeTest.java

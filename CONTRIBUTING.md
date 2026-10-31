@@ -169,7 +169,8 @@ cargo corpus jdk-tests
 ```
 
 `cargo corpus jdk-tests list` prints each input with the releases its jtreg header compiles it
-at. Don't study the tests beyond what selecting and running them needs.
+at. `tools/corpus/jdk-tests-deep-nesting.txt` lists javac's deep-nesting stress tests among them,
+by path. Don't study the tests beyond what selecting and running them needs.
 
 ### javac oracle
 
@@ -230,7 +231,8 @@ cargo oracle tree
 ```
 
 Besides corpus projects, both take `jdk-tests`, javac's tests fetched by `cargo corpus jdk-tests`,
-each compared at the releases its test compiles it at.
+each compared at the releases its test compiles it at, and `jdk-deep-nesting`, javac's
+deep-nesting stress tests.
 
 ### Tests
 
