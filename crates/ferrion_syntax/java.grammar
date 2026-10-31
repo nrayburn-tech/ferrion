@@ -55,8 +55,8 @@
 //    with a `VariableDeclarator` per name, and the commas are its tokens. javac makes a `VARIABLE`
 //    per name, sharing the modifiers and type nodes (`shared` in the oracle), the first ending
 //    after its `,`. C-style dimensions belong to what they follow: `int a[]` has a `Dim` in the
-//    declarator, `int m()[]` in the method, and `int x[]` in the parameter. javac wraps the type in
-//    an `ARRAY_TYPE` spanning the name (or the parameters).
+//    declarator, `int m()[]` in the method, and `int x[]` in the parameter (a lambda's too: `(int
+//    x[]) -> 1`). javac wraps the type in an `ARRAY_TYPE` spanning the name (or the parameters).
 // 4. **Array types are flat:** `ArrayType` is the element type and one `Dim` per `[]`, in source
 //    order, so in `int @A [] @B []` the first `Dim` (with `@A`) is the outermost dimension, as in
 //    JLS 10.2. javac nests an `ARRAY_TYPE` per dimension, with each outer one's span equal to the
@@ -689,7 +689,7 @@ enum LambdaBody = Expr | Block
 /// `(a, b)`, `(int a, int b)`, `()`, or a single name without parentheses (decision 8).
 node LambdaParameters = '('? (parameters:LambdaParameter (',' parameters:LambdaParameter)*)? ')'?
 
-node LambdaParameter = Modifiers? ty:Type? Varargs? name:Ident
+node LambdaParameter = Modifiers? ty:Type? Varargs? name:Ident dims:Dim*
 
 /// `a::m`, `String::new`, `int[]::clone`, `List<String>::size`, `super::m` (decision 9).
 node MethodRefExpr = qualifier:ExprOrType '::' TypeArguments? (name:Ident | new_kw:'new')
