@@ -135,3 +135,12 @@ jobs:
         run: cargo oracle differences
       - name: Check the snapshots of javac's parser output
         run: cargo oracle parser-cases
+      - name: Check that the parser reproduces every corpus file, and its throughput
+        run: cargo parser-check round-trip
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      # The seed and sample size are the ones tools/parser-check/thresholds.toml is set from.
+      - name: Check error recovery on mutated corpus files
+        run: cargo parser-check mutate --seed 1 --sample 2000
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus

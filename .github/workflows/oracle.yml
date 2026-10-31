@@ -1,7 +1,8 @@
 name: Oracle
 
 # The full javac comparison: every corpus file at every supported release. Pull requests compare
-# each file at its own release only (see ci.yml).
+# each file at its own release only (see ci.yml). The parser's own checks run here on javac's tests
+# too, and on a larger mutation sample.
 
 on:
   schedule:
@@ -52,3 +53,25 @@ jobs:
           name: oracle-report
           path: oracle-report.json
           if-no-files-found: ignore
+
+  parser:
+    name: parser checks on javac's tests and a larger mutation sample
+    runs-on: ubuntu-latest
+    env:
+      # Kept out of target/, so the Rust cache doesn't save them.
+      FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+    steps:
+      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: Check out the corpus and javac's tests
+        run: |
+          cargo corpus checkout
+          cargo corpus jdk-tests
+      # Pull requests check the corpus projects (see ci.yml); javac's tests add unusual and broken
+      # input, and its deep-nesting tests.
+      - name: Check that the parser reproduces javac's tests, and its throughput
+        run: cargo parser-check round-trip jdk-tests
+      # Ten times the pull requests' sample, with another seed, against the same thresholds.
+      - name: Check error recovery on more mutated corpus files
+        run: cargo parser-check mutate --seed 2 --sample 20000
