@@ -1,0 +1,10 @@
+List<>;
+List<,>;
+List<A B>;
+List<? extends>;
+List<?[]>;
+int[1];
+a.b.;
+a.<B>c;
+int @A;
+List<;

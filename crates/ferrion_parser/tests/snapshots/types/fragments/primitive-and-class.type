@@ -1,0 +1,7 @@
+int;
+boolean;
+var;
+java.util.List;
+Map.Entry<K, V>;
+Outer<A>.Inner<B>;
+void;

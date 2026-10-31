@@ -1,0 +1,17 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  ERROR compiler.err.expected 31..31 @31 [>] > expected
+tree at 27:
+  COMPILATION_UNIT 0..72 @0 "class A<T extends Comparable<T>>> {}\ncla"…
+    CLASS 0..36 @0 "class A<T extends Comparable<T>>> {}"
+      MODIFIERS -1..-1 @-1
+      TYPE_PARAMETER 8..31 @8 "T extends Comparable<T>"
+        PARAMETERIZED_TYPE 18..31 @28 "Comparable<T>"
+          IDENTIFIER 18..28 @18 "Comparable"
+          IDENTIFIER 29..30 @29 "T"
+    CLASS 37..72 @37 "class B<T extends Comparable<T>> {}"
+      MODIFIERS -1..-1 @-1
+      TYPE_PARAMETER 45..68 @45 "T extends Comparable<T>"
+        PARAMETERIZED_TYPE 55..68 @65 "Comparable<T>"
+          IDENTIFIER 55..65 @55 "Comparable"
+          IDENTIFIER 66..67 @66 "T"

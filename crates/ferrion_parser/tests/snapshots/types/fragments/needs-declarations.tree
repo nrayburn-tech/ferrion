@@ -1,0 +1,36 @@
+CompilationUnit 0..24 [error]
+  ClassType 0..11 [error]
+    Annotation 0..9 [error]
+      At 0..1 "@"
+      Name 1..2
+        Identifier 1..2 "A"
+      AnnotationArguments 2..9 [error]
+        LParen 2..3 "("
+        Error 3..8 [error]
+          Identifier 3..4 "x"
+          Whitespace 4..5 " "
+          Eq 5..6 "="
+          Whitespace 6..7 " "
+          IntLiteral 7..8 "1"
+        RParen 8..9 ")"
+    Whitespace 9..10 " "
+    Identifier 10..11 "T"
+  Semi 11..12 ";"
+  LineTerminator 12..13 "\n"
+  PrimitiveType 13..22 [error]
+    Annotation 13..18 [error]
+      At 13..14 "@"
+      Name 14..15
+        Identifier 14..15 "A"
+      AnnotationArguments 15..18 [error]
+        LParen 15..16 "("
+        Error 16..17 [error]
+          IntLiteral 16..17 "1"
+        RParen 17..18 ")"
+    Whitespace 18..19 " "
+    IntKw 19..22 "int"
+  Semi 22..23 ";"
+  LineTerminator 23..24 "\n"
+  Eof 24..24 ""
+error 3..4 @3 UnexpectedToken(Identifier): unexpected name
+error 16..17 @16 UnexpectedToken(IntLiteral): unexpected literal

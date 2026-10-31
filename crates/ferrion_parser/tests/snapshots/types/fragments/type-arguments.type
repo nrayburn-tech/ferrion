@@ -1,0 +1,8 @@
+List<?>;
+List<? extends Number>;
+Map<? super K, ? extends List<? super V>>;
+List<@A ?>;
+List<@A ? extends @B C>;
+List<int[]>;
+List<List<List<String>>>;
+Map<K, List<V>>;
