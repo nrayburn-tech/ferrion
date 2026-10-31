@@ -1,0 +1,269 @@
+CompilationUnit 0..502 [error]
+  ClassDecl 0..290 [error]
+    Modifiers 0..94
+      PublicKw 0..6 "public"
+      Whitespace 6..7 " "
+      ProtectedKw 7..16 "protected"
+      Whitespace 16..17 " "
+      PrivateKw 17..24 "private"
+      Whitespace 24..25 " "
+      AbstractKw 25..33 "abstract"
+      Whitespace 33..34 " "
+      StaticKw 34..40 "static"
+      Whitespace 40..41 " "
+      FinalKw 41..46 "final"
+      Whitespace 46..47 " "
+      TransientKw 47..56 "transient"
+      Whitespace 56..57 " "
+      VolatileKw 57..65 "volatile"
+      Whitespace 65..66 " "
+      SynchronizedKw 66..78 "synchronized"
+      Whitespace 78..79 " "
+      NativeKw 79..85 "native"
+      Whitespace 85..86 " "
+      StrictfpKw 86..94 "strictfp"
+    Whitespace 94..95 " "
+    ClassKw 95..100 "class"
+    Whitespace 100..101 " "
+    Identifier 101..102 "A"
+    Whitespace 102..103 " "
+    ClassBody 103..290 [error]
+      LBrace 103..104 "{"
+      LineTerminator 104..105 "\n"
+      Whitespace 105..107 "  "
+      FieldDecl 107..137
+        Modifiers 107..126
+          PublicKw 107..113 "public"
+          Whitespace 113..114 " "
+          StaticKw 114..120 "static"
+          Whitespace 120..121 " "
+          FinalKw 121..126 "final"
+        Whitespace 126..127 " "
+        PrimitiveType 127..130
+          IntKw 127..130 "int"
+        Whitespace 130..131 " "
+        VariableDeclarator 131..136
+          Identifier 131..132 "X"
+          Whitespace 132..133 " "
+          Eq 133..134 "="
+          Whitespace 134..135 " "
+          LiteralExpr 135..136
+            IntLiteral 135..136 "1"
+        Semi 136..137 ";"
+      LineTerminator 137..138 "\n"
+      LineTerminator 138..139 "\n"
+      Whitespace 139..141 "  "
+      MethodDecl 141..230 [error]
+        Modifiers 141..167
+          Annotation 141..150
+            At 141..142 "@"
+            Name 142..150
+              Identifier 142..150 "Override"
+          Whitespace 150..151 " "
+          PublicKw 151..157 "public"
+          Whitespace 157..158 " "
+          Annotation 158..167
+            At 158..159 "@"
+            Name 159..167
+              Identifier 159..167 "Nullable"
+        Whitespace 167..168 " "
+        ClassType 168..174
+          Identifier 168..174 "String"
+        Whitespace 174..175 " "
+        Identifier 175..183 "toString"
+        FormalParameters 183..185
+          LParen 183..184 "("
+          RParen 184..185 ")"
+        Whitespace 185..186 " "
+        Error 186..230 [error]
+          LBrace 186..187 "{"
+          Whitespace 187..188 " "
+          ReturnKw 188..194 "return"
+          Whitespace 194..195 " "
+          NullKw 195..199 "null"
+          Semi 199..200 ";"
+          Whitespace 200..201 " "
+          RBrace 201..202 "}"
+          LineTerminator 202..203 "\n"
+          LineTerminator 203..204 "\n"
+          Whitespace 204..206 "  "
+          TransientKw 206..215 "transient"
+          Whitespace 215..216 " "
+          VolatileKw 216..224 "volatile"
+          Whitespace 224..225 " "
+          IntKw 225..228 "int"
+          Whitespace 228..229 " "
+          Identifier 229..230 "y"
+      Semi 230..231 ";"
+      LineTerminator 231..232 "\n"
+      LineTerminator 232..233 "\n"
+      Whitespace 233..235 "  "
+      MethodDecl 235..264
+        Modifiers 235..254
+          SynchronizedKw 235..247 "synchronized"
+          Whitespace 247..248 " "
+          NativeKw 248..254 "native"
+        Whitespace 254..255 " "
+        VoidType 255..259
+          VoidKw 255..259 "void"
+        Whitespace 259..260 " "
+        Identifier 260..261 "n"
+        FormalParameters 261..263
+          LParen 261..262 "("
+          RParen 262..263 ")"
+        Semi 263..264 ";"
+      LineTerminator 264..265 "\n"
+      LineTerminator 265..266 "\n"
+      Whitespace 266..268 "  "
+      MethodDecl 268..288 [error]
+        Modifiers 268..276
+          StrictfpKw 268..276 "strictfp"
+        Whitespace 276..277 " "
+        VoidType 277..281
+          VoidKw 277..281 "void"
+        Whitespace 281..282 " "
+        Identifier 282..283 "s"
+        FormalParameters 283..285
+          LParen 283..284 "("
+          RParen 284..285 ")"
+        Whitespace 285..286 " "
+        Error 286..288 [error]
+          LBrace 286..287 "{"
+          RBrace 287..288 "}"
+      LineTerminator 288..289 "\n"
+      RBrace 289..290 "}"
+  LineTerminator 290..291 "\n"
+  LineTerminator 291..292 "\n"
+  InterfaceDecl 292..326
+    Modifiers 292..298
+      SealedKw 292..298 "sealed"
+    Whitespace 298..299 " "
+    InterfaceKw 299..308 "interface"
+    Whitespace 308..309 " "
+    Identifier 309..310 "S"
+    Whitespace 310..311 " "
+    PermitsClause 311..323
+      PermitsKw 311..318 "permits"
+      Whitespace 318..319 " "
+      ClassType 319..320
+        Identifier 319..320 "T"
+      Comma 320..321 ","
+      Whitespace 321..322 " "
+      ClassType 322..323
+        Identifier 322..323 "U"
+    Whitespace 323..324 " "
+    ClassBody 324..326
+      LBrace 324..325 "{"
+      RBrace 325..326 "}"
+  LineTerminator 326..327 "\n"
+  LineTerminator 327..328 "\n"
+  ClassDecl 328..357
+    Modifiers 328..333
+      FinalKw 328..333 "final"
+    Whitespace 333..334 " "
+    ClassKw 334..339 "class"
+    Whitespace 339..340 " "
+    Identifier 340..341 "T"
+    Whitespace 341..342 " "
+    ImplementsClause 342..354
+      ImplementsKw 342..352 "implements"
+      Whitespace 352..353 " "
+      ClassType 353..354
+        Identifier 353..354 "S"
+    Whitespace 354..355 " "
+    ClassBody 355..357
+      LBrace 355..356 "{"
+      RBrace 356..357 "}"
+  LineTerminator 357..358 "\n"
+  LineTerminator 358..359 "\n"
+  ClassDecl 359..393
+    Modifiers 359..369
+      NonSealedKw 359..362 "non"
+      NonSealedKw 362..363 "-"
+      NonSealedKw 363..369 "sealed"
+    Whitespace 369..370 " "
+    ClassKw 370..375 "class"
+    Whitespace 375..376 " "
+    Identifier 376..377 "U"
+    Whitespace 377..378 " "
+    ImplementsClause 378..390
+      ImplementsKw 378..388 "implements"
+      Whitespace 388..389 " "
+      ClassType 389..390
+        Identifier 389..390 "S"
+    Whitespace 390..391 " "
+    ClassBody 391..393
+      LBrace 391..392 "{"
+      RBrace 392..393 "}"
+  LineTerminator 393..394 "\n"
+  LineTerminator 394..395 "\n"
+  ClassDecl 395..431
+    Modifiers 395..410
+      AbstractKw 395..403 "abstract"
+      Whitespace 403..404 " "
+      SealedKw 404..410 "sealed"
+    Whitespace 410..411 " "
+    ClassKw 411..416 "class"
+    Whitespace 416..417 " "
+    Identifier 417..418 "V"
+    Whitespace 418..419 " "
+    PermitsClause 419..428
+      PermitsKw 419..426 "permits"
+      Whitespace 426..427 " "
+      ClassType 427..428
+        Identifier 427..428 "W"
+    Whitespace 428..429 " "
+    ClassBody 429..431
+      LBrace 429..430 "{"
+      RBrace 430..431 "}"
+  LineTerminator 431..432 "\n"
+  LineTerminator 432..433 "\n"
+  ClassDecl 433..462
+    Modifiers 433..451
+      SealedKw 433..439 "sealed"
+      Whitespace 439..440 " "
+      Annotation 440..451
+        At 440..441 "@"
+        Name 441..451
+          Identifier 441..451 "Deprecated"
+    Whitespace 451..452 " "
+    ClassKw 452..457 "class"
+    Whitespace 457..458 " "
+    Identifier 458..459 "X"
+    Whitespace 459..460 " "
+    ClassBody 460..462
+      LBrace 460..461 "{"
+      RBrace 461..462 "}"
+  LineTerminator 462..463 "\n"
+  LineTerminator 463..464 "\n"
+  InterfaceDecl 464..501 [error]
+    InterfaceKw 464..473 "interface"
+    Whitespace 473..474 " "
+    Identifier 474..475 "I"
+    Whitespace 475..476 " "
+    ClassBody 476..501 [error]
+      LBrace 476..477 "{"
+      LineTerminator 477..478 "\n"
+      Whitespace 478..480 "  "
+      MethodDecl 480..499 [error]
+        Modifiers 480..487
+          DefaultKw 480..487 "default"
+        Whitespace 487..488 " "
+        VoidType 488..492
+          VoidKw 488..492 "void"
+        Whitespace 492..493 " "
+        Identifier 493..494 "d"
+        FormalParameters 494..496
+          LParen 494..495 "("
+          RParen 495..496 ")"
+        Whitespace 496..497 " "
+        Error 497..499 [error]
+          LBrace 497..498 "{"
+          RBrace 498..499 "}"
+      LineTerminator 499..500 "\n"
+      RBrace 500..501 "}"
+  LineTerminator 501..502 "\n"
+  Eof 502..502 ""
+error 186..187 @186 UnexpectedToken(LBrace): unexpected '{'
+error 286..287 @286 UnexpectedToken(LBrace): unexpected '{'
+error 497..498 @497 UnexpectedToken(LBrace): unexpected '{'

@@ -103,12 +103,13 @@ CompilationUnit 0..242
     Semi 226..227 ";"
   LineTerminator 227..228 "\n"
   LineTerminator 228..229 "\n"
-  Unparsed 229..241
+  ClassDecl 229..241
     ClassKw 229..234 "class"
     Whitespace 234..235 " "
     Identifier 235..238 "App"
     Whitespace 238..239 " "
-    LBrace 239..240 "{"
-    RBrace 240..241 "}"
+    ClassBody 239..241
+      LBrace 239..240 "{"
+      RBrace 240..241 "}"
   LineTerminator 241..242 "\n"
   Eof 242..242 ""

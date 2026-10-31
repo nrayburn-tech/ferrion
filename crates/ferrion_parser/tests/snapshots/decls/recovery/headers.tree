@@ -1,0 +1,123 @@
+CompilationUnit 0..160 [error]
+  ClassDecl 0..33 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ImplementsClause 8..20
+      ImplementsKw 8..18 "implements"
+      Whitespace 18..19 " "
+      ClassType 19..20
+        Identifier 19..20 "B"
+    Whitespace 20..21 " "
+    Error 21..30 [error]
+      ExtendsKw 21..28 "extends"
+      Whitespace 28..29 " "
+      Identifier 29..30 "C"
+    Whitespace 30..31 " "
+    ClassBody 31..33
+      LBrace 31..32 "{"
+      RBrace 32..33 "}"
+  LineTerminator 33..34 "\n"
+  ClassDecl 34..57 [error]
+    ClassKw 34..39 "class"
+    Whitespace 39..40 " "
+    Identifier 40..41 "D"
+    Whitespace 41..42 " "
+    ExtendsClause 42..51
+      ExtendsKw 42..49 "extends"
+      Whitespace 49..50 " "
+      ClassType 50..51
+        Identifier 50..51 "E"
+    Error 51..54 [error]
+      Comma 51..52 ","
+      Whitespace 52..53 " "
+      Identifier 53..54 "F"
+    Whitespace 54..55 " "
+    ClassBody 55..57
+      LBrace 55..56 "{"
+      RBrace 56..57 "}"
+  LineTerminator 57..58 "\n"
+  ClassDecl 58..66 [error]
+    ClassKw 58..63 "class"
+    Whitespace 63..64 " "
+    ClassBody 64..66
+      LBrace 64..65 "{"
+      RBrace 65..66 "}"
+  LineTerminator 66..67 "\n"
+  ClassDecl 67..79 [error]
+    ClassKw 67..72 "class"
+    Whitespace 72..73 " "
+    Identifier 73..74 "G"
+    Whitespace 74..75 " "
+    Error 75..76 [error]
+      Identifier 75..76 "H"
+    Whitespace 76..77 " "
+    ClassBody 77..79
+      LBrace 77..78 "{"
+      RBrace 78..79 "}"
+  LineTerminator 79..80 "\n"
+  ClassDecl 80..98 [error]
+    ClassKw 80..85 "class"
+    Whitespace 85..86 " "
+    Identifier 86..87 "I"
+    Whitespace 87..88 " "
+    ExtendsClause 88..95 [error]
+      ExtendsKw 88..95 "extends"
+    Whitespace 95..96 " "
+    ClassBody 96..98
+      LBrace 96..97 "{"
+      RBrace 97..98 "}"
+  LineTerminator 98..99 "\n"
+  InterfaceDecl 99..126 [error]
+    InterfaceKw 99..108 "interface"
+    Whitespace 108..109 " "
+    Identifier 109..110 "J"
+    Whitespace 110..111 " "
+    Error 111..123 [error]
+      ImplementsKw 111..121 "implements"
+      Whitespace 121..122 " "
+      Identifier 122..123 "K"
+    Whitespace 123..124 " "
+    ClassBody 124..126
+      LBrace 124..125 "{"
+      RBrace 125..126 "}"
+  LineTerminator 126..127 "\n"
+  EnumDecl 127..146 [error]
+    EnumKw 127..131 "enum"
+    Whitespace 131..132 " "
+    Identifier 132..133 "L"
+    Whitespace 133..134 " "
+    Error 134..143 [error]
+      ExtendsKw 134..141 "extends"
+      Whitespace 141..142 " "
+      Identifier 142..143 "M"
+    Whitespace 143..144 " "
+    EnumBody 144..146
+      LBrace 144..145 "{"
+      RBrace 145..146 "}"
+  LineTerminator 146..147 "\n"
+  EnumDecl 147..159 [error]
+    EnumKw 147..151 "enum"
+    Whitespace 151..152 " "
+    Identifier 152..153 "N"
+    Error 153..156 [error]
+      TypeParameters 153..156
+        Lt 153..154 "<"
+        TypeParameter 154..155
+          Identifier 154..155 "T"
+        Gt 155..156 ">"
+    Whitespace 156..157 " "
+    EnumBody 157..159
+      LBrace 157..158 "{"
+      RBrace 158..159 "}"
+  LineTerminator 159..160 "\n"
+  Eof 160..160 ""
+error 20..20 @20 Expected(Token(LBrace)): '{' expected
+error 51..51 @51 Expected(Token(LBrace)): '{' expected
+error 63..63 @63 Expected(Identifier): name expected
+error 74..74 @74 Expected(Token(LBrace)): '{' expected
+error 96..97 @96 TypeExpected(LBrace): expected a type, found '{'
+error 110..110 @110 Expected(Token(LBrace)): '{' expected
+error 133..133 @133 Expected(Token(LBrace)): '{' expected
+error 154..155 @154 GenericEnum: an enum can't have type parameters

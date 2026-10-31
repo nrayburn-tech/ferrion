@@ -1,0 +1,201 @@
+CompilationUnit 0..349 [error]
+  EnumDecl 0..13
+    EnumKw 0..4 "enum"
+    Whitespace 4..5 " "
+    Identifier 5..10 "Empty"
+    Whitespace 10..11 " "
+    EnumBody 11..13
+      LBrace 11..12 "{"
+      RBrace 12..13 "}"
+  LineTerminator 13..14 "\n"
+  LineTerminator 14..15 "\n"
+  EnumDecl 15..35
+    EnumKw 15..19 "enum"
+    Whitespace 19..20 " "
+    Identifier 20..29 "OnlyComma"
+    Whitespace 29..30 " "
+    EnumBody 30..35
+      LBrace 30..31 "{"
+      Whitespace 31..32 " "
+      Comma 32..33 ","
+      Whitespace 33..34 " "
+      RBrace 34..35 "}"
+  LineTerminator 35..36 "\n"
+  LineTerminator 36..37 "\n"
+  EnumDecl 37..61
+    EnumKw 37..41 "enum"
+    Whitespace 41..42 " "
+    Identifier 42..55 "OnlySemicolon"
+    Whitespace 55..56 " "
+    EnumBody 56..61
+      LBrace 56..57 "{"
+      Whitespace 57..58 " "
+      Semi 58..59 ";"
+      Whitespace 59..60 " "
+      RBrace 60..61 "}"
+  LineTerminator 61..62 "\n"
+  LineTerminator 62..63 "\n"
+  EnumDecl 63..95
+    EnumKw 63..67 "enum"
+    Whitespace 67..68 " "
+    Identifier 68..73 "Color"
+    Whitespace 73..74 " "
+    EnumBody 74..95
+      LBrace 74..75 "{"
+      Whitespace 75..76 " "
+      EnumConstant 76..79
+        Identifier 76..79 "RED"
+      Comma 79..80 ","
+      Whitespace 80..81 " "
+      EnumConstant 81..86
+        Identifier 81..86 "GREEN"
+      Comma 86..87 ","
+      Whitespace 87..88 " "
+      EnumConstant 88..92
+        Identifier 88..92 "BLUE"
+      Comma 92..93 ","
+      Whitespace 93..94 " "
+      RBrace 94..95 "}"
+  LineTerminator 95..96 "\n"
+  LineTerminator 96..97 "\n"
+  EnumDecl 97..348 [error]
+    EnumKw 97..101 "enum"
+    Whitespace 101..102 " "
+    Identifier 102..108 "Planet"
+    Whitespace 108..109 " "
+    ImplementsClause 109..124
+      ImplementsKw 109..119 "implements"
+      Whitespace 119..120 " "
+      ClassType 120..124
+        Identifier 120..124 "Body"
+    Whitespace 124..125 " "
+    EnumBody 125..348 [error]
+      LBrace 125..126 "{"
+      LineTerminator 126..127 "\n"
+      Whitespace 127..129 "  "
+      EnumConstant 129..163
+        Modifiers 129..140
+          Annotation 129..140
+            At 129..130 "@"
+            Name 130..140
+              Identifier 130..140 "Deprecated"
+        Whitespace 140..141 " "
+        Identifier 141..148 "MERCURY"
+        Arguments 148..163
+          LParen 148..149 "("
+          LiteralExpr 149..155
+            DoubleLiteral 149..155 "3.3e23"
+          Comma 155..156 ","
+          Whitespace 156..157 " "
+          LiteralExpr 157..162
+            DoubleLiteral 157..162 "2.4e6"
+          RParen 162..163 ")"
+      Comma 163..164 ","
+      LineTerminator 164..165 "\n"
+      Whitespace 165..167 "  "
+      EnumConstant 167..240 [error]
+        Identifier 167..172 "EARTH"
+        Arguments 172..187
+          LParen 172..173 "("
+          LiteralExpr 173..179
+            DoubleLiteral 173..179 "5.9e24"
+          Comma 179..180 ","
+          Whitespace 180..181 " "
+          LiteralExpr 181..186
+            DoubleLiteral 181..186 "6.3e6"
+          RParen 186..187 ")"
+        Whitespace 187..188 " "
+        ClassBody 188..240 [error]
+          LBrace 188..189 "{"
+          LineTerminator 189..190 "\n"
+          Whitespace 190..194 "    "
+          MethodDecl 194..236 [error]
+            Modifiers 194..203
+              Annotation 194..203
+                At 194..195 "@"
+                Name 195..203
+                  Identifier 195..203 "Override"
+            Whitespace 203..204 " "
+            PrimitiveType 204..210
+              DoubleKw 204..210 "double"
+            Whitespace 210..211 " "
+            Identifier 211..218 "gravity"
+            FormalParameters 218..220
+              LParen 218..219 "("
+              RParen 219..220 ")"
+            Whitespace 220..221 " "
+            Error 221..236 [error]
+              LBrace 221..222 "{"
+              Whitespace 222..223 " "
+              ReturnKw 223..229 "return"
+              Whitespace 229..230 " "
+              DoubleLiteral 230..233 "9.8"
+              Semi 233..234 ";"
+              Whitespace 234..235 " "
+              RBrace 235..236 "}"
+          LineTerminator 236..237 "\n"
+          Whitespace 237..239 "  "
+          RBrace 239..240 "}"
+      Semi 240..241 ";"
+      LineTerminator 241..242 "\n"
+      LineTerminator 242..243 "\n"
+      Whitespace 243..245 "  "
+      FieldDecl 245..271
+        Modifiers 245..258
+          PrivateKw 245..252 "private"
+          Whitespace 252..253 " "
+          FinalKw 253..258 "final"
+        Whitespace 258..259 " "
+        PrimitiveType 259..265
+          DoubleKw 259..265 "double"
+        Whitespace 265..266 " "
+        VariableDeclarator 266..270
+          Identifier 266..270 "mass"
+        Semi 270..271 ";"
+      LineTerminator 271..272 "\n"
+      LineTerminator 272..273 "\n"
+      Whitespace 273..275 "  "
+      ConstructorDecl 275..346 [error]
+        Identifier 275..281 "Planet"
+        FormalParameters 281..309
+          LParen 281..282 "("
+          FormalParameter 282..293
+            PrimitiveType 282..288
+              DoubleKw 282..288 "double"
+            Whitespace 288..289 " "
+            Identifier 289..293 "mass"
+          Comma 293..294 ","
+          Whitespace 294..295 " "
+          FormalParameter 295..308
+            PrimitiveType 295..301
+              DoubleKw 295..301 "double"
+            Whitespace 301..302 " "
+            Identifier 302..308 "radius"
+          RParen 308..309 ")"
+        Whitespace 309..310 " "
+        Error 310..346 [error]
+          LBrace 310..311 "{"
+          RBrace 311..312 "}"
+          LineTerminator 312..313 "\n"
+          LineTerminator 313..314 "\n"
+          Whitespace 314..316 "  "
+          DoubleKw 316..322 "double"
+          Whitespace 322..323 " "
+          Identifier 323..330 "gravity"
+          LParen 330..331 "("
+          RParen 331..332 ")"
+          Whitespace 332..333 " "
+          LBrace 333..334 "{"
+          Whitespace 334..335 " "
+          ReturnKw 335..341 "return"
+          Whitespace 341..342 " "
+          IntLiteral 342..343 "0"
+          Semi 343..344 ";"
+          Whitespace 344..345 " "
+          RBrace 345..346 "}"
+      LineTerminator 346..347 "\n"
+      RBrace 347..348 "}"
+  LineTerminator 348..349 "\n"
+  Eof 349..349 ""
+error 221..222 @221 UnexpectedToken(LBrace): unexpected '{'
+error 310..311 @310 UnexpectedToken(LBrace): unexpected '{'

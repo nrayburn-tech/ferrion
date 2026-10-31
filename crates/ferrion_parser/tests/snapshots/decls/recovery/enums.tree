@@ -1,0 +1,111 @@
+CompilationUnit 0..98 [error]
+  EnumDecl 0..27 [error]
+    EnumKw 0..4 "enum"
+    Whitespace 4..5 " "
+    Identifier 5..6 "A"
+    Whitespace 6..7 " "
+    EnumBody 7..27 [error]
+      LBrace 7..8 "{"
+      Whitespace 8..9 " "
+      EnumConstant 9..10
+        Identifier 9..10 "X"
+      Comma 10..11 ","
+      Whitespace 11..12 " "
+      EnumConstant 12..13
+        Identifier 12..13 "Y"
+      Whitespace 13..14 " "
+      MethodDecl 14..25 [error]
+        VoidType 14..18
+          VoidKw 14..18 "void"
+        Whitespace 18..19 " "
+        Identifier 19..20 "f"
+        FormalParameters 20..22
+          LParen 20..21 "("
+          RParen 21..22 ")"
+        Whitespace 22..23 " "
+        Error 23..25 [error]
+          LBrace 23..24 "{"
+          RBrace 24..25 "}"
+      Whitespace 25..26 " "
+      RBrace 26..27 "}"
+  LineTerminator 27..28 "\n"
+  EnumDecl 28..42 [error]
+    EnumKw 28..32 "enum"
+    Whitespace 32..33 " "
+    Identifier 33..34 "B"
+    Whitespace 34..35 " "
+    EnumBody 35..42 [error]
+      LBrace 35..36 "{"
+      Whitespace 36..37 " "
+      EnumConstant 37..38
+        Identifier 37..38 "X"
+      Whitespace 38..39 " "
+      FieldDecl 39..40 [error]
+        ClassType 39..40
+          Identifier 39..40 "Y"
+      Whitespace 40..41 " "
+      RBrace 41..42 "}"
+  LineTerminator 42..43 "\n"
+  EnumDecl 43..59 [error]
+    EnumKw 43..47 "enum"
+    Whitespace 47..48 " "
+    Identifier 48..49 "C"
+    Whitespace 49..50 " "
+    EnumBody 50..59 [error]
+      LBrace 50..51 "{"
+      Whitespace 51..52 " "
+      EnumConstant 52..53
+        Identifier 52..53 "X"
+      Comma 53..54 ","
+      Error 54..55 [error]
+        Comma 54..55 ","
+      Whitespace 55..56 " "
+      EnumConstant 56..57
+        Identifier 56..57 "Y"
+      Whitespace 57..58 " "
+      RBrace 58..59 "}"
+  LineTerminator 59..60 "\n"
+  EnumDecl 60..77 [error]
+    EnumKw 60..64 "enum"
+    Whitespace 64..65 " "
+    Identifier 65..66 "D"
+    Whitespace 66..67 " "
+    EnumBody 67..77 [error]
+      LBrace 67..68 "{"
+      Whitespace 68..69 " "
+      FieldDecl 69..75
+        PrimitiveType 69..72
+          IntKw 69..72 "int"
+        Whitespace 72..73 " "
+        VariableDeclarator 73..74
+          Identifier 73..74 "x"
+        Semi 74..75 ";"
+      Whitespace 75..76 " "
+      RBrace 76..77 "}"
+  LineTerminator 77..78 "\n"
+  EnumDecl 78..97 [error]
+    EnumKw 78..82 "enum"
+    Whitespace 82..83 " "
+    Identifier 83..84 "E"
+    Whitespace 84..85 " "
+    EnumBody 85..97 [error]
+      LBrace 85..86 "{"
+      Whitespace 86..87 " "
+      FieldDecl 87..95 [error]
+        Modifiers 87..93
+          PublicKw 87..93 "public"
+        Whitespace 93..94 " "
+        ClassType 94..95
+          Identifier 94..95 "X"
+      Whitespace 95..96 " "
+      RBrace 96..97 "}"
+  LineTerminator 97..98 "\n"
+  Eof 98..98 ""
+error 13..13 @13 Expected(OneOf([Comma, RBrace, Semi])): ',', '}', or ';' expected
+error 23..24 @23 UnexpectedToken(LBrace): unexpected '{'
+error 38..38 @38 Expected(OneOf([Comma, RBrace, Semi])): ',', '}', or ';' expected
+error 40..40 @40 Expected(Identifier): name expected
+error 54..55 @54 ExpectedEnumConstant(Comma): unexpected ',': expected an enum constant
+error 69..72 @69 ExpectedEnumConstant(IntKw): unexpected 'int': expected an enum constant
+error 87..93 @87 ExpectedEnumConstant(PublicKw): unexpected 'public': expected an enum constant
+error 95..95 @95 Expected(Identifier): name expected

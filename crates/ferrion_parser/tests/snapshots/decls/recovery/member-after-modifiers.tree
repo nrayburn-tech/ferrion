@@ -1,0 +1,37 @@
+CompilationUnit 0..39 [error]
+  ClassDecl 0..38 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..38 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      Error 12..18 [error]
+        Modifiers 12..18
+          PublicKw 12..18 "public"
+      Whitespace 18..19 " "
+      Error 19..20 [error]
+        IntLiteral 19..20 "5"
+      Semi 20..21 ";"
+      LineTerminator 21..22 "\n"
+      Whitespace 22..24 "  "
+      MethodDecl 24..36 [error]
+        VoidType 24..28
+          VoidKw 24..28 "void"
+        Whitespace 28..29 " "
+        Identifier 29..31 "ok"
+        FormalParameters 31..33
+          LParen 31..32 "("
+          RParen 32..33 ")"
+        Whitespace 33..34 " "
+        Error 34..36 [error]
+          LBrace 34..35 "{"
+          RBrace 35..36 "}"
+      LineTerminator 36..37 "\n"
+      RBrace 37..38 "}"
+  LineTerminator 38..39 "\n"
+  Eof 39..39 ""
+error 19..20 @19 ExpectedMember(IntLiteral): unexpected literal: expected a member declaration
+error 34..35 @34 UnexpectedToken(LBrace): unexpected '{'

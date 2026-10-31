@@ -1,0 +1,19 @@
+CompilationUnit 0..23 [error]
+  ClassDecl 0..10
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..10
+      LBrace 8..9 "{"
+      RBrace 9..10 "}"
+  LineTerminator 10..11 "\n"
+  Error 11..22 [error]
+    Modifiers 11..22
+      Annotation 11..22
+        At 11..12 "@"
+        Name 12..22
+          Identifier 12..22 "Deprecated"
+  LineTerminator 22..23 "\n"
+  Eof 23..23 ""
+error 23..23 @23 ExpectedDeclaration(Eof): unexpected end of file: expected a declaration

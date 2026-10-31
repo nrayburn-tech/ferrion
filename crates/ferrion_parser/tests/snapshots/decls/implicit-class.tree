@@ -1,0 +1,80 @@
+CompilationUnit 0..156 [error]
+  LineComment 0..14 "// release: 25"
+  LineTerminator 14..15 "\n"
+  ImportDecl 15..39
+    ImportKw 15..21 "import"
+    Whitespace 21..22 " "
+    ModuleKw 22..28 "module"
+    Whitespace 28..29 " "
+    Name 29..38
+      Name 29..33
+        Identifier 29..33 "java"
+      Dot 33..34 "."
+      Identifier 34..38 "base"
+    Semi 38..39 ";"
+  LineTerminator 39..40 "\n"
+  LineTerminator 40..41 "\n"
+  FieldDecl 41..67
+    ClassType 41..47
+      Identifier 41..47 "String"
+    Whitespace 47..48 " "
+    VariableDeclarator 48..66
+      Identifier 48..56 "greeting"
+      Whitespace 56..57 " "
+      Eq 57..58 "="
+      Whitespace 58..59 " "
+      LiteralExpr 59..66
+        StringLiteral 59..66 "\"hello\""
+    Semi 66..67 ";"
+  LineTerminator 67..68 "\n"
+  LineTerminator 68..69 "\n"
+  MethodDecl 69..136 [error]
+    VoidType 69..73
+      VoidKw 69..73 "void"
+    Whitespace 73..74 " "
+    Identifier 74..78 "main"
+    FormalParameters 78..80
+      LParen 78..79 "("
+      RParen 79..80 ")"
+    Whitespace 80..81 " "
+    Error 81..136 [error]
+      LBrace 81..82 "{"
+      LineTerminator 82..83 "\n"
+      Whitespace 83..85 "  "
+      Identifier 85..91 "System"
+      Dot 91..92 "."
+      Identifier 92..95 "out"
+      Dot 95..96 "."
+      Identifier 96..103 "println"
+      LParen 103..104 "("
+      Identifier 104..112 "greeting"
+      RParen 112..113 ")"
+      Semi 113..114 ";"
+      LineTerminator 114..115 "\n"
+      RBrace 115..116 "}"
+      LineTerminator 116..117 "\n"
+      LineTerminator 117..118 "\n"
+      Identifier 118..124 "record"
+      Whitespace 124..125 " "
+      Identifier 125..131 "Helper"
+      LParen 131..132 "("
+      RParen 132..133 ")"
+      Whitespace 133..134 " "
+      LBrace 134..135 "{"
+      RBrace 135..136 "}"
+  LineTerminator 136..137 "\n"
+  LineTerminator 137..138 "\n"
+  Semi 138..139 ";"
+  LineTerminator 139..140 "\n"
+  LineTerminator 140..141 "\n"
+  ClassDecl 141..155
+    ClassKw 141..146 "class"
+    Whitespace 146..147 " "
+    Identifier 147..152 "Other"
+    Whitespace 152..153 " "
+    ClassBody 153..155
+      LBrace 153..154 "{"
+      RBrace 154..155 "}"
+  LineTerminator 155..156 "\n"
+  Eof 156..156 ""
+error 81..82 @81 UnexpectedToken(LBrace): unexpected '{'
