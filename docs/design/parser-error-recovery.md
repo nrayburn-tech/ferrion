@@ -39,6 +39,10 @@ On a token that can't start an item:
    the recovery set, and reports one error at the first of them. Balanced delimiters inside the
    skipped run are skipped as a unit, so a stray `(` doesn't swallow the rest of the file.
 
+Characters the lexer can't make a token of (its `Error` tokens, already reported) are skipped by
+the parser and placed like trivia, in the innermost node around them. javac's scanner skips them
+the same way, so `import a.#b;` gets one error, for the `#`, and its import is still `a.b`.
+
 ### Missing pieces
 
 - A missing token (`;`, `)`, a name) is reported, not invented. Its node ends at the last token it
@@ -128,6 +132,7 @@ pub struct ParseDiagnostic {
     pub severity: Severity,        // error or warning
     pub span: Span,                // what an editor underlines
     pub anchor: u32,               // the offset javac's `position` corresponds to
+    pub javac_phase: JavacPhase,   // when javac reports it: Parse, Later, or Never
 }
 ```
 
@@ -167,14 +172,15 @@ parsing, because they are decidable from the tree. Known so far:
 
 The mechanism, so the list stays complete:
 
-- every diagnostic kind and every feature row records `javac_phase: Parse | Later`;
-- the comparison with javac's parsing phase leaves out `Later` diagnostics;
+- every diagnostic kind and every feature row records `javac_phase: Parse | Later | Never`;
+- the comparison with javac's parsing phase leaves out `Later` and `Never` diagnostics;
 - each `Later` kind or feature has a case in `tools/oracle-check/differences/` whose snapshot shows
   javac's full compile reporting it, and no error from javac's parse;
 - the normalization document lists them, and a test checks that the list, the cases, and the table
   agree, as the lexer's differences are checked.
 
-Diagnostics javac never reports (`NestingTooDeep`) are deliberate departures, listed the same way.
+Diagnostics javac never reports (`NestingTooDeep`) have `javac_phase: Never`. They are deliberate
+departures, listed the same way.
 
 ### Warnings
 

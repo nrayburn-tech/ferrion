@@ -1,0 +1,52 @@
+CompilationUnit 0..63 [error]
+  ImportDecl 0..10 [error]
+    ImportKw 0..6 "import"
+    Whitespace 6..7 " "
+    Name 7..10
+      Name 7..8
+        Identifier 7..8 "a"
+      Dot 8..9 "."
+      Identifier 9..10 "b"
+  LineTerminator 10..11 "\n"
+  ImportDecl 11..21 [error]
+    ImportKw 11..17 "import"
+    Whitespace 17..18 " "
+    Name 18..20 [error]
+      Name 18..19
+        Identifier 18..19 "c"
+      Dot 19..20 "."
+    Semi 20..21 ";"
+  LineTerminator 21..22 "\n"
+  ImportDecl 22..30 [error]
+    ImportKw 22..28 "import"
+    Whitespace 28..29 " "
+    Semi 29..30 ";"
+  LineTerminator 30..31 "\n"
+  ImportDecl 31..50 [error]
+    ImportKw 31..37 "import"
+    Whitespace 37..38 " "
+    StaticKw 38..44 "static"
+    Whitespace 44..45 " "
+    Name 45..48
+      Name 45..46
+        Identifier 45..46 "d"
+      Dot 46..47 "."
+      Identifier 47..48 "e"
+    Dot 48..49 "."
+    Star 49..50 "*"
+  LineTerminator 50..51 "\n"
+  ImportDecl 51..62
+    ImportKw 51..57 "import"
+    Whitespace 57..58 " "
+    Name 58..61
+      Name 58..59
+        Identifier 58..59 "f"
+      Dot 59..60 "."
+      Identifier 60..61 "g"
+    Semi 61..62 ";"
+  LineTerminator 62..63 "\n"
+  Eof 63..63 ""
+error 10..10 @10 Expected(Token(Semi)): ';' expected
+error 20..20 @20 Expected(Identifier): name expected
+error 28..28 @28 Expected(Identifier): name expected
+error 50..50 @50 Expected(Token(Semi)): ';' expected

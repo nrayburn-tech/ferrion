@@ -157,6 +157,13 @@ version = "0.0.0"
 [[package]]
 name = "ferrion_parser"
 version = "0.0.0"
+dependencies = [
+ "ferrion_diagnostics",
+ "ferrion_java_version",
+ "ferrion_lexer",
+ "ferrion_stack",
+ "ferrion_syntax",
+]
 
 [[package]]
 name = "ferrion_project"

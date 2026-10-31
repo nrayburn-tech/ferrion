@@ -1,0 +1,13 @@
+CompilationUnit 0..69
+  LineComment 0..41 "// Keywords written with Unicode escapes."
+  LineTerminator 41..42 "\n"
+  ImportDecl 42..68
+    ImportKw 42..53 "\\u0069mport"
+    Whitespace 53..54 " "
+    ModuleKw 54..65 "\\u006dodule"
+    Whitespace 65..66 " "
+    Name 66..67
+      Identifier 66..67 "m"
+    Semi 67..68 ";"
+  LineTerminator 68..69 "\n"
+  Eof 69..69 ""

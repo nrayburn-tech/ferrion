@@ -1,0 +1,19 @@
+CompilationUnit 0..27 [error]
+  ImportDecl 0..9 [error]
+    ImportKw 0..6 "import"
+    Whitespace 6..7 " "
+    Name 7..8
+      Identifier 7..8 "c"
+    Semi 8..9 ";"
+  LineTerminator 9..10 "\n"
+  ImportDecl 10..26
+    ImportKw 10..16 "import"
+    Whitespace 16..17 " "
+    ModuleKw 17..23 "module"
+    Whitespace 23..24 " "
+    Name 24..25
+      Identifier 24..25 "m"
+    Semi 25..26 ";"
+  LineTerminator 26..27 "\n"
+  Eof 27..27 ""
+error 8..8 @8 Expected(Token(Dot)): '.' expected

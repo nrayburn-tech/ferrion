@@ -6,5 +6,12 @@ license.workspace = true
 repository.workspace = true
 publish.workspace = true
 
+[dependencies]
+ferrion_diagnostics = { path = "../ferrion_diagnostics" }
+ferrion_java_version = { path = "../ferrion_java_version" }
+ferrion_lexer = { path = "../ferrion_lexer" }
+ferrion_stack = { path = "../ferrion_stack" }
+ferrion_syntax = { path = "../ferrion_syntax" }
+
 [lints]
 workspace = true

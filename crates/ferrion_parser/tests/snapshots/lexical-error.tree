@@ -1,0 +1,14 @@
+CompilationUnit 0..13 [error]
+  ImportDecl 0..12 [error]
+    ImportKw 0..6 "import"
+    Whitespace 6..7 " "
+    Name 7..11 [error]
+      Name 7..8
+        Identifier 7..8 "a"
+      Dot 8..9 "."
+      ErrorToken 9..10 "#"
+      Identifier 10..11 "b"
+    Semi 11..12 ";"
+  LineTerminator 12..13 "\n"
+  Eof 13..13 ""
+error 9..10 @9 Lexical(IllegalCharacter): illegal character
