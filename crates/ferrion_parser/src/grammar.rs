@@ -9,8 +9,7 @@
 //! - `stmts.rs`: blocks, statements, and switch blocks;
 //! - `patterns.rs`: patterns.
 //!
-//! Functions other areas call are `pub(crate)`, with the signatures their callers need. Areas not
-//! written yet have stubs with those signatures, which call [`todo`].
+//! Functions other areas call are `pub(crate)`, with the signatures their callers need.
 
 mod decls;
 mod exprs;
@@ -161,12 +160,4 @@ pub(crate) fn name(p: &mut Parser<'_>) -> Option<CompletedMarker> {
         }
     }
     Some(name)
-}
-
-/// TEMPORARY, a stand-in for grammar not written yet, called by the stubs. Puts the tokens up to
-/// the next `;` or `,`, an unmatched closing delimiter, or the end of the file in an `Error`
-/// node, skipping delimited groups whole, and reports the first as unexpected. Returns the node,
-/// or `None` (consuming nothing) if the current token is one of those.
-pub(crate) fn todo(p: &mut Parser<'_>) -> Option<CompletedMarker> {
-    p.skip_until(TokenSet::new(&[Semi, Comma]))
 }

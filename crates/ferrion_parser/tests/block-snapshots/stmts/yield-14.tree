@@ -1,0 +1,74 @@
+CompilationUnit 0..115 [error]
+  LineComment 0..14 "// release: 14"
+  LineTerminator 14..15 "\n"
+  Block 15..114 [error]
+    LBrace 15..16 "{"
+    LineTerminator 16..17 "\n"
+    Whitespace 17..21 "    "
+    YieldStmt 21..31
+      YieldKw 21..26 "yield"
+      Whitespace 26..27 " "
+      ParenExpr 27..30
+        LParen 27..28 "("
+        LiteralExpr 28..29
+          IntLiteral 28..29 "1"
+        RParen 29..30 ")"
+      Semi 30..31 ";"
+    LineTerminator 31..32 "\n"
+    Whitespace 32..36 "    "
+    YieldStmt 36..45
+      YieldKw 36..41 "yield"
+      Whitespace 41..42 " "
+      PrefixExpr 42..44
+        Minus 42..43 "-"
+        LiteralExpr 43..44
+          IntLiteral 43..44 "1"
+      Semi 44..45 ";"
+    LineTerminator 45..46 "\n"
+    Whitespace 46..50 "    "
+    YieldStmt 50..60
+      YieldKw 50..55 "yield"
+      Whitespace 55..56 " "
+      PrefixExpr 56..59
+        PlusPlus 56..58 "++"
+        NameExpr 58..59
+          Identifier 58..59 "x"
+      Semi 59..60 ";"
+    LineTerminator 60..61 "\n"
+    Whitespace 61..65 "    "
+    YieldStmt 65..71 [error]
+      YieldKw 65..70 "yield"
+      Semi 70..71 ";"
+    LineTerminator 71..72 "\n"
+    Whitespace 72..76 "    "
+    ExprStmt 76..86
+      AssignExpr 76..85
+        NameExpr 76..81
+          Identifier 76..81 "yield"
+        Whitespace 81..82 " "
+        Eq 82..83 "="
+        Whitespace 83..84 " "
+        LiteralExpr 84..85
+          IntLiteral 84..85 "1"
+      Semi 85..86 ";"
+    LineTerminator 86..87 "\n"
+    Whitespace 87..91 "    "
+    ExprStmt 91..99
+      PostfixExpr 91..98
+        NameExpr 91..96
+          Identifier 91..96 "yield"
+        PlusPlus 96..98 "++"
+      Semi 98..99 ";"
+    LineTerminator 99..100 "\n"
+    Whitespace 100..104 "    "
+    LabeledStmt 104..112
+      Identifier 104..109 "yield"
+      Colon 109..110 ":"
+      Whitespace 110..111 " "
+      EmptyStmt 111..112
+        Semi 111..112 ";"
+    LineTerminator 112..113 "\n"
+    RBrace 113..114 "}"
+  LineTerminator 114..115 "\n"
+  Eof 115..115 ""
+error 70..71 @70 ExpressionExpected(Semi): expected an expression, found ';'

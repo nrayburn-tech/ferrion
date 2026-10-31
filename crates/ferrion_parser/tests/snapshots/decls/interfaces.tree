@@ -1,4 +1,4 @@
-CompilationUnit 0..207 [error]
+CompilationUnit 0..207
   InterfaceDecl 0..14
     InterfaceKw 0..9 "interface"
     Whitespace 9..10 " "
@@ -9,7 +9,7 @@ CompilationUnit 0..207 [error]
       RBrace 13..14 "}"
   LineTerminator 14..15 "\n"
   LineTerminator 15..16 "\n"
-  InterfaceDecl 16..206 [error]
+  InterfaceDecl 16..206
     Modifiers 16..22
       PublicKw 16..22 "public"
     Whitespace 22..23 " "
@@ -37,7 +37,7 @@ CompilationUnit 0..207 [error]
             Identifier 51..52 "T"
           Gt 52..53 ">"
     Whitespace 53..54 " "
-    ClassBody 54..206 [error]
+    ClassBody 54..206
       LBrace 54..55 "{"
       LineTerminator 55..56 "\n"
       Whitespace 56..58 "  "
@@ -68,7 +68,7 @@ CompilationUnit 0..207 [error]
       LineTerminator 101..102 "\n"
       LineTerminator 102..103 "\n"
       Whitespace 103..105 "  "
-      MethodDecl 105..204 [error]
+      MethodDecl 105..136
         Modifiers 105..112
           DefaultKw 105..112 "default"
         Whitespace 112..113 " "
@@ -80,37 +80,46 @@ CompilationUnit 0..207 [error]
           LParen 131..132 "("
           RParen 132..133 ")"
         Whitespace 133..134 " "
-        Error 134..204 [error]
+        Block 134..136
           LBrace 134..135 "{"
           RBrace 135..136 "}"
-          LineTerminator 136..137 "\n"
-          LineTerminator 137..138 "\n"
-          Whitespace 138..140 "  "
+      LineTerminator 136..137 "\n"
+      LineTerminator 137..138 "\n"
+      Whitespace 138..140 "  "
+      MethodDecl 140..169
+        Modifiers 140..146
           StaticKw 140..146 "static"
-          Whitespace 146..147 " "
+        Whitespace 146..147 " "
+        VoidType 147..151
           VoidKw 147..151 "void"
-          Whitespace 151..152 " "
-          Identifier 152..164 "staticMethod"
+        Whitespace 151..152 " "
+        Identifier 152..164 "staticMethod"
+        FormalParameters 164..166
           LParen 164..165 "("
           RParen 165..166 ")"
-          Whitespace 166..167 " "
+        Whitespace 166..167 " "
+        Block 167..169
           LBrace 167..168 "{"
           RBrace 168..169 "}"
-          LineTerminator 169..170 "\n"
-          LineTerminator 170..171 "\n"
-          Whitespace 171..173 "  "
+      LineTerminator 169..170 "\n"
+      LineTerminator 170..171 "\n"
+      Whitespace 171..173 "  "
+      MethodDecl 173..204
+        Modifiers 173..180
           PrivateKw 173..180 "private"
-          Whitespace 180..181 " "
+        Whitespace 180..181 " "
+        VoidType 181..185
           VoidKw 181..185 "void"
-          Whitespace 185..186 " "
-          Identifier 186..199 "privateMethod"
+        Whitespace 185..186 " "
+        Identifier 186..199 "privateMethod"
+        FormalParameters 199..201
           LParen 199..200 "("
           RParen 200..201 ")"
-          Whitespace 201..202 " "
+        Whitespace 201..202 " "
+        Block 202..204
           LBrace 202..203 "{"
           RBrace 203..204 "}"
       LineTerminator 204..205 "\n"
       RBrace 205..206 "}"
   LineTerminator 206..207 "\n"
   Eof 207..207 ""
-error 134..135 @134 UnexpectedToken(LBrace): unexpected '{'

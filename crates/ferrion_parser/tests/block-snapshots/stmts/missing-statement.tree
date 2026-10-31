@@ -1,0 +1,17 @@
+CompilationUnit 0..15 [error]
+  Block 0..14 [error]
+    LBrace 0..1 "{"
+    LineTerminator 1..2 "\n"
+    Whitespace 2..6 "    "
+    IfStmt 6..12 [error]
+      IfKw 6..8 "if"
+      Whitespace 8..9 " "
+      LParen 9..10 "("
+      NameExpr 10..11
+        Identifier 10..11 "a"
+      RParen 11..12 ")"
+    Whitespace 12..13 " "
+    RBrace 13..14 "}"
+  LineTerminator 14..15 "\n"
+  Eof 15..15 ""
+error 13..14 @13 StatementExpected: statement expected

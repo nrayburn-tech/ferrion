@@ -1,0 +1,188 @@
+CompilationUnit 0..386
+  LineComment 0..14 "// release: 14"
+  LineTerminator 14..15 "\n"
+  ClassDecl 15..385
+    ClassKw 15..20 "class"
+    Whitespace 20..21 " "
+    Identifier 21..26 "Yield"
+    Whitespace 26..27 " "
+    ClassBody 27..385
+      LBrace 27..28 "{"
+      LineTerminator 28..29 "\n"
+      Whitespace 29..33 "    "
+      MethodDecl 33..367
+        PrimitiveType 33..36
+          IntKw 33..36 "int"
+        Whitespace 36..37 " "
+        Identifier 37..38 "m"
+        FormalParameters 38..45
+          LParen 38..39 "("
+          FormalParameter 39..44
+            PrimitiveType 39..42
+              IntKw 39..42 "int"
+            Whitespace 42..43 " "
+            Identifier 43..44 "x"
+          RParen 44..45 ")"
+        Whitespace 45..46 " "
+        Block 46..367
+          LBrace 46..47 "{"
+          LineTerminator 47..48 "\n"
+          Whitespace 48..56 "        "
+          LocalVarDecl 56..282
+            PrimitiveType 56..59
+              IntKw 56..59 "int"
+            Whitespace 59..60 " "
+            VariableDeclarator 60..281
+              Identifier 60..61 "y"
+              Whitespace 61..62 " "
+              Eq 62..63 "="
+              Whitespace 63..64 " "
+              SwitchExpr 64..281
+                SwitchKw 64..70 "switch"
+                Whitespace 70..71 " "
+                LParen 71..72 "("
+                NameExpr 72..73
+                  Identifier 72..73 "x"
+                RParen 73..74 ")"
+                Whitespace 74..75 " "
+                SwitchBlock 75..281
+                  LBrace 75..76 "{"
+                  LineTerminator 76..77 "\n"
+                  Whitespace 77..89 "            "
+                  SwitchRule 89..141
+                    SwitchLabel 89..95
+                      CaseKw 89..93 "case"
+                      Whitespace 93..94 " "
+                      LiteralExpr 94..95
+                        IntLiteral 94..95 "1"
+                    Whitespace 95..96 " "
+                    Arrow 96..98 "->"
+                    Whitespace 98..99 " "
+                    Block 99..141
+                      LBrace 99..100 "{"
+                      LineTerminator 100..101 "\n"
+                      Whitespace 101..117 "                "
+                      YieldStmt 117..127
+                        YieldKw 117..122 "yield"
+                        Whitespace 122..123 " "
+                        ParenExpr 123..126
+                          LParen 123..124 "("
+                          LiteralExpr 124..125
+                            IntLiteral 124..125 "1"
+                          RParen 125..126 ")"
+                        Semi 126..127 ";"
+                      LineTerminator 127..128 "\n"
+                      Whitespace 128..140 "            "
+                      RBrace 140..141 "}"
+                  LineTerminator 141..142 "\n"
+                  Whitespace 142..154 "            "
+                  SwitchRule 154..205
+                    SwitchLabel 154..160
+                      CaseKw 154..158 "case"
+                      Whitespace 158..159 " "
+                      LiteralExpr 159..160
+                        IntLiteral 159..160 "2"
+                    Whitespace 160..161 " "
+                    Arrow 161..163 "->"
+                    Whitespace 163..164 " "
+                    Block 164..205
+                      LBrace 164..165 "{"
+                      LineTerminator 165..166 "\n"
+                      Whitespace 166..182 "                "
+                      YieldStmt 182..191
+                        YieldKw 182..187 "yield"
+                        Whitespace 187..188 " "
+                        PrefixExpr 188..190
+                          Minus 188..189 "-"
+                          LiteralExpr 189..190
+                            IntLiteral 189..190 "1"
+                        Semi 190..191 ";"
+                      LineTerminator 191..192 "\n"
+                      Whitespace 192..204 "            "
+                      RBrace 204..205 "}"
+                  LineTerminator 205..206 "\n"
+                  Whitespace 206..218 "            "
+                  SwitchRule 218..271
+                    SwitchLabel 218..225
+                      DefaultKw 218..225 "default"
+                    Whitespace 225..226 " "
+                    Arrow 226..228 "->"
+                    Whitespace 228..229 " "
+                    Block 229..271
+                      LBrace 229..230 "{"
+                      LineTerminator 230..231 "\n"
+                      Whitespace 231..247 "                "
+                      YieldStmt 247..257
+                        YieldKw 247..252 "yield"
+                        Whitespace 252..253 " "
+                        PrefixExpr 253..256
+                          PlusPlus 253..255 "++"
+                          NameExpr 255..256
+                            Identifier 255..256 "x"
+                        Semi 256..257 ";"
+                      LineTerminator 257..258 "\n"
+                      Whitespace 258..270 "            "
+                      RBrace 270..271 "}"
+                  LineTerminator 271..272 "\n"
+                  Whitespace 272..280 "        "
+                  RBrace 280..281 "}"
+            Semi 281..282 ";"
+          LineTerminator 282..283 "\n"
+          Whitespace 283..291 "        "
+          ExprStmt 291..306
+            AssignExpr 291..305
+              FieldAccessExpr 291..301
+                ThisExpr 291..295
+                  ThisKw 291..295 "this"
+                Dot 295..296 "."
+                Identifier 296..301 "yield"
+              Whitespace 301..302 " "
+              Eq 302..303 "="
+              Whitespace 303..304 " "
+              LiteralExpr 304..305
+                IntLiteral 304..305 "1"
+            Semi 305..306 ";"
+          LineTerminator 306..307 "\n"
+          Whitespace 307..315 "        "
+          LabeledStmt 315..343
+            Identifier 315..320 "yield"
+            Colon 320..321 ":"
+            Whitespace 321..322 " "
+            ForStmt 322..343
+              ForKw 322..325 "for"
+              Whitespace 325..326 " "
+              LParen 326..327 "("
+              Semi 327..328 ";"
+              Semi 328..329 ";"
+              RParen 329..330 ")"
+              Whitespace 330..331 " "
+              BreakStmt 331..343
+                BreakKw 331..336 "break"
+                Whitespace 336..337 " "
+                Identifier 337..342 "yield"
+                Semi 342..343 ";"
+          LineTerminator 343..344 "\n"
+          Whitespace 344..352 "        "
+          ReturnStmt 352..361
+            ReturnKw 352..358 "return"
+            Whitespace 358..359 " "
+            NameExpr 359..360
+              Identifier 359..360 "y"
+            Semi 360..361 ";"
+          LineTerminator 361..362 "\n"
+          Whitespace 362..366 "    "
+          RBrace 366..367 "}"
+      LineTerminator 367..368 "\n"
+      LineTerminator 368..369 "\n"
+      Whitespace 369..373 "    "
+      FieldDecl 373..383
+        PrimitiveType 373..376
+          IntKw 373..376 "int"
+        Whitespace 376..377 " "
+        VariableDeclarator 377..382
+          Identifier 377..382 "yield"
+        Semi 382..383 ";"
+      LineTerminator 383..384 "\n"
+      RBrace 384..385 "}"
+  LineTerminator 385..386 "\n"
+  Eof 386..386 ""

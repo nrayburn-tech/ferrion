@@ -165,13 +165,19 @@ one as a keyword only where the grammar has that keyword and the lookahead confi
 | `record` | where a type declaration can start | followed by a name, at every release: `record r;` is a record missing its header |
 | `sealed`, `non-sealed` | in modifiers | followed by `public`, `protected`, `private`, `abstract`, `static`, `final`, `strictfp`, `sealed`, `non-sealed`, an annotation, `class`, `interface`, or `enum` |
 | `permits` | in a class or interface header | after the name, type parameters, and `extends` or `implements` |
-| `yield` | at the start of a statement, at 14+ | not followed by `=`, `.`, `[`, `++`, or `--` (exact set settled with the oracle) |
-| `when` | after a `case` pattern | followed by an expression |
+| `yield` | at the start of a statement, at 14+ | followed by `;` or a token that can start an expression; `++` or `--` only if not then followed by `;` |
+| `when` | after a `case` pattern, or `case null, default` (an error) | always |
 
-The lookahead for `module`, `open`, `record`, and `sealed` is javac's, found with the oracle, so
-that Ferrion reads invalid code as javac does and reports the same first error. `non-sealed` is
-three adjacent tokens with no trivia between them; with trivia (`non - sealed`) it is an
-expression. Where the parser reads an identifier as a keyword, it records the keyword kind in
+The lookahead for `module`, `open`, `record`, `sealed`, and `yield` is javac's, found with the
+oracle, so that Ferrion reads invalid code as javac does and reports the same first error.
+`non-sealed` is three adjacent tokens with no trivia between them; with trivia (`non - sealed`) it
+is an expression.
+
+javac's reading of `yield`, observed with the oracle at 14: `yield (1);`, `yield -1;`, `yield ++x;`,
+and `yield;` (an error) are `yield` statements, and `yield = 1;`, `yield.f();`, `yield[0] = 1;`,
+`yield++;`, `yield: ;`, `yield<T> x;`, `yield -> 1;`, and `yield * x;` use a name.
+
+Where the parser reads an identifier as a keyword, it records the keyword kind in
 the tree's token kinds (see [syntax tree](parser-syntax-tree.md#contextual-keywords)). `var` and `_`
 are never recorded as keywords, as explained above.
 

@@ -1,10 +1,10 @@
-CompilationUnit 0..534 [error]
-  ClassDecl 0..533 [error]
+CompilationUnit 0..534
+  ClassDecl 0..533
     ClassKw 0..5 "class"
     Whitespace 5..6 " "
     Identifier 6..7 "A"
     Whitespace 7..8 " "
-    ClassBody 8..533 [error]
+    ClassBody 8..533
       LBrace 8..9 "{"
       LineTerminator 9..10 "\n"
       Whitespace 10..12 "  "
@@ -59,43 +59,52 @@ CompilationUnit 0..534 [error]
       LineTerminator 54..55 "\n"
       LineTerminator 55..56 "\n"
       Whitespace 56..58 "  "
-      ConstructorDecl 58..87 [error]
+      ConstructorDecl 58..64
         Identifier 58..59 "A"
         FormalParameters 59..61
           LParen 59..60 "("
           RParen 60..61 ")"
         Whitespace 61..62 " "
-        Error 62..87 [error]
+        Block 62..64
           LBrace 62..63 "{"
           RBrace 63..64 "}"
-          LineTerminator 64..65 "\n"
-          LineTerminator 65..66 "\n"
-          Whitespace 66..68 "  "
+      LineTerminator 64..65 "\n"
+      LineTerminator 65..66 "\n"
+      Whitespace 66..68 "  "
+      ConstructorDecl 68..93
+        TypeParameters 68..71
           Lt 68..69 "<"
-          Identifier 69..70 "T"
+          TypeParameter 69..70
+            Identifier 69..70 "T"
           Gt 70..71 ">"
-          Whitespace 71..72 " "
-          Identifier 72..73 "A"
+        Whitespace 71..72 " "
+        Identifier 72..73 "A"
+        FormalParameters 73..78
           LParen 73..74 "("
-          Identifier 74..75 "T"
-          Whitespace 75..76 " "
-          Identifier 76..77 "t"
+          FormalParameter 74..77
+            ClassType 74..75
+              Identifier 74..75 "T"
+            Whitespace 75..76 " "
+            Identifier 76..77 "t"
           RParen 77..78 ")"
-          Whitespace 78..79 " "
+        Whitespace 78..79 " "
+        ThrowsClause 79..90
           ThrowsKw 79..85 "throws"
           Whitespace 85..86 " "
-          Identifier 86..87 "E"
-      Error 87..93 [error]
-        Comma 87..88 ","
-        Whitespace 88..89 " "
-        Identifier 89..90 "F"
+          ClassType 86..87
+            Identifier 86..87 "E"
+          Comma 87..88 ","
+          Whitespace 88..89 " "
+          ClassType 89..90
+            Identifier 89..90 "F"
         Whitespace 90..91 " "
-        LBrace 91..92 "{"
-        RBrace 92..93 "}"
+        Block 91..93
+          LBrace 91..92 "{"
+          RBrace 92..93 "}"
       LineTerminator 93..94 "\n"
       LineTerminator 94..95 "\n"
       Whitespace 95..97 "  "
-      MethodDecl 97..346 [error]
+      MethodDecl 97..123
         PrimitiveType 97..100
           IntKw 97..100 "int"
         Whitespace 100..101 " "
@@ -107,146 +116,203 @@ CompilationUnit 0..534 [error]
           LBracket 104..105 "["
           RBracket 105..106 "]"
         Whitespace 106..107 " "
-        Error 107..346 [error]
+        Block 107..123
           LBrace 107..108 "{"
           Whitespace 108..109 " "
-          ReturnKw 109..115 "return"
-          Whitespace 115..116 " "
-          NullKw 116..120 "null"
-          Semi 120..121 ";"
+          ReturnStmt 109..121
+            ReturnKw 109..115 "return"
+            Whitespace 115..116 " "
+            LiteralExpr 116..120
+              NullKw 116..120 "null"
+            Semi 120..121 ";"
           Whitespace 121..122 " "
           RBrace 122..123 "}"
-          LineTerminator 123..124 "\n"
-          LineTerminator 124..125 "\n"
-          Whitespace 125..127 "  "
+      LineTerminator 123..124 "\n"
+      LineTerminator 124..125 "\n"
+      Whitespace 125..127 "  "
+      MethodDecl 127..192
+        TypeParameters 127..152
           Lt 127..128 "<"
-          Identifier 128..129 "T"
-          Whitespace 129..130 " "
-          ExtendsKw 130..137 "extends"
-          Whitespace 137..138 " "
-          Identifier 138..148 "Comparable"
-          Lt 148..149 "<"
-          Identifier 149..150 "T"
-          Gt 150..151 ">"
+          TypeParameter 128..151
+            Identifier 128..129 "T"
+            Whitespace 129..130 " "
+            ExtendsKw 130..137 "extends"
+            Whitespace 137..138 " "
+            ClassType 138..151
+              Identifier 138..148 "Comparable"
+              TypeArguments 148..151
+                Lt 148..149 "<"
+                ClassType 149..150
+                  Identifier 149..150 "T"
+                Gt 150..151 ">"
           Gt 151..152 ">"
-          Whitespace 152..153 " "
+        Whitespace 152..153 " "
+        Annotation 153..162
           At 153..154 "@"
-          Identifier 154..162 "Nullable"
-          Whitespace 162..163 " "
+          Name 154..162
+            Identifier 154..162 "Nullable"
+        Whitespace 162..163 " "
+        ClassType 163..164
           Identifier 163..164 "T"
-          Whitespace 164..165 " "
-          Identifier 165..168 "max"
+        Whitespace 164..165 " "
+        Identifier 165..168 "max"
+        FormalParameters 168..178
           LParen 168..169 "("
-          Identifier 169..170 "T"
-          Whitespace 170..171 " "
-          Identifier 171..172 "a"
+          FormalParameter 169..172
+            ClassType 169..170
+              Identifier 169..170 "T"
+            Whitespace 170..171 " "
+            Identifier 171..172 "a"
           Comma 172..173 ","
           Whitespace 173..174 " "
-          Identifier 174..175 "T"
-          Whitespace 175..176 " "
-          Identifier 176..177 "b"
+          FormalParameter 174..177
+            ClassType 174..175
+              Identifier 174..175 "T"
+            Whitespace 175..176 " "
+            Identifier 176..177 "b"
           RParen 177..178 ")"
-          Whitespace 178..179 " "
+        Whitespace 178..179 " "
+        Block 179..192
           LBrace 179..180 "{"
           Whitespace 180..181 " "
-          ReturnKw 181..187 "return"
-          Whitespace 187..188 " "
-          Identifier 188..189 "a"
-          Semi 189..190 ";"
+          ReturnStmt 181..190
+            ReturnKw 181..187 "return"
+            Whitespace 187..188 " "
+            NameExpr 188..189
+              Identifier 188..189 "a"
+            Semi 189..190 ";"
           Whitespace 190..191 " "
           RBrace 191..192 "}"
-          LineTerminator 192..193 "\n"
-          LineTerminator 193..194 "\n"
-          Whitespace 194..196 "  "
+      LineTerminator 192..193 "\n"
+      LineTerminator 193..194 "\n"
+      Whitespace 194..196 "  "
+      MethodDecl 196..230
+        VoidType 196..200
           VoidKw 196..200 "void"
-          Whitespace 200..201 " "
-          Identifier 201..209 "receiver"
+        Whitespace 200..201 " "
+        Identifier 201..209 "receiver"
+        FormalParameters 209..227
           LParen 209..210 "("
-          At 210..211 "@"
-          Identifier 211..212 "A"
-          Whitespace 212..213 " "
-          Identifier 213..214 "A"
-          Whitespace 214..215 " "
-          ThisKw 215..219 "this"
+          ReceiverParameter 210..219
+            Modifiers 210..212
+              Annotation 210..212
+                At 210..211 "@"
+                Name 211..212
+                  Identifier 211..212 "A"
+            Whitespace 212..213 " "
+            ClassType 213..214
+              Identifier 213..214 "A"
+            Whitespace 214..215 " "
+            ThisKw 215..219 "this"
           Comma 219..220 ","
           Whitespace 220..221 " "
-          IntKw 221..224 "int"
-          Whitespace 224..225 " "
-          Identifier 225..226 "x"
+          FormalParameter 221..226
+            PrimitiveType 221..224
+              IntKw 221..224 "int"
+            Whitespace 224..225 " "
+            Identifier 225..226 "x"
           RParen 226..227 ")"
-          Whitespace 227..228 " "
+        Whitespace 227..228 " "
+        Block 228..230
           LBrace 228..229 "{"
           RBrace 229..230 "}"
-          LineTerminator 230..231 "\n"
-          LineTerminator 231..232 "\n"
-          Whitespace 232..234 "  "
+      LineTerminator 230..231 "\n"
+      LineTerminator 231..232 "\n"
+      Whitespace 232..234 "  "
+      MethodDecl 234..280
+        VoidType 234..238
           VoidKw 234..238 "void"
-          Whitespace 238..239 " "
-          Identifier 239..246 "varargs"
+        Whitespace 238..239 " "
+        Identifier 239..246 "varargs"
+        FormalParameters 246..277
           LParen 246..247 "("
-          IntKw 247..250 "int"
-          Whitespace 250..251 " "
-          Identifier 251..256 "first"
+          FormalParameter 247..256
+            PrimitiveType 247..250
+              IntKw 247..250 "int"
+            Whitespace 250..251 " "
+            Identifier 251..256 "first"
           Comma 256..257 ","
           Whitespace 257..258 " "
-          Identifier 258..264 "String"
-          Whitespace 264..265 " "
-          At 265..266 "@"
-          Identifier 266..267 "A"
-          Whitespace 267..268 " "
-          Ellipsis 268..271 "..."
-          Whitespace 271..272 " "
-          Identifier 272..276 "rest"
+          FormalParameter 258..276
+            ClassType 258..264
+              Identifier 258..264 "String"
+            Whitespace 264..265 " "
+            Varargs 265..271
+              Annotation 265..267
+                At 265..266 "@"
+                Name 266..267
+                  Identifier 266..267 "A"
+              Whitespace 267..268 " "
+              Ellipsis 268..271 "..."
+            Whitespace 271..272 " "
+            Identifier 272..276 "rest"
           RParen 276..277 ")"
-          Whitespace 277..278 " "
+        Whitespace 277..278 " "
+        Block 278..280
           LBrace 278..279 "{"
           RBrace 279..280 "}"
-          LineTerminator 280..281 "\n"
-          LineTerminator 281..282 "\n"
-          Whitespace 282..284 "  "
+      LineTerminator 280..281 "\n"
+      LineTerminator 281..282 "\n"
+      Whitespace 282..284 "  "
+      MethodDecl 284..320
+        VoidType 284..288
           VoidKw 284..288 "void"
-          Whitespace 288..289 " "
-          Identifier 289..295 "cStyle"
+        Whitespace 288..289 " "
+        Identifier 289..295 "cStyle"
+        FormalParameters 295..317
           LParen 295..296 "("
-          IntKw 296..299 "int"
-          Whitespace 299..300 " "
-          Identifier 300..301 "x"
-          LBracket 301..302 "["
-          RBracket 302..303 "]"
+          FormalParameter 296..303
+            PrimitiveType 296..299
+              IntKw 296..299 "int"
+            Whitespace 299..300 " "
+            Identifier 300..301 "x"
+            Dim 301..303
+              LBracket 301..302 "["
+              RBracket 302..303 "]"
           Comma 303..304 ","
           Whitespace 304..305 " "
-          FinalKw 305..310 "final"
-          Whitespace 310..311 " "
-          IntKw 311..314 "int"
-          Whitespace 314..315 " "
-          Identifier 315..316 "y"
+          FormalParameter 305..316
+            Modifiers 305..310
+              FinalKw 305..310 "final"
+            Whitespace 310..311 " "
+            PrimitiveType 311..314
+              IntKw 311..314 "int"
+            Whitespace 314..315 " "
+            Identifier 315..316 "y"
           RParen 316..317 ")"
-          Whitespace 317..318 " "
+        Whitespace 317..318 " "
+        Block 318..320
           LBrace 318..319 "{"
           RBrace 319..320 "}"
-          LineTerminator 320..321 "\n"
-          LineTerminator 321..322 "\n"
-          Whitespace 322..324 "  "
+      LineTerminator 320..321 "\n"
+      LineTerminator 321..322 "\n"
+      Whitespace 322..324 "  "
+      MethodDecl 324..347
+        Modifiers 324..332
           AbstractKw 324..332 "abstract"
-          Whitespace 332..333 " "
+        Whitespace 332..333 " "
+        VoidType 333..337
           VoidKw 333..337 "void"
-          Whitespace 337..338 " "
-          Identifier 338..344 "noBody"
+        Whitespace 337..338 " "
+        Identifier 338..344 "noBody"
+        FormalParameters 344..346
           LParen 344..345 "("
           RParen 345..346 ")"
-      Semi 346..347 ";"
+        Semi 346..347 ";"
       LineTerminator 347..348 "\n"
       LineTerminator 348..349 "\n"
       Whitespace 349..351 "  "
-      Initializer 351..366 [error]
+      Initializer 351..360
         StaticKw 351..357 "static"
         Whitespace 357..358 " "
-        Error 358..366 [error]
+        Block 358..360
           LBrace 358..359 "{"
           RBrace 359..360 "}"
-          LineTerminator 360..361 "\n"
-          LineTerminator 361..362 "\n"
-          Whitespace 362..364 "  "
+      LineTerminator 360..361 "\n"
+      LineTerminator 361..362 "\n"
+      Whitespace 362..364 "  "
+      Initializer 364..366
+        Block 364..366
           LBrace 364..365 "{"
           RBrace 365..366 "}"
       LineTerminator 366..367 "\n"
@@ -257,16 +323,16 @@ CompilationUnit 0..534 [error]
       LineTerminator 372..373 "\n"
       LineTerminator 373..374 "\n"
       Whitespace 374..376 "  "
-      ClassDecl 376..416 [error]
+      ClassDecl 376..416
         ClassKw 376..381 "class"
         Whitespace 381..382 " "
         Identifier 382..387 "Inner"
         Whitespace 387..388 " "
-        ClassBody 388..416 [error]
+        ClassBody 388..416
           LBrace 388..389 "{"
           LineTerminator 389..390 "\n"
           Whitespace 390..394 "    "
-          ConstructorDecl 394..412 [error]
+          ConstructorDecl 394..412
             Identifier 394..399 "Inner"
             FormalParameters 399..409
               LParen 399..400 "("
@@ -279,7 +345,7 @@ CompilationUnit 0..534 [error]
                 ThisKw 404..408 "this"
               RParen 408..409 ")"
             Whitespace 409..410 " "
-            Error 410..412 [error]
+            Block 410..412
               LBrace 410..411 "{"
               RBrace 411..412 "}"
           LineTerminator 412..413 "\n"
@@ -341,7 +407,3 @@ CompilationUnit 0..534 [error]
       RBrace 532..533 "}"
   LineTerminator 533..534 "\n"
   Eof 534..534 ""
-error 62..63 @62 UnexpectedToken(LBrace): unexpected '{'
-error 107..108 @107 UnexpectedToken(LBrace): unexpected '{'
-error 358..359 @358 UnexpectedToken(LBrace): unexpected '{'
-error 410..411 @410 UnexpectedToken(LBrace): unexpected '{'

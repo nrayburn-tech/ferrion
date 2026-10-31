@@ -1,0 +1,41 @@
+CompilationUnit 0..62
+  LineComment 0..14 "// release: 13"
+  LineTerminator 14..15 "\n"
+  Block 15..61
+    LBrace 15..16 "{"
+    LineTerminator 16..17 "\n"
+    Whitespace 17..21 "    "
+    ExprStmt 21..31
+      MethodCallExpr 21..30
+        Identifier 21..26 "yield"
+        Whitespace 26..27 " "
+        Arguments 27..30
+          LParen 27..28 "("
+          LiteralExpr 28..29
+            IntLiteral 28..29 "1"
+          RParen 29..30 ")"
+      Semi 30..31 ";"
+    LineTerminator 31..32 "\n"
+    Whitespace 32..36 "    "
+    ExprStmt 36..46
+      AssignExpr 36..45
+        NameExpr 36..41
+          Identifier 36..41 "yield"
+        Whitespace 41..42 " "
+        Eq 42..43 "="
+        Whitespace 43..44 " "
+        LiteralExpr 44..45
+          IntLiteral 44..45 "1"
+      Semi 45..46 ";"
+    LineTerminator 46..47 "\n"
+    Whitespace 47..51 "    "
+    LabeledStmt 51..59
+      Identifier 51..56 "yield"
+      Colon 56..57 ":"
+      Whitespace 57..58 " "
+      EmptyStmt 58..59
+        Semi 58..59 ";"
+    LineTerminator 59..60 "\n"
+    RBrace 60..61 "}"
+  LineTerminator 61..62 "\n"
+  Eof 62..62 ""

@@ -1,4 +1,4 @@
-CompilationUnit 0..868 [error]
+CompilationUnit 0..868
   ImportDecl 0..19
     ImportKw 0..6 "import"
     Whitespace 6..7 " "
@@ -27,7 +27,7 @@ CompilationUnit 0..868 [error]
     Semi 47..48 ";"
   LineTerminator 48..49 "\n"
   LineTerminator 49..50 "\n"
-  ClassDecl 50..867 [error]
+  ClassDecl 50..867
     ClassKw 50..55 "class"
     Whitespace 55..56 " "
     Identifier 56..67 "Expressions"
@@ -37,7 +37,7 @@ CompilationUnit 0..868 [error]
         Identifier 68..69 "T"
       Gt 69..70 ">"
     Whitespace 70..71 " "
-    ClassBody 71..867 [error]
+    ClassBody 71..867
       LBrace 71..72 "{"
       LineTerminator 72..73 "\n"
       Whitespace 73..75 "  "
@@ -216,7 +216,7 @@ CompilationUnit 0..868 [error]
       LineTerminator 291..292 "\n"
       LineTerminator 292..293 "\n"
       Whitespace 293..295 "  "
-      MethodDecl 295..865 [error]
+      MethodDecl 295..812
         ClassType 295..301
           Identifier 295..301 "Object"
         Whitespace 301..302 " "
@@ -244,314 +244,458 @@ CompilationUnit 0..868 [error]
             Identifier 326..327 "l"
           RParen 327..328 ")"
         Whitespace 328..329 " "
-        Error 329..865 [error]
+        Block 329..812
           LBrace 329..330 "{"
           LineTerminator 330..331 "\n"
           Whitespace 331..335 "    "
-          Identifier 335..336 "i"
-          Whitespace 336..337 " "
-          PlusEq 337..339 "+="
-          Whitespace 339..340 " "
-          Identifier 340..341 "i"
-          Whitespace 341..342 " "
-          LtLt 342..344 "<<"
-          Whitespace 344..345 " "
-          IntLiteral 345..346 "2"
-          Whitespace 346..347 " "
-          Gt 347..348 ">"
-          Gt 348..349 ">"
-          Whitespace 349..350 " "
-          IntLiteral 350..351 "1"
-          Whitespace 351..352 " "
-          Gt 352..353 ">"
-          Gt 353..354 ">"
-          Gt 354..355 ">"
-          Whitespace 355..356 " "
-          IntLiteral 356..357 "3"
-          Semi 357..358 ";"
+          ExprStmt 335..358
+            AssignExpr 335..357
+              NameExpr 335..336
+                Identifier 335..336 "i"
+              Whitespace 336..337 " "
+              PlusEq 337..339 "+="
+              Whitespace 339..340 " "
+              BinaryExpr 340..357
+                BinaryExpr 340..351
+                  BinaryExpr 340..346
+                    NameExpr 340..341
+                      Identifier 340..341 "i"
+                    Whitespace 341..342 " "
+                    LtLt 342..344 "<<"
+                    Whitespace 344..345 " "
+                    LiteralExpr 345..346
+                      IntLiteral 345..346 "2"
+                  Whitespace 346..347 " "
+                  Gt 347..348 ">"
+                  Gt 348..349 ">"
+                  Whitespace 349..350 " "
+                  LiteralExpr 350..351
+                    IntLiteral 350..351 "1"
+                Whitespace 351..352 " "
+                Gt 352..353 ">"
+                Gt 353..354 ">"
+                Gt 354..355 ">"
+                Whitespace 355..356 " "
+                LiteralExpr 356..357
+                  IntLiteral 356..357 "3"
+            Semi 357..358 ";"
           LineTerminator 358..359 "\n"
           Whitespace 359..363 "    "
-          Identifier 363..364 "i"
-          Whitespace 364..365 " "
-          Gt 365..366 ">"
-          Gt 366..367 ">"
-          GtEq 367..369 ">="
-          Whitespace 369..370 " "
-          IntLiteral 370..371 "1"
-          Semi 371..372 ";"
+          ExprStmt 363..372
+            AssignExpr 363..371
+              NameExpr 363..364
+                Identifier 363..364 "i"
+              Whitespace 364..365 " "
+              Gt 365..366 ">"
+              Gt 366..367 ">"
+              GtEq 367..369 ">="
+              Whitespace 369..370 " "
+              LiteralExpr 370..371
+                IntLiteral 370..371 "1"
+            Semi 371..372 ";"
           LineTerminator 372..373 "\n"
           Whitespace 373..377 "    "
-          Identifier 377..378 "o"
-          Whitespace 378..379 " "
-          Eq 379..380 "="
-          Whitespace 380..381 " "
-          Identifier 381..382 "i"
-          Whitespace 382..383 " "
-          Gt 383..384 ">"
-          Whitespace 384..385 " "
-          IntLiteral 385..386 "0"
-          Whitespace 386..387 " "
-          Question 387..388 "?"
-          Whitespace 388..389 " "
-          LParen 389..390 "("
-          Identifier 390..396 "Object"
-          RParen 396..397 ")"
-          Whitespace 397..398 " "
-          StringLiteral 398..401 "\"a\""
-          Whitespace 401..402 " "
-          Plus 402..403 "+"
-          Whitespace 403..404 " "
-          CharLiteral 404..407 "'b'"
-          Whitespace 407..408 " "
-          Colon 408..409 ":"
-          Whitespace 409..410 " "
-          Identifier 410..411 "i"
-          Whitespace 411..412 " "
-          Lt 412..413 "<"
-          Whitespace 413..414 " "
-          IntLiteral 414..415 "0"
-          Whitespace 415..416 " "
-          Question 416..417 "?"
-          Whitespace 417..418 " "
-          NullKw 418..422 "null"
-          Whitespace 422..423 " "
-          Colon 423..424 ":"
-          Whitespace 424..425 " "
-          Identifier 425..429 "List"
-          Dot 429..430 "."
-          Lt 430..431 "<"
-          Identifier 431..437 "String"
-          Gt 437..438 ">"
-          Identifier 438..440 "of"
-          LParen 440..441 "("
-          RParen 441..442 ")"
-          Semi 442..443 ";"
+          ExprStmt 377..443
+            AssignExpr 377..442
+              NameExpr 377..378
+                Identifier 377..378 "o"
+              Whitespace 378..379 " "
+              Eq 379..380 "="
+              Whitespace 380..381 " "
+              ConditionalExpr 381..442
+                BinaryExpr 381..386
+                  NameExpr 381..382
+                    Identifier 381..382 "i"
+                  Whitespace 382..383 " "
+                  Gt 383..384 ">"
+                  Whitespace 384..385 " "
+                  LiteralExpr 385..386
+                    IntLiteral 385..386 "0"
+                Whitespace 386..387 " "
+                Question 387..388 "?"
+                Whitespace 388..389 " "
+                BinaryExpr 389..407
+                  CastExpr 389..401
+                    LParen 389..390 "("
+                    ClassType 390..396
+                      Identifier 390..396 "Object"
+                    RParen 396..397 ")"
+                    Whitespace 397..398 " "
+                    LiteralExpr 398..401
+                      StringLiteral 398..401 "\"a\""
+                  Whitespace 401..402 " "
+                  Plus 402..403 "+"
+                  Whitespace 403..404 " "
+                  LiteralExpr 404..407
+                    CharLiteral 404..407 "'b'"
+                Whitespace 407..408 " "
+                Colon 408..409 ":"
+                Whitespace 409..410 " "
+                ConditionalExpr 410..442
+                  BinaryExpr 410..415
+                    NameExpr 410..411
+                      Identifier 410..411 "i"
+                    Whitespace 411..412 " "
+                    Lt 412..413 "<"
+                    Whitespace 413..414 " "
+                    LiteralExpr 414..415
+                      IntLiteral 414..415 "0"
+                  Whitespace 415..416 " "
+                  Question 416..417 "?"
+                  Whitespace 417..418 " "
+                  LiteralExpr 418..422
+                    NullKw 418..422 "null"
+                  Whitespace 422..423 " "
+                  Colon 423..424 ":"
+                  Whitespace 424..425 " "
+                  MethodCallExpr 425..442
+                    NameExpr 425..429
+                      Identifier 425..429 "List"
+                    Dot 429..430 "."
+                    TypeArguments 430..438
+                      Lt 430..431 "<"
+                      ClassType 431..437
+                        Identifier 431..437 "String"
+                      Gt 437..438 ">"
+                    Identifier 438..440 "of"
+                    Arguments 440..442
+                      LParen 440..441 "("
+                      RParen 441..442 ")"
+            Semi 442..443 ";"
           LineTerminator 443..444 "\n"
           Whitespace 444..448 "    "
-          Identifier 448..449 "o"
-          Whitespace 449..450 " "
-          Eq 450..451 "="
-          Whitespace 451..452 " "
-          LParen 452..453 "("
-          Identifier 453..461 "Runnable"
-          Whitespace 461..462 " "
-          Amp 462..463 "&"
-          Whitespace 463..464 " "
-          Identifier 464..468 "java"
-          Dot 468..469 "."
-          Identifier 469..471 "io"
-          Dot 471..472 "."
-          Identifier 472..484 "Serializable"
-          RParen 484..485 ")"
-          Whitespace 485..486 " "
-          LParen 486..487 "("
-          RParen 487..488 ")"
-          Whitespace 488..489 " "
-          Arrow 489..491 "->"
-          Whitespace 491..492 " "
-          LBrace 492..493 "{"
-          RBrace 493..494 "}"
-          Semi 494..495 ";"
+          ExprStmt 448..495
+            AssignExpr 448..494
+              NameExpr 448..449
+                Identifier 448..449 "o"
+              Whitespace 449..450 " "
+              Eq 450..451 "="
+              Whitespace 451..452 " "
+              CastExpr 452..494
+                LParen 452..453 "("
+                IntersectionType 453..484
+                  ClassType 453..461
+                    Identifier 453..461 "Runnable"
+                  Whitespace 461..462 " "
+                  Amp 462..463 "&"
+                  Whitespace 463..464 " "
+                  ClassType 464..484
+                    ClassType 464..471
+                      ClassType 464..468
+                        Identifier 464..468 "java"
+                      Dot 468..469 "."
+                      Identifier 469..471 "io"
+                    Dot 471..472 "."
+                    Identifier 472..484 "Serializable"
+                RParen 484..485 ")"
+                Whitespace 485..486 " "
+                LambdaExpr 486..494
+                  LambdaParameters 486..488
+                    LParen 486..487 "("
+                    RParen 487..488 ")"
+                  Whitespace 488..489 " "
+                  Arrow 489..491 "->"
+                  Whitespace 491..492 " "
+                  Block 492..494
+                    LBrace 492..493 "{"
+                    RBrace 493..494 "}"
+            Semi 494..495 ";"
           LineTerminator 495..496 "\n"
           Whitespace 496..500 "    "
-          Identifier 500..501 "o"
-          Whitespace 501..502 " "
-          Eq 502..503 "="
-          Whitespace 503..504 " "
-          Identifier 504..505 "o"
-          Whitespace 505..506 " "
-          InstanceofKw 506..516 "instanceof"
-          Whitespace 516..517 " "
-          Identifier 517..523 "String"
-          Whitespace 523..524 " "
-          Identifier 524..527 "str"
-          Whitespace 527..528 " "
-          AmpAmp 528..530 "&&"
-          Whitespace 530..531 " "
-          Bang 531..532 "!"
-          Identifier 532..535 "str"
-          Dot 535..536 "."
-          Identifier 536..543 "isEmpty"
-          LParen 543..544 "("
-          RParen 544..545 ")"
-          Semi 545..546 ";"
+          ExprStmt 500..546
+            AssignExpr 500..545
+              NameExpr 500..501
+                Identifier 500..501 "o"
+              Whitespace 501..502 " "
+              Eq 502..503 "="
+              Whitespace 503..504 " "
+              BinaryExpr 504..545
+                InstanceofExpr 504..527
+                  NameExpr 504..505
+                    Identifier 504..505 "o"
+                  Whitespace 505..506 " "
+                  InstanceofKw 506..516 "instanceof"
+                  Whitespace 516..517 " "
+                  TypePattern 517..527
+                    ClassType 517..523
+                      Identifier 517..523 "String"
+                    Whitespace 523..524 " "
+                    Identifier 524..527 "str"
+                Whitespace 527..528 " "
+                AmpAmp 528..530 "&&"
+                Whitespace 530..531 " "
+                PrefixExpr 531..545
+                  Bang 531..532 "!"
+                  MethodCallExpr 532..545
+                    NameExpr 532..535
+                      Identifier 532..535 "str"
+                    Dot 535..536 "."
+                    Identifier 536..543 "isEmpty"
+                    Arguments 543..545
+                      LParen 543..544 "("
+                      RParen 544..545 ")"
+            Semi 545..546 ";"
           LineTerminator 546..547 "\n"
           Whitespace 547..551 "    "
-          Identifier 551..552 "o"
-          Whitespace 552..553 " "
-          Eq 553..554 "="
-          Whitespace 554..555 " "
-          NewKw 555..558 "new"
-          Whitespace 558..559 " "
-          Identifier 559..570 "Expressions"
-          Lt 570..571 "<"
-          Identifier 571..577 "String"
-          Gt 577..578 ">"
-          LParen 578..579 "("
-          RParen 579..580 ")"
-          Dot 580..581 "."
-          NewKw 581..584 "new"
-          Whitespace 584..585 " "
-          Identifier 585..590 "Inner"
-          Lt 590..591 "<"
-          Gt 591..592 ">"
-          LParen 592..593 "("
-          ThisKw 593..597 "this"
-          Comma 597..598 ","
-          Whitespace 598..599 " "
-          Identifier 599..610 "Expressions"
-          Dot 610..611 "."
-          ThisKw 611..615 "this"
-          RParen 615..616 ")"
-          Semi 616..617 ";"
+          ExprStmt 551..617
+            AssignExpr 551..616
+              NameExpr 551..552
+                Identifier 551..552 "o"
+              Whitespace 552..553 " "
+              Eq 553..554 "="
+              Whitespace 554..555 " "
+              NewExpr 555..616
+                NewExpr 555..580
+                  NewKw 555..558 "new"
+                  Whitespace 558..559 " "
+                  ClassType 559..578
+                    Identifier 559..570 "Expressions"
+                    TypeArguments 570..578
+                      Lt 570..571 "<"
+                      ClassType 571..577
+                        Identifier 571..577 "String"
+                      Gt 577..578 ">"
+                  Arguments 578..580
+                    LParen 578..579 "("
+                    RParen 579..580 ")"
+                Dot 580..581 "."
+                NewKw 581..584 "new"
+                Whitespace 584..585 " "
+                ClassType 585..592
+                  Identifier 585..590 "Inner"
+                  TypeArguments 590..592
+                    Lt 590..591 "<"
+                    Gt 591..592 ">"
+                Arguments 592..616
+                  LParen 592..593 "("
+                  ThisExpr 593..597
+                    ThisKw 593..597 "this"
+                  Comma 597..598 ","
+                  Whitespace 598..599 " "
+                  ThisExpr 599..615
+                    NameExpr 599..610
+                      Identifier 599..610 "Expressions"
+                    Dot 610..611 "."
+                    ThisKw 611..615 "this"
+                  RParen 615..616 ")"
+            Semi 616..617 ";"
           LineTerminator 617..618 "\n"
           Whitespace 618..622 "    "
-          Identifier 622..623 "o"
-          Whitespace 623..624 " "
-          Eq 624..625 "="
-          Whitespace 625..626 " "
-          IntKw 626..629 "int"
-          LBracket 629..630 "["
-          RBracket 630..631 "]"
-          Dot 631..632 "."
-          ClassKw 632..637 "class"
-          Semi 637..638 ";"
+          ExprStmt 622..638
+            AssignExpr 622..637
+              NameExpr 622..623
+                Identifier 622..623 "o"
+              Whitespace 623..624 " "
+              Eq 624..625 "="
+              Whitespace 625..626 " "
+              ClassLiteralExpr 626..637
+                ArrayType 626..631
+                  PrimitiveType 626..629
+                    IntKw 626..629 "int"
+                  Dim 629..631
+                    LBracket 629..630 "["
+                    RBracket 630..631 "]"
+                Dot 631..632 "."
+                ClassKw 632..637 "class"
+            Semi 637..638 ";"
           LineTerminator 638..639 "\n"
           Whitespace 639..643 "    "
-          Identifier 643..644 "o"
-          Whitespace 644..645 " "
-          Eq 645..646 "="
-          Whitespace 646..647 " "
-          SwitchKw 647..653 "switch"
-          Whitespace 653..654 " "
-          LParen 654..655 "("
-          Identifier 655..656 "i"
-          RParen 656..657 ")"
-          Whitespace 657..658 " "
-          LBrace 658..659 "{"
-          Whitespace 659..660 " "
-          CaseKw 660..664 "case"
-          Whitespace 664..665 " "
-          IntLiteral 665..666 "1"
-          Whitespace 666..667 " "
-          Arrow 667..669 "->"
-          Whitespace 669..670 " "
-          IntLiteral 670..671 "2"
-          Semi 671..672 ";"
-          Whitespace 672..673 " "
-          DefaultKw 673..680 "default"
-          Whitespace 680..681 " "
-          Arrow 681..683 "->"
-          Whitespace 683..684 " "
-          LBrace 684..685 "{"
-          Whitespace 685..686 " "
-          Identifier 686..691 "yield"
-          Whitespace 691..692 " "
-          IntLiteral 692..693 "3"
-          Semi 693..694 ";"
-          Whitespace 694..695 " "
-          RBrace 695..696 "}"
-          Whitespace 696..697 " "
-          RBrace 697..698 "}"
-          Semi 698..699 ";"
+          ExprStmt 643..699
+            AssignExpr 643..698
+              NameExpr 643..644
+                Identifier 643..644 "o"
+              Whitespace 644..645 " "
+              Eq 645..646 "="
+              Whitespace 646..647 " "
+              SwitchExpr 647..698
+                SwitchKw 647..653 "switch"
+                Whitespace 653..654 " "
+                LParen 654..655 "("
+                NameExpr 655..656
+                  Identifier 655..656 "i"
+                RParen 656..657 ")"
+                Whitespace 657..658 " "
+                SwitchBlock 658..698
+                  LBrace 658..659 "{"
+                  Whitespace 659..660 " "
+                  SwitchRule 660..672
+                    SwitchLabel 660..666
+                      CaseKw 660..664 "case"
+                      Whitespace 664..665 " "
+                      LiteralExpr 665..666
+                        IntLiteral 665..666 "1"
+                    Whitespace 666..667 " "
+                    Arrow 667..669 "->"
+                    Whitespace 669..670 " "
+                    LiteralExpr 670..671
+                      IntLiteral 670..671 "2"
+                    Semi 671..672 ";"
+                  Whitespace 672..673 " "
+                  SwitchRule 673..696
+                    SwitchLabel 673..680
+                      DefaultKw 673..680 "default"
+                    Whitespace 680..681 " "
+                    Arrow 681..683 "->"
+                    Whitespace 683..684 " "
+                    Block 684..696
+                      LBrace 684..685 "{"
+                      Whitespace 685..686 " "
+                      YieldStmt 686..694
+                        YieldKw 686..691 "yield"
+                        Whitespace 691..692 " "
+                        LiteralExpr 692..693
+                          IntLiteral 692..693 "3"
+                        Semi 693..694 ";"
+                      Whitespace 694..695 " "
+                      RBrace 695..696 "}"
+                  Whitespace 696..697 " "
+                  RBrace 697..698 "}"
+            Semi 698..699 ";"
           LineTerminator 699..700 "\n"
           Whitespace 700..704 "    "
-          Identifier 704..705 "o"
-          Whitespace 705..706 " "
-          Eq 706..707 "="
-          Whitespace 707..708 " "
-          LParen 708..709 "("
-          IntKw 709..712 "int"
-          RParen 712..713 ")"
-          Whitespace 713..714 " "
-          Minus 714..715 "-"
-          Identifier 715..716 "l"
-          Whitespace 716..717 " "
-          Plus 717..718 "+"
-          Whitespace 718..719 " "
-          LParen 719..720 "("
-          Identifier 720..721 "i"
-          RParen 721..722 ")"
-          Whitespace 722..723 " "
-          Minus 723..724 "-"
-          Whitespace 724..725 " "
-          PlusPlus 725..727 "++"
-          Identifier 727..728 "i"
-          Whitespace 728..729 " "
-          Minus 729..730 "-"
-          Whitespace 730..731 " "
-          Identifier 731..732 "i"
-          MinusMinus 732..734 "--"
-          Semi 734..735 ";"
+          ExprStmt 704..735
+            AssignExpr 704..734
+              NameExpr 704..705
+                Identifier 704..705 "o"
+              Whitespace 705..706 " "
+              Eq 706..707 "="
+              Whitespace 707..708 " "
+              BinaryExpr 708..734
+                BinaryExpr 708..728
+                  BinaryExpr 708..722
+                    CastExpr 708..716
+                      LParen 708..709 "("
+                      PrimitiveType 709..712
+                        IntKw 709..712 "int"
+                      RParen 712..713 ")"
+                      Whitespace 713..714 " "
+                      PrefixExpr 714..716
+                        Minus 714..715 "-"
+                        NameExpr 715..716
+                          Identifier 715..716 "l"
+                    Whitespace 716..717 " "
+                    Plus 717..718 "+"
+                    Whitespace 718..719 " "
+                    ParenExpr 719..722
+                      LParen 719..720 "("
+                      NameExpr 720..721
+                        Identifier 720..721 "i"
+                      RParen 721..722 ")"
+                  Whitespace 722..723 " "
+                  Minus 723..724 "-"
+                  Whitespace 724..725 " "
+                  PrefixExpr 725..728
+                    PlusPlus 725..727 "++"
+                    NameExpr 727..728
+                      Identifier 727..728 "i"
+                Whitespace 728..729 " "
+                Minus 729..730 "-"
+                Whitespace 730..731 " "
+                PostfixExpr 731..734
+                  NameExpr 731..732
+                    Identifier 731..732 "i"
+                  MinusMinus 732..734 "--"
+            Semi 734..735 ";"
           LineTerminator 735..736 "\n"
           Whitespace 736..740 "    "
-          Identifier 740..741 "o"
-          Whitespace 741..742 " "
-          Eq 742..743 "="
-          Whitespace 743..744 " "
-          ThisKw 744..748 "this"
-          Dot 748..749 "."
-          Lt 749..750 "<"
-          Identifier 750..751 "T"
-          Gt 751..752 ">"
-          Identifier 752..753 "m"
-          LParen 753..754 "("
-          Identifier 754..755 "o"
-          Comma 755..756 ","
-          Whitespace 756..757 " "
-          Identifier 757..758 "a"
-          LBracket 758..759 "["
-          IntLiteral 759..760 "0"
-          RBracket 760..761 "]"
-          Comma 761..762 ","
-          Whitespace 762..763 " "
-          LParen 763..764 "("
-          Identifier 764..765 "l"
-          RParen 765..766 ")"
-          RParen 766..767 ")"
-          Semi 767..768 ";"
+          ExprStmt 740..768
+            AssignExpr 740..767
+              NameExpr 740..741
+                Identifier 740..741 "o"
+              Whitespace 741..742 " "
+              Eq 742..743 "="
+              Whitespace 743..744 " "
+              MethodCallExpr 744..767
+                ThisExpr 744..748
+                  ThisKw 744..748 "this"
+                Dot 748..749 "."
+                TypeArguments 749..752
+                  Lt 749..750 "<"
+                  ClassType 750..751
+                    Identifier 750..751 "T"
+                  Gt 751..752 ">"
+                Identifier 752..753 "m"
+                Arguments 753..767
+                  LParen 753..754 "("
+                  NameExpr 754..755
+                    Identifier 754..755 "o"
+                  Comma 755..756 ","
+                  Whitespace 756..757 " "
+                  ArrayAccessExpr 757..761
+                    NameExpr 757..758
+                      Identifier 757..758 "a"
+                    LBracket 758..759 "["
+                    LiteralExpr 759..760
+                      IntLiteral 759..760 "0"
+                    RBracket 760..761 "]"
+                  Comma 761..762 ","
+                  Whitespace 762..763 " "
+                  ParenExpr 763..766
+                    LParen 763..764 "("
+                    NameExpr 764..765
+                      Identifier 764..765 "l"
+                    RParen 765..766 ")"
+                  RParen 766..767 ")"
+            Semi 767..768 ";"
           LineTerminator 768..769 "\n"
           Whitespace 769..773 "    "
-          ReturnKw 773..779 "return"
-          Whitespace 779..780 " "
-          SuperKw 780..785 "super"
-          Dot 785..786 "."
-          Identifier 786..794 "toString"
-          LParen 794..795 "("
-          RParen 795..796 ")"
-          Whitespace 796..797 " "
-          Plus 797..798 "+"
-          Whitespace 798..799 " "
-          Identifier 799..800 "a"
-          Dot 800..801 "."
-          Identifier 801..807 "length"
-          Semi 807..808 ";"
+          ReturnStmt 773..808
+            ReturnKw 773..779 "return"
+            Whitespace 779..780 " "
+            BinaryExpr 780..807
+              MethodCallExpr 780..796
+                SuperExpr 780..785
+                  SuperKw 780..785 "super"
+                Dot 785..786 "."
+                Identifier 786..794 "toString"
+                Arguments 794..796
+                  LParen 794..795 "("
+                  RParen 795..796 ")"
+              Whitespace 796..797 " "
+              Plus 797..798 "+"
+              Whitespace 798..799 " "
+              FieldAccessExpr 799..807
+                NameExpr 799..800
+                  Identifier 799..800 "a"
+                Dot 800..801 "."
+                Identifier 801..807 "length"
+            Semi 807..808 ";"
           LineTerminator 808..809 "\n"
           Whitespace 809..811 "  "
           RBrace 811..812 "}"
-          LineTerminator 812..813 "\n"
-          LineTerminator 813..814 "\n"
-          Whitespace 814..816 "  "
-          ClassKw 816..821 "class"
-          Whitespace 821..822 " "
-          Identifier 822..827 "Inner"
+      LineTerminator 812..813 "\n"
+      LineTerminator 813..814 "\n"
+      Whitespace 814..816 "  "
+      ClassDecl 816..865
+        ClassKw 816..821 "class"
+        Whitespace 821..822 " "
+        Identifier 822..827 "Inner"
+        TypeParameters 827..830
           Lt 827..828 "<"
-          Identifier 828..829 "U"
+          TypeParameter 828..829
+            Identifier 828..829 "U"
           Gt 829..830 ">"
-          Whitespace 830..831 " "
+        Whitespace 830..831 " "
+        ClassBody 831..865
           LBrace 831..832 "{"
           LineTerminator 832..833 "\n"
           Whitespace 833..837 "    "
-          Identifier 837..842 "Inner"
-          LParen 842..843 "("
-          Identifier 843..849 "Object"
-          Ellipsis 849..852 "..."
-          Whitespace 852..853 " "
-          Identifier 853..857 "args"
-          RParen 857..858 ")"
-          Whitespace 858..859 " "
-          LBrace 859..860 "{"
-          RBrace 860..861 "}"
+          ConstructorDecl 837..861
+            Identifier 837..842 "Inner"
+            FormalParameters 842..858
+              LParen 842..843 "("
+              FormalParameter 843..857
+                ClassType 843..849
+                  Identifier 843..849 "Object"
+                Varargs 849..852
+                  Ellipsis 849..852 "..."
+                Whitespace 852..853 " "
+                Identifier 853..857 "args"
+              RParen 857..858 ")"
+            Whitespace 858..859 " "
+            Block 859..861
+              LBrace 859..860 "{"
+              RBrace 860..861 "}"
           LineTerminator 861..862 "\n"
           Whitespace 862..864 "  "
           RBrace 864..865 "}"
@@ -559,4 +703,3 @@ CompilationUnit 0..868 [error]
       RBrace 866..867 "}"
   LineTerminator 867..868 "\n"
   Eof 868..868 ""
-error 329..330 @329 UnexpectedToken(LBrace): unexpected '{'

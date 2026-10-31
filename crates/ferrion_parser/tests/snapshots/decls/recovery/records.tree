@@ -84,7 +84,7 @@ CompilationUnit 0..130 [error]
       CompactConstructorDecl 91..95 [error]
         Identifier 91..92 "E"
         Whitespace 92..93 " "
-        Error 93..95 [error]
+        Block 93..95
           LBrace 93..94 "{"
           RBrace 94..95 "}"
       Whitespace 95..96 " "
@@ -121,6 +121,5 @@ error 9..14 @9 RecordComponentModifiers: a record component can't have modifiers
 error 39..40 @39 RecordComponentDims: a record component's array dimensions go on its type
 error 68..69 @68 InstanceFieldInRecord: a record's fields must be static; its components are its instance fields
 error 91..92 @91 MissingReturnType: a method needs a result type; a constructor takes its class's name
-error 93..94 @93 UnexpectedToken(LBrace): unexpected '{'
 error 106..106 @106 Expected(Token(LParen)): '(' expected
 error 121..125 @121 MisplacedReceiver: a receiver parameter ('this') can only be a method's first parameter

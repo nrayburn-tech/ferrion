@@ -31,29 +31,36 @@ CompilationUnit 0..132 [error]
             Identifier 99..100 "T"
           Gt 100..101 ">"
       Whitespace 101..102 " "
-      Initializer 102..129 [error]
-        Error 102..129 [error]
+      Initializer 102..104
+        Block 102..104
           LBrace 102..103 "{"
           RBrace 103..104 "}"
-          LineTerminator 104..105 "\n"
-          Whitespace 105..107 "  "
+      LineTerminator 104..105 "\n"
+      Whitespace 105..107 "  "
+      MethodDecl 107..124 [error]
+        VoidType 107..111
           VoidKw 107..111 "void"
-          Whitespace 111..112 " "
-          Identifier 112..113 "g"
+        Whitespace 111..112 " "
+        Identifier 112..113 "g"
+        FormalParameters 113..115
           LParen 113..114 "("
           RParen 114..115 ")"
-          Whitespace 115..116 " "
+        Whitespace 115..116 " "
+        ThrowsClause 116..124
           ThrowsKw 116..122 "throws"
           Whitespace 122..123 " "
-          Identifier 123..124 "F"
-          LBracket 124..125 "["
-          RBracket 125..126 "]"
-          Whitespace 126..127 " "
-          LBrace 127..128 "{"
-          RBrace 128..129 "}"
+          ClassType 123..124
+            Identifier 123..124 "F"
+      Error 124..129 [error]
+        LBracket 124..125 "["
+        RBracket 125..126 "]"
+        Whitespace 126..127 " "
+        LBrace 127..128 "{"
+        RBrace 128..129 "}"
       LineTerminator 129..130 "\n"
       RBrace 130..131 "}"
   LineTerminator 131..132 "\n"
   Eof 132..132 ""
 error 98..98 @98 Expected(OneOf([LBrace, Semi])): '{' or ';' expected
 error 102..103 @102 ExpectedMember(LBrace): unexpected '{': expected a member declaration
+error 124..124 @124 Expected(OneOf([LBrace, Semi])): '{' or ';' expected

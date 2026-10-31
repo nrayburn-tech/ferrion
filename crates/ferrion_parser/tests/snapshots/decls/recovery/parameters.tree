@@ -8,7 +8,7 @@ CompilationUnit 0..237 [error]
       LBrace 8..9 "{"
       LineTerminator 9..10 "\n"
       Whitespace 10..12 "  "
-      MethodDecl 12..234 [error]
+      MethodDecl 12..26 [error]
         VoidType 12..16
           VoidKw 12..16 "void"
         Whitespace 16..17 " "
@@ -20,143 +20,206 @@ CompilationUnit 0..237 [error]
               IntKw 19..22 "int"
           RParen 22..23 ")"
         Whitespace 23..24 " "
-        Error 24..234 [error]
+        Block 24..26
           LBrace 24..25 "{"
           RBrace 25..26 "}"
-          LineTerminator 26..27 "\n"
-          Whitespace 27..29 "  "
+      LineTerminator 26..27 "\n"
+      Whitespace 27..29 "  "
+      MethodDecl 29..46 [error]
+        VoidType 29..33
           VoidKw 29..33 "void"
-          Whitespace 33..34 " "
-          Identifier 34..35 "b"
+        Whitespace 33..34 " "
+        Identifier 34..35 "b"
+        FormalParameters 35..43 [error]
           LParen 35..36 "("
-          IntKw 36..39 "int"
-          Whitespace 39..40 " "
-          Identifier 40..41 "x"
+          FormalParameter 36..41
+            PrimitiveType 36..39
+              IntKw 36..39 "int"
+            Whitespace 39..40 " "
+            Identifier 40..41 "x"
           Comma 41..42 ","
           RParen 42..43 ")"
-          Whitespace 43..44 " "
+        Whitespace 43..44 " "
+        Block 44..46
           LBrace 44..45 "{"
           RBrace 45..46 "}"
-          LineTerminator 46..47 "\n"
-          Whitespace 47..49 "  "
+      LineTerminator 46..47 "\n"
+      Whitespace 47..49 "  "
+      MethodDecl 49..67 [error]
+        VoidType 49..53
           VoidKw 49..53 "void"
-          Whitespace 53..54 " "
-          Identifier 54..55 "c"
+        Whitespace 53..54 " "
+        Identifier 54..55 "c"
+        FormalParameters 55..64 [error]
           LParen 55..56 "("
-          IntKw 56..59 "int"
-          Whitespace 59..60 " "
-          Identifier 60..61 "x"
+          FormalParameter 56..61
+            PrimitiveType 56..59
+              IntKw 56..59 "int"
+            Whitespace 59..60 " "
+            Identifier 60..61 "x"
           Whitespace 61..62 " "
-          Identifier 62..63 "y"
+          Error 62..63 [error]
+            Identifier 62..63 "y"
           RParen 63..64 ")"
-          Whitespace 64..65 " "
+        Whitespace 64..65 " "
+        Block 65..67
           LBrace 65..66 "{"
           RBrace 66..67 "}"
-          LineTerminator 67..68 "\n"
-          Whitespace 68..70 "  "
+      LineTerminator 67..68 "\n"
+      Whitespace 68..70 "  "
+      MethodDecl 70..96 [error]
+        VoidType 70..74
           VoidKw 70..74 "void"
-          Whitespace 74..75 " "
-          Identifier 75..76 "d"
+        Whitespace 74..75 " "
+        Identifier 75..76 "d"
+        FormalParameters 76..93 [error]
           LParen 76..77 "("
-          IntKw 77..80 "int"
-          Ellipsis 80..83 "..."
-          Whitespace 83..84 " "
-          Identifier 84..85 "x"
+          FormalParameter 77..85
+            PrimitiveType 77..80
+              IntKw 77..80 "int"
+            Varargs 80..83
+              Ellipsis 80..83 "..."
+            Whitespace 83..84 " "
+            Identifier 84..85 "x"
           Comma 85..86 ","
           Whitespace 86..87 " "
-          IntKw 87..90 "int"
-          Whitespace 90..91 " "
-          Identifier 91..92 "y"
+          FormalParameter 87..92
+            PrimitiveType 87..90
+              IntKw 87..90 "int"
+            Whitespace 90..91 " "
+            Identifier 91..92 "y"
           RParen 92..93 ")"
-          Whitespace 93..94 " "
+        Whitespace 93..94 " "
+        Block 94..96
           LBrace 94..95 "{"
           RBrace 95..96 "}"
-          LineTerminator 96..97 "\n"
-          Whitespace 97..99 "  "
+      LineTerminator 96..97 "\n"
+      Whitespace 97..99 "  "
+      MethodDecl 99..120 [error]
+        VoidType 99..103
           VoidKw 99..103 "void"
-          Whitespace 103..104 " "
-          Identifier 104..105 "e"
+        Whitespace 103..104 " "
+        Identifier 104..105 "e"
+        FormalParameters 105..117 [error]
           LParen 105..106 "("
-          IntKw 106..109 "int"
-          Ellipsis 109..112 "..."
-          Whitespace 112..113 " "
-          Identifier 113..114 "x"
-          LBracket 114..115 "["
-          RBracket 115..116 "]"
+          FormalParameter 106..116 [error]
+            PrimitiveType 106..109
+              IntKw 106..109 "int"
+            Varargs 109..112
+              Ellipsis 109..112 "..."
+            Whitespace 112..113 " "
+            Identifier 113..114 "x"
+            Dim 114..116
+              LBracket 114..115 "["
+              RBracket 115..116 "]"
           RParen 116..117 ")"
-          Whitespace 117..118 " "
+        Whitespace 117..118 " "
+        Block 118..120
           LBrace 118..119 "{"
           RBrace 119..120 "}"
-          LineTerminator 120..121 "\n"
-          Whitespace 121..123 "  "
+      LineTerminator 120..121 "\n"
+      Whitespace 121..123 "  "
+      MethodDecl 123..147 [error]
+        VoidType 123..127
           VoidKw 123..127 "void"
-          Whitespace 127..128 " "
-          Identifier 128..129 "f"
+        Whitespace 127..128 " "
+        Identifier 128..129 "f"
+        FormalParameters 129..144 [error]
           LParen 129..130 "("
-          IntKw 130..133 "int"
-          Whitespace 133..134 " "
-          Identifier 134..135 "x"
+          FormalParameter 130..135
+            PrimitiveType 130..133
+              IntKw 130..133 "int"
+            Whitespace 133..134 " "
+            Identifier 134..135 "x"
           Comma 135..136 ","
           Whitespace 136..137 " "
-          Identifier 137..138 "A"
-          Whitespace 138..139 " "
-          ThisKw 139..143 "this"
+          ReceiverParameter 137..143 [error]
+            ClassType 137..138
+              Identifier 137..138 "A"
+            Whitespace 138..139 " "
+            ThisKw 139..143 "this"
           RParen 143..144 ")"
-          Whitespace 144..145 " "
+        Whitespace 144..145 " "
+        Block 145..147
           LBrace 145..146 "{"
           RBrace 146..147 "}"
-          LineTerminator 147..148 "\n"
-          Whitespace 148..150 "  "
+      LineTerminator 147..148 "\n"
+      Whitespace 148..150 "  "
+      MethodDecl 150..169 [error]
+        VoidType 150..154
           VoidKw 150..154 "void"
-          Whitespace 154..155 " "
-          Identifier 155..156 "g"
+        Whitespace 154..155 " "
+        Identifier 155..156 "g"
+        FormalParameters 156..166 [error]
           LParen 156..157 "("
-          Identifier 157..158 "A"
-          Whitespace 158..159 " "
-          ThisKw 159..163 "this"
-          LBracket 163..164 "["
-          RBracket 164..165 "]"
+          ReceiverParameter 157..165 [error]
+            ClassType 157..158
+              Identifier 157..158 "A"
+            Whitespace 158..159 " "
+            ThisKw 159..163 "this"
+            Dim 163..165
+              LBracket 163..164 "["
+              RBracket 164..165 "]"
           RParen 165..166 ")"
-          Whitespace 166..167 " "
+        Whitespace 166..167 " "
+        Block 167..169
           LBrace 167..168 "{"
           RBrace 168..169 "}"
-          LineTerminator 169..170 "\n"
-          Whitespace 170..172 "  "
+      LineTerminator 169..170 "\n"
+      Whitespace 170..172 "  "
+      MethodDecl 172..195 [error]
+        VoidType 172..176
           VoidKw 172..176 "void"
-          Whitespace 176..177 " "
-          Identifier 177..178 "h"
+        Whitespace 176..177 " "
+        Identifier 177..178 "h"
+        FormalParameters 178..192 [error]
           LParen 178..179 "("
-          PublicKw 179..185 "public"
-          Whitespace 185..186 " "
-          IntKw 186..189 "int"
-          Whitespace 189..190 " "
-          Identifier 190..191 "x"
+          FormalParameter 179..191 [error]
+            Modifiers 179..185
+              PublicKw 179..185 "public"
+            Whitespace 185..186 " "
+            PrimitiveType 186..189
+              IntKw 186..189 "int"
+            Whitespace 189..190 " "
+            Identifier 190..191 "x"
           RParen 191..192 ")"
-          Whitespace 192..193 " "
+        Whitespace 192..193 " "
+        Block 193..195
           LBrace 193..194 "{"
           RBrace 194..195 "}"
-          LineTerminator 195..196 "\n"
-          Whitespace 196..198 "  "
+      LineTerminator 195..196 "\n"
+      Whitespace 196..198 "  "
+      MethodDecl 198..213 [error]
+        VoidType 198..202
           VoidKw 198..202 "void"
-          Whitespace 202..203 " "
-          Identifier 203..204 "i"
+        Whitespace 202..203 " "
+        Identifier 203..204 "i"
+        FormalParameters 204..210 [error]
           LParen 204..205 "("
-          IntKw 205..208 "int"
-          Whitespace 208..209 " "
-          Identifier 209..210 "x"
-          Whitespace 210..211 " "
+          FormalParameter 205..210
+            PrimitiveType 205..208
+              IntKw 205..208 "int"
+            Whitespace 208..209 " "
+            Identifier 209..210 "x"
+        Whitespace 210..211 " "
+        Block 211..213
           LBrace 211..212 "{"
           RBrace 212..213 "}"
-          LineTerminator 213..214 "\n"
-          Whitespace 214..216 "  "
+      LineTerminator 213..214 "\n"
+      Whitespace 214..216 "  "
+      MethodDecl 216..234 [error]
+        VoidType 216..220
           VoidKw 216..220 "void"
-          Whitespace 220..221 " "
-          Identifier 221..222 "j"
+        Whitespace 220..221 " "
+        Identifier 221..222 "j"
+        FormalParameters 222..224
           LParen 222..223 "("
           RParen 223..224 ")"
-          Whitespace 224..225 " "
+        Whitespace 224..225 " "
+        ThrowsClause 225..231 [error]
           ThrowsKw 225..231 "throws"
-          Whitespace 231..232 " "
+        Whitespace 231..232 " "
+        Block 232..234
           LBrace 232..233 "{"
           RBrace 233..234 "}"
       LineTerminator 234..235 "\n"
@@ -164,4 +227,12 @@ CompilationUnit 0..237 [error]
   LineTerminator 236..237 "\n"
   Eof 237..237 ""
 error 22..22 @22 Expected(Identifier): name expected
-error 24..25 @24 UnexpectedToken(LBrace): unexpected '{'
+error 42..43 @42 TypeExpected(RParen): expected a type, found ')'
+error 61..61 @61 Expected(OneOf([Comma, RParen, LBracket])): ',', ')', or '[' expected
+error 84..85 @84 VarargsNotLast: only the last parameter can be variable arity
+error 114..115 @114 VarargsWithDims: a variable arity parameter's array dimensions go on its type
+error 139..143 @139 MisplacedReceiver: a receiver parameter ('this') can only be a method's first parameter
+error 163..164 @163 ReceiverWithDims: a receiver parameter can't have array dimensions
+error 186..189 @186 ModifierNotAllowed: modifiers aren't allowed here
+error 210..210 @210 Expected(OneOf([Comma, RParen, LBracket])): ',', ')', or '[' expected
+error 231..231 @231 Expected(Identifier): name expected

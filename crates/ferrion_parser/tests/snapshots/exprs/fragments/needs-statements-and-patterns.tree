@@ -1,71 +1,79 @@
-CompilationUnit 0..203 [error]
-  InstanceofExpr 0..21 [error]
+CompilationUnit 0..203
+  InstanceofExpr 0..21
     NameExpr 0..1
       Identifier 0..1 "x"
     Whitespace 1..2 " "
     InstanceofKw 2..12 "instanceof"
     Whitespace 12..13 " "
-    Error 13..21 [error]
-      Identifier 13..19 "String"
+    TypePattern 13..21
+      ClassType 13..19
+        Identifier 13..19 "String"
       Whitespace 19..20 " "
       Identifier 20..21 "s"
   Semi 21..22 ";"
   LineTerminator 22..23 "\n"
-  InstanceofExpr 23..45 [error]
+  InstanceofExpr 23..45
     NameExpr 23..24
       Identifier 23..24 "x"
     Whitespace 24..25 " "
     InstanceofKw 25..35 "instanceof"
     Whitespace 35..36 " "
-    Error 36..45 [error]
-      FinalKw 36..41 "final"
+    TypePattern 36..45
+      Modifiers 36..41
+        FinalKw 36..41 "final"
       Whitespace 41..42 " "
-      Identifier 42..43 "T"
+      ClassType 42..43
+        Identifier 42..43 "T"
       Whitespace 43..44 " "
       Identifier 44..45 "t"
   Semi 45..46 ";"
   LineTerminator 46..47 "\n"
-  InstanceofExpr 47..68 [error]
+  InstanceofExpr 47..68
     NameExpr 47..48
       Identifier 47..48 "x"
     Whitespace 48..49 " "
     InstanceofKw 49..59 "instanceof"
     Whitespace 59..60 " "
-    Error 60..68 [error]
-      Identifier 60..61 "R"
+    RecordPattern 60..68
+      ClassType 60..61
+        Identifier 60..61 "R"
       LParen 61..62 "("
-      IntKw 62..65 "int"
-      Whitespace 65..66 " "
-      Identifier 66..67 "a"
+      TypePattern 62..67
+        PrimitiveType 62..65
+          IntKw 62..65 "int"
+        Whitespace 65..66 " "
+        Identifier 66..67 "a"
       RParen 67..68 ")"
   Semi 68..69 ";"
   LineTerminator 69..70 "\n"
-  LambdaExpr 70..78 [error]
+  LambdaExpr 70..78
     LambdaParameters 70..72
       LParen 70..71 "("
       RParen 71..72 ")"
     Whitespace 72..73 " "
     Arrow 73..75 "->"
     Whitespace 75..76 " "
-    Error 76..78 [error]
+    Block 76..78
       LBrace 76..77 "{"
       RBrace 77..78 "}"
   Semi 78..79 ";"
   LineTerminator 79..80 "\n"
-  LambdaExpr 80..98 [error]
+  LambdaExpr 80..98
     LambdaParameters 80..81
       LambdaParameter 80..81
         Identifier 80..81 "x"
     Whitespace 81..82 " "
     Arrow 82..84 "->"
     Whitespace 84..85 " "
-    Error 85..98 [error]
+    Block 85..98
       LBrace 85..86 "{"
       Whitespace 86..87 " "
-      ReturnKw 87..93 "return"
-      Whitespace 93..94 " "
-      Identifier 94..95 "x"
-      Semi 95..96 ";"
+      ReturnStmt 87..96
+        ReturnKw 87..93 "return"
+        Whitespace 93..94 " "
+        NameExpr 94..95
+          Identifier 94..95 "x"
+        Semi 95..96 ";"
       Whitespace 96..97 " "
       RBrace 97..98 "}"
   Semi 98..99 ";"
@@ -84,7 +92,7 @@ CompilationUnit 0..203 [error]
       RBrace 109..110 "}"
   Semi 110..111 ";"
   LineTerminator 111..112 "\n"
-  NewExpr 112..137 [error]
+  NewExpr 112..137
     NewKw 112..115 "new"
     Whitespace 115..116 " "
     ClassType 116..119
@@ -96,10 +104,10 @@ CompilationUnit 0..203 [error]
       LParen 119..120 "("
       RParen 120..121 ")"
     Whitespace 121..122 " "
-    ClassBody 122..137 [error]
+    ClassBody 122..137
       LBrace 122..123 "{"
       Whitespace 123..124 " "
-      MethodDecl 124..135 [error]
+      MethodDecl 124..135
         VoidType 124..128
           VoidKw 124..128 "void"
         Whitespace 128..129 " "
@@ -108,14 +116,14 @@ CompilationUnit 0..203 [error]
           LParen 130..131 "("
           RParen 131..132 ")"
         Whitespace 132..133 " "
-        Error 133..135 [error]
+        Block 133..135
           LBrace 133..134 "{"
           RBrace 134..135 "}"
       Whitespace 135..136 " "
       RBrace 136..137 "}"
   Semi 137..138 ";"
   LineTerminator 138..139 "\n"
-  SwitchExpr 139..167 [error]
+  SwitchExpr 139..167
     SwitchKw 139..145 "switch"
     Whitespace 145..146 " "
     LParen 146..147 "("
@@ -123,50 +131,50 @@ CompilationUnit 0..203 [error]
       Identifier 147..148 "x"
     RParen 148..149 ")"
     Whitespace 149..150 " "
-    Error 150..167 [error]
+    SwitchBlock 150..167
       LBrace 150..151 "{"
       Whitespace 151..152 " "
-      DefaultKw 152..159 "default"
-      Whitespace 159..160 " "
-      Arrow 160..162 "->"
-      Whitespace 162..163 " "
-      IntLiteral 163..164 "1"
-      Semi 164..165 ";"
+      SwitchRule 152..165
+        SwitchLabel 152..159
+          DefaultKw 152..159 "default"
+        Whitespace 159..160 " "
+        Arrow 160..162 "->"
+        Whitespace 162..163 " "
+        LiteralExpr 163..164
+          IntLiteral 163..164 "1"
+        Semi 164..165 ";"
       Whitespace 165..166 " "
       RBrace 166..167 "}"
   Semi 167..168 ";"
   LineTerminator 168..169 "\n"
-  SwitchExpr 169..201 [error]
-    SwitchKw 169..175 "switch"
-    Whitespace 175..176 " "
-    LParen 176..177 "("
-    NameExpr 177..178
-      Identifier 177..178 "x"
-    RParen 178..179 ")"
-    Whitespace 179..180 " "
-    Error 180..201 [error]
-      LBrace 180..181 "{"
-      Whitespace 181..182 " "
-      DefaultKw 182..189 "default"
-      Whitespace 189..190 " "
-      Arrow 190..192 "->"
-      Whitespace 192..193 " "
-      IntLiteral 193..194 "1"
-      Semi 194..195 ";"
-      Whitespace 195..196 " "
-      RBrace 196..197 "}"
-      Whitespace 197..198 " "
-      Plus 198..199 "+"
-      Whitespace 199..200 " "
+  BinaryExpr 169..201
+    SwitchExpr 169..197
+      SwitchKw 169..175 "switch"
+      Whitespace 175..176 " "
+      LParen 176..177 "("
+      NameExpr 177..178
+        Identifier 177..178 "x"
+      RParen 178..179 ")"
+      Whitespace 179..180 " "
+      SwitchBlock 180..197
+        LBrace 180..181 "{"
+        Whitespace 181..182 " "
+        SwitchRule 182..195
+          SwitchLabel 182..189
+            DefaultKw 182..189 "default"
+          Whitespace 189..190 " "
+          Arrow 190..192 "->"
+          Whitespace 192..193 " "
+          LiteralExpr 193..194
+            IntLiteral 193..194 "1"
+          Semi 194..195 ";"
+        Whitespace 195..196 " "
+        RBrace 196..197 "}"
+    Whitespace 197..198 " "
+    Plus 198..199 "+"
+    Whitespace 199..200 " "
+    LiteralExpr 200..201
       IntLiteral 200..201 "1"
   Semi 201..202 ";"
   LineTerminator 202..203 "\n"
   Eof 203..203 ""
-error 13..19 @13 UnexpectedToken(Identifier): unexpected name
-error 36..41 @36 UnexpectedToken(FinalKw): unexpected 'final'
-error 60..61 @60 UnexpectedToken(Identifier): unexpected name
-error 76..77 @76 UnexpectedToken(LBrace): unexpected '{'
-error 85..86 @85 UnexpectedToken(LBrace): unexpected '{'
-error 133..134 @133 UnexpectedToken(LBrace): unexpected '{'
-error 150..151 @150 UnexpectedToken(LBrace): unexpected '{'
-error 180..181 @180 UnexpectedToken(LBrace): unexpected '{'
