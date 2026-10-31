@@ -148,12 +148,19 @@ javac 27:
 | `foo(1, ;` | `illegal.start.of.expr` | start of `;` |
 | `x.;` | `expected` (`<identifier> expected`), then `not.stmt` | end of `.`; `not.stmt` spans `x.`, with its position at the `.` |
 | `return 1 }` | `expected` (`';' expected`) | end of `1` |
+| `foo(a b)` | `expected2` (`')' or ',' expected`) | end of `a` |
+| `x instanceof ;` | `illegal.start.of.type` | start of `;` |
+| `int;` in an expression, `a[];` | `dot.class.expected` | start of `;`, the token after the type |
+| `new int[];` | `array.dimension.missing` | start of `;`, the token after the `]` |
+| `new int[1] {2}` | `illegal.array.creation.both.dimension.and.initialization` | the `{` |
+| `(a, int b) -> 1` | `invalid.lambda.parameter.declaration` | the lambda's `(` |
 | an unclosed class at the end of the file | `premature.eof` | end of the last token |
 | a `;` before the first import | `extraneous.semicolon` | the `;` |
 | a feature too new for the release | `feature.not.supported.in.source(.plural)` | the feature's anchor (see [language versions](parser-language-versions.md#the-feature-table)) |
 
 So "expected" errors anchor at the end of the previous non-trivia token, and "illegal start" errors
-at the start of the offending token. Ferrion uses the same span conventions for display, which also
+at the start of the offending token. Errors about a construct that is complete but wrong anchor at
+a token of their own, given with each diagnostic kind. Ferrion uses the same span conventions for display, which also
 read well: the caret follows the token that should have been followed by a `;`.
 
 Ferrion's kinds are its own (`Expected { what }`, `UnexpectedToken`, `NotAStatement`,
