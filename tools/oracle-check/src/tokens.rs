@@ -116,6 +116,20 @@ impl Check for Tokens {
 }
 
 impl Prepared {
+    /// The lexer's items in javac's terms, or its panic message.
+    pub fn items(&self) -> Result<&[Item<'static>], &str> {
+        self.items.as_deref().map_err(String::as_str)
+    }
+
+    pub fn has_bom(&self) -> bool {
+        self.bom
+    }
+
+    /// The allowed differences found while normalizing the lexer's tokens.
+    pub fn allowed(&self) -> Counts {
+        self.allowed
+    }
+
     /// The 1-based line and column of a javac offset.
     fn line_col(&self, utf16: u32) -> (u32, u32) {
         let byte = self.byte_offset(utf16).unwrap_or(self.text.len() as u32);
@@ -130,7 +144,8 @@ impl Prepared {
             .byte_offset(utf16.saturating_sub(u32::from(self.bom)))
     }
 
-    fn show(&self, item: &Item) -> String {
+    /// An item as reports show it: kind, UTF-16 span, and text.
+    pub fn show(&self, item: &Item) -> String {
         let text = match (self.byte_offset(item.start), self.byte_offset(item.end)) {
             (Some(start), Some(end)) => self.text.get(start as usize..end as usize),
             _ => None,

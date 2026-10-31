@@ -1,0 +1,15 @@
+# javac --release 27, then Ferrion, both in javac's terms. Regenerate with `cargo oracle differences --bless`.
+javac   CLASS 0..5 "class"
+javac   IDENTIFIER 6..7 "A"
+javac   LBRACE 8..9 "{"
+javac   JAVADOC_BLOCK comment 9..13 "/**/"
+javac   RBRACE 13..14 "}"
+javac   EOF 15..15 ""
+ferrion CLASS 0..5 "class"
+ferrion IDENTIFIER 6..7 "A"
+ferrion LBRACE 8..9 "{"
+ferrion JAVADOC_BLOCK comment 9..13 "/**/"
+ferrion RBRACE 13..14 "}"
+ferrion EOF 15..15 ""
+allowed empty-block-comment 1
+same after normalization

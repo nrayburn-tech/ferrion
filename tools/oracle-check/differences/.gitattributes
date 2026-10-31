@@ -1,0 +1,2 @@
+# The cases' exact bytes matter (line endings, a byte-order mark, a trailing SUB).
+* -text

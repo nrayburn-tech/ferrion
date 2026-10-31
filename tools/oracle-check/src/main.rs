@@ -3,7 +3,8 @@
 //!
 //! `oracle tokens` checks the lexer: its tokens and comments must match javac's after the
 //! normalization in docs/design/lexer-oracle-normalization.md, and must reproduce every file byte
-//! for byte. Later phases add their own checks (see [`check::Check`]).
+//! for byte. Later phases add their own checks (see [`check::Check`]). `oracle differences` checks
+//! the known differences the corpus doesn't exercise (see [`differences`]).
 //!
 //! The corpus is found as `tools/corpus` finds it, and javac's output is cached under
 //! `target/oracle`, or `FERRION_ORACLE_CACHE` if it is set (see [`cache`]).
@@ -11,6 +12,7 @@
 mod allowed;
 mod cache;
 mod check;
+mod differences;
 mod inventory;
 mod oracle;
 mod report;
@@ -40,8 +42,10 @@ const USAGE: &str = "\
 usage: oracle <check> [<option>...] [<project>...]
 
 checks:
-  tokens  compare the lexer's tokens and comments with javac's, and check that the tokens
-          reproduce each file
+  tokens       compare the lexer's tokens and comments with javac's, and check that the
+               tokens reproduce each file
+  differences  check the known differences in tools/oracle-check/differences against their
+               snapshots, at the latest release (takes only --oracle-jar and --bless)
 
 options:
   --release <N>        compare every file at release N (repeatable); by default, each file is
@@ -53,6 +57,7 @@ options:
   --oracle-jar <file>  the javac oracle (default: tools/javac-oracle/target/javac-oracle.jar)
   --file <file>        compare this file instead of the corpus (repeatable); its own release is
                        the latest
+  --bless              differences: write the snapshots that changed instead of failing
 
 Projects default to every corpus project. JAVA_HOME must point to a JDK that supports the
 releases compared, and the projects must be checked out (`cargo corpus checkout`). javac's
@@ -67,6 +72,7 @@ struct Options {
     oracle_jar: PathBuf,
     projects: Vec<String>,
     files: Vec<PathBuf>,
+    bless: bool,
 }
 
 fn main() -> ExitCode {
@@ -105,6 +111,7 @@ fn parse_args(args: impl Iterator<Item = String>) -> Options {
         oracle_jar: repository.join("tools/javac-oracle/target/javac-oracle.jar"),
         projects: Vec::new(),
         files: Vec::new(),
+        bless: false,
     };
     let mut releases = Vec::new();
     let mut all_releases = false;
@@ -134,6 +141,7 @@ fn parse_args(args: impl Iterator<Item = String>) -> Options {
             "--json" => options.json = Some(PathBuf::from(value("--json"))),
             "--oracle-jar" => options.oracle_jar = PathBuf::from(value("--oracle-jar")),
             "--file" => options.files.push(PathBuf::from(value("--file"))),
+            "--bless" => options.bless = true,
             "-h" | "--help" => {
                 println!("{USAGE}");
                 std::process::exit(0);
@@ -159,6 +167,7 @@ fn run() -> Result<bool> {
     let options = parse_args(std::env::args().skip(1));
     match options.check.as_str() {
         "tokens" => run_check(&tokens::Tokens, &options),
+        "differences" => differences::run(options.oracle_jar, options.bless),
         other => usage(&format!("unknown check `{other}`")),
     }
 }
@@ -241,6 +250,9 @@ mod tests {
             options.files,
             [PathBuf::from("A.java"), PathBuf::from("B.java")]
         );
+
+        let options = parse("differences --bless");
+        assert!(options.bless);
 
         let options = parse("tokens --all-releases --json out.json");
         let Releases::These(all) = options.releases else {

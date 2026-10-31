@@ -194,6 +194,18 @@ javac's output is cached in `target/oracle`, or in `FERRION_ORACLE_CACHE` if it 
 the oracle jar, the JDK, the release, and each file's content, so a rerun only runs javac for what
 changed. Delete the directory to start over.
 
+Differences on input the corpus doesn't have, such as malformed literals, are checked against
+snapshots in `tools/oracle-check/differences/`:
+
+```bash
+cargo oracle differences
+```
+
+It fails if javac's output or the lexer's no longer matches a snapshot. When a change is intended,
+`cargo oracle differences --bless` rewrites the snapshots; update the "Known differences on
+malformed input" section of the normalization document to match. `cargo test` checks the lexer's
+side of the snapshots without a JDK.
+
 ### Tests
 
 - Every bug fix comes with a regression test.

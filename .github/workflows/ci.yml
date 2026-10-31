@@ -102,3 +102,5 @@ jobs:
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
+      - name: Check the known differences from javac
+        run: cargo oracle differences

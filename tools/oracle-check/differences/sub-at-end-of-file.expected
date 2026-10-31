@@ -1,0 +1,12 @@
+# javac --release 27, then Ferrion, both in javac's terms. Regenerate with `cargo oracle differences --bless`.
+javac   CLASS 0..5 "class"
+javac   IDENTIFIER 6..7 "A"
+javac   LBRACE 8..9 "{"
+javac   RBRACE 9..10 "}"
+javac   EOF 11..11 ""
+ferrion CLASS 0..5 "class"
+ferrion IDENTIFIER 6..7 "A"
+ferrion LBRACE 8..9 "{"
+ferrion RBRACE 9..10 "}"
+ferrion EOF 12..12 ""
+first difference at item 5
