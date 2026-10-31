@@ -161,8 +161,8 @@ cargo corpus lock <project>
 
 ### javac oracle
 
-`tools/javac-oracle` dumps javac's tokens, comments, scanner diagnostics, parse diagnostics, and
-tree positions as JSON lines. Build it with the newest GA JDK:
+`tools/javac-oracle` dumps javac's tokens, comments, scanner diagnostics, parse diagnostics (with
+their codes and arguments), and tree positions as JSON lines. Build it with the newest GA JDK:
 
 ```bash
 mvn --batch-mode --file tools/javac-oracle/pom.xml package

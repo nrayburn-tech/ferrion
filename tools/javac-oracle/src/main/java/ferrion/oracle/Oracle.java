@@ -7,11 +7,13 @@ import com.sun.source.util.SourcePositions;
 import com.sun.source.util.TreeScanner;
 import com.sun.source.util.Trees;
 import com.sun.tools.javac.api.BasicJavacTask;
+import com.sun.tools.javac.api.ClientCodeWrapper;
 import com.sun.tools.javac.parser.Scanner;
 import com.sun.tools.javac.parser.ScannerFactory;
 import com.sun.tools.javac.parser.Tokens.Comment;
 import com.sun.tools.javac.parser.Tokens.Token;
 import com.sun.tools.javac.parser.Tokens.TokenKind;
+import com.sun.tools.javac.tree.JCTree;
 import com.sun.tools.javac.util.JCDiagnostic;
 import com.sun.tools.javac.util.Log;
 import java.io.IOException;
@@ -20,14 +22,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import javax.tools.Diagnostic;
-import javax.tools.DiagnosticCollector;
+import javax.tools.DiagnosticListener;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.ToolProvider;
@@ -44,8 +48,18 @@ import javax.tools.ToolProvider;
  *   <li>{@code scanDiagnostics}: what javac's scanner reports while producing the tokens;
  *   <li>{@code diagnostics}: everything javac reports while parsing, including language-version
  *       errors;
- *   <li>{@code tree}: {@code [kind, start, end, depth]} for each tree node, in pre-order.
+ *   <li>{@code tree}: {@code [kind, start, end, depth, preferred, shared]} for each tree node, in
+ *       the pre-order of {@link TreeScanner}. {@code preferred} is the position javac reports
+ *       diagnostics about the node at (a declaration's name, a binary operator), and {@code shared}
+ *       is 1 when the same node was already written under another parent (the type in {@code int
+ *       a, b;}), 0 otherwise. A position javac doesn't have is -1.
  * </ul>
+ *
+ * <p>Each diagnostic has javac's {@code kind} ({@code ERROR}, {@code WARNING}, ...), its {@code
+ * code} ({@code compiler.err.expected}), its {@code start}, {@code position}, and {@code end}, its
+ * {@code args}, and its English {@code message}. An argument that is itself a diagnostic, such as
+ * the feature in "records are not supported in -source 8", is written as its code ({@code
+ * compiler.misc.feature.records}); other arguments are written as text.
  *
  * <p>Tokens, comments, and scan diagnostics come from scanning the file on its own, so they don't
  * depend on how the parser recovers from errors. The file is only parsed, in a javac task of its
@@ -91,12 +105,12 @@ final class Oracle {
       writeScan(json, scanTask(release), file, source, sections);
     }
     if (sections.contains(Section.DIAGNOSTICS) || sections.contains(Section.TREE)) {
-      DiagnosticCollector<JavaFileObject> collector = new DiagnosticCollector<>();
+      Collector collector = new Collector();
       JavacTask task = newTask(List.of(file), release, collector);
       Iterable<? extends CompilationUnitTree> units = task.parse();
       if (sections.contains(Section.DIAGNOSTICS)) {
         json.name(Section.DIAGNOSTICS.json).beginArray();
-        for (Diagnostic<? extends JavaFileObject> diagnostic : collector.getDiagnostics()) {
+        for (Diagnostic<? extends JavaFileObject> diagnostic : collector.diagnostics) {
           writeDiagnostic(json, diagnostic);
         }
         json.endArray();
@@ -127,12 +141,11 @@ final class Oracle {
    * scanner's errors.
    */
   private static JavacTask scanTask(String release) {
-    return SCAN_TASKS.computeIfAbsent(
-        release, r -> newTask(List.of(), r, new DiagnosticCollector<>()));
+    return SCAN_TASKS.computeIfAbsent(release, r -> newTask(List.of(), r, new Collector()));
   }
 
   private static JavacTask newTask(
-      List<JavaFileObject> files, String release, DiagnosticCollector<JavaFileObject> collector) {
+      List<JavaFileObject> files, String release, Collector collector) {
     return (JavacTask)
         ToolProvider.getSystemJavaCompiler()
             .getTask(
@@ -210,6 +223,14 @@ final class Oracle {
         .value(diagnostic.getPosition())
         .name("end")
         .value(diagnostic.getEndPosition())
+        .name("args")
+        .beginArray();
+    if (diagnostic instanceof JCDiagnostic jc) {
+      for (Object arg : jc.getArgs()) {
+        json.value(arg instanceof JCDiagnostic nested ? nested.getCode() : String.valueOf(arg));
+      }
+    }
+    json.endArray()
         .name("message")
         .value(diagnostic.getMessage(Locale.ROOT))
         .endObject();
@@ -219,6 +240,7 @@ final class Oracle {
     private final Json json;
     private final SourcePositions positions;
     private final CompilationUnitTree unit;
+    private final Set<Tree> written = Collections.newSetFromMap(new IdentityHashMap<>());
 
     TreeWriter(Json json, SourcePositions positions, CompilationUnitTree unit) {
       this.json = json;
@@ -236,8 +258,24 @@ final class Oracle {
           .value(positions.getStartPosition(unit, tree))
           .value(positions.getEndPosition(unit, tree))
           .value(depth)
+          .value(((JCTree) tree).getPreferredPosition())
+          .value(written.add(tree) ? 0 : 1)
           .endArray();
       return tree.accept(this, depth + 1);
+    }
+  }
+
+  /**
+   * Collects what javac reports. It's trusted, so javac gives it its own diagnostics rather than
+   * wrappers, whose arguments can't be read.
+   */
+  @ClientCodeWrapper.Trusted
+  private static final class Collector implements DiagnosticListener<JavaFileObject> {
+    final List<Diagnostic<? extends JavaFileObject>> diagnostics = new ArrayList<>();
+
+    @Override
+    public void report(Diagnostic<? extends JavaFileObject> diagnostic) {
+      diagnostics.add(diagnostic);
     }
   }
 

@@ -94,6 +94,17 @@ jobs:
           java -jar tools/javac-oracle/target/javac-oracle.jar --release 17
           tools/javac-oracle/src/test/resources/Sample.java
           | jq --exit-status '.diagnostics == [] and .tokens[-1][0] == "EOF" and (.tree | length) > 0'
+      # Diagnostics name their feature, and deep input parses on the oracle's large stack.
+      - name: Check the javac oracle's diagnostics and tree
+        run: |
+          java -jar tools/javac-oracle/target/javac-oracle.jar --release 8 --sections diagnostics \
+            tools/javac-oracle/src/test/resources/Sample.java \
+            | jq --exit-status '.diagnostics[0].args[0] == "compiler.misc.feature.records"'
+          deep="$RUNNER_TEMP/Deep.java"
+          printf 'class Deep { int x = %s1%s; }\n' "$(printf '(%.0s' $(seq 10000))" \
+            "$(printf ')%.0s' $(seq 10000))" > "$deep"
+          java -jar tools/javac-oracle/target/javac-oracle.jar --release 27 --sections tree "$deep" \
+            | jq --exit-status '(.crash | not) and ([.tree[][3]] | max) > 10000'
       - run: rustup toolchain install
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - name: Fetch a corpus project
