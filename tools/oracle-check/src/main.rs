@@ -6,7 +6,7 @@
 //! for byte. Later phases add their own checks (see [`check::Check`]).
 //!
 //! The corpus is found as `tools/corpus` finds it, and javac's output is cached under
-//! `target/oracle` (see [`cache`]).
+//! `target/oracle`, or `FERRION_ORACLE_CACHE` if it is set (see [`cache`]).
 
 mod allowed;
 mod cache;
@@ -55,7 +55,8 @@ options:
                        the latest
 
 Projects default to every corpus project. JAVA_HOME must point to a JDK that supports the
-releases compared, and the projects must be checked out (`cargo corpus checkout`).";
+releases compared, and the projects must be checked out (`cargo corpus checkout`). javac's
+output is cached in target/oracle, or in FERRION_ORACLE_CACHE if it is set.";
 
 struct Options {
     check: String,
@@ -88,6 +89,10 @@ fn parse_args(args: impl Iterator<Item = String>) -> Options {
     let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let mut args = args.peekable();
     let check = match args.next() {
+        Some(arg) if arg == "-h" || arg == "--help" => {
+            println!("{USAGE}");
+            std::process::exit(0);
+        }
         Some(check) if !check.starts_with('-') => check,
         _ => usage("name a check"),
     };
@@ -184,7 +189,10 @@ fn run_check<C: Check>(check: &C, options: &Options) -> Result<bool> {
             oracle.jdk
         );
     }
-    let cache_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/oracle");
+    let cache_root = match std::env::var_os("FERRION_ORACLE_CACHE") {
+        Some(dir) => PathBuf::from(dir),
+        None => PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/oracle"),
+    };
     let mut cache = Cache::open(&cache_root, &oracle.key, &releases)
         .with_context(|| format!("opening the cache in {}", cache_root.display()))?;
 
