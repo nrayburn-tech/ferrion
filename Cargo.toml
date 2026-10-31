@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/*", "tools/corpus"]
+members = ["crates/*", "tools/corpus", "tools/oracle-check"]
 
 [workspace.package]
 version = "0.0.0"

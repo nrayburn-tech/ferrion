@@ -1,0 +1,246 @@
+//! Compares Ferrion's results with javac's across the corpus, through the javac oracle
+//! (`tools/javac-oracle`).
+//!
+//! `oracle tokens` checks the lexer: its tokens and comments must match javac's after the
+//! normalization in docs/design/lexer-oracle-normalization.md, and must reproduce every file byte
+//! for byte. Later phases add their own checks (see [`check::Check`]).
+//!
+//! The corpus is found as `tools/corpus` finds it, and javac's output is cached under
+//! `target/oracle` (see [`cache`]).
+
+mod allowed;
+mod cache;
+mod check;
+mod inventory;
+mod oracle;
+mod report;
+mod run;
+mod tokens;
+
+use std::path::PathBuf;
+use std::process::ExitCode;
+
+use anyhow::{Context, Result, bail};
+use corpus::Dirs;
+use corpus::project::Project;
+
+use crate::cache::Cache;
+use crate::check::Check;
+use crate::inventory::Releases;
+use crate::oracle::Oracle;
+use crate::report::Report;
+
+/// The oldest Java release Ferrion supports.
+pub const OLDEST_RELEASE: u32 = 8;
+/// The newest Java release Ferrion supports: the latest GA release. This is the one place it's
+/// recorded for the oracle comparison; the JDK in `.github/workflows` must be at least this new.
+pub const LATEST_RELEASE: u32 = 27;
+
+const USAGE: &str = "\
+usage: oracle <check> [<option>...] [<project>...]
+
+checks:
+  tokens  compare the lexer's tokens and comments with javac's, and check that the tokens
+          reproduce each file
+
+options:
+  --release <N>        compare every file at release N (repeatable); by default, each file is
+                       compared at its source set's release
+  --all-releases       compare every file at every supported release
+  --jobs <N>           run up to N JVMs and comparison threads at once (default: the number of CPUs)
+  --limit <N>          show the first N failures (default: 10)
+  --json <file>        also write the full report as JSON
+  --oracle-jar <file>  the javac oracle (default: tools/javac-oracle/target/javac-oracle.jar)
+  --file <file>        compare this file instead of the corpus (repeatable); its own release is
+                       the latest
+
+Projects default to every corpus project. JAVA_HOME must point to a JDK that supports the
+releases compared, and the projects must be checked out (`cargo corpus checkout`).";
+
+struct Options {
+    check: String,
+    releases: Releases,
+    jobs: usize,
+    limit: usize,
+    json: Option<PathBuf>,
+    oracle_jar: PathBuf,
+    projects: Vec<String>,
+    files: Vec<PathBuf>,
+}
+
+fn main() -> ExitCode {
+    match run() {
+        Ok(true) => ExitCode::SUCCESS,
+        Ok(false) => ExitCode::FAILURE,
+        Err(error) => {
+            eprintln!("error: {error:#}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn usage(message: &str) -> ! {
+    eprintln!("oracle: {message}\n\n{USAGE}");
+    std::process::exit(2);
+}
+
+fn parse_args(args: impl Iterator<Item = String>) -> Options {
+    let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut args = args.peekable();
+    let check = match args.next() {
+        Some(check) if !check.starts_with('-') => check,
+        _ => usage("name a check"),
+    };
+    let mut options = Options {
+        check,
+        releases: Releases::Own,
+        jobs: std::thread::available_parallelism().map_or(1, |n| n.get()),
+        limit: 10,
+        json: None,
+        oracle_jar: repository.join("tools/javac-oracle/target/javac-oracle.jar"),
+        projects: Vec::new(),
+        files: Vec::new(),
+    };
+    let mut releases = Vec::new();
+    let mut all_releases = false;
+    while let Some(arg) = args.next() {
+        let mut value = |name: &str| {
+            args.next()
+                .unwrap_or_else(|| usage(&format!("{name} needs a value")))
+        };
+        let mut number = |name: &str| -> usize {
+            let text = value(name);
+            text.parse()
+                .unwrap_or_else(|_| usage(&format!("{name}: `{text}` isn't a number")))
+        };
+        match arg.as_str() {
+            "--release" => {
+                let release = number("--release") as u32;
+                if !(OLDEST_RELEASE..=LATEST_RELEASE).contains(&release) {
+                    usage(&format!(
+                        "--release must be from {OLDEST_RELEASE} to {LATEST_RELEASE}"
+                    ));
+                }
+                releases.push(release);
+            }
+            "--all-releases" => all_releases = true,
+            "--jobs" => options.jobs = number("--jobs").max(1),
+            "--limit" => options.limit = number("--limit"),
+            "--json" => options.json = Some(PathBuf::from(value("--json"))),
+            "--oracle-jar" => options.oracle_jar = PathBuf::from(value("--oracle-jar")),
+            "--file" => options.files.push(PathBuf::from(value("--file"))),
+            "-h" | "--help" => {
+                println!("{USAGE}");
+                std::process::exit(0);
+            }
+            _ if arg.starts_with('-') => usage(&format!("unknown option `{arg}`")),
+            _ => options.projects.push(arg),
+        }
+    }
+    options.releases = match (all_releases, releases.is_empty()) {
+        (true, true) => Releases::These((OLDEST_RELEASE..=LATEST_RELEASE).collect()),
+        (true, false) => usage("--release and --all-releases can't be combined"),
+        (false, true) => Releases::Own,
+        (false, false) => {
+            releases.sort_unstable();
+            releases.dedup();
+            Releases::These(releases)
+        }
+    };
+    options
+}
+
+fn run() -> Result<bool> {
+    let options = parse_args(std::env::args().skip(1));
+    match options.check.as_str() {
+        "tokens" => run_check(&tokens::Tokens, &options),
+        other => usage(&format!("unknown check `{other}`")),
+    }
+}
+
+/// Runs a check, prints its report, and returns whether everything matched.
+fn run_check<C: Check>(check: &C, options: &Options) -> Result<bool> {
+    let files = if options.files.is_empty() {
+        let dirs = Dirs::new()?;
+        let projects = Project::load_all(&dirs.projects_file())?;
+        let selected = corpus::select(&projects, &options.projects)?;
+        inventory::collect(&dirs, &selected, &options.releases)?
+    } else {
+        if !options.projects.is_empty() {
+            usage("--file and projects can't be combined");
+        }
+        inventory::collect_paths(&options.files, &options.releases)?
+    };
+
+    let oracle = Oracle::new(options.oracle_jar.clone(), check.sections())?;
+    let mut releases: Vec<u32> = files.iter().flat_map(|f| f.releases.clone()).collect();
+    releases.sort_unstable();
+    releases.dedup();
+    if let Some(&newest) = releases.last()
+        && newest > oracle.jdk
+    {
+        bail!(
+            "JAVA_HOME is JDK {}, which can't compile for release {newest}; use JDK {newest} or newer",
+            oracle.jdk
+        );
+    }
+    let cache_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/oracle");
+    let mut cache = Cache::open(&cache_root, &oracle.key, &releases)
+        .with_context(|| format!("opening the cache in {}", cache_root.display()))?;
+
+    let (results, timings) = run::run(check, &files, &oracle, &mut cache, options.jobs)?;
+    let report = Report::new(check.name(), &files, &results, &timings, options.limit);
+    print!("{}", report.text(options.limit));
+    println!(
+        "\njavac: {} file-releases in {} JVMs, {:.1}s; comparison: {:.1}s",
+        timings.javac_files,
+        timings.javac_runs,
+        timings.javac.as_secs_f64(),
+        timings.compare.as_secs_f64()
+    );
+    if let Some(path) = &options.json {
+        std::fs::write(path, serde_json::to_string_pretty(&report)? + "\n")
+            .with_context(|| format!("writing {}", path.display()))?;
+    }
+    let failures = report.total.failures();
+    if failures > 0 {
+        println!("{failures} failures");
+    }
+    Ok(failures == 0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse(args: &str) -> Options {
+        parse_args(args.split_whitespace().map(str::to_owned))
+    }
+
+    #[test]
+    fn arguments() {
+        let options = parse("tokens jedis guava");
+        assert_eq!(options.check, "tokens");
+        assert_eq!(options.releases, Releases::Own);
+        assert_eq!(options.projects, ["jedis", "guava"]);
+
+        let options = parse("tokens --release 17 --release 8 --release 17 --jobs 3 --limit 0");
+        assert_eq!(options.releases, Releases::These(vec![8, 17]));
+        assert_eq!((options.jobs, options.limit), (3, 0));
+
+        let options = parse("tokens --file A.java --file B.java");
+        assert_eq!(
+            options.files,
+            [PathBuf::from("A.java"), PathBuf::from("B.java")]
+        );
+
+        let options = parse("tokens --all-releases --json out.json");
+        let Releases::These(all) = options.releases else {
+            panic!("expected every release");
+        };
+        assert_eq!(all.first(), Some(&OLDEST_RELEASE));
+        assert_eq!(all.last(), Some(&LATEST_RELEASE));
+        assert_eq!(all.len(), (LATEST_RELEASE - OLDEST_RELEASE + 1) as usize);
+        assert_eq!(options.json, Some(PathBuf::from("out.json")));
+    }
+}
