@@ -16,8 +16,8 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, anyhow, bail};
 use ferrion_diagnostics::{LineIndex, SourceText};
+use ferrion_java_version::LATEST_RELEASE;
 
-use crate::LATEST_RELEASE;
 use crate::allowed::Allowed;
 use crate::check::Check;
 use crate::oracle::{Oracle, Output};

@@ -9,7 +9,7 @@ use corpus::project::Project;
 use ferrion_diagnostics::SourceText;
 
 use crate::cache::{SourceKey, source_key};
-use crate::{LATEST_RELEASE, OLDEST_RELEASE};
+use ferrion_java_version::LATEST_RELEASE;
 
 /// Which releases files are compared at.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -60,7 +60,7 @@ pub fn collect(dirs: &Dirs, projects: &[&Project], releases: &Releases) -> Resul
             for source_set in &module.source_sets {
                 // A build that doesn't set a release compiles for its JDK's.
                 let release = source_set.java_release.unwrap_or(lock.jdk);
-                if !(OLDEST_RELEASE..=LATEST_RELEASE).contains(&release) {
+                if !ferrion_java_version::is_supported(release) {
                     bail!(
                         "{} {} {} is for Java {release}, which isn't supported",
                         project.name,

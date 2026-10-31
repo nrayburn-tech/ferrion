@@ -7,7 +7,7 @@ record what those methods return on a real JDK, for every code point. A third ta
 `Character.isIdentifierIgnorable`, since javac ignores those characters when comparing names.
 
 The lexer doesn't depend on the Java version, so the tables follow the newest GA JDK, the latest
-release Ferrion supports (`LATEST_RELEASE` in `tools/oracle-check/src/main.rs`). The generated file
+release Ferrion supports (`LATEST_RELEASE` in `crates/ferrion_java_version`). The generated file
 records the JDK feature version and the Unicode version it came from.
 
 Two checks keep the tables current:

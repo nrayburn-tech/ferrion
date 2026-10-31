@@ -101,6 +101,10 @@ name = "ferrion_formatter"
 version = "0.0.0"
 
 [[package]]
+name = "ferrion_java_version"
+version = "0.0.0"
+
+[[package]]
 name = "ferrion_lexer"
 version = "0.0.0"
 dependencies = [
@@ -181,6 +185,7 @@ dependencies = [
  "anyhow",
  "corpus",
  "ferrion_diagnostics",
+ "ferrion_java_version",
  "ferrion_lexer",
  "serde",
  "serde_json",
