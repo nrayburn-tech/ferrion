@@ -109,6 +109,14 @@ pub(crate) fn conditional_expr(p: &mut Parser<'_>) -> Option<CompletedMarker> {
     p.nested(conditional)
 }
 
+/// A case constant or a guard's condition: a conditional expression (JLS 14.11.1) in which `->`
+/// ends the expression instead of starting a lambda, so that `case A ->` and `when (a) ->` read
+/// as javac reads them. Lambdas nested in parentheses or arguments are still lambdas. `None`,
+/// consuming nothing, if no expression starts here.
+pub(crate) fn case_label_expr(p: &mut Parser<'_>) -> Option<CompletedMarker> {
+    p.without_lambdas(conditional)
+}
+
 /// Whether an expression can start at the current token.
 pub(crate) fn at_expr_start(p: &Parser<'_>) -> bool {
     p.at_set(EXPR_START) || p.at(VoidKw) && p.nth(1) == Dot
@@ -522,7 +530,7 @@ fn primary(p: &mut Parser<'_>) -> Option<CompletedMarker> {
         return Some(m.complete(p, LiteralExpr));
     }
     if p.at_set(IDENT) {
-        if p.nth(1) == Arrow {
+        if p.nth(1) == Arrow && p.lambdas_allowed() {
             return Some(lambda(p));
         }
         if let Some(qualified) = type_qualifier(p) {
@@ -541,7 +549,7 @@ fn primary(p: &mut Parser<'_>) -> Option<CompletedMarker> {
         return Some(type_qualifier_rest(p, ty));
     }
     Some(match p.current() {
-        LParen if classify_paren(p) == ParenKind::Lambda => lambda(p),
+        LParen if p.lambdas_allowed() && classify_paren(p) == ParenKind::Lambda => lambda(p),
         LParen => {
             let m = p.start();
             p.bump();

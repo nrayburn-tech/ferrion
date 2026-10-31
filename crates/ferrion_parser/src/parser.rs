@@ -454,7 +454,6 @@ impl<'t> Parser<'t> {
     /// Runs `f` one level deeper, as [`Parser::nested`] does, at a level where `->` can't start
     /// a lambda: in a case label, where it ends the label. Expressions nested deeper, such as in
     /// parentheses or arguments, can have lambdas again.
-    #[allow(dead_code, reason = "for case labels, in the expression grammar")]
     pub fn without_lambdas<R>(
         &mut self,
         f: impl FnOnce(&mut Parser<'t>) -> Option<R>,
@@ -468,7 +467,6 @@ impl<'t> Parser<'t> {
     }
 
     /// Whether a lambda can start here: false directly inside [`Parser::without_lambdas`].
-    #[allow(dead_code, reason = "for case labels, in the expression grammar")]
     pub fn lambdas_allowed(&self) -> bool {
         self.no_lambda_depth != Some(self.depth)
     }
