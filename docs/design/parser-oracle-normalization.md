@@ -22,10 +22,10 @@ For each file and release:
   parsing the file in a javac task of its own, with `--release <N> -proc:none`. Nothing after
   parsing runs, so errors javac reports while entering or attributing the file are never in it.
 - **Ferrion:** to do. `tools/oracle-check/src/syntax.rs` defines the interface the parser
-  implements (`Parser`: parse once per file, then the errors at each release and the tree in
-  javac's terms). Until it's implemented, `NoParser` stands in, and both checks run javac, cache
-  its output, and report counts without comparing: each file-release is counted as
-  `not-compared`.
+  implements (`Parser`: parse the file at each release it's compared at, since the parser reads
+  some valid code differently by release, then give the errors and the tree in javac's terms).
+  Until it's implemented, `NoParser` stands in, and both checks run javac, cache its output, and
+  report counts without comparing: each file-release is counted as `not-compared`.
 
 The comparisons in `syntax.rs` are provisional, written so the parser can be plugged in and
 tested, and are settled with the normalization below:
