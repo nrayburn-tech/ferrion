@@ -1,0 +1,319 @@
+CompilationUnit 0..281
+  NewExpr 0..7
+    NewKw 0..3 "new"
+    Whitespace 3..4 " "
+    ClassType 4..5
+      Identifier 4..5 "A"
+    Arguments 5..7
+      LParen 5..6 "("
+      RParen 6..7 ")"
+  Semi 7..8 ";"
+  LineTerminator 8..9 "\n"
+  NewExpr 9..18
+    NewKw 9..12 "new"
+    Whitespace 12..13 " "
+    ClassType 13..16
+      Identifier 13..14 "A"
+      TypeArguments 14..16
+        Lt 14..15 "<"
+        Gt 15..16 ">"
+    Arguments 16..18
+      LParen 16..17 "("
+      RParen 17..18 ")"
+  Semi 18..19 ";"
+  LineTerminator 19..20 "\n"
+  NewExpr 20..38
+    NewKw 20..23 "new"
+    Whitespace 23..24 " "
+    TypeArguments 24..27
+      Lt 24..25 "<"
+      ClassType 25..26
+        Identifier 25..26 "T"
+      Gt 26..27 ">"
+    ClassType 27..36
+      Identifier 27..28 "A"
+      TypeArguments 28..36
+        Lt 28..29 "<"
+        ClassType 29..35
+          Identifier 29..35 "String"
+        Gt 35..36 ">"
+    Arguments 36..38
+      LParen 36..37 "("
+      RParen 37..38 ")"
+  Semi 38..39 ";"
+  LineTerminator 39..40 "\n"
+  NewExpr 40..60
+    NewKw 40..43 "new"
+    Whitespace 43..44 " "
+    ClassType 44..54
+      ClassType 44..52
+        ClassType 44..47
+          ClassType 44..45
+            Identifier 44..45 "a"
+          Dot 45..46 "."
+          Identifier 46..47 "b"
+        Dot 47..48 "."
+        Identifier 48..49 "C"
+        TypeArguments 49..52
+          Lt 49..50 "<"
+          ClassType 50..51
+            Identifier 50..51 "D"
+          Gt 51..52 ">"
+      Dot 52..53 "."
+      Identifier 53..54 "E"
+    Arguments 54..60
+      LParen 54..55 "("
+      LiteralExpr 55..56
+        IntLiteral 55..56 "1"
+      Comma 56..57 ","
+      Whitespace 57..58 " "
+      LiteralExpr 58..59
+        IntLiteral 58..59 "2"
+      RParen 59..60 ")"
+  Semi 60..61 ";"
+  LineTerminator 61..62 "\n"
+  NewExpr 62..72
+    NewKw 62..65 "new"
+    Whitespace 65..66 " "
+    ClassType 66..70
+      Annotation 66..68
+        At 66..67 "@"
+        Name 67..68
+          Identifier 67..68 "A"
+      Whitespace 68..69 " "
+      Identifier 69..70 "X"
+    Arguments 70..72
+      LParen 70..71 "("
+      RParen 71..72 ")"
+  Semi 72..73 ";"
+  LineTerminator 73..74 "\n"
+  NewExpr 74..91
+    NameExpr 74..79
+      Identifier 74..79 "outer"
+    Dot 79..80 "."
+    NewKw 80..83 "new"
+    Whitespace 83..84 " "
+    ClassType 84..89
+      Identifier 84..89 "Inner"
+    Arguments 89..91
+      LParen 89..90 "("
+      RParen 90..91 ")"
+  Semi 91..92 ";"
+  LineTerminator 92..93 "\n"
+  NewExpr 93..108
+    NameExpr 93..94
+      Identifier 93..94 "a"
+    Dot 94..95 "."
+    NewKw 95..98 "new"
+    Whitespace 98..99 " "
+    TypeArguments 99..102
+      Lt 99..100 "<"
+      ClassType 100..101
+        Identifier 100..101 "T"
+      Gt 101..102 ">"
+    ClassType 102..106
+      Identifier 102..103 "X"
+      TypeArguments 103..106
+        Lt 103..104 "<"
+        ClassType 104..105
+          Identifier 104..105 "U"
+        Gt 105..106 ">"
+    Arguments 106..108
+      LParen 106..107 "("
+      RParen 107..108 ")"
+  Semi 108..109 ";"
+  LineTerminator 109..110 "\n"
+  NewExpr 110..123
+    MethodCallExpr 110..113
+      Identifier 110..111 "f"
+      Arguments 111..113
+        LParen 111..112 "("
+        RParen 112..113 ")"
+    Dot 113..114 "."
+    NewKw 114..117 "new"
+    Whitespace 117..118 " "
+    ClassType 118..121
+      Identifier 118..119 "X"
+      TypeArguments 119..121
+        Lt 119..120 "<"
+        Gt 120..121 ">"
+    Arguments 121..123
+      LParen 121..122 "("
+      RParen 122..123 ")"
+  Semi 123..124 ";"
+  LineTerminator 124..125 "\n"
+  ArrayCreationExpr 125..135
+    NewKw 125..128 "new"
+    Whitespace 128..129 " "
+    PrimitiveType 129..132
+      IntKw 129..132 "int"
+    DimExpr 132..135
+      LBracket 132..133 "["
+      LiteralExpr 133..134
+        IntLiteral 133..134 "3"
+      RBracket 134..135 "]"
+  Semi 135..136 ";"
+  LineTerminator 136..137 "\n"
+  ArrayCreationExpr 137..149
+    NewKw 137..140 "new"
+    Whitespace 140..141 " "
+    PrimitiveType 141..144
+      IntKw 141..144 "int"
+    DimExpr 144..147
+      LBracket 144..145 "["
+      LiteralExpr 145..146
+        IntLiteral 145..146 "3"
+      RBracket 146..147 "]"
+    Dim 147..149
+      LBracket 147..148 "["
+      RBracket 148..149 "]"
+  Semi 149..150 ";"
+  LineTerminator 150..151 "\n"
+  ArrayCreationExpr 151..166
+    NewKw 151..154 "new"
+    Whitespace 154..155 " "
+    PrimitiveType 155..158
+      IntKw 155..158 "int"
+    DimExpr 158..161
+      LBracket 158..159 "["
+      NameExpr 159..160
+        Identifier 159..160 "a"
+      RBracket 160..161 "]"
+    DimExpr 161..164
+      LBracket 161..162 "["
+      NameExpr 162..163
+        Identifier 162..163 "b"
+      RBracket 163..164 "]"
+    Dim 164..166
+      LBracket 164..165 "["
+      RBracket 165..166 "]"
+  Semi 166..167 ";"
+  LineTerminator 167..168 "\n"
+  ArrayCreationExpr 168..191
+    NewKw 168..171 "new"
+    Whitespace 171..172 " "
+    PrimitiveType 172..175
+      IntKw 172..175 "int"
+    Dim 175..177
+      LBracket 175..176 "["
+      RBracket 176..177 "]"
+    Dim 177..179
+      LBracket 177..178 "["
+      RBracket 178..179 "]"
+    Whitespace 179..180 " "
+    ArrayInitializer 180..191
+      LBrace 180..181 "{"
+      ArrayInitializer 181..184
+        LBrace 181..182 "{"
+        LiteralExpr 182..183
+          IntLiteral 182..183 "1"
+        RBrace 183..184 "}"
+      Comma 184..185 ","
+      Whitespace 185..186 " "
+      ArrayInitializer 186..190
+        LBrace 186..187 "{"
+        LiteralExpr 187..188
+          IntLiteral 187..188 "2"
+        Comma 188..189 ","
+        RBrace 189..190 "}"
+      RBrace 190..191 "}"
+  Semi 191..192 ";"
+  LineTerminator 192..193 "\n"
+  ArrayCreationExpr 193..208
+    NewKw 193..196 "new"
+    Whitespace 196..197 " "
+    ClassType 197..203
+      Identifier 197..203 "String"
+    Dim 203..205
+      LBracket 203..204 "["
+      RBracket 204..205 "]"
+    Whitespace 205..206 " "
+    ArrayInitializer 206..208
+      LBrace 206..207 "{"
+      RBrace 207..208 "}"
+  Semi 208..209 ";"
+  LineTerminator 209..210 "\n"
+  ArrayCreationExpr 210..223
+    NewKw 210..213 "new"
+    Whitespace 213..214 " "
+    PrimitiveType 214..217
+      IntKw 214..217 "int"
+    Dim 217..219
+      LBracket 217..218 "["
+      RBracket 218..219 "]"
+    Whitespace 219..220 " "
+    ArrayInitializer 220..223
+      LBrace 220..221 "{"
+      Comma 221..222 ","
+      RBrace 222..223 "}"
+  Semi 223..224 ";"
+  LineTerminator 224..225 "\n"
+  ArrayCreationExpr 225..245
+    NewKw 225..228 "new"
+    Whitespace 228..229 " "
+    PrimitiveType 229..232
+      IntKw 229..232 "int"
+    Whitespace 232..233 " "
+    DimExpr 233..239
+      Annotation 233..235
+        At 233..234 "@"
+        Name 234..235
+          Identifier 234..235 "A"
+      Whitespace 235..236 " "
+      LBracket 236..237 "["
+      LiteralExpr 237..238
+        IntLiteral 237..238 "3"
+      RBracket 238..239 "]"
+    Whitespace 239..240 " "
+    Dim 240..245
+      Annotation 240..242
+        At 240..241 "@"
+        Name 241..242
+          Identifier 241..242 "B"
+      Whitespace 242..243 " "
+      LBracket 243..244 "["
+      RBracket 244..245 "]"
+  Semi 245..246 ";"
+  LineTerminator 246..247 "\n"
+  ArrayCreationExpr 247..261
+    NewKw 247..250 "new"
+    Whitespace 250..251 " "
+    ClassType 251..252
+      Identifier 251..252 "X"
+    Whitespace 252..253 " "
+    Dim 253..258
+      Annotation 253..255
+        At 253..254 "@"
+        Name 254..255
+          Identifier 254..255 "A"
+      Whitespace 255..256 " "
+      LBracket 256..257 "["
+      RBracket 257..258 "]"
+    Whitespace 258..259 " "
+    ArrayInitializer 259..261
+      LBrace 259..260 "{"
+      RBrace 260..261 "}"
+  Semi 261..262 ";"
+  LineTerminator 262..263 "\n"
+  ArrayAccessExpr 263..279
+    ArrayCreationExpr 263..276
+      NewKw 263..266 "new"
+      Whitespace 266..267 " "
+      PrimitiveType 267..270
+        IntKw 267..270 "int"
+      Dim 270..272
+        LBracket 270..271 "["
+        RBracket 271..272 "]"
+      Whitespace 272..273 " "
+      ArrayInitializer 273..276
+        LBrace 273..274 "{"
+        LiteralExpr 274..275
+          IntLiteral 274..275 "1"
+        RBrace 275..276 "}"
+    LBracket 276..277 "["
+    LiteralExpr 277..278
+      IntLiteral 277..278 "0"
+    RBracket 278..279 "]"
+  Semi 279..280 ";"
+  LineTerminator 280..281 "\n"
+  Eof 281..281 ""

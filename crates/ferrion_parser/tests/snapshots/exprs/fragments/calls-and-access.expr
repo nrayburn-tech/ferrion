@@ -1,0 +1,18 @@
+m();
+a.m(1, 2);
+a.<T>m();
+this.<String>g();
+Collections.<K, V>emptyMap();
+a[0][1];
+a.b().c[2].d;
+f(1).g(2).h(3);
+super.m();
+X.super.m();
+X.this.y;
+this.x;
+this(1);
+super(1);
+<T>this(1);
+a.<T>super();
+outer.super();
+a.class;

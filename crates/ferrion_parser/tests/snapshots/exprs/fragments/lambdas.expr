@@ -1,0 +1,17 @@
+x -> x;
+_ -> 1;
+() -> 1;
+(a, b) -> a + b;
+(int a, int b) -> a;
+(var a, var b) -> a;
+(final int a) -> a;
+(@A String... a) -> a;
+(int a[]) -> a;
+(java.util.List<String> a) -> a;
+(a<b> c) -> 1;
+(a<b> c);
+a -> b -> c;
+f(x -> 1, () -> 2);
+(Runnable) () -> 1;
+a ? x -> 1 : y -> 2;
+a + x -> 1;

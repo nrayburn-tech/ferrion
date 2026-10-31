@@ -1,0 +1,17 @@
+a.;
+this.;
+super;
+super.;
+a.<T>;
+a.<T>b;
+a[;
+a[1 2];
+a::;
+a.<>b();
+int;
+int.;
+a[];
+int[].length;
+a.b[] c;
+List<String>.class;
+List<>::m;

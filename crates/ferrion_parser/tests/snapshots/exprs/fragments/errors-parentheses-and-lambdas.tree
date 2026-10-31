@@ -1,0 +1,224 @@
+CompilationUnit 0..153 [error]
+  ParenExpr 0..2 [error]
+    LParen 0..1 "("
+    NameExpr 1..2
+      Identifier 1..2 "a"
+  Semi 2..3 ";"
+  LineTerminator 3..4 "\n"
+  LambdaExpr 4..6 [error]
+    LambdaParameters 4..6
+      LParen 4..5 "("
+      RParen 5..6 ")"
+  Semi 6..7 ";"
+  LineTerminator 7..8 "\n"
+  LambdaExpr 8..14 [error]
+    LambdaParameters 8..14
+      LParen 8..9 "("
+      LambdaParameter 9..10
+        Identifier 9..10 "a"
+      Comma 10..11 ","
+      Whitespace 11..12 " "
+      LambdaParameter 12..13
+        Identifier 12..13 "b"
+      RParen 13..14 ")"
+  Semi 14..15 ";"
+  LineTerminator 15..16 "\n"
+  LambdaExpr 16..21 [error]
+    LambdaParameters 16..21
+      LParen 16..17 "("
+      LambdaParameter 17..20
+        ClassType 17..18
+          Identifier 17..18 "a"
+        Whitespace 18..19 " "
+        Identifier 19..20 "b"
+      RParen 20..21 ")"
+  Semi 21..22 ";"
+  LineTerminator 22..23 "\n"
+  LambdaExpr 23..38 [error]
+    LambdaParameters 23..33 [error]
+      LParen 23..24 "("
+      LambdaParameter 24..25
+        Identifier 24..25 "a"
+      Comma 25..26 ","
+      Whitespace 26..27 " "
+      LambdaParameter 27..32
+        PrimitiveType 27..30
+          IntKw 27..30 "int"
+        Whitespace 30..31 " "
+        Identifier 31..32 "b"
+      RParen 32..33 ")"
+    Whitespace 33..34 " "
+    Arrow 34..36 "->"
+    Whitespace 36..37 " "
+    LiteralExpr 37..38
+      IntLiteral 37..38 "1"
+  Semi 38..39 ";"
+  LineTerminator 39..40 "\n"
+  LambdaExpr 40..55 [error]
+    LambdaParameters 40..50 [error]
+      LParen 40..41 "("
+      LambdaParameter 41..46
+        PrimitiveType 41..44
+          IntKw 41..44 "int"
+        Whitespace 44..45 " "
+        Identifier 45..46 "a"
+      Comma 46..47 ","
+      Whitespace 47..48 " "
+      LambdaParameter 48..49
+        Identifier 48..49 "b"
+      RParen 49..50 ")"
+    Whitespace 50..51 " "
+    Arrow 51..53 "->"
+    Whitespace 53..54 " "
+    LiteralExpr 54..55
+      IntLiteral 54..55 "1"
+  Semi 55..56 ";"
+  LineTerminator 56..57 "\n"
+  LambdaExpr 57..71 [error]
+    LambdaParameters 57..66 [error]
+      LParen 57..58 "("
+      LambdaParameter 58..65 [error]
+        Modifiers 58..63
+          FinalKw 58..63 "final"
+        Whitespace 63..64 " "
+        ClassType 64..65
+          Identifier 64..65 "a"
+      RParen 65..66 ")"
+    Whitespace 66..67 " "
+    Arrow 67..69 "->"
+    Whitespace 69..70 " "
+    LiteralExpr 70..71
+      IntLiteral 70..71 "1"
+  Semi 71..72 ";"
+  LineTerminator 72..73 "\n"
+  LambdaExpr 73..84 [error]
+    LambdaParameters 73..79 [error]
+      LParen 73..74 "("
+      LambdaParameter 74..78 [error]
+        ClassType 74..75
+          Identifier 74..75 "a"
+        Varargs 75..78
+          Ellipsis 75..78 "..."
+      RParen 78..79 ")"
+    Whitespace 79..80 " "
+    Arrow 80..82 "->"
+    Whitespace 82..83 " "
+    LiteralExpr 83..84
+      IntLiteral 83..84 "1"
+  Semi 84..85 ";"
+  LineTerminator 85..86 "\n"
+  LambdaExpr 86..92 [error]
+    LambdaParameters 86..90 [error]
+      LParen 86..87 "("
+      LambdaParameter 87..90
+        ClassType 87..88
+          Identifier 87..88 "a"
+        Whitespace 88..89 " "
+        Identifier 89..90 "b"
+    Whitespace 90..91 " "
+    NameExpr 91..92
+      Identifier 91..92 "c"
+  Error 92..93 [error]
+    RParen 92..93 ")"
+  Whitespace 93..94 " "
+  Error 94..98 [error]
+    Arrow 94..96 "->"
+    Whitespace 96..97 " "
+    IntLiteral 97..98 "1"
+  Semi 98..99 ";"
+  LineTerminator 99..100 "\n"
+  MethodCallExpr 100..111 [error]
+    Identifier 100..101 "f"
+    Arguments 101..111 [error]
+      LParen 101..102 "("
+      ParenExpr 102..105
+        LParen 102..103 "("
+        LiteralExpr 103..104
+          IntLiteral 103..104 "1"
+        RParen 104..105 ")"
+      Whitespace 105..106 " "
+      Error 106..110 [error]
+        Arrow 106..108 "->"
+        Whitespace 108..109 " "
+        IntLiteral 109..110 "1"
+      RParen 110..111 ")"
+  Semi 111..112 ";"
+  LineTerminator 112..113 "\n"
+  MethodCallExpr 113..120 [error]
+    Identifier 113..114 "f"
+    Arguments 114..120 [error]
+      LParen 114..115 "("
+      ParenExpr 115..117 [error]
+        LParen 115..116 "("
+        NameExpr 116..117
+          Identifier 116..117 "a"
+      Comma 117..118 ","
+      Whitespace 118..119 " "
+      RParen 119..120 ")"
+  Whitespace 120..121 " "
+  Error 121..125 [error]
+    Arrow 121..123 "->"
+    Whitespace 123..124 " "
+    IntLiteral 124..125 "1"
+  Error 125..126 [error]
+    RParen 125..126 ")"
+  Semi 126..127 ";"
+  LineTerminator 127..128 "\n"
+  LambdaExpr 128..132 [error]
+    LambdaParameters 128..129
+      LambdaParameter 128..129
+        Identifier 128..129 "x"
+    Whitespace 129..130 " "
+    Arrow 130..132 "->"
+  Whitespace 132..133 " "
+  Semi 133..134 ";"
+  LineTerminator 134..135 "\n"
+  Error 135..138 [error]
+    TypeArguments 135..138
+      Lt 135..136 "<"
+      ClassType 136..137
+        Identifier 136..137 "T"
+      Gt 137..138 ">"
+  Error 138..141 [error]
+    Identifier 138..139 "m"
+    LParen 139..140 "("
+    RParen 140..141 ")"
+  Semi 141..142 ";"
+  LineTerminator 142..143 "\n"
+  BinaryExpr 143..150 [error]
+    ParenExpr 143..147 [error]
+      LParen 143..144 "("
+      ConditionalExpr 144..147 [error]
+        BinaryExpr 144..146 [error]
+          NameExpr 144..145
+            Identifier 144..145 "a"
+          Lt 145..146 "<"
+        Question 146..147 "?"
+    Gt 147..148 ">"
+    Whitespace 148..149 " "
+    NameExpr 149..150
+      Identifier 149..150 "c"
+  Error 150..151 [error]
+    RParen 150..151 ")"
+  Semi 151..152 ";"
+  LineTerminator 152..153 "\n"
+  Eof 153..153 ""
+error 2..2 @2 Expected(Token(RParen)): ')' expected
+error 6..6 @6 Expected(Token(Arrow)): '->' expected
+error 14..14 @14 Expected(Token(Arrow)): '->' expected
+error 21..21 @21 Expected(Token(Arrow)): '->' expected
+error 23..33 @23 MixedLambdaParameters: a lambda's parameters must all have types or all be inferred
+error 40..50 @40 MixedLambdaParameters: a lambda's parameters must all have types or all be inferred
+error 65..65 @65 Expected(Identifier): name expected
+error 78..78 @78 Expected(Identifier): name expected
+error 90..90 @90 Expected(OneOf([Comma, RParen, LBracket])): ',', ')', or '[' expected
+error 92..92 @92 Expected(Token(Semi)): ';' expected
+error 105..105 @105 Expected(OneOf([RParen, Comma])): ')' or ',' expected
+error 117..117 @117 Expected(Token(RParen)): ')' expected
+error 119..120 @119 ExpressionExpected(RParen): expected an expression, found ')'
+error 120..120 @120 Expected(Token(Semi)): ';' expected
+error 133..134 @133 ExpressionExpected(Semi): expected an expression, found ';'
+error 138..139 @138 ExpressionExpected(Identifier): expected an expression, found name
+error 146..147 @146 ExpressionExpected(Question): expected an expression, found '?'
+error 147..148 @147 ExpressionExpected(Gt): expected an expression, found '>'
+error 150..150 @150 Expected(Token(Semi)): ';' expected

@@ -1,0 +1,64 @@
+CompilationUnit 0..88
+  LiteralExpr 0..1
+    IntLiteral 0..1 "1"
+  Semi 1..2 ";"
+  LineTerminator 2..3 "\n"
+  LiteralExpr 3..5
+    LongLiteral 3..5 "2L"
+  Semi 5..6 ";"
+  LineTerminator 6..7 "\n"
+  LiteralExpr 7..11
+    FloatLiteral 7..11 "1.5f"
+  Semi 11..12 ";"
+  LineTerminator 12..13 "\n"
+  LiteralExpr 13..16
+    DoubleLiteral 13..16 "2.0"
+  Semi 16..17 ";"
+  LineTerminator 17..18 "\n"
+  LiteralExpr 18..22
+    IntLiteral 18..22 "0x1F"
+  Semi 22..23 ";"
+  LineTerminator 23..24 "\n"
+  LiteralExpr 24..27
+    CharLiteral 24..27 "'c'"
+  Semi 27..28 ";"
+  LineTerminator 28..29 "\n"
+  LiteralExpr 29..32
+    StringLiteral 29..32 "\"s\""
+  Semi 32..33 ";"
+  LineTerminator 33..34 "\n"
+  LiteralExpr 34..54
+    TextBlock 34..54 "\"\"\"\n    text\n    \"\"\""
+  Semi 54..55 ";"
+  LineTerminator 55..56 "\n"
+  LiteralExpr 56..60
+    TrueKw 56..60 "true"
+  Semi 60..61 ";"
+  LineTerminator 61..62 "\n"
+  LiteralExpr 62..67
+    FalseKw 62..67 "false"
+  Semi 67..68 ";"
+  LineTerminator 68..69 "\n"
+  LiteralExpr 69..73
+    NullKw 69..73 "null"
+  Semi 73..74 ";"
+  LineTerminator 74..75 "\n"
+  NameExpr 75..76
+    Identifier 75..76 "a"
+  Semi 76..77 ";"
+  LineTerminator 77..78 "\n"
+  NameExpr 78..79
+    Underscore 78..79 "_"
+  Semi 79..80 ";"
+  LineTerminator 80..81 "\n"
+  FieldAccessExpr 81..86
+    FieldAccessExpr 81..84
+      NameExpr 81..82
+        Identifier 81..82 "a"
+      Dot 82..83 "."
+      Identifier 83..84 "b"
+    Dot 84..85 "."
+    Identifier 85..86 "c"
+  Semi 86..87 ";"
+  LineTerminator 87..88 "\n"
+  Eof 88..88 ""

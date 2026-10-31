@@ -1,0 +1,131 @@
+CompilationUnit 0..108 [error]
+  BinaryExpr 0..3 [error]
+    NameExpr 0..1
+      Identifier 0..1 "a"
+    Whitespace 1..2 " "
+    Plus 2..3 "+"
+  Whitespace 3..4 " "
+  Semi 4..5 ";"
+  LineTerminator 5..6 "\n"
+  BinaryExpr 6..13 [error]
+    BinaryExpr 6..9 [error]
+      NameExpr 6..7
+        Identifier 6..7 "a"
+      Whitespace 7..8 " "
+      Plus 8..9 "+"
+    Whitespace 9..10 " "
+    Star 10..11 "*"
+    Whitespace 11..12 " "
+    LiteralExpr 12..13
+      IntLiteral 12..13 "3"
+  Semi 13..14 ";"
+  LineTerminator 14..15 "\n"
+  AssignExpr 15..18 [error]
+    NameExpr 15..16
+      Identifier 15..16 "a"
+    Whitespace 16..17 " "
+    Eq 17..18 "="
+  Whitespace 18..19 " "
+  Semi 19..20 ";"
+  LineTerminator 20..21 "\n"
+  ConditionalExpr 21..26 [error]
+    NameExpr 21..22
+      Identifier 21..22 "a"
+    Whitespace 22..23 " "
+    Question 23..24 "?"
+    Whitespace 24..25 " "
+    NameExpr 25..26
+      Identifier 25..26 "b"
+  Whitespace 26..27 " "
+  Semi 27..28 ";"
+  LineTerminator 28..29 "\n"
+  ConditionalExpr 29..36 [error]
+    NameExpr 29..30
+      Identifier 29..30 "a"
+    Whitespace 30..31 " "
+    Question 31..32 "?"
+    Whitespace 32..33 " "
+    NameExpr 33..34
+      Identifier 33..34 "b"
+    Whitespace 34..35 " "
+    Colon 35..36 ":"
+  Whitespace 36..37 " "
+  Semi 37..38 ";"
+  LineTerminator 38..39 "\n"
+  PrefixExpr 39..40 [error]
+    Minus 39..40 "-"
+  Whitespace 40..41 " "
+  Semi 41..42 ";"
+  LineTerminator 42..43 "\n"
+  CastExpr 43..48 [error]
+    LParen 43..44 "("
+    PrimitiveType 44..47
+      IntKw 44..47 "int"
+    RParen 47..48 ")"
+  Whitespace 48..49 " "
+  Semi 49..50 ";"
+  LineTerminator 50..51 "\n"
+  CastExpr 51..65 [error]
+    LParen 51..52 "("
+    ClassType 52..64
+      Identifier 52..56 "List"
+      TypeArguments 56..64
+        Lt 56..57 "<"
+        ClassType 57..63
+          Identifier 57..63 "String"
+        Gt 63..64 ">"
+    RParen 64..65 ")"
+  Whitespace 65..66 " "
+  Semi 66..67 ";"
+  LineTerminator 67..68 "\n"
+  InstanceofExpr 68..80 [error]
+    NameExpr 68..69
+      Identifier 68..69 "x"
+    Whitespace 69..70 " "
+    InstanceofKw 70..80 "instanceof"
+  Whitespace 80..81 " "
+  Semi 81..82 ";"
+  LineTerminator 82..83 "\n"
+  BinaryExpr 83..90 [error]
+    BinaryExpr 83..86 [error]
+      NameExpr 83..84
+        Identifier 83..84 "a"
+      Whitespace 84..85 " "
+      Gt 85..86 ">"
+    Whitespace 86..87 " "
+    Gt 87..88 ">"
+    Whitespace 88..89 " "
+    LiteralExpr 89..90
+      IntLiteral 89..90 "1"
+  Semi 90..91 ";"
+  LineTerminator 91..92 "\n"
+  BinaryExpr 92..100 [error]
+    BinaryExpr 92..95 [error]
+      NameExpr 92..93
+        Identifier 92..93 "a"
+      Whitespace 93..94 " "
+      Gt 94..95 ">"
+    Whitespace 95..96 " "
+    GtEq 96..98 ">="
+    Whitespace 98..99 " "
+    LiteralExpr 99..100
+      IntLiteral 99..100 "1"
+  Semi 100..101 ";"
+  LineTerminator 101..102 "\n"
+  Error 102..106 [error]
+    VoidKw 102..106 "void"
+  Semi 106..107 ";"
+  LineTerminator 107..108 "\n"
+  Eof 108..108 ""
+error 4..5 @4 ExpressionExpected(Semi): expected an expression, found ';'
+error 10..11 @10 ExpressionExpected(Star): expected an expression, found '*'
+error 19..20 @19 ExpressionExpected(Semi): expected an expression, found ';'
+error 26..26 @26 Expected(Token(Colon)): ':' expected
+error 37..38 @37 ExpressionExpected(Semi): expected an expression, found ';'
+error 41..42 @41 ExpressionExpected(Semi): expected an expression, found ';'
+error 49..50 @49 ExpressionExpected(Semi): expected an expression, found ';'
+error 66..67 @66 ExpressionExpected(Semi): expected an expression, found ';'
+error 81..82 @81 TypeExpected(Semi): expected a type, found ';'
+error 87..88 @87 ExpressionExpected(Gt): expected an expression, found '>'
+error 96..98 @96 ExpressionExpected(GtEq): expected an expression, found '>='
+error 102..106 @102 ExpressionExpected(VoidKw): expected an expression, found 'void'

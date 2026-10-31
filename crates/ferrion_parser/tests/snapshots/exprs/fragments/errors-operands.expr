@@ -1,0 +1,12 @@
+a + ;
+a + * 3;
+a = ;
+a ? b ;
+a ? b : ;
+- ;
+(int) ;
+(List<String>) ;
+x instanceof ;
+a > > 1;
+a > >= 1;
+void;

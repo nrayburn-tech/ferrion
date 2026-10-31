@@ -1,0 +1,15 @@
+new;
+new X;
+new X b;
+new int;
+new int[];
+new int[1] {2};
+new X<A;
+new X<A @B>();
+new int[1;
+new int[][1];
+x.new int[1];
+x.new X;
+new int[] {1 2};
+new int[] {1,,2};
+new int[] {1,

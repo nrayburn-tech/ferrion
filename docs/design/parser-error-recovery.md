@@ -74,6 +74,10 @@ lambda or a parenthesized expression, a generic call or a comparison, a local va
 expression statement), it decides from tokens alone, never by trying one reading and backtracking
 after errors. A wrong guess in broken code is then a local error, not a cascade.
 
+The lookahead is linear in what it scans. The one scan that could make parsing quadratic, for a
+generic type before `::` (`List<String>::size`), which `a < b < c ...` would start at every name,
+gives up after 1,024 tokens of type arguments, and the name is then read as an expression.
+
 ## What a syntax error affects
 
 SCOPE.md says rules run on the parts of a file a syntax error doesn't affect, and range formatting

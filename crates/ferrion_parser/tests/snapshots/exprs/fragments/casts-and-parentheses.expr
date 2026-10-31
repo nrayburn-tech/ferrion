@@ -1,0 +1,17 @@
+(a);
+((a));
+(a) b;
+(a) - b;
+(a) !b;
+(a) ++b;
+(int) -b;
+(int) +b;
+(a.b) c;
+(List<String>) x;
+(int[]) x;
+(A & B) x;
+(a & b) + c;
+(java.util.List<?> & Runnable) x;
+(T) (U) x;
+-(int) -x;
+(@A T) x;

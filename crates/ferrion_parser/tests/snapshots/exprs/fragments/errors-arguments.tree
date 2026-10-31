@@ -1,0 +1,70 @@
+CompilationUnit 0..42 [error]
+  MethodCallExpr 0..6 [error]
+    Identifier 0..1 "f"
+    Arguments 1..6 [error]
+      LParen 1..2 "("
+      NameExpr 2..3
+        Identifier 2..3 "a"
+      Whitespace 3..4 " "
+      Error 4..5 [error]
+        Identifier 4..5 "b"
+      RParen 5..6 ")"
+  Semi 6..7 ";"
+  LineTerminator 7..8 "\n"
+  MethodCallExpr 8..11 [error]
+    Identifier 8..9 "f"
+    Arguments 9..11 [error]
+      LParen 9..10 "("
+      NameExpr 10..11
+        Identifier 10..11 "a"
+  Semi 11..12 ";"
+  LineTerminator 12..13 "\n"
+  MethodCallExpr 13..19 [error]
+    Identifier 13..14 "f"
+    Arguments 14..19 [error]
+      LParen 14..15 "("
+      LiteralExpr 15..16
+        IntLiteral 15..16 "1"
+      Comma 16..17 ","
+      Whitespace 17..18 " "
+      RParen 18..19 ")"
+  Semi 19..20 ";"
+  LineTerminator 20..21 "\n"
+  MethodCallExpr 21..26 [error]
+    Identifier 21..22 "f"
+    Arguments 22..26 [error]
+      LParen 22..23 "("
+      Comma 23..24 ","
+      NameExpr 24..25
+        Identifier 24..25 "a"
+      RParen 25..26 ")"
+  Semi 26..27 ";"
+  LineTerminator 27..28 "\n"
+  MethodCallExpr 28..35 [error]
+    Identifier 28..29 "f"
+    Arguments 29..35 [error]
+      LParen 29..30 "("
+      NameExpr 30..31
+        Identifier 30..31 "a"
+      Comma 31..32 ","
+      Comma 32..33 ","
+      NameExpr 33..34
+        Identifier 33..34 "b"
+      RParen 34..35 ")"
+  Semi 35..36 ";"
+  LineTerminator 36..37 "\n"
+  MethodCallExpr 37..41 [error]
+    Identifier 37..38 "f"
+    Arguments 38..41 [error]
+      LParen 38..39 "("
+      NameExpr 39..40
+        Identifier 39..40 "a"
+      Comma 40..41 ","
+  LineTerminator 41..42 "\n"
+  Eof 42..42 ""
+error 3..3 @3 Expected(OneOf([RParen, Comma])): ')' or ',' expected
+error 11..11 @11 Expected(OneOf([RParen, Comma])): ')' or ',' expected
+error 18..19 @18 ExpressionExpected(RParen): expected an expression, found ')'
+error 23..24 @23 ExpressionExpected(Comma): expected an expression, found ','
+error 32..33 @32 ExpressionExpected(Comma): expected an expression, found ','
+error 42..42 @42 ExpressionExpected(Eof): expected an expression, found end of file
