@@ -6,10 +6,10 @@
 //! [`NoParser`] stands in: both checks run javac, cache its output, and summarize it (diagnostic
 //! codes, tree sizes and depths), and every result is [`Status::NotCompared`].
 //!
-//! The comparisons themselves are provisional, and the parser work settles them along with the
-//! normalization: `syntax` compares whether there are errors and, if there are, the first one in
-//! source order by code and position; `tree` compares every node of files javac reports no errors
-//! for.
+//! `syntax` compares whether there are errors and, if there are, the first one in source order by
+//! code and position. Later errors depend on each parser's recovery, so they aren't compared.
+//! `tree` compares every node of files javac reports no errors for; it is provisional, and the
+//! parser work settles it along with the normalization.
 
 use std::panic::{AssertUnwindSafe, catch_unwind};
 

@@ -27,15 +27,17 @@ For each file and release:
   Until it's implemented, `NoParser` stands in, and both checks run javac, cache its output, and
   report counts without comparing: each file-release is counted as `not-compared`.
 
-The comparisons in `syntax.rs` are provisional, written so the parser can be plugged in and
-tested, and are settled with the normalization below:
+The comparisons are in `syntax.rs`:
 
 - `syntax` compares javac's errors (warnings left out) with the parser's at each release: both
   have errors or neither does, and the first error in source order has the same code and
-  `position`.
-- `tree` compares every node, as `(kind, start, end, depth)` in javac's order, for files javac
-  reports no error for. Files javac rejects are skipped and listed, since javac's tree after an
-  error depends on its recovery.
+  `position`. This is the Phase 2 exit criterion for syntax errors, as decided in review. Later
+  errors aren't compared: they depend on each parser's recovery after the first error, and
+  matching them would mean reproducing javac's.
+- `tree`, provisional until the parser work settles it with the normalization below, compares
+  every node, as `(kind, start, end, depth)` in javac's order, for files javac reports no error
+  for. Files javac rejects are skipped and listed, since javac's tree after an error depends on
+  its recovery.
 
 ## The oracle's output
 

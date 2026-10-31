@@ -110,8 +110,8 @@ the whole declaration, since everything in it depends on the header.
 3. **Fuzzing:** the parser fuzz targets check the tree's invariants and that the parser terminates.
 4. **javac's first error:** on the snapshot inputs and javac's own test inputs, Ferrion's first
    error is expected to match javac's first parsing-phase error by kind and position. Later errors
-   depend on each parser's recovery; how they are compared is set in
-   `parser-oracle-normalization.md`.
+   depend on each parser's recovery and aren't compared (see
+   `parser-oracle-normalization.md`).
 
 ## Syntax errors and javac
 
