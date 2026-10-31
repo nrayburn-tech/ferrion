@@ -208,24 +208,53 @@ rust-analyzer's design notes. A builder then turns the events into the arrays in
 explicit stack. Trivia are skipped by the parser and placed by the builder, which is what keeps
 node ranges free of edge trivia.
 
+The tree lives in its own crate, `ferrion_syntax`, and the parser and its builder in
+`ferrion_parser` (see [the crates](parser.md#the-crates)). The builder hands the finished arrays to
+`SyntaxTree::new`, which checks them in debug builds, so the tree's fields stay private and every
+tree keeps the invariants above. Consumers that only read trees depend on `ferrion_syntax` alone.
+
 ## Typed views
 
-A grammar file (`crates/ferrion_parser/java.grammar`, in a small format of Ferrion's own) lists each
-node kind and its children by role, for example:
+A grammar file (`crates/ferrion_syntax/java.grammar`, in a small format of Ferrion's own) lists
+each node kind and its children by role, for example:
 
 ```
 IfStmt = 'if' '(' condition:Expr ')' then_branch:Stmt ('else' else_branch:Stmt)?
 BinaryExpr = lhs:Expr op:BinaryOp rhs:Expr
 ```
 
-A code generator in `tools/` writes `SyntaxKind`, the typed view structs, the `Expr`/`Stmt`/`Decl`
-enums, and their accessors to a checked-in file, and CI checks that it is up to date, as it does for
-rule documentation. Generated code is plain to read and review, and adds no proc-macro build time.
+A code generator, `tools/codegen` (`cargo codegen`), writes `SyntaxKind`, the typed view structs,
+the enums over several kinds (`Expr`, `Stmt`, `Member`, `Type`, ...), and their accessors to
+checked-in files, and CI checks that they are up to date, as it does for rule documentation.
+Generated code is plain to read and review, and adds no proc-macro build time.
 
 An accessor scans the node's direct children (and, for tokens, its direct tokens) for the first that
 matches its role. That is linear in the number of children, which is small, over contiguous arrays,
-and allocates nothing. Every accessor returns an `Option`, since recovery can leave any child
-missing. A view is a `SyntaxNode` with a checked kind, so it is free to create and to convert back.
+and allocates nothing. Every accessor returns an `Option` (or an iterator, for a list), since
+recovery can leave any child missing. Where two roles accept the same kinds, such as an `if`'s two
+branches, each accessor looks only between the tokens around its role (after `else`, for the else
+branch), so a missing child is never mistaken for another. A view is a `SyntaxNode` with a checked
+kind, so it is free to create and to convert back.
+
+### Node catalog
+
+`java.grammar` lists every node kind for Java 8 through 27, preview syntax included, and records
+the representation decisions in its header, each checked against javac's tree with the oracle. In
+short:
+
+- qualified names nest to the left with a node per prefix, as javac's do, and ambiguous names stay
+  expressions (`NameExpr`, `FieldAccessExpr`) until semantic analysis reclassifies them;
+- `int a, b;` is one declaration with a `VariableDeclarator` per name, where javac makes two
+  variables sharing a type;
+- array types are flat (an element type and a `Dim` per `[]`, outermost first), since javac's
+  nested array types have spans that don't nest;
+- annotations before a declaration's type are in its `Modifiers`, and every other annotation
+  belongs to the type construct it precedes;
+- switch blocks hold rules or groups of labels and statements, as in the JLS, where javac has a
+  `CASE` per label;
+- list separators are tokens of the node holding the list, with clause nodes (`ThrowsClause`, ...)
+  where a list has no delimiters of its own;
+- keyword token kinds end in `Kw` (`ClassKw`, and `RecordKw` for the contextual keyword).
 
 ## Node identity
 

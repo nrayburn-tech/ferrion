@@ -1,0 +1,707 @@
+// Java's syntax tree: every token kind and node kind, and each node's children by role.
+//
+// `cargo codegen` (tools/codegen) reads this file and writes `SyntaxKind`
+// (src/syntax_kind/generated.rs) and the typed views (src/ast/generated.rs). Change this file,
+// then run it. CI fails if the generated files are out of date. The tree itself is described in
+// docs/design/parser-syntax-tree.md.
+//
+// ## Format
+//
+// - `token Name 'spelling' from LexerName trivia` declares a token kind. The spelling, the `from`
+//   part, and `trivia` are optional. Without `from`, the lexer's `TokenKind` variant is the name
+//   without a `Kw` suffix (`ClassKw` is `TokenKind::Class`).
+// - `contextual Name 'spelling'` declares a contextual keyword kind, which the parser records in
+//   the tree's token kinds where it reads an identifier as that keyword. Its `ContextualKeyword`
+//   variant is the name without `Kw`.
+// - `tokens Name = A | B` declares a set of token kinds, for a role that accepts any of them.
+// - `node Name = rule` declares a node kind. `node Name` alone declares one without typed
+//   accessors.
+// - `enum Name = A | B` declares a typed view over several node kinds (or other enums), such as
+//   `Expr`. Enums don't add node kinds.
+//
+// Rules are written with `'spelling'` for tokens, names for tokens, token sets, nodes, and enums,
+// `label:` for a role, `( )` for grouping, `|` for alternatives, and `?`, `*`, and `+`. A rule says
+// which children a node has and in what order; it isn't the parser, which accepts more and reports
+// errors. Each labeled element becomes an accessor, and so does each unlabeled node or enum (named
+// after it, in snake case, plural when repeated). A label used more than once, or under `*` or
+// `+`, makes a list accessor. Accessors look only at a node's direct children and direct tokens.
+// When two roles accept the same kinds (`then_branch` and `else_branch`), each one's accessor looks
+// only between the tokens around it in the rule, such as after `'else'`. `///` comments document
+// the item that follows them, and are copied into the generated code.
+//
+// ## Representation decisions
+//
+// The tree is lossless: every token, trivia included, is in it, and no node is empty. A missing
+// child is absent and its accessor returns `None`; tokens the parser can't place go in an `Error`
+// node. Each decision below was checked against javac's tree with `tools/javac-oracle` (JDK 27) on
+// small inputs; the oracle's shapes are in tools/oracle-check/parser-cases and
+// docs/design/parser-oracle-normalization.md. Ferrion's tree follows the JLS where javac's shape
+// doesn't fit a lossless tree, and the oracle comparison builds javac's nodes from it.
+//
+// 1. **Qualified names nest to the left, one node per prefix**, like javac's `MEMBER_SELECT`
+//    chains: `a.b.c` is `Name(Name(Name(a) . b) . c)`. That gives every prefix a `NodeId`, so
+//    semantic analysis can record what each prefix resolves to. `Name` is used where only names are
+//    allowed: package, import, module, and annotation names, and module directives. In types the
+//    nodes are `ClassType`s, and in expressions `NameExpr` and `FieldAccessExpr`.
+// 2. **Ambiguous names stay as the parser read them.** The parser can't tell a package from a type
+//    from a variable (JLS 6.5). In an expression, `a.b.c` is `FieldAccessExpr`s over a `NameExpr`
+//    whatever `a` and `b` turn out to be, and semantic analysis reclassifies them. A name is a type
+//    only where the syntax says so: before a declared name, after `new`, `extends`, `implements`,
+//    `throws`, and `instanceof`, in casts and type arguments, and before `[]` or `<...>::`. So the
+//    qualifier of `.this`, `.super`, `.class`, and `::` is an expression when it's a plain name.
+//    javac does the same: `Names.class` is `MEMBER_SELECT(IDENTIFIER)`, and `int[].class` has an
+//    `ARRAY_TYPE`.
+// 3. **One declaration, several declarators.** `int a, b;` is one `FieldDecl` (or `LocalVarDecl`)
+//    with a `VariableDeclarator` per name, and the commas are its tokens. javac makes a `VARIABLE`
+//    per name, sharing the modifiers and type nodes (`shared` in the oracle), the first ending
+//    after its `,`. C-style dimensions belong to what they follow: `int a[]` has a `Dim` in the
+//    declarator, `int m()[]` in the method, and `int x[]` in the parameter. javac wraps the type in
+//    an `ARRAY_TYPE` spanning the name (or the parameters).
+// 4. **Array types are flat:** `ArrayType` is the element type and one `Dim` per `[]`, in source
+//    order, so in `int @A [] @B []` the first `Dim` (with `@A`) is the outermost dimension, as in
+//    JLS 10.2. javac nests an `ARRAY_TYPE` per dimension, with each outer one's span equal to the
+//    inner's (`int[][]`: both span `int[][]`), which contiguous nested nodes can't represent.
+//    Array creation is `ArrayCreationExpr` with the element type, `DimExpr`s (`[n]`), `Dim`s, and
+//    an optional `ArrayInitializer`.
+// 5. **Annotations.** Annotations before a declaration's type are in its `Modifiers`, since the
+//    parser can't tell declaration annotations from type annotations; javac's `MODIFIERS` has them
+//    too. Every other annotation belongs to the type construct it precedes: a `ClassType` segment
+//    (`java.util.@A List`), a `PrimitiveType`, a `Dim`, a `DimExpr`, `Varargs` (`String @A ...`), a
+//    `Wildcard`, or a `TypeParameter`. Annotations between a method's type parameters and its
+//    result type (`<T> @A String m()`) are direct children of the method, as in JLS 8.4's
+//    MethodHeader; javac puts them in the method's `MODIFIERS`, outside its span.
+// 6. **Receiver parameters and varargs.** `void m(@A Foo this)` has a `ReceiverParameter` first in
+//    `FormalParameters`; javac lists it as a `VARIABLE` after the other parameters, with `this`
+//    (or `Outer.this`) as its name expression. `String... a` is a `FormalParameter` with a
+//    `Varargs` node holding the `...` and its annotations; javac makes it an `ARRAY_TYPE` with its
+//    position at the `...`.
+// 7. **Parentheses.** `(a)` is a `ParenExpr`. The parentheses of `if`, `while`, `do`, `switch`, and
+//    `synchronized` are tokens of the statement, as in the JLS; javac adds a `PARENTHESIZED` node
+//    there. A cast is `CastExpr`, and `(A & B) x` has an `IntersectionType` spanning `A & B`;
+//    javac's `INTERSECTION_TYPE` starts at the `(`.
+// 8. **Lambdas.** Every lambda has `LambdaParameters`; for `x -> x` it is just the name, without
+//    parentheses. Each parameter is a `LambdaParameter`, with a type when it has one. `var` there,
+//    in local variables, and in patterns is a `ClassType` named `var` (contextual keywords stay
+//    identifiers, see 16); javac has a `VAR_TYPE` node. javac's implicit parameter is a `VARIABLE`
+//    spanning the name, and an expression body has no wrapper.
+// 9. **Method references** are `MethodRefExpr`: a qualifier, `::`, type arguments, and a name or
+//    `new`. The qualifier is an expression (`a.b::c`, `super::m`, `this::m`, `foo()::m`) or, when
+//    the syntax makes it a type, a type (`String[]::new`, `List<String>::size`), as with javac.
+// 10. **Calls.** `MethodCallExpr` holds its receiver, type arguments, and name directly; javac
+//    wraps them in a `MEMBER_SELECT` (spanning the type arguments) or an `IDENTIFIER`. `this(...)`
+//    and `super(...)`, qualified or not, are `ConstructorCallExpr` in an `ExprStmt`, matching
+//    javac's `EXPRESSION_STATEMENT(METHOD_INVOCATION(IDENTIFIER this))`.
+// 11. **Switches.** `SwitchStmt` and `SwitchExpr` share `SwitchBlock`, which holds either
+//    `SwitchRule`s (`case ... ->`) or `SwitchGroup`s (`case ...:` followed by statements). A group
+//    holds all its labels, so `case 1: case 2: f();` is one group with two `SwitchLabel`s; javac
+//    makes two `CASE`s, the first with no statements. A label holds its elements (constant
+//    expressions and patterns), a `default` token for `default` and `case null, default`, and an
+//    optional `Guard` (`when ...`). javac has a `CONSTANT_CASE_LABEL`, `PATTERN_CASE_LABEL`, or
+//    `DEFAULT_CASE_LABEL` per element, with the guard after them in the `CASE`. A rule's body is
+//    an expression followed by `;`, a `Block`, or a `ThrowStmt` (JLS 14.11.1); in a switch
+//    statement javac wraps the expression in an `EXPRESSION_STATEMENT`.
+// 12. **Patterns.** `TypePattern` is a flat binding (`final String s`): modifiers, type, and name;
+//    javac wraps a `VARIABLE` in a `BINDING_PATTERN` with the same span. `RecordPattern` is a type
+//    and nested patterns (javac's `DECONSTRUCTION_PATTERN`). `_` as a nested pattern is
+//    `UnnamedPattern`; javac's `ANY_PATTERN` for it has an empty span at the `_`. Primitive types
+//    in patterns (a preview feature in JDK 27) need no node of their own: `o instanceof int
+//    i` is a `TypePattern` with a `PrimitiveType`. JDK 27 has no other preview language syntax:
+//    javac 27 with `--enable-preview` rejects value classes, null-restricted types, derived record
+//    creation (`with`), and patterns in enhanced `for` and in assignments, as without it. String
+//    templates were withdrawn and have no node.
+// 13. **`_`.** The lexer makes `_` an `Underscore` token at every release. The parser accepts it
+//    wherever it accepts an identifier (the `Ident` token set), since it is one at Java 8;
+//    the version check reports it by release.
+// 14. **List separators** (commas, `&` in bounds and intersections, `|` in union types, `;` between
+//    resources) are direct tokens of the node that holds the list. There are no per-item wrapper
+//    nodes. A list with no delimiters of its own gets a clause node: `ExtendsClause`,
+//    `ImplementsClause`, `PermitsClause`, and `ThrowsClause`. Trailing commas (array initializers,
+//    enum constants) are tokens of the list's node too.
+// 15. **Operators.** All binary operators share `BinaryExpr`, assignments `AssignExpr`, and unary
+//    operators `PrefixExpr` and `PostfixExpr`; the operator is a direct token. The lexer splits `>`
+//    operators (`>>` is two `Gt` tokens, `>>>=` is `Gt Gt GtEq`), so those operators are runs of
+//    adjacent tokens in the node, and the generated `op` accessor returns the first token of the
+//    run. javac has a kind per operator. Adjacent string literals in a `+` chain aren't folded;
+//    javac folds them into one `STRING_LITERAL`.
+// 16. **Contextual keywords** are identifiers to the lexer. Where the parser reads one as a
+//    keyword, the tree's token kinds record its `...Kw` kind (`RecordKw`, `YieldKw` from 14,
+//    `WhenKw`, ...). `non-sealed` is three tokens, `non`, `-`, and `sealed`, with no trivia
+//    between them; all three get `NonSealedKw`. `var` and `_` are never recorded as keywords
+//    (docs/design/parser-language-versions.md).
+// 17. **Literals** are one kind, `LiteralExpr`; its token's kind says which literal it is. javac
+//    has a kind per literal type.
+// 18. **Empty modifiers are absent:** a declaration without modifiers or annotations has no
+//    `Modifiers` node. javac has an empty `MODIFIERS` at -1..-1 (or at a generic method's `<`).
+// 19. **Stray semicolons** in class bodies and at the top level are tokens of the body or the
+//    compilation unit. javac has no node for them in a class body, and an `EMPTY_STATEMENT` at the
+//    top level.
+// 20. **Local classes, interfaces, enums, and records** are the same nodes as members; the `Stmt`
+//    enum includes `TypeDecl`. javac's tree does the same.
+// 21. **Implicitly declared classes** (JEP 512): top-level methods and fields are members of the
+//    `CompilationUnit`. javac wraps them in a synthesized `CLASS`.
+// 22. **Packages and modules** take their annotations as direct children, as in javac, and have no
+//    `Modifiers`; a module's `open` is a token. Enum constants are `EnumConstant`, for which javac
+//    synthesizes a type and a `NEW_CLASS` without end positions. A record's compact constructor is
+//    `CompactConstructorDecl`, whose parameters javac copies from the record header.
+
+// ---------------------------------------------------------------------------------------------
+// Tokens, in the lexer's order (crates/ferrion_lexer/src/kind.rs).
+
+/// Spaces, tabs, and form feeds.
+token Whitespace trivia
+/// One CR, LF, or CRLF.
+token LineTerminator trivia
+/// `// ...`
+token LineComment trivia
+/// `/// ...`, a Markdown documentation comment line from Java 23.
+token DocLineComment trivia
+/// `/* ... */`
+token BlockComment trivia
+/// `/** ... */`
+token DocComment trivia
+
+token Identifier
+
+token AbstractKw 'abstract'
+token AssertKw 'assert'
+token BooleanKw 'boolean'
+token BreakKw 'break'
+token ByteKw 'byte'
+token CaseKw 'case'
+token CatchKw 'catch'
+token CharKw 'char'
+token ClassKw 'class'
+token ConstKw 'const'
+token ContinueKw 'continue'
+token DefaultKw 'default'
+token DoKw 'do'
+token DoubleKw 'double'
+token ElseKw 'else'
+token EnumKw 'enum'
+token ExtendsKw 'extends'
+token FinalKw 'final'
+token FinallyKw 'finally'
+token FloatKw 'float'
+token ForKw 'for'
+token GotoKw 'goto'
+token IfKw 'if'
+token ImplementsKw 'implements'
+token ImportKw 'import'
+token InstanceofKw 'instanceof'
+token IntKw 'int'
+token InterfaceKw 'interface'
+token LongKw 'long'
+token NativeKw 'native'
+token NewKw 'new'
+token PackageKw 'package'
+token PrivateKw 'private'
+token ProtectedKw 'protected'
+token PublicKw 'public'
+token ReturnKw 'return'
+token ShortKw 'short'
+token StaticKw 'static'
+token StrictfpKw 'strictfp'
+token SuperKw 'super'
+token SwitchKw 'switch'
+token SynchronizedKw 'synchronized'
+token ThisKw 'this'
+token ThrowKw 'throw'
+token ThrowsKw 'throws'
+token TransientKw 'transient'
+token TryKw 'try'
+token VoidKw 'void'
+token VolatileKw 'volatile'
+token WhileKw 'while'
+/// `_`: an identifier at Java 8, a keyword from 9, and an unnamed variable or pattern from 22.
+token Underscore '_'
+
+token TrueKw 'true'
+token FalseKw 'false'
+token NullKw 'null'
+token IntLiteral
+token LongLiteral
+token FloatLiteral
+token DoubleLiteral
+token CharLiteral
+token StringLiteral
+token TextBlock
+
+token LParen '('
+token RParen ')'
+token LBrace '{'
+token RBrace '}'
+token LBracket '['
+token RBracket ']'
+token Semi ';'
+token Comma ','
+token Dot '.'
+token Ellipsis '...'
+token At '@'
+token ColonColon '::'
+
+token Eq '='
+token Gt '>'
+token Lt '<'
+token Bang '!'
+token Tilde '~'
+token Question '?'
+token Colon ':'
+token Arrow '->'
+token EqEq '=='
+token GtEq '>='
+token LtEq '<='
+token BangEq '!='
+token AmpAmp '&&'
+token PipePipe '||'
+token PlusPlus '++'
+token MinusMinus '--'
+token Plus '+'
+token Minus '-'
+token Star '*'
+token Slash '/'
+token Amp '&'
+token Pipe '|'
+token Caret '^'
+token Percent '%'
+token LtLt '<<'
+token PlusEq '+='
+token MinusEq '-='
+token StarEq '*='
+token SlashEq '/='
+token AmpEq '&='
+token PipeEq '|='
+token CaretEq '^='
+token PercentEq '%='
+token LtLtEq '<<='
+
+/// Characters that can't start any token. The lexer reports an error for them, and the parser
+/// skips them: they are placed like trivia, in the innermost node around them, and never start or
+/// end a node.
+token ErrorToken from Error
+/// The end of the text: an empty token, always last, and always a direct token of the
+/// `CompilationUnit`.
+token Eof
+
+// ---------------------------------------------------------------------------------------------
+// Contextual keywords (JLS 3.9), recorded where the parser reads them as keywords. `var` is never
+// recorded (decision 16).
+
+contextual ExportsKw 'exports'
+contextual ModuleKw 'module'
+/// `non-sealed`: the three tokens `non`, `-`, and `sealed` all get this kind.
+contextual NonSealedKw 'non-sealed'
+contextual OpenKw 'open'
+contextual OpensKw 'opens'
+contextual PermitsKw 'permits'
+contextual ProvidesKw 'provides'
+contextual RecordKw 'record'
+contextual RequiresKw 'requires'
+contextual SealedKw 'sealed'
+contextual ToKw 'to'
+contextual TransitiveKw 'transitive'
+contextual UsesKw 'uses'
+contextual WhenKw 'when'
+contextual WithKw 'with'
+/// `yield` at the start of a `yield` statement, at release 14 and later.
+contextual YieldKw 'yield'
+
+// ---------------------------------------------------------------------------------------------
+// Token sets.
+
+/// A name: an identifier, or `_`, which is an identifier at Java 8 (decision 13).
+tokens Ident = Identifier | '_'
+
+tokens PrimitiveTypeKeyword = 'boolean' | 'byte' | 'char' | 'short' | 'int' | 'long' | 'float'
+    | 'double'
+
+tokens Modifier = 'public' | 'protected' | 'private' | 'abstract' | 'static' | 'final'
+    | 'transient' | 'volatile' | 'synchronized' | 'native' | 'strictfp' | 'default' | 'sealed'
+    | 'non-sealed'
+
+tokens RequiresModifier = 'transitive' | 'static'
+
+tokens Literal = IntLiteral | LongLiteral | FloatLiteral | DoubleLiteral | CharLiteral
+    | StringLiteral | TextBlock | 'true' | 'false' | 'null'
+
+tokens PrefixOp = '+' | '-' | '!' | '~' | '++' | '--'
+
+tokens PostfixOp = '++' | '--'
+
+/// Binary operators, by their first token: `>>` and `>>>` are runs of `>` tokens.
+tokens BinaryOp = '||' | '&&' | '|' | '^' | '&' | '==' | '!=' | '<' | '>' | '<=' | '>=' | '<<'
+    | '+' | '-' | '*' | '/' | '%'
+
+/// Assignment operators, by their first token: `>>=` is `>` `>=`, and `>>>=` is `>` `>` `>=`.
+tokens AssignOp = '=' | '+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' | '<<=' | '>'
+
+// ---------------------------------------------------------------------------------------------
+// Compilation units, packages, imports, and modules.
+
+/// The root. It covers every token: leading trivia, the declarations, and `Eof`. An ordinary
+/// compilation unit has members (type declarations, or for an implicitly declared class, methods
+/// and fields too); a modular one has a `ModuleDecl`.
+node CompilationUnit = PackageDecl? ImportDecl* (ModuleDecl | (members:Member | ';')*) Eof
+
+/// `@A package a.b;`
+node PackageDecl = Annotation* 'package' name:Name ';'
+
+/// `import a.b.C;`, `import static a.b.C.m;`, `import a.b.*;`, `import module m;`. The `.*` of an
+/// on-demand import is two tokens of the import; javac's `MEMBER_SELECT` for it has `*` as its
+/// name.
+node ImportDecl = 'import' static_kw:'static'? module_kw:'module'? name:Name ('.' star:'*')? ';'
+
+/// A qualified name where only names are allowed (decision 1).
+node Name = (qualifier:Name '.')? name:Ident
+
+node ModuleDecl = Annotation* open_kw:'open'? 'module' name:Name '{' directives:ModuleDirective*
+    '}'
+
+enum ModuleDirective = RequiresDirective | ExportsDirective | OpensDirective | UsesDirective
+    | ProvidesDirective
+
+node RequiresDirective = 'requires' modifiers:RequiresModifier* name:Name ';'
+
+node ExportsDirective = 'exports' package_name:Name ('to' modules:Name (',' modules:Name)*)? ';'
+
+node OpensDirective = 'opens' package_name:Name ('to' modules:Name (',' modules:Name)*)? ';'
+
+node UsesDirective = 'uses' service:Name ';'
+
+node ProvidesDirective = 'provides' service:Name 'with' implementations:Name
+    (',' implementations:Name)* ';'
+
+// ---------------------------------------------------------------------------------------------
+// Modifiers and annotations.
+
+/// Modifier keywords and annotations, in source order. Absent when there are none.
+node Modifiers = (annotations:Annotation | keywords:Modifier)+
+
+node Annotation = '@' name:Name AnnotationArguments?
+
+/// `(x = 1, y = 2)`, `(1)`, or `()`.
+node AnnotationArguments = '(' (pairs:ElementValuePair (',' pairs:ElementValuePair)*
+    | value:ElementValue)? ')'
+
+node ElementValuePair = name:Ident '=' value:ElementValue
+
+enum ElementValue = Expr | Annotation | ElementValueArray
+
+node ElementValueArray = '{' (values:ElementValue (',' values:ElementValue)*)? ','? '}'
+
+// ---------------------------------------------------------------------------------------------
+// Type declarations and members.
+
+enum TypeDecl = ClassDecl | InterfaceDecl | EnumDecl | RecordDecl | AnnotationTypeDecl
+
+/// What a class body (or, for an implicitly declared class, a compilation unit) holds.
+enum Member = TypeDecl | FieldDecl | MethodDecl | ConstructorDecl | CompactConstructorDecl
+    | Initializer
+
+node ClassDecl = Modifiers? 'class' name:Ident TypeParameters? ExtendsClause? ImplementsClause?
+    PermitsClause? body:ClassBody
+
+node InterfaceDecl = Modifiers? 'interface' name:Ident TypeParameters? ExtendsClause?
+    PermitsClause? body:ClassBody
+
+node EnumDecl = Modifiers? 'enum' name:Ident ImplementsClause? body:EnumBody
+
+node RecordDecl = Modifiers? 'record' name:Ident TypeParameters? RecordHeader ImplementsClause?
+    body:ClassBody
+
+/// `@interface A { ... }`. The `@` is a token of the declaration; javac's modifiers include it.
+node AnnotationTypeDecl = Modifiers? '@' 'interface' name:Ident body:ClassBody
+
+/// A class's `extends` has one type, an interface's any number.
+node ExtendsClause = 'extends' types:Type (',' types:Type)*
+
+node ImplementsClause = 'implements' types:Type (',' types:Type)*
+
+node PermitsClause = 'permits' types:Type (',' types:Type)*
+
+/// The body of a class, interface, record, annotation type, anonymous class, or enum constant.
+node ClassBody = '{' (members:Member | ';')* '}'
+
+node EnumBody = '{' (constants:EnumConstant (',' constants:EnumConstant)*)? ','?
+    (';' (members:Member | ';')*)? '}'
+
+/// Only annotations can be its modifiers.
+node EnumConstant = Modifiers? name:Ident Arguments? body:ClassBody?
+
+node RecordHeader = '(' (components:RecordComponent (',' components:RecordComponent)*)? ')'
+
+node RecordComponent = Modifiers? ty:Type Varargs? name:Ident
+
+/// Fields, and constants in interfaces and annotation types (decision 3).
+node FieldDecl = Modifiers? ty:Type declarators:VariableDeclarator
+    (',' declarators:VariableDeclarator)* ';'
+
+node VariableDeclarator = name:Ident dims:Dim* ('=' initializer:VariableInitializer)?
+
+enum VariableInitializer = Expr | ArrayInitializer
+
+/// Methods, and annotation type elements (`int v() default 1;`). Annotations after the type
+/// parameters are direct children (decision 5).
+node MethodDecl = Modifiers? TypeParameters? annotations:Annotation* result:Type name:Ident
+    FormalParameters dims:Dim* ThrowsClause? (DefaultValue? ';' | body:Block)
+
+node ConstructorDecl = Modifiers? TypeParameters? annotations:Annotation* name:Ident
+    FormalParameters ThrowsClause? body:Block
+
+/// A record's constructor without parameters: `R { ... }`.
+node CompactConstructorDecl = Modifiers? name:Ident body:Block
+
+/// An instance or `static` initializer.
+node Initializer = static_kw:'static'? body:Block
+
+node FormalParameters = '(' (ReceiverParameter ','?)? (parameters:FormalParameter
+    (',' parameters:FormalParameter)*)? ')'
+
+node FormalParameter = Modifiers? ty:Type Varargs? name:Ident dims:Dim*
+
+/// `Foo this` or `Outer.this`, first in a method's or inner class constructor's parameters.
+node ReceiverParameter = Modifiers? ty:Type (qualifier:Ident '.')? 'this'
+
+/// The `...` of a variable arity parameter, and its annotations.
+node Varargs = annotations:Annotation* '...'
+
+node ThrowsClause = 'throws' types:Type (',' types:Type)*
+
+/// An annotation type element's default value.
+node DefaultValue = 'default' value:ElementValue
+
+node TypeParameters = '<' (parameters:TypeParameter (',' parameters:TypeParameter)*)? '>'
+
+node TypeParameter = annotations:Annotation* name:Ident ('extends' bounds:Type
+    ('&' bounds:Type)*)?
+
+// ---------------------------------------------------------------------------------------------
+// Types.
+
+/// `VoidType` is here so that a method's result is a `Type`; the parser reports `void` where it
+/// isn't allowed. `IntersectionType` appears in casts and `UnionType` in catch clauses.
+enum Type = PrimitiveType | ClassType | ArrayType | VoidType | IntersectionType | UnionType
+
+node PrimitiveType = annotations:Annotation* keyword:PrimitiveTypeKeyword
+
+node VoidType = 'void'
+
+/// `a.b.C<T>`: one node per segment, nested to the left (decision 1). Each segment has its own
+/// annotations and type arguments: `java.util.@A Map.Entry<K, V>`. `var` is a `ClassType`.
+node ClassType = (qualifier:ClassType '.')? annotations:Annotation* name:Ident TypeArguments?
+
+/// The element type and its dimensions, outermost first (decision 4).
+node ArrayType = element_type:Type dims:Dim+
+
+/// `[]` and its annotations.
+node Dim = annotations:Annotation* '[' ']'
+
+/// `A & B` in a cast.
+node IntersectionType = types:Type ('&' types:Type)+
+
+/// `A | B` in a catch clause.
+node UnionType = types:Type ('|' types:Type)+
+
+/// `<A, B>`, or `<>` for a diamond.
+node TypeArguments = '<' (arguments:TypeArgument (',' arguments:TypeArgument)*)? '>'
+
+enum TypeArgument = Type | Wildcard
+
+node Wildcard = annotations:Annotation* '?' ((extends_kw:'extends' | super_kw:'super')
+    bound:Type)?
+
+// ---------------------------------------------------------------------------------------------
+// Statements.
+
+/// A block statement (JLS 14.2): a statement, a local variable declaration, or a local class,
+/// interface, enum, or record.
+enum Stmt = Block | LocalVarDecl | TypeDecl | EmptyStmt | ExprStmt | IfStmt | AssertStmt
+    | SwitchStmt | WhileStmt | DoStmt | ForStmt | ForEachStmt | LabeledStmt | BreakStmt
+    | ContinueStmt | ReturnStmt | ThrowStmt | SynchronizedStmt | TryStmt | YieldStmt
+
+node Block = '{' statements:Stmt* '}'
+
+/// A local variable declaration (decision 3). Its `;` is absent in a `for` header, an enhanced
+/// `for`, and a resource, where the `;` (if any) belongs to the enclosing node.
+node LocalVarDecl = Modifiers? ty:Type declarators:VariableDeclarator
+    (',' declarators:VariableDeclarator)* ';'?
+
+node EmptyStmt = ';'
+
+node ExprStmt = expr:Expr ';'
+
+node IfStmt = 'if' '(' condition:Expr ')' then_branch:Stmt ('else' else_branch:Stmt)?
+
+node AssertStmt = 'assert' condition:Expr (':' detail:Expr)? ';'
+
+node SwitchStmt = 'switch' '(' selector:Expr ')' body:SwitchBlock
+
+node WhileStmt = 'while' '(' condition:Expr ')' body:Stmt
+
+node DoStmt = 'do' body:Stmt 'while' '(' condition:Expr ')' ';'
+
+node ForStmt = 'for' '(' ForInit? ';' condition:Expr? ';' ForUpdate? ')' body:Stmt
+
+/// A local variable declaration, or expressions separated by commas.
+node ForInit = LocalVarDecl | expressions:Expr (',' expressions:Expr)*
+
+node ForUpdate = expressions:Expr (',' expressions:Expr)*
+
+/// `for (T x : xs)`. The variable is a `LocalVarDecl` with one declarator and no `;`.
+node ForEachStmt = 'for' '(' variable:LocalVarDecl ':' iterable:Expr ')' body:Stmt
+
+node LabeledStmt = label:Ident ':' body:Stmt
+
+node BreakStmt = 'break' label:Ident? ';'
+
+node ContinueStmt = 'continue' label:Ident? ';'
+
+node ReturnStmt = 'return' value:Expr? ';'
+
+node ThrowStmt = 'throw' exception:Expr ';'
+
+node SynchronizedStmt = 'synchronized' '(' lock:Expr ')' body:Block
+
+node TryStmt = 'try' ResourceSpecification? body:Block catches:CatchClause* FinallyClause?
+
+node ResourceSpecification = '(' resources:Resource (';' resources:Resource)* ';'? ')'
+
+/// A declared resource (a `LocalVarDecl` without `;`), or from Java 9 a variable or field access.
+enum Resource = LocalVarDecl | Expr
+
+node CatchClause = 'catch' '(' parameter:CatchParameter ')' body:Block
+
+/// `Exception e`, or `A | B e` with a `UnionType`.
+node CatchParameter = Modifiers? ty:Type name:Ident dims:Dim*
+
+node FinallyClause = 'finally' body:Block
+
+node YieldStmt = 'yield' value:Expr ';'
+
+// ---------------------------------------------------------------------------------------------
+// Switches (decision 11).
+
+node SwitchBlock = '{' (rules:SwitchRule* | groups:SwitchGroup*) '}'
+
+/// `case ... -> body`. An expression body is followed by `;`, a token of the rule.
+node SwitchRule = SwitchLabel '->' body:SwitchRuleBody ';'?
+
+enum SwitchRuleBody = Expr | Block | ThrowStmt
+
+/// `case 1: case 2: statements`: every label, then the statements.
+node SwitchGroup = (labels:SwitchLabel ':')+ statements:Stmt*
+
+/// `case` with constants or patterns (and `default`, in `case null, default`) and an optional
+/// guard, or `default`. `default_kw` finds either `default`.
+node SwitchLabel = 'case' elements:CaseElement (',' (elements:CaseElement | 'default'))* Guard?
+    | default_kw:'default'
+
+enum CaseElement = Pattern | Expr
+
+/// `when condition`.
+node Guard = 'when' condition:Expr
+
+// ---------------------------------------------------------------------------------------------
+// Patterns (decision 12).
+
+enum Pattern = TypePattern | RecordPattern | UnnamedPattern
+
+node TypePattern = Modifiers? ty:Type name:Ident
+
+node RecordPattern = ty:Type '(' (components:Pattern (',' components:Pattern)*)? ')'
+
+node UnnamedPattern = '_'
+
+// ---------------------------------------------------------------------------------------------
+// Expressions.
+
+enum Expr = LiteralExpr | NameExpr | ThisExpr | SuperExpr | ParenExpr | ClassLiteralExpr
+    | FieldAccessExpr | ArrayAccessExpr | MethodCallExpr | ConstructorCallExpr | NewExpr
+    | ArrayCreationExpr | PrefixExpr | PostfixExpr | BinaryExpr | InstanceofExpr
+    | ConditionalExpr | AssignExpr | CastExpr | LambdaExpr | MethodRefExpr | SwitchExpr
+
+/// A qualifier that can be a type or an expression (decision 2).
+enum ExprOrType = Expr | Type
+
+/// Any literal; the token's kind says which.
+node LiteralExpr = value:Literal
+
+/// A simple name in an expression: a variable, or a package or type to be reclassified.
+node NameExpr = name:Ident
+
+/// `this`, or `Outer.this`.
+node ThisExpr = (qualifier:Expr '.')? 'this'
+
+/// `super` in `super.f` and `super.m()`, or `Outer.super` and `Interface.super`.
+node SuperExpr = (qualifier:Expr '.')? 'super'
+
+node ParenExpr = '(' expr:Expr ')'
+
+/// `Foo.class`, `int[].class`, `void.class`.
+node ClassLiteralExpr = target:ExprOrType '.' 'class'
+
+node FieldAccessExpr = target:Expr '.' name:Ident
+
+node ArrayAccessExpr = array:Expr '[' index:Expr ']'
+
+/// `m()`, `a.m()`, `a.<T>m()`, `super.m()` (decision 10).
+node MethodCallExpr = (receiver:Expr '.')? TypeArguments? name:Ident Arguments
+
+node Arguments = '(' (arguments:Expr (',' arguments:Expr)*)? ')'
+
+/// `this(...)`, `super(...)`, `<T>this(...)`, and `outer.super(...)`, in a constructor.
+node ConstructorCallExpr = (qualifier:Expr '.')? TypeArguments? (this_kw:'this'
+    | super_kw:'super') Arguments
+
+/// `new A()`, `new <T>A<>()`, `outer.new Inner()`, with an anonymous class body or not. The
+/// direct `TypeArguments` are the constructor's; the class's are in its `ClassType`.
+node NewExpr = (outer:Expr '.')? 'new' TypeArguments? ty:Type Arguments body:ClassBody?
+
+/// `new int[n][]`, `new int[] {1}` (decision 4).
+node ArrayCreationExpr = 'new' element_type:Type DimExpr* dims:Dim* initializer:ArrayInitializer?
+
+/// `[n]` in an array creation, and its annotations.
+node DimExpr = annotations:Annotation* '[' size:Expr ']'
+
+node ArrayInitializer = '{' (elements:VariableInitializer (',' elements:VariableInitializer)*)?
+    ','? '}'
+
+node PrefixExpr = op:PrefixOp operand:Expr
+
+node PostfixExpr = operand:Expr op:PostfixOp
+
+/// Every binary operator but `instanceof` (decision 15).
+node BinaryExpr = lhs:Expr op:BinaryOp rhs:Expr
+
+/// `x instanceof T`, or with a pattern, `x instanceof T t`.
+node InstanceofExpr = expr:Expr 'instanceof' (ty:Type | pattern:Pattern)
+
+node ConditionalExpr = condition:Expr '?' then_expr:Expr ':' else_expr:Expr
+
+node AssignExpr = target:Expr op:AssignOp value:Expr
+
+/// `(T) x`, or `(A & B) x` with an `IntersectionType`.
+node CastExpr = '(' ty:Type ')' expr:Expr
+
+node LambdaExpr = LambdaParameters '->' body:LambdaBody
+
+enum LambdaBody = Expr | Block
+
+/// `(a, b)`, `(int a, int b)`, `()`, or a single name without parentheses (decision 8).
+node LambdaParameters = '('? (parameters:LambdaParameter (',' parameters:LambdaParameter)*)? ')'?
+
+node LambdaParameter = Modifiers? ty:Type? Varargs? name:Ident
+
+/// `a::m`, `String::new`, `int[]::clone`, `List<String>::size`, `super::m` (decision 9).
+node MethodRefExpr = qualifier:ExprOrType '::' TypeArguments? (name:Ident | new_kw:'new')
+
+node SwitchExpr = 'switch' '(' selector:Expr ')' body:SwitchBlock
+
+// ---------------------------------------------------------------------------------------------
+// Recovery.
+
+/// Tokens the parser couldn't place. Each one comes with a diagnostic.
+node Error
+
+/// TEMPORARY, until the declaration grammar lands: the tokens after the imports, unparsed.
+/// It isn't an error, and has no diagnostic. The declaration grammar removes it.
+node Unparsed
