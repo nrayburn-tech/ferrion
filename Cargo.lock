@@ -189,7 +189,9 @@ name = "ferrion_syntax"
 version = "0.0.0"
 dependencies = [
  "ferrion_diagnostics",
+ "ferrion_doc_comments",
  "ferrion_lexer",
+ "ferrion_parser",
 ]
 
 [[package]]

@@ -10,5 +10,11 @@ publish.workspace = true
 ferrion_diagnostics = { path = "../ferrion_diagnostics" }
 ferrion_lexer = { path = "../ferrion_lexer" }
 
+[dev-dependencies]
+# End-to-end tests of the comment map on parsed files. A dev-dependency cycle, which cargo allows:
+# the tests link the same ferrion_syntax as the parser.
+ferrion_doc_comments = { path = "../ferrion_doc_comments" }
+ferrion_parser = { path = "../ferrion_parser" }
+
 [lints]
 workspace = true
