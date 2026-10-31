@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      - run: rustup toolchain install
+      - run: cargo fmt --all --check
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: cargo test --workspace --locked
+
+  deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+
+  scancode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: tools/scancode/requirements.txt
+      - run: sudo apt-get install --yes --no-install-recommends libmagic1 libmagic-mgc
+      - run: python tools/scancode/scan.py
+
+  tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "27"
+          cache: maven
+      - name: Build the javac oracle
+        working-directory: tools/javac-oracle
+        run: mvn --batch-mode --no-transfer-progress package
+      - name: Run the javac oracle
+        run: >-
+          java -jar tools/javac-oracle/target/javac-oracle.jar --release 17
+          tools/javac-oracle/src/test/resources/Sample.java
+          | jq --exit-status '.diagnostics == [] and .tokens[-1][0] == "EOF" and (.tree | length) > 0'
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: Fetch a corpus project
+        run: cargo corpus fetch jedis
