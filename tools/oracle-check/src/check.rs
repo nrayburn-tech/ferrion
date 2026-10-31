@@ -1,5 +1,5 @@
-//! What a comparison with javac is made of, so each phase can add its own (tokens now; tree
-//! positions and diagnostics later) and share the corpus, oracle, cache, and report.
+//! What a comparison with javac is made of, so each phase can add its own (tokens, syntax errors,
+//! and tree positions so far) and share the corpus, oracle, cache, and report.
 
 use ferrion_diagnostics::SourceText;
 use serde::Serialize;
@@ -21,9 +21,16 @@ pub trait Check: Sync {
     /// compared at. `bytes` are the file as read, and `source` is what they decode to.
     fn prepare(&self, source: &SourceText, bytes: &[u8]) -> Self::Prepared;
 
+    /// Whether [`Check::compare`] can give different outcomes for the same javac output at two
+    /// releases. When it can't, a file whose output is the same at several releases, as most are,
+    /// is compared once.
+    fn depends_on_release(&self) -> bool {
+        false
+    }
+
     /// Compares a prepared file with javac's output for it at one release. The output is never a
     /// failure ([`Output::failure`]); those are reported without calling this.
-    fn compare(&self, prepared: &Self::Prepared, output: &Output) -> Outcome;
+    fn compare(&self, prepared: &Self::Prepared, release: u32, output: &Output) -> Outcome;
 }
 
 /// The result of comparing one file at one release.
@@ -32,9 +39,24 @@ pub struct Outcome {
     pub status: Status,
     /// Why Ferrion's result doesn't reproduce the file, if it doesn't.
     pub round_trip: Option<Located>,
-    /// The first lexical error javac reported, when the comparison stopped there.
+    /// The first error javac reported, when the comparison stopped there or left the file out.
     pub javac_error: Option<Located>,
     pub allowed: Counts,
+    /// What javac reported, for checks that summarize it.
+    pub summary: Summary,
+}
+
+/// What javac reported for a file at a release, summarized across a run.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Summary {
+    /// The codes of the errors and warnings javac reported while parsing, in its order.
+    pub codes: Vec<String>,
+    /// Tree nodes, and those javac gave no start or no end position.
+    pub nodes: u64,
+    pub no_start: u64,
+    pub no_end: u64,
+    /// The depth of the deepest tree node, where the compilation unit is 0.
+    pub depth: u32,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -42,10 +64,13 @@ pub enum Status {
     #[default]
     Matched,
     Mismatched(Box<Mismatch>),
-    /// The file isn't UTF-8 or ASCII, so it isn't compared.
+    /// The file isn't compared, for the reason given: it isn't UTF-8 or ASCII, or the check
+    /// leaves out files javac rejects.
     Skipped(String),
     /// javac produced no output for the file.
     JavacFailed(String),
+    /// javac's side ran, but Ferrion has nothing to compare it with yet. Not a failure.
+    NotCompared,
     /// Ferrion panicked.
     Panicked(String),
 }

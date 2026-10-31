@@ -3,8 +3,14 @@
 //!
 //! `oracle tokens` checks the lexer: its tokens and comments must match javac's after the
 //! normalization in docs/design/lexer-oracle-normalization.md, and must reproduce every file byte
-//! for byte. Later phases add their own checks (see [`check::Check`]). `oracle differences` checks
-//! the known differences the corpus doesn't exercise (see [`differences`]).
+//! for byte. `oracle syntax` and `oracle tree` are the parser's checks (see [`syntax`]); until the
+//! parser is plugged in, they run and summarize javac's side only. Later phases add their own
+//! checks (see [`check::Check`]). `oracle differences` checks the known differences the corpus
+//! doesn't exercise (see [`differences`]).
+//!
+//! Besides the corpus projects, the checks can run on OpenJDK's javac tests, named `jdk-tests`
+//! (or `jdk-deep-nesting` for its deep-nesting stress tests only), once `cargo corpus jdk-tests`
+//! has fetched them.
 //!
 //! The corpus is found as `tools/corpus` finds it, and javac's output is cached under
 //! `target/oracle`, or `FERRION_ORACLE_CACHE` if it is set (see [`cache`]).
@@ -17,6 +23,7 @@ mod inventory;
 mod oracle;
 mod report;
 mod run;
+mod syntax;
 mod tokens;
 
 use std::path::PathBuf;
@@ -37,10 +44,13 @@ const USAGE: &str = "\
 usage: oracle <check> [<option>...] [<project>...]
 
 checks:
-  tokens       compare the lexer's tokens and comments with javac's, and check that the
-               tokens reproduce each file
-  differences  check the known differences in tools/oracle-check/differences against their
-               snapshots, at the latest release (takes only --oracle-jar and --bless)
+  tokens        compare the lexer's tokens and comments with javac's, and check that the
+                tokens reproduce each file
+  syntax        compare syntax errors with javac's parsing-phase errors; for now, run javac and
+                summarize its errors (the parser isn't plugged in yet)
+  tree          compare tree positions with javac's; for now, run javac and summarize its trees
+  differences   check the known differences in tools/oracle-check/differences against their
+                snapshots, at the latest release (takes only --oracle-jar and --bless)
 
 options:
   --release <N>        compare every file at release N (repeatable); by default, each file is
@@ -54,9 +64,11 @@ options:
                        the latest
   --bless              differences: write the snapshots that changed instead of failing
 
-Projects default to every corpus project. JAVA_HOME must point to a JDK that supports the
-releases compared, and the projects must be checked out (`cargo corpus checkout`). javac's
-output is cached in target/oracle, or in FERRION_ORACLE_CACHE if it is set.";
+Projects default to every corpus project. `jdk-tests` names OpenJDK's javac tests, each compared
+at the releases its jtreg header compiles it at, and `jdk-deep-nesting` only its deep-nesting
+stress tests; fetch them with `cargo corpus jdk-tests`. JAVA_HOME must point to a JDK that
+supports the releases compared, and the projects must be checked out (`cargo corpus checkout`).
+javac's output is cached in target/oracle, or in FERRION_ORACLE_CACHE if it is set.";
 
 struct Options {
     check: String,
@@ -162,6 +174,8 @@ fn run() -> Result<bool> {
     let options = parse_args(std::env::args().skip(1));
     match options.check.as_str() {
         "tokens" => run_check(&tokens::Tokens, &options),
+        "syntax" => run_check(&syntax::Syntax(syntax::NoParser), &options),
+        "tree" => run_check(&syntax::Tree(syntax::NoParser), &options),
         "differences" => differences::run(options.oracle_jar, options.bless),
         other => usage(&format!("unknown check `{other}`")),
     }
@@ -172,8 +186,28 @@ fn run_check<C: Check>(check: &C, options: &Options) -> Result<bool> {
     let files = if options.files.is_empty() {
         let dirs = Dirs::new()?;
         let projects = Project::load_all(&dirs.projects_file())?;
-        let selected = corpus::select(&projects, &options.projects)?;
-        inventory::collect(&dirs, &selected, &options.releases)?
+        let (jdk, names): (Vec<&String>, Vec<String>) = {
+            let (jdk, names): (Vec<&String>, Vec<&String>) =
+                options.projects.iter().partition(|name| {
+                    *name == inventory::JDK_TESTS || *name == inventory::JDK_DEEP_NESTING
+                });
+            (jdk, names.into_iter().cloned().collect())
+        };
+        let mut files = Vec::new();
+        if jdk.is_empty() || !names.is_empty() {
+            let selected = corpus::select(&projects, &names)?;
+            files = inventory::collect(&dirs, &selected, &options.releases)?;
+        }
+        for name in jdk {
+            let deep = name == inventory::JDK_DEEP_NESTING;
+            let (jdk_files, unsupported) =
+                inventory::collect_jdk_tests(&dirs, name, deep, &options.releases)?;
+            if unsupported > 0 {
+                eprintln!("{name}: left out {unsupported} files compiled only before Java 8");
+            }
+            files.extend(jdk_files);
+        }
+        files
     } else {
         if !options.projects.is_empty() {
             usage("--file and projects can't be combined");

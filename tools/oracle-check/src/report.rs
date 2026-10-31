@@ -17,13 +17,17 @@ pub struct Tally {
     pub files: u64,
     pub matched: u64,
     pub mismatched: u64,
-    /// Files that aren't UTF-8 or ASCII. They aren't failures.
+    /// Files that aren't compared: they aren't UTF-8 or ASCII, or the check leaves out files
+    /// javac rejects. They aren't failures.
     pub skipped: u64,
     pub round_trip_failures: u64,
     pub javac_failures: u64,
     pub panics: u64,
-    /// Comparisons that stopped at a lexical error javac reported. Not failures in themselves.
+    /// Comparisons that stopped at, or left out a file for, an error javac reported. Not
+    /// failures in themselves.
     pub javac_errors: u64,
+    /// javac's side ran, but Ferrion has nothing to compare it with yet. Not failures.
+    pub not_compared: u64,
     #[serde(skip)]
     pub allowed: Counts,
 }
@@ -38,6 +42,7 @@ impl Tally {
             Status::Skipped(_) => self.skipped += 1,
             Status::JavacFailed(_) => self.javac_failures += 1,
             Status::Panicked(_) => self.panics += 1,
+            Status::NotCompared => self.not_compared += 1,
         }
         self.round_trip_failures += u64::from(outcome.round_trip.is_some());
         self.javac_errors += u64::from(outcome.javac_error.is_some());
@@ -53,6 +58,7 @@ impl Tally {
         self.javac_failures += other.javac_failures;
         self.panics += other.panics;
         self.javac_errors += other.javac_errors;
+        self.not_compared += other.not_compared;
         self.allowed.merge(&other.allowed);
     }
 
@@ -72,8 +78,42 @@ pub struct Report {
     /// Results that aren't failures but are worth knowing about: skipped files, and comparisons
     /// that stopped at a lexical error javac reported.
     pub notes: Vec<Failure>,
+    /// What javac reported, for checks that summarize it.
+    pub javac: JavacReport,
     pub timings: TimingsReport,
 }
+
+/// A summary of what javac reported across the run.
+#[derive(Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct JavacReport {
+    /// Each diagnostic code javac reported, most frequent first.
+    pub codes: Vec<CodeCount>,
+    pub nodes: u64,
+    pub nodes_without_start: u64,
+    pub nodes_without_end: u64,
+    /// The files with the deepest trees, deepest first, each at the release where it's deepest.
+    pub deepest: Vec<Depth>,
+}
+
+#[derive(Serialize)]
+pub struct CodeCount {
+    pub code: String,
+    /// How many times javac reported it.
+    pub diagnostics: u64,
+    /// In how many file-releases.
+    pub files: u64,
+}
+
+#[derive(Serialize)]
+pub struct Depth {
+    pub file: String,
+    pub release: u32,
+    pub depth: u32,
+}
+
+/// How many of the deepest trees a report keeps.
+const DEEPEST: usize = 50;
 
 #[derive(Serialize)]
 pub struct Row {
@@ -125,6 +165,9 @@ impl Report {
         let mut rows: BTreeMap<(&str, u32), Tally> = BTreeMap::new();
         let mut failures = Vec::new();
         let mut notes = Vec::new();
+        let mut javac = JavacReport::default();
+        let mut codes: BTreeMap<&str, (u64, u64)> = BTreeMap::new();
+        let mut depths = Vec::new();
         for result in results {
             let file = &files[result.file];
             rows.entry((&file.project, result.release))
@@ -155,7 +198,23 @@ impl Report {
                 }
                 Status::Panicked(message) => failures.push(failure("panic", &start(message), None)),
                 Status::Skipped(reason) => notes.push(failure("skipped", &start(reason), None)),
-                Status::Matched => {}
+                Status::Matched | Status::NotCompared => {}
+            }
+            let summary = &outcome.summary;
+            for (i, code) in summary.codes.iter().enumerate() {
+                let count = codes.entry(code).or_default();
+                count.0 += 1;
+                count.1 += u64::from(!summary.codes[..i].contains(code));
+            }
+            javac.nodes += summary.nodes;
+            javac.nodes_without_start += summary.no_start;
+            javac.nodes_without_end += summary.no_end;
+            if summary.nodes > 0 {
+                depths.push(Depth {
+                    file: file.display.clone(),
+                    release: result.release,
+                    depth: summary.depth,
+                });
             }
             if let Some(round_trip) = &outcome.round_trip {
                 failures.push(failure("round-trip", round_trip, None));
@@ -192,6 +251,22 @@ impl Report {
                 count: total.allowed.get(allowed),
             })
             .collect();
+        javac.codes = codes
+            .into_iter()
+            .map(|(code, (diagnostics, files))| CodeCount {
+                code: code.to_owned(),
+                diagnostics,
+                files,
+            })
+            .collect();
+        javac
+            .codes
+            .sort_by_key(|count| std::cmp::Reverse((count.files, count.diagnostics)));
+        depths.sort_by_key(|depth| std::cmp::Reverse(depth.depth));
+        let mut seen = std::collections::HashSet::new();
+        depths.retain(|depth| seen.insert(depth.file.clone()));
+        depths.truncate(DEEPEST);
+        javac.deepest = depths;
         Report {
             check,
             rows,
@@ -199,6 +274,7 @@ impl Report {
             allowed,
             failures,
             notes,
+            javac,
             timings: TimingsReport {
                 javac_files: timings.javac_files,
                 javac_runs: timings.javac_runs,
@@ -223,9 +299,14 @@ impl Report {
             "panics",
             "javac-errors",
         ];
-        let mut table = vec![header.map(str::to_owned).to_vec()];
+        let not_compared = self.total.not_compared > 0;
+        let mut header = header.map(str::to_owned).to_vec();
+        if not_compared {
+            header.push("not-compared".to_owned());
+        }
+        let mut table = vec![header];
         let row = |project: &str, release: String, t: &Tally| {
-            vec![
+            let mut row = vec![
                 project.to_owned(),
                 release,
                 t.files.to_string(),
@@ -236,7 +317,11 @@ impl Report {
                 t.javac_failures.to_string(),
                 t.panics.to_string(),
                 t.javac_errors.to_string(),
-            ]
+            ];
+            if not_compared {
+                row.push(t.not_compared.to_string());
+            }
+            row
         };
         for r in &self.rows {
             table.push(row(&r.project, r.release.to_string(), &r.tally));
@@ -244,7 +329,7 @@ impl Report {
         if self.rows.len() > 1 {
             table.push(row("total", String::new(), &self.total));
         }
-        let widths: Vec<usize> = (0..header.len())
+        let widths: Vec<usize> = (0..table[0].len())
             .map(|i| table.iter().map(|row| row[i].len()).max().unwrap())
             .collect();
         for row in &table {
@@ -259,6 +344,17 @@ impl Report {
             writeln!(out, "{}", line.trim_end()).unwrap();
         }
 
+        if not_compared {
+            writeln!(
+                out,
+                "\n{} file-releases weren't compared: Ferrion's side of `{}` isn't plugged in \
+                 yet, so only javac's side ran",
+                self.total.not_compared, self.check
+            )
+            .unwrap();
+        }
+        out += &self.javac.text(limit);
+
         if !self.total.allowed.is_empty() {
             let applied: Vec<String> = self
                 .allowed
@@ -272,8 +368,8 @@ impl Report {
         if shown > 0 {
             writeln!(
                 out,
-                "\n{} notes (skipped files, and comparisons that stopped at a lexical error javac \
-                 reported); the first {shown}:",
+                "\n{} notes (skipped files, and files javac reported an error for); the first \
+                 {shown}:",
                 self.notes.len()
             )
             .unwrap();
@@ -316,6 +412,52 @@ impl Report {
     }
 }
 
+impl JavacReport {
+    /// The summary as text, showing the `limit` most frequent codes and deepest trees.
+    fn text(&self, limit: usize) -> String {
+        let mut out = String::new();
+        if !self.codes.is_empty() {
+            let shown = self.codes.len().min(limit);
+            writeln!(
+                out,
+                "\njavac reported {} diagnostic codes; the {shown} in the most file-releases \
+                 (diagnostics, file-releases):",
+                self.codes.len()
+            )
+            .unwrap();
+            for count in &self.codes[..shown] {
+                writeln!(
+                    out,
+                    "  {:<60} {:>7} {:>7}",
+                    count.code, count.diagnostics, count.files
+                )
+                .unwrap();
+            }
+        }
+        if self.nodes > 0 {
+            writeln!(
+                out,
+                "\njavac's trees: {} nodes, {} without a start position, {} without an end position",
+                self.nodes, self.nodes_without_start, self.nodes_without_end
+            )
+            .unwrap();
+            let shown = self.deepest.len().min(limit);
+            if shown > 0 {
+                writeln!(out, "the {shown} deepest:").unwrap();
+            }
+            for depth in &self.deepest[..shown] {
+                writeln!(
+                    out,
+                    "  {:>6}  {} (release {})",
+                    depth.depth, depth.file, depth.release
+                )
+                .unwrap();
+            }
+        }
+        out
+    }
+}
+
 /// A failure message that has no position of its own.
 fn start(message: &str) -> Located {
     Located {
@@ -350,7 +492,7 @@ fn write_sides(out: &mut String, mismatch: &Mismatch) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::check::Outcome;
+    use crate::check::{Outcome, Summary};
 
     fn file(project: &str, path: &str) -> SourceFile {
         SourceFile {
@@ -433,5 +575,68 @@ mod tests {
         assert_eq!(json["total"]["roundTripFailures"], 1);
         assert_eq!(json["rows"][0]["project"], "a");
         assert_eq!(json["failures"][0]["details"]["at"], 0);
+    }
+
+    #[test]
+    fn javac_summaries() {
+        let files = [file("a", "A.java"), file("a", "B.java")];
+        let outcome = |codes: &[&str], depth| Outcome {
+            status: Status::NotCompared,
+            summary: Summary {
+                codes: codes.iter().map(|&code| code.to_owned()).collect(),
+                nodes: 10,
+                no_start: 2,
+                no_end: 1,
+                depth,
+            },
+            ..Outcome::default()
+        };
+        let results = [
+            FileResult {
+                file: 0,
+                release: 8,
+                outcome: outcome(&["compiler.err.expected", "compiler.err.expected"], 4),
+            },
+            FileResult {
+                file: 0,
+                release: 17,
+                outcome: outcome(&[], 5),
+            },
+            FileResult {
+                file: 1,
+                release: 8,
+                outcome: outcome(&["compiler.err.premature.eof", "compiler.err.expected"], 3),
+            },
+        ];
+        let report = Report::new("tree", &files, &results, &Timings::default(), 10);
+        assert_eq!(report.total.not_compared, 3);
+        assert_eq!(report.total.failures(), 0);
+        let codes: Vec<(&str, u64, u64)> = report
+            .javac
+            .codes
+            .iter()
+            .map(|count| (count.code.as_str(), count.diagnostics, count.files))
+            .collect();
+        assert_eq!(
+            codes,
+            [
+                ("compiler.err.expected", 3, 2),
+                ("compiler.err.premature.eof", 1, 1)
+            ]
+        );
+        assert_eq!(report.javac.nodes, 30);
+        assert_eq!(report.javac.nodes_without_start, 6);
+        // Each file once, at the release where it's deepest.
+        let deepest: Vec<(&str, u32, u32)> = report
+            .javac
+            .deepest
+            .iter()
+            .map(|depth| (depth.file.as_str(), depth.release, depth.depth))
+            .collect();
+        assert_eq!(deepest, [("a/A.java", 17, 5), ("a/B.java", 8, 3)]);
+        let text = report.text(10);
+        assert!(text.contains("not-compared"), "{text}");
+        assert!(text.contains("3 file-releases weren't compared"), "{text}");
+        assert!(text.contains("javac reported 2 diagnostic codes"), "{text}");
     }
 }

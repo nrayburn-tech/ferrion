@@ -84,6 +84,41 @@ pub fn collect(dirs: &Dirs, projects: &[&Project], releases: &Releases) -> Resul
     Ok(files)
 }
 
+/// The names that select javac's own test inputs instead of a corpus project: all of them, or
+/// only its deep-nesting stress tests.
+pub const JDK_TESTS: &str = "jdk-tests";
+pub const JDK_DEEP_NESTING: &str = "jdk-deep-nesting";
+
+/// OpenJDK's javac tests (see `corpus::jdk_tests`), as one project named `name`. A file's own
+/// releases are those its test compiles it at; files compiled only before Java 8 are left out,
+/// and their number returned.
+pub fn collect_jdk_tests(
+    dirs: &Dirs,
+    name: &str,
+    deep_only: bool,
+    releases: &Releases,
+) -> Result<(Vec<SourceFile>, usize)> {
+    let tests = corpus::jdk_tests::JdkTests::load(dirs)?;
+    let mut files = Vec::new();
+    let mut unsupported = 0;
+    for input in corpus::jdk_tests::inputs(&tests, dirs)? {
+        if deep_only && !input.deep_nesting {
+            continue;
+        }
+        if input.releases.is_empty() {
+            unsupported += 1;
+            continue;
+        }
+        let display = format!("{name}/{}", input.path);
+        let mut file = read(name, input.file, display, releases, LATEST_RELEASE)?;
+        if *releases == Releases::Own {
+            file.releases = input.releases.into_iter().collect();
+        }
+        files.push(file);
+    }
+    Ok((files, unsupported))
+}
+
 /// Files named on the command line, as one project. Their own release is the latest.
 pub fn collect_paths(paths: &[PathBuf], releases: &Releases) -> Result<Vec<SourceFile>> {
     paths

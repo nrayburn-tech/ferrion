@@ -242,8 +242,10 @@ fn compare<C: Check>(
                         .as_ref()
                         .map(|source| check.prepare(source, &file.bytes));
                     // javac's output is usually the same at every release, and then so is the
-                    // outcome, so each output is compared once.
+                    // outcome, unless the check depends on the release, so each output is compared
+                    // once.
                     let mut compared: Vec<(&str, Outcome)> = Vec::new();
+                    let reuse = !check.depends_on_release();
                     for &release in &file.releases {
                         let outcome = match (&prepared, cache.output_hash(release, &file.key)) {
                             (Err(reason), _) => {
@@ -256,10 +258,11 @@ fn compare<C: Check>(
                                     .unwrap_or_else(|| "javac produced no output".to_owned()),
                             )),
                             (Ok(prepared), Some(hash)) => {
-                                match compared.iter().find(|(seen, _)| *seen == hash) {
+                                match compared.iter().find(|(seen, _)| reuse && *seen == hash) {
                                     Some((_, outcome)) => outcome.clone(),
                                     None => {
-                                        let outcome = compare_output(check, prepared, cache, hash);
+                                        let outcome =
+                                            compare_output(check, prepared, release, cache, hash);
                                         compared.push((hash, outcome.clone()));
                                         outcome
                                     }
@@ -285,6 +288,7 @@ fn compare<C: Check>(
 fn compare_output<C: Check>(
     check: &C,
     prepared: &C::Prepared,
+    release: u32,
     cache: &Cache,
     hash: &str,
 ) -> Outcome {
@@ -292,7 +296,7 @@ fn compare_output<C: Check>(
     match cache.read(hash) {
         Ok(output) => match output.failure() {
             Some(failure) => failed(failure.to_owned()),
-            None => check.compare(prepared, &output),
+            None => check.compare(prepared, release, &output),
         },
         Err(error) => failed(format!("{error:#}")),
     }

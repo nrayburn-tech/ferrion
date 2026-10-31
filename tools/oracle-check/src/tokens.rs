@@ -83,7 +83,7 @@ impl Check for Tokens {
         }
     }
 
-    fn compare(&self, prepared: &Prepared, output: &Output) -> Outcome {
+    fn compare(&self, prepared: &Prepared, _release: u32, output: &Output) -> Outcome {
         let ours = match &prepared.items {
             Ok(items) => items,
             Err(panic) => return Outcome::with_status(Status::Panicked(panic.clone())),
@@ -111,6 +111,7 @@ impl Check for Tokens {
             round_trip: prepared.round_trip.clone(),
             javac_error,
             allowed,
+            summary: Default::default(),
         }
     }
 }
@@ -910,6 +911,7 @@ mod tests {
             start: at,
             position: at,
             end: at,
+            args: Vec::new(),
             message: "message\ndetail".into(),
         };
         let mut output = Output {
@@ -992,7 +994,7 @@ mod tests {
                 ["INT",11,14],["IDENTIFIER",15,16],["SEMI",16,17],["EOF",18,18]],
                 "comments":[],"scanDiagnostics":[]}"#,
         );
-        let outcome = Tokens.compare(&prepared, &output);
+        let outcome = Tokens.compare(&prepared, 17, &output);
         assert_eq!(outcome.round_trip, None);
         let Status::Mismatched(mismatch) = outcome.status else {
             panic!("expected a mismatch, got {:?}", outcome.status);
@@ -1017,7 +1019,7 @@ mod tests {
         };
         let output =
             output(r#"{"tokens":[["CLASS",0,5],["EOF",5,5]],"comments":[],"scanDiagnostics":[]}"#);
-        let outcome = Tokens.compare(&prepared, &output);
+        let outcome = Tokens.compare(&prepared, 17, &output);
         assert_eq!(outcome, Outcome::default());
     }
 
@@ -1031,7 +1033,7 @@ mod tests {
             r#"{"tokens":[["STRINGLITERAL",1,4],["IDENTIFIER",5,6],["EOF",7,7]],"comments":[],
                 "scanDiagnostics":[]}"#,
         );
-        let Status::Mismatched(mismatch) = Tokens.compare(&prepared, &output).status else {
+        let Status::Mismatched(mismatch) = Tokens.compare(&prepared, 17, &output).status else {
             panic!("expected a mismatch");
         };
         assert_eq!((mismatch.line, mismatch.column), (2, 1));
