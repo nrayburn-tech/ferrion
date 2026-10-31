@@ -71,7 +71,9 @@ comment, up to the nearest token that isn't whitespace, which is what "on its ow
 Building it is one pass over the tokens with a stack of open nodes, then a sort of the comments by
 element; nothing recurses. On a generated 20 MB file with 1.2 million comments (5.6 million tokens),
 it took 33 ms in a release build on an Apple M1 Pro, and 38 ms for 2 million comments leading one
-declaration; finding every comment's list again took about 0.2 µs per comment.
+declaration; finding every comment's list again took about 0.2 µs per comment. Over the corpus
+(25,983 files, 191 MB, 290,000 comments), it took 221 ms in all, under 1 ms for any one file, against
+2.2 s for parsing.
 
 ### What consumers build on it
 
@@ -118,6 +120,10 @@ ones included), fields, methods and annotation type elements, constructors, comp
 and enum constants, and for the `TypeDecl` and `Member` enums. javac attaches none to record
 components, initializers, parameters, local variables, statements, imports, or module directives,
 so those have none.
+
+Across the corpus at release 25, `doc_comment()` and javac 27's `DocTrees.getDocComment` agree on
+every one of 120,365 attachments, compared by declaration kind and start. The comparison was run
+once with a script outside the repository; a corpus harness can repeat it.
 
 Where Ferrion differs from javac 27:
 
