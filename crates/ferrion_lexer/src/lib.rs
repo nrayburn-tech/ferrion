@@ -16,6 +16,8 @@
 mod cursor;
 mod escape;
 mod ident;
+#[doc(hidden)]
+pub mod invariants;
 mod kind;
 mod lexer;
 #[cfg(test)]
