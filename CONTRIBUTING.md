@@ -264,21 +264,32 @@ rustup toolchain install && cargo install cargo-fuzz --version 0.13.2 --locked
 - `lex` reads arbitrary bytes as a source file and lexes its text.
 - `lex_fragments` lexes text built from fragments of Java, such as keywords, comment and text block
   delimiters, and Unicode escapes, to reach states that random bytes rarely do.
+- `javadoc` reads arbitrary bytes as the content of a `/** */` comment and parses it with the doc
+  comment parser.
+- `markdown` reads arbitrary bytes as lines of `///` comments (each line gets the `///`) and parses
+  the Markdown doc comments they form.
 
-Both fail when `ferrion_lexer::invariants` finds that the lexer broke a promise its API documents,
-or when the lexer panics. Run a target, reading the committed seeds in `seeds/` and keeping what it
-finds in `corpus/` (ignored by git):
+The lexer targets fail when `ferrion_lexer::invariants` finds that the lexer broke a promise its API
+documents, and the doc comment targets when `ferrion_doc_comments::invariants` finds the same of
+the doc comment parsers. All of them fail when the code under test panics. Run a target, reading the
+committed seeds in `seeds/` and keeping what it finds in `corpus/` (ignored by git):
 
 ```bash
 mkdir -p corpus/lex && cargo fuzz run --sanitizer none --debug-assertions lex corpus/lex seeds/lex -- -dict=java.dict -timeout=10
 ```
 
-The lexer has no unsafe code, so AddressSanitizer is turned off, which makes fuzzing about twice as
-fast; debug assertions catch arithmetic overflow. Pass the same two flags to every `cargo fuzz`
-command, or it rebuilds the targets. Add `-max_total_time=<seconds>` after `--` to stop after a
-while. CI runs every target for 60 seconds (`.github/workflows/fuzz.yml`, called from `ci.yml`), and
-a weekly scheduled run of the same workflow runs each for 30 minutes and keeps its corpus in the
-Actions cache. Crashing inputs are uploaded as the `fuzz-artifacts` artifact.
+The lexer targets use the dictionary `java.dict`, and the doc comment targets `doc_comments.dict`:
+
+```bash
+mkdir -p corpus/javadoc && cargo fuzz run --sanitizer none --debug-assertions javadoc corpus/javadoc seeds/javadoc -- -dict=doc_comments.dict -timeout=10
+```
+
+The code under test has no unsafe code, so AddressSanitizer is turned off, which makes fuzzing
+about twice as fast; debug assertions catch arithmetic overflow. Pass the same two flags to every
+`cargo fuzz` command, or it rebuilds the targets. Add `-max_total_time=<seconds>` after `--` to stop
+after a while. CI runs every target for 60 seconds (`.github/workflows/fuzz.yml`, called from
+`ci.yml`), and a weekly scheduled run of the same workflow runs each for 30 minutes and keeps its
+corpus in the Actions cache. Crashing inputs are uploaded as the `fuzz-artifacts` artifact.
 
 To turn a failure into a regression test:
 
@@ -288,16 +299,17 @@ To turn a failure into a regression test:
    cargo fuzz tmin --sanitizer none --debug-assertions lex artifacts/lex/crash-<hash>
    ```
 
-2. Copy it to `crates/ferrion_lexer/tests/fuzz-regressions/`, under a name that says what it
-   covers. A `lex_fragments` input is a list of fragment numbers, not source text, so write its text
-   there instead:
+2. Copy it, under a name that says what it covers, to `crates/ferrion_lexer/tests/fuzz-regressions/`
+   for a lexer target, or to `crates/ferrion_doc_comments/tests/fuzz-regressions/javadoc/` or
+   `.../markdown/` for a doc comment target. A `lex_fragments` input is a list of fragment numbers,
+   not source text, so write its text there instead:
 
    ```bash
    FERRION_FUZZ_SAVE_TEXT=../crates/ferrion_lexer/tests/fuzz-regressions/<name>.java cargo fuzz run --sanitizer none --debug-assertions lex_fragments artifacts/lex_fragments/<minimized>
    ```
 
-3. Fix the bug. `cargo test --package ferrion_lexer --test fuzz_regressions` runs every file there
-   through the same checks, on the stable toolchain.
+3. Fix the bug. `cargo test --package ferrion_lexer --test fuzz_regressions` (or `--package
+   ferrion_doc_comments`) runs every file there through the same checks, on the stable toolchain.
 
 ## Pull requests
 

@@ -9,6 +9,7 @@ publish = false
 cargo-fuzz = true
 
 [dependencies]
+ferrion_doc_comments = { path = "../crates/ferrion_doc_comments" }
 ferrion_lexer = { path = "../crates/ferrion_lexer" }
 libfuzzer-sys = "0.4.13"
 
@@ -29,6 +30,20 @@ bench = false
 [[bin]]
 name = "lex_fragments"
 path = "fuzz_targets/lex_fragments.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "javadoc"
+path = "fuzz_targets/javadoc.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "markdown"
+path = "fuzz_targets/markdown.rs"
 test = false
 doc = false
 bench = false

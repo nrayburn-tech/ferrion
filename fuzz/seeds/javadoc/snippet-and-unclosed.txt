@@ -1,0 +1,13 @@
+
+ * {@snippet lang=java id='a b' region="r" :
+ *   if (x) {
+ *     y(); // @highlight substring="y"
+ *   }
+ * }
+ * {@snippet : one} {@snippet class=Example region=main}
+ * {@code
+ * @Override
+ * void x() {}
+ * } {@link #m(int count, List<? extends T>[] a) label {x}} {@}
+ * Unclosed {@code x {y}
+ * @param a the a
