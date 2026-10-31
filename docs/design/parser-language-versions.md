@@ -155,18 +155,22 @@ them to users. At releases where it isn't, it is an error. Observed with the ora
 | a type's or type parameter's name (`class var`) | warning at the name | error at the name (`restricted.type.not.allowed`) |
 | a local variable's type (`var x`, `yield x`, `final sealed s`) | warning at the first variable's name | `var`: none; `var[] a` or `var a[]`: `.array` at `var`; `var a, b`: `.compound` at `var`; the others: `.here` at the type |
 | any other type (a field, parameter, result, cast, `catch`, type argument, `instanceof`) | warning at the type | error at the type (`restricted.type.not.allowed.here`) |
-| `var` as a lambda parameter's type | warning at `var` | at 10 the feature above; from 11, nothing |
+| `var` as a lambda parameter's type | warning at `var` | at 10 the feature above; from 11, nothing; with `[]` after the name, `.here` at 10 and `.array` from 11, at the name |
 | an unqualified call `yield(...)` | warning at `yield` | error at `yield` (`invalid.yield`); at the start of a statement it is a `yield` statement |
 
-`var` in a record pattern and after `new` (an error after parsing), and a qualified name ending in
-`var`, get nothing while parsing. For `sealed int x;`, where `sealed` is read as a field's type,
-the restricted-type error comes before the grammar's `<identifier> expected`, as with javac.
+`var` as a top-level record pattern's type (`o instanceof var(int x)`) is a type like the others.
+`var` in a record pattern, as a nested record pattern's type, with type arguments (`var<T>`), and
+after `new` (errors after parsing), and a qualified name ending in `var`, get nothing while
+parsing. For `sealed int x;`, where `sealed` is read as a field's type, the restricted-type error
+comes before the grammar's `<identifier> expected`, as with javac.
 
 `_` is reported at every use, by where it is:
 
 | Where | 8 | 9 to 21 | 22 and later |
 | --- | --- | --- | --- |
 | a local variable, a lambda or `catch` parameter, a pattern variable, or a nested `_` pattern | warning | unnamed variables need 22 | allowed |
+| a local variable with `[]` after its name | warning | unnamed variables need 22 | error (`use.of.underscore.not.allowed.with.brackets`) |
+| a field after the first in its declaration (`int a, _;`) | warning | unnamed variables need 22 | error (`use.of.underscore.not.allowed`) |
 | anywhere else, `case _` included | warning | error (`underscore.as.identifier`) | error (`use.of.underscore.not.allowed.non.variable`) |
 
 `var` and `_` are identifiers in the tree at every release. Whether `var x = 1;` declares an

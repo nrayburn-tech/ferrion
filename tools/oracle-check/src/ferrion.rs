@@ -143,6 +143,23 @@ fn syntax_code(kind: Kind, release: u32) -> &'static str {
         Kind::StatementNotAllowedInRule => "switch.case.unexpected.statement",
         // Never compared (`JavacPhase::Never`).
         Kind::NestingTooDeep => "nesting.too.deep",
+        // The version check's kinds, by its own mapping. Only errors get here.
+        Kind::FeatureNotInRelease { .. }
+        | Kind::PreviewFeature(_)
+        | Kind::RestrictedTypeName { .. }
+        | Kind::RestrictedType { .. }
+        | Kind::VarArray
+        | Kind::VarCompound
+        | Kind::VarWithDeclaredTypes
+        | Kind::UnderscoreIdentifier { .. }
+        | Kind::UnderscoreNotAllowed
+        | Kind::UnderscoreWithBrackets
+        | Kind::YieldCall { .. }
+        | Kind::ExtraneousSemicolon { .. } => {
+            ferrion_parser::version::javac_diagnostic(kind, Severity::Error)
+                .expect("a version diagnostic")
+                .code
+        }
     }
 }
 

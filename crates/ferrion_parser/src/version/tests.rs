@@ -1,12 +1,13 @@
-//! The table's consistency.
+//! The table's consistency, and the check on its own.
 
 use std::collections::HashSet;
 use std::path::Path;
+use std::sync::Arc;
 
 use ferrion_java_version::{LATEST_RELEASE, OLDEST_RELEASE, SUPPORTED_RELEASES};
 
 use super::*;
-use crate::JavacPhase;
+use crate::{JavacPhase, ParseDiagnostic, ParseDiagnosticKind as D, ParseOptions, Severity, parse};
 
 fn read(path: &Path) -> String {
     std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()))
@@ -91,6 +92,18 @@ fn messages() {
         Feature::PrimitivePatterns.message(LATEST_RELEASE),
         "primitive types in patterns are a preview feature, not supported"
     );
+    let d = ParseDiagnostic::error(
+        D::FeatureNotInRelease {
+            feature: Feature::TextBlocks,
+            release: 8,
+        },
+        ferrion_diagnostics::Span::empty(0),
+        0,
+    );
+    assert_eq!(
+        d.message(),
+        "text blocks require Java 15+ (the target is Java 8)"
+    );
 }
 
 #[test]
@@ -140,5 +153,99 @@ fn the_design_document_lists_every_row() {
             row.feature,
             cells[3]
         );
+    }
+}
+
+/// Every row javac reports after parsing is listed in docs/design/parser-error-recovery.md as
+/// reported earlier than javac.
+#[test]
+fn later_rows_are_listed_as_reported_earlier_than_javac() {
+    let doc = read(
+        &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/design/parser-error-recovery.md"),
+    );
+    let section: String = doc
+        .lines()
+        .skip_while(|l| *l != "### Reported earlier than javac")
+        .skip(1)
+        .take_while(|l| !l.starts_with('#'))
+        .collect::<Vec<_>>()
+        .join(" ");
+    for row in FEATURES
+        .iter()
+        .filter(|r| r.javac_phase == JavacPhase::Later)
+    {
+        assert!(
+            section.contains(row.name),
+            "{:?} isn't listed as reported earlier than javac",
+            row.feature
+        );
+    }
+}
+
+/// The check is a loop over the tree's arrays: a deep tree doesn't overflow a small stack.
+#[test]
+fn deep_trees_dont_overflow_the_stack() {
+    let depth = 9_000;
+    let text: Arc<str> = Arc::from(format!(
+        "class A {{ Object x = {}\"\"\"\n  a\"\"\"{}; }}\n",
+        "(".repeat(depth),
+        ")".repeat(depth)
+    ));
+    let parsed = parse(text, ParseOptions { release: 8 });
+    std::thread::Builder::new()
+        .stack_size(64 * 1024)
+        .spawn(move || {
+            let diagnostics = check(&parsed.tree);
+            assert_eq!(diagnostics.len(), 1);
+            assert!(matches!(
+                diagnostics[0].kind,
+                D::FeatureNotInRelease {
+                    feature: Feature::TextBlocks,
+                    ..
+                }
+            ));
+            drop(parsed);
+        })
+        .unwrap()
+        .join()
+        .unwrap();
+}
+
+#[test]
+fn javac_diagnostics() {
+    let javac = |kind, severity| javac_diagnostic(kind, severity).map(|j| j.code);
+    let records = D::FeatureNotInRelease {
+        feature: Feature::Records,
+        release: 11,
+    };
+    assert_eq!(
+        javac_diagnostic(records, Severity::Error),
+        Some(Feature::Records.row().javac)
+    );
+    let var = D::RestrictedTypeName {
+        name: RestrictedName::Var,
+        release: 9,
+    };
+    assert_eq!(
+        javac(var, Severity::Warning),
+        Some("restricted.type.not.allowed")
+    );
+    let sealed = D::RestrictedType {
+        name: RestrictedName::Sealed,
+        release: 16,
+    };
+    assert_eq!(
+        javac(sealed, Severity::Warning),
+        Some("restricted.type.not.allowed.preview")
+    );
+    let underscore = D::UnderscoreIdentifier { release: 22 };
+    assert_eq!(
+        javac(underscore, Severity::Error),
+        Some("use.of.underscore.not.allowed.non.variable")
+    );
+    assert_eq!(javac(D::NotAStatement, Severity::Error), None);
+    for kind in [records, var, sealed, underscore, D::VarArray] {
+        assert!(kind.is_version());
+        assert!(javac(kind, Severity::Error).is_some());
     }
 }

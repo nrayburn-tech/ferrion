@@ -572,7 +572,6 @@ doesn't. Category: javac error recovery, unless noted.
 | [`syntax-wrong-receiver.java`](../../tools/oracle-check/differences/syntax-wrong-receiver.java) | `A this.x` as a parameter | `wrong.receiver` | `expected3` |
 | [`syntax-parenthesized-comparison-before-name.java`](../../tools/oracle-check/differences/syntax-parenthesized-comparison-before-name.java) | `(a < b) c` | `expected2` | `expected`, one token later |
 | [`syntax-lambda-parameter-annotated-after-type.java`](../../tools/oracle-check/differences/syntax-lambda-parameter-annotated-after-type.java) | `(int @A x) -> 1` | `expected` | `illegal.start.of.type` |
-| [`syntax-permits-without-sealed.java`](../../tools/oracle-check/differences/syntax-permits-without-sealed.java) | `class A permits B {}` at 16 | `expected` (`'{'`), since `permits` isn't a keyword before 17 | `invalid.permits.clause`; the version check is to report it |
 | [`syntax-final-record-pattern.java`](../../tools/oracle-check/differences/syntax-final-record-pattern.java) | `case final R(var x)` | `mod.not.allowed.here` | none |
 
 The token check's two known differences in javac's tests are listed in `known-files.txt`:
@@ -584,11 +583,12 @@ and `diags/examples/TextBlockOpenDelimiter.java` shows
 ## Pending
 
 `cargo test` runs both comparisons on every snapshot case; the comparisons that don't match yet
-are listed, each with its reason, in `PENDING` in `tools/oracle-check/src/ferrion/tests.rs`, and
-the test fails when a listed one starts to match. All of them wait for the version check (W4):
-the version errors of `implicit-class-members.java`, `implicit-classes-and-module-imports.java`,
-`records.java`, `sealed-and-text-blocks.java`, and `switches-and-patterns.java`, and the
-restricted names of `var-and-underscore.java`. Every tree comparison matches.
+would be listed, each with its reason, in `PENDING` in `tools/oracle-check/src/ferrion/tests.rs`,
+and the test fails when a listed one starts to match. None is pending: the version check (W4)
+reports the version errors of `implicit-class-members.java`,
+`implicit-classes-and-module-imports.java`, `records.java`, `sealed-and-text-blocks.java`, and
+`switches-and-patterns.java`, and the restricted names of `var-and-underscore.java`, and every
+syntax and tree comparison matches.
 
 ## Running it
 

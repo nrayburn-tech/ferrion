@@ -103,3 +103,6 @@ CompilationUnit 0..290
       RBrace 288..289 "}"
   LineTerminator 289..290 "\n"
   Eof 290..290 ""
+warning 157..163 @157 RestrictedType { name: Sealed, release: 8 }: 'sealed' can't be used as a type here from Java 17
+warning 203..209 @203 RestrictedType { name: Record, release: 8 }: 'record' can't be used as a type here from Java 16
+warning 280..286 @280 RestrictedTypeName { name: Sealed, release: 8 }: 'sealed' can't name a type from Java 17

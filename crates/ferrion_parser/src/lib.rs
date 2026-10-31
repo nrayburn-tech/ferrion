@@ -38,7 +38,7 @@ pub struct ParseOptions {
 pub struct Parse {
     /// The tree, holding every token of the text. Immutable, `Send`, and `Sync`.
     pub tree: SyntaxTree,
-    /// Lexical and syntax errors, in source order.
+    /// Lexical and syntax errors, and the version check's errors and warnings, in source order.
     pub diagnostics: Vec<ParseDiagnostic>,
 }
 
@@ -51,10 +51,11 @@ pub fn parse(text: Arc<str>, options: ParseOptions) -> Parse {
     grammar::compilation_unit(&mut p);
     let (events, mut diagnostics) = p.finish();
     diagnostics.extend(lexed.errors.iter().map(ParseDiagnostic::lexical));
-    diagnostics.sort_by_key(|d| d.span.start);
     let lex_errors: Vec<_> = lexed.errors.iter().map(|e| e.span).collect();
     let tree =
         builder::Builder::new(text.clone(), lexed.tokens, &lex_errors, release).build(events);
+    diagnostics.extend(version::check(&tree));
+    diagnostics.sort_by_key(|d| d.span.start);
     Parse { tree, diagnostics }
 }
 

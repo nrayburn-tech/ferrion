@@ -87,3 +87,4 @@ CompilationUnit 0..137
       RBrace 135..136 "}"
   LineTerminator 136..137 "\n"
   Eof 137..137 ""
+warning 57..62 @57 YieldCall { release: 13 }: a method named 'yield' must be called with a qualifier from Java 14
