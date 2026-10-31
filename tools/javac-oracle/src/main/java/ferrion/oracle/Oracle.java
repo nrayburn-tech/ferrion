@@ -21,8 +21,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
@@ -46,8 +48,8 @@ import javax.tools.ToolProvider;
  * </ul>
  *
  * <p>Tokens, comments, and scan diagnostics come from scanning the file on its own, so they don't
- * depend on how the parser recovers from errors. The file is only parsed when diagnostics or the
- * tree are asked for.
+ * depend on how the parser recovers from errors. The file is only parsed, in a javac task of its
+ * own, when diagnostics or the tree are asked for.
  */
 final class Oracle {
   private Oracle() {}
@@ -86,12 +88,11 @@ final class Oracle {
     if (sections.contains(Section.TOKENS)
         || sections.contains(Section.COMMENTS)
         || sections.contains(Section.SCAN_DIAGNOSTICS)) {
-      // A task of its own, so the parse below reports the scanner's errors too.
-      writeScan(json, newTask(file, release, new DiagnosticCollector<>()), file, source, sections);
+      writeScan(json, scanTask(release), file, source, sections);
     }
     if (sections.contains(Section.DIAGNOSTICS) || sections.contains(Section.TREE)) {
       DiagnosticCollector<JavaFileObject> collector = new DiagnosticCollector<>();
-      JavacTask task = newTask(file, release, collector);
+      JavacTask task = newTask(List.of(file), release, collector);
       Iterable<? extends CompilationUnitTree> units = task.parse();
       if (sections.contains(Section.DIAGNOSTICS)) {
         json.name(Section.DIAGNOSTICS.json).beginArray();
@@ -117,8 +118,21 @@ final class Oracle {
     return EnumSet.allOf(Section.class);
   }
 
+  private static final Map<String, JavacTask> SCAN_TASKS = new HashMap<>();
+
+  /**
+   * The task files are scanned with, one per release. Setting up a task for a release takes longer
+   * than scanning most files, and scanning leaves nothing behind in the task: each scan has its own
+   * diagnostic handler. It's a task of its own, so the parse in a file's own task still reports the
+   * scanner's errors.
+   */
+  private static JavacTask scanTask(String release) {
+    return SCAN_TASKS.computeIfAbsent(
+        release, r -> newTask(List.of(), r, new DiagnosticCollector<>()));
+  }
+
   private static JavacTask newTask(
-      JavaFileObject file, String release, DiagnosticCollector<JavaFileObject> collector) {
+      List<JavaFileObject> files, String release, DiagnosticCollector<JavaFileObject> collector) {
     return (JavacTask)
         ToolProvider.getSystemJavaCompiler()
             .getTask(
@@ -127,7 +141,7 @@ final class Oracle {
                 collector,
                 List.of("--release", release, "-proc:none", "-Xlint:-options"),
                 null,
-                List.of(file));
+                files);
   }
 
   private static void writeScan(
