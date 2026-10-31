@@ -1,0 +1,34 @@
+[package]
+name = "ferrion_fuzz"
+version = "0.0.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+ferrion_lexer = { path = "../crates/ferrion_lexer" }
+libfuzzer-sys = "0.4.13"
+
+# The fuzz targets need a nightly toolchain, so they have their own workspace instead of being
+# members of the root one.
+[workspace]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "lex"
+path = "fuzz_targets/lex.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "lex_fragments"
+path = "fuzz_targets/lex_fragments.rs"
+test = false
+doc = false
+bench = false

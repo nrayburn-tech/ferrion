@@ -1,0 +1,2 @@
+# Seed inputs are bytes: line endings must not be converted.
+seeds/** -text
