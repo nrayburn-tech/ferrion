@@ -10,6 +10,7 @@ use std::borrow::Cow;
 
 use ferrion_diagnostics::{LineCol, LineIndex, SourceText};
 
+use crate::ident::is_ignorable;
 use crate::{LexError, Lexed, Span, Token, TokenKind, cooked_text, lex};
 
 /// Reads `bytes` as a source file, and checks [`SourceText::to_bytes`] and [`check_text`]. Bytes
@@ -39,7 +40,24 @@ pub fn check_text(text: &str) -> Result<(), String> {
 pub fn check(text: &str, lexed: &Lexed) -> Result<(), String> {
     let len = u32::try_from(text.len()).map_err(|_| "the text is too long".to_owned())?;
     check_tokens(text, len, &lexed.tokens)?;
-    check_errors(text, len, &lexed.errors)
+    check_errors(text, len, &lexed.errors)?;
+    check_error_tokens(&lexed.tokens, &lexed.errors)
+}
+
+/// Checks that every [`TokenKind::Error`] token has an error that overlaps it.
+fn check_error_tokens(tokens: &[Token], errors: &[LexError]) -> Result<(), String> {
+    for (i, token) in tokens.iter().enumerate() {
+        let Span { start, end } = token.span;
+        let reported = errors.iter().any(|error| {
+            error.span.start < end && start < error.span.end.max(error.span.start + 1)
+        });
+        if token.kind == TokenKind::Error && !reported {
+            return Err(format!(
+                "token {i}, {token:?}: an Error token with no error"
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn check_tokens(text: &str, len: u32, tokens: &[Token]) -> Result<(), String> {
@@ -115,19 +133,27 @@ fn check_token(
     escapes: &[Escape],
     cooked: Cow<'_, str>,
 ) -> Result<(), String> {
-    // TODO: check Error tokens too once the lexer replaces the placeholder, whose cooked_text
-    // doesn't translate escapes.
-    if token.kind != TokenKind::Error {
-        let raw = &text[token.span.range()];
-        match translate(raw, token.span.start, escapes) {
-            Some(expected) if expected != cooked => {
-                return Err(format!("cooked text is {cooked:?}, not {expected:?}"));
-            }
-            _ => {}
+    let raw = &text[token.span.range()];
+    // Names compare without identifier-ignorable characters (JLS §3.8), so their cooked text
+    // leaves those out.
+    let is_name = token.kind == TokenKind::Identifier
+        || token
+            .kind
+            .fixed_text()
+            .is_some_and(|text| text.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_'));
+    if let Some(mut expected) = translate(raw, token.span.start, escapes) {
+        if is_name {
+            expected.retain(|c| !is_ignorable(c));
         }
-        if escapes.is_empty() && matches!(cooked, Cow::Owned(_)) {
-            return Err("cooked text is owned, but the token has no Unicode escapes".to_owned());
+        if expected != cooked {
+            return Err(format!("cooked text is {cooked:?}, not {expected:?}"));
         }
+    }
+    if escapes.is_empty()
+        && matches!(cooked, Cow::Owned(_))
+        && !(is_name && raw.contains(is_ignorable))
+    {
+        return Err("cooked text is owned, but the token has no Unicode escapes".to_owned());
     }
     let cooked = cooked.as_ref();
 
@@ -141,6 +167,8 @@ fn check_token(
         };
     }
     let fits = match token.kind {
+        // A raw SUB that ends the text is whitespace too (JLS §3.5).
+        TokenKind::Whitespace if raw == "\x1A" => token.span.end as usize == text.len(),
         TokenKind::Whitespace => cooked.chars().all(|c| matches!(c, ' ' | '\t' | '\x0C')),
         TokenKind::LineTerminator => matches!(cooked, "\n" | "\r" | "\r\n"),
         TokenKind::LineComment => cooked.starts_with("//") && !cooked.contains(['\r', '\n']),
@@ -456,7 +484,26 @@ mod tests {
             (Error, 1),
             (Identifier, 5),
         ]);
+        check_tokens(text, text.len() as u32, &lexed.tokens).unwrap();
+    }
+
+    #[test]
+    fn rejects_error_tokens_without_errors() {
+        let text = "#";
+        let mut lexed = lexed(&[(Error, 1)]);
+        rejects(text, &lexed, "an Error token with no error");
+        lexed.errors.push(LexError {
+            kind: crate::LexErrorKind::IllegalCharacter,
+            span: Span::new(0, 1),
+        });
         check(text, &lexed).unwrap();
+    }
+
+    #[test]
+    fn names_leave_out_ignorable_characters() {
+        let text = "a\u{AD}b";
+        let token = token(Identifier, 0, text.len() as u32);
+        check_token(text, token, &[], Cow::Owned("ab".to_owned())).unwrap();
     }
 
     #[test]
