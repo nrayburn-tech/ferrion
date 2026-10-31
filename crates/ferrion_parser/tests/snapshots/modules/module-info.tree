@@ -1,0 +1,265 @@
+CompilationUnit 0..588
+  ImportDecl 0..34
+    ImportKw 0..6 "import"
+    Whitespace 6..7 " "
+    Name 7..33
+      Name 7..20
+        Name 7..16
+          Name 7..11
+            Identifier 7..11 "java"
+          Dot 11..12 "."
+          Identifier 12..16 "util"
+        Dot 16..17 "."
+        Identifier 17..20 "spi"
+      Dot 20..21 "."
+      Identifier 21..33 "ToolProvider"
+    Semi 33..34 ";"
+  LineTerminator 34..35 "\n"
+  LineTerminator 35..36 "\n"
+  DocComment 36..54 "/** The module. */"
+  LineTerminator 54..55 "\n"
+  ModuleDecl 55..587
+    Annotation 55..66
+      At 55..56 "@"
+      Name 56..66
+        Identifier 56..66 "Deprecated"
+    LineTerminator 66..67 "\n"
+    ModuleKw 67..73 "module"
+    Whitespace 73..74 " "
+    Name 74..89
+      Name 74..85
+        Name 74..77
+          Identifier 74..77 "com"
+        Dot 77..78 "."
+        Identifier 78..85 "example"
+      Dot 85..86 "."
+      Identifier 86..89 "app"
+    Whitespace 89..90 " "
+    LBrace 90..91 "{"
+    LineTerminator 91..92 "\n"
+    Whitespace 92..94 "  "
+    RequiresDirective 94..113
+      RequiresKw 94..102 "requires"
+      Whitespace 102..103 " "
+      Name 103..112
+        Name 103..107
+          Identifier 103..107 "java"
+        Dot 107..108 "."
+        Identifier 108..112 "base"
+      Semi 112..113 ";"
+    LineTerminator 113..114 "\n"
+    Whitespace 114..116 "  "
+    RequiresDirective 116..152
+      RequiresKw 116..124 "requires"
+      Whitespace 124..125 " "
+      TransitiveKw 125..135 "transitive"
+      Whitespace 135..136 " "
+      Name 136..151
+        Name 136..147
+          Name 136..139
+            Identifier 136..139 "com"
+          Dot 139..140 "."
+          Identifier 140..147 "example"
+        Dot 147..148 "."
+        Identifier 148..151 "api"
+      Semi 151..152 ";"
+    LineTerminator 152..153 "\n"
+    Whitespace 153..155 "  "
+    RequiresDirective 155..192
+      RequiresKw 155..163 "requires"
+      Whitespace 163..164 " "
+      StaticKw 164..170 "static"
+      Whitespace 170..171 " "
+      Name 171..191
+        Name 171..182
+          Name 171..174
+            Identifier 171..174 "com"
+          Dot 174..175 "."
+          Identifier 175..182 "example"
+        Dot 182..183 "."
+        Identifier 183..191 "optional"
+      Semi 191..192 ";"
+    LineTerminator 192..193 "\n"
+    Whitespace 193..195 "  "
+    RequiresDirective 195..239
+      RequiresKw 195..203 "requires"
+      Whitespace 203..204 " "
+      StaticKw 204..210 "static"
+      Whitespace 210..211 " "
+      TransitiveKw 211..221 "transitive"
+      Whitespace 221..222 " "
+      Name 222..238
+        Name 222..233
+          Name 222..225
+            Identifier 222..225 "com"
+          Dot 225..226 "."
+          Identifier 226..233 "example"
+        Dot 233..234 "."
+        Identifier 234..238 "both"
+      Semi 238..239 ";"
+    LineTerminator 239..240 "\n"
+    Whitespace 240..242 "  "
+    RequiresDirective 242..262
+      RequiresKw 242..250 "requires"
+      Whitespace 250..251 " "
+      Name 251..261
+        Identifier 251..261 "transitive"
+      Semi 261..262 ";"
+    LineTerminator 262..263 "\n"
+    Whitespace 263..265 "  "
+    RequiresDirective 265..290
+      RequiresKw 265..273 "requires"
+      Whitespace 273..274 " "
+      Name 274..289
+        Name 274..284
+          Identifier 274..284 "transitive"
+        Dot 284..285 "."
+        Identifier 285..289 "name"
+      Semi 289..290 ";"
+    LineTerminator 290..291 "\n"
+    Whitespace 291..293 "  "
+    ExportsDirective 293..321
+      ExportsKw 293..300 "exports"
+      Whitespace 300..301 " "
+      Name 301..320
+        Name 301..316
+          Name 301..312
+            Name 301..304
+              Identifier 301..304 "com"
+            Dot 304..305 "."
+            Identifier 305..312 "example"
+          Dot 312..313 "."
+          Identifier 313..316 "app"
+        Dot 316..317 "."
+        Identifier 317..320 "api"
+      Semi 320..321 ";"
+    LineTerminator 321..322 "\n"
+    Whitespace 322..324 "  "
+    ExportsDirective 324..395
+      ExportsKw 324..331 "exports"
+      Whitespace 331..332 " "
+      Name 332..356
+        Name 332..347
+          Name 332..343
+            Name 332..335
+              Identifier 332..335 "com"
+            Dot 335..336 "."
+            Identifier 336..343 "example"
+          Dot 343..344 "."
+          Identifier 344..347 "app"
+        Dot 347..348 "."
+        Identifier 348..356 "internal"
+      Whitespace 356..357 " "
+      ToKw 357..359 "to"
+      Whitespace 359..360 " "
+      Name 360..376
+        Name 360..371
+          Name 360..363
+            Identifier 360..363 "com"
+          Dot 363..364 "."
+          Identifier 364..371 "example"
+        Dot 371..372 "."
+        Identifier 372..376 "test"
+      Comma 376..377 ","
+      Whitespace 377..378 " "
+      Name 378..394
+        Name 378..389
+          Name 378..381
+            Identifier 378..381 "com"
+          Dot 381..382 "."
+          Identifier 382..389 "example"
+        Dot 389..390 "."
+        Identifier 390..394 "tool"
+      Semi 394..395 ";"
+    LineTerminator 395..396 "\n"
+    Whitespace 396..398 "  "
+    OpensDirective 398..426
+      OpensKw 398..403 "opens"
+      Whitespace 403..404 " "
+      Name 404..425
+        Name 404..419
+          Name 404..415
+            Name 404..407
+              Identifier 404..407 "com"
+            Dot 407..408 "."
+            Identifier 408..415 "example"
+          Dot 415..416 "."
+          Identifier 416..419 "app"
+        Dot 419..420 "."
+        Identifier 420..425 "model"
+      Semi 425..426 ";"
+    LineTerminator 426..427 "\n"
+    Whitespace 427..429 "  "
+    OpensDirective 429..486
+      OpensKw 429..434 "opens"
+      Whitespace 434..435 " "
+      Name 435..460
+        Name 435..450
+          Name 435..446
+            Name 435..438
+              Identifier 435..438 "com"
+            Dot 438..439 "."
+            Identifier 439..446 "example"
+          Dot 446..447 "."
+          Identifier 447..450 "app"
+        Dot 450..451 "."
+        Identifier 451..460 "resources"
+      Whitespace 460..461 " "
+      ToKw 461..463 "to"
+      Whitespace 463..464 " "
+      Name 464..485
+        Name 464..475
+          Name 464..467
+            Identifier 464..467 "com"
+          Dot 467..468 "."
+          Identifier 468..475 "example"
+        Dot 475..476 "."
+        Identifier 476..485 "framework"
+      Semi 485..486 ";"
+    LineTerminator 486..487 "\n"
+    Whitespace 487..489 "  "
+    UsesDirective 489..507
+      UsesKw 489..493 "uses"
+      Whitespace 493..494 " "
+      Name 494..506
+        Identifier 494..506 "ToolProvider"
+      Semi 506..507 ";"
+    LineTerminator 507..508 "\n"
+    Whitespace 508..510 "  "
+    ProvidesDirective 510..585
+      ProvidesKw 510..518 "provides"
+      Whitespace 518..519 " "
+      Name 519..531
+        Identifier 519..531 "ToolProvider"
+      Whitespace 531..532 " "
+      WithKw 532..536 "with"
+      Whitespace 536..537 " "
+      Name 537..557
+        Name 537..552
+          Name 537..548
+            Name 537..540
+              Identifier 537..540 "com"
+            Dot 540..541 "."
+            Identifier 541..548 "example"
+          Dot 548..549 "."
+          Identifier 549..552 "app"
+        Dot 552..553 "."
+        Identifier 553..557 "Tool"
+      Comma 557..558 ","
+      Whitespace 558..559 " "
+      Name 559..584
+        Name 559..574
+          Name 559..570
+            Name 559..562
+              Identifier 559..562 "com"
+            Dot 562..563 "."
+            Identifier 563..570 "example"
+          Dot 570..571 "."
+          Identifier 571..574 "app"
+        Dot 574..575 "."
+        Identifier 575..584 "OtherTool"
+      Semi 584..585 ";"
+    LineTerminator 585..586 "\n"
+    RBrace 586..587 "}"
+  LineTerminator 587..588 "\n"
+  Eof 588..588 ""

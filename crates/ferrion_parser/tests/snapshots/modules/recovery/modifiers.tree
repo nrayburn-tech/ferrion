@@ -1,0 +1,16 @@
+CompilationUnit 0..19 [error]
+  ModuleDecl 0..18 [error]
+    Error 0..6 [error]
+      Modifiers 0..6
+        PublicKw 0..6 "public"
+    Whitespace 6..7 " "
+    ModuleKw 7..13 "module"
+    Whitespace 13..14 " "
+    Name 14..15
+      Identifier 14..15 "m"
+    Whitespace 15..16 " "
+    LBrace 16..17 "{"
+    RBrace 17..18 "}"
+  LineTerminator 18..19 "\n"
+  Eof 19..19 ""
+error 7..13 @7 ModifierNotAllowed: modifiers aren't allowed here
