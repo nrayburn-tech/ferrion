@@ -162,14 +162,16 @@ one as a keyword only where the grammar has that keyword and the lookahead confi
 | `module`, `open` | at the start of a module declaration, after imports and annotations | `open`? `module` name `{` |
 | `requires`, `transitive`, `exports`, `opens`, `to`, `uses`, `provides`, `with` | in a module declaration's body | position in the directive |
 | `module` | in `import module M;` | followed by a name, not `.` |
-| `record` | where a type declaration can start | followed by a name and `(` or `<` |
-| `sealed`, `non-sealed` | in the modifiers of a class or interface | followed by more modifiers or a class or interface keyword |
+| `record` | where a type declaration can start | followed by a name, at every release: `record r;` is a record missing its header |
+| `sealed`, `non-sealed` | in modifiers | followed by `public`, `protected`, `private`, `abstract`, `static`, `final`, `strictfp`, `sealed`, `non-sealed`, an annotation, `class`, `interface`, or `enum` |
 | `permits` | in a class or interface header | after the name, type parameters, and `extends` or `implements` |
 | `yield` | at the start of a statement, at 14+ | not followed by `=`, `.`, `[`, `++`, or `--` (exact set settled with the oracle) |
 | `when` | after a `case` pattern | followed by an expression |
 
-`non-sealed` is three adjacent tokens with no trivia between them; with trivia (`non - sealed`) it
-is an expression. Where the parser reads an identifier as a keyword, it records the keyword kind in
+The lookahead for `record` and `sealed` is javac's, found with the oracle, so
+that Ferrion reads invalid code as javac does and reports the same first error. `non-sealed` is
+three adjacent tokens with no trivia between them; with trivia (`non - sealed`) it is an
+expression. Where the parser reads an identifier as a keyword, it records the keyword kind in
 the tree's token kinds (see [syntax tree](parser-syntax-tree.md#contextual-keywords)). `var` and `_`
 are never recorded as keywords, as explained above.
 

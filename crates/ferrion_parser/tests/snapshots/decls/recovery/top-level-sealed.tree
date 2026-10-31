@@ -1,0 +1,27 @@
+CompilationUnit 0..32 [error]
+  Error 0..6 [error]
+    SealedKw 0..6 "sealed"
+  Whitespace 6..7 " "
+  RecordDecl 7..20
+    RecordKw 7..13 "record"
+    Whitespace 13..14 " "
+    Identifier 14..15 "R"
+    RecordHeader 15..17
+      LParen 15..16 "("
+      RParen 16..17 ")"
+    Whitespace 17..18 " "
+    ClassBody 18..20
+      LBrace 18..19 "{"
+      RBrace 19..20 "}"
+  LineTerminator 20..21 "\n"
+  ClassDecl 21..31
+    ClassKw 21..26 "class"
+    Whitespace 26..27 " "
+    Identifier 27..28 "A"
+    Whitespace 28..29 " "
+    ClassBody 29..31
+      LBrace 29..30 "{"
+      RBrace 30..31 "}"
+  LineTerminator 31..32 "\n"
+  Eof 32..32 ""
+error 0..6 @0 ExpectedDeclaration(Identifier): unexpected name: expected a declaration

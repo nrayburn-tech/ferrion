@@ -1,0 +1,201 @@
+CompilationUnit 0..287
+  ClassDecl 0..286
+    Modifiers 0..275
+      Annotation 0..7
+        At 0..1 "@"
+        Name 1..7
+          Identifier 1..7 "Marker"
+      LineTerminator 7..8 "\n"
+      Annotation 8..18
+        At 8..9 "@"
+        Name 9..15
+          Identifier 9..15 "Single"
+        AnnotationArguments 15..18
+          LParen 15..16 "("
+          LiteralExpr 16..17
+            IntLiteral 16..17 "1"
+          RParen 17..18 ")"
+      LineTerminator 18..19 "\n"
+      Annotation 19..43
+        At 19..20 "@"
+        Name 20..25
+          Identifier 20..25 "Pairs"
+        AnnotationArguments 25..43
+          LParen 25..26 "("
+          ElementValuePair 26..31
+            Identifier 26..27 "a"
+            Whitespace 27..28 " "
+            Eq 28..29 "="
+            Whitespace 29..30 " "
+            LiteralExpr 30..31
+              IntLiteral 30..31 "1"
+          Comma 31..32 ","
+          Whitespace 32..33 " "
+          ElementValuePair 33..42
+            Identifier 33..34 "b"
+            Whitespace 34..35 " "
+            Eq 35..36 "="
+            Whitespace 36..37 " "
+            LiteralExpr 37..42
+              StringLiteral 37..42 "\"two\""
+          RParen 42..43 ")"
+      LineTerminator 43..44 "\n"
+      Annotation 44..62
+        At 44..45 "@"
+        Name 45..51
+          Identifier 45..51 "Arrays"
+        AnnotationArguments 51..62
+          LParen 51..52 "("
+          ElementValueArray 52..61
+            LBrace 52..53 "{"
+            LiteralExpr 53..54
+              IntLiteral 53..54 "1"
+            Comma 54..55 ","
+            Whitespace 55..56 " "
+            LiteralExpr 56..57
+              IntLiteral 56..57 "2"
+            Comma 57..58 ","
+            Whitespace 58..59 " "
+            LiteralExpr 59..60
+              IntLiteral 59..60 "3"
+            RBrace 60..61 "}"
+          RParen 61..62 ")"
+      LineTerminator 62..63 "\n"
+      Annotation 63..78
+        At 63..64 "@"
+        Name 64..74
+          Identifier 64..74 "EmptyArray"
+        AnnotationArguments 74..78
+          LParen 74..75 "("
+          ElementValueArray 75..77
+            LBrace 75..76 "{"
+            RBrace 76..77 "}"
+          RParen 77..78 ")"
+      LineTerminator 78..79 "\n"
+      Annotation 79..102
+        At 79..80 "@"
+        Name 80..93
+          Identifier 80..93 "TrailingComma"
+        AnnotationArguments 93..102
+          LParen 93..94 "("
+          ElementValueArray 94..101
+            LBrace 94..95 "{"
+            LiteralExpr 95..96
+              IntLiteral 95..96 "1"
+            Comma 96..97 ","
+            Whitespace 97..98 " "
+            LiteralExpr 98..99
+              IntLiteral 98..99 "2"
+            Comma 99..100 ","
+            RBrace 100..101 "}"
+          RParen 101..102 ")"
+      LineTerminator 102..103 "\n"
+      Annotation 103..118
+        At 103..104 "@"
+        Name 104..113
+          Identifier 104..113 "OnlyComma"
+        AnnotationArguments 113..118
+          LParen 113..114 "("
+          ElementValueArray 114..117
+            LBrace 114..115 "{"
+            Comma 115..116 ","
+            RBrace 116..117 "}"
+          RParen 117..118 ")"
+      LineTerminator 118..119 "\n"
+      Annotation 119..135
+        At 119..120 "@"
+        Name 120..126
+          Identifier 120..126 "Nested"
+        AnnotationArguments 126..135
+          LParen 126..127 "("
+          Annotation 127..134
+            At 127..128 "@"
+            Name 128..134
+              Identifier 128..134 "Marker"
+          RParen 134..135 ")"
+      LineTerminator 135..136 "\n"
+      Annotation 136..171
+        At 136..137 "@"
+        Name 137..151
+          Identifier 137..151 "NestedInArrays"
+        AnnotationArguments 151..171
+          LParen 151..152 "("
+          ElementValueArray 152..170
+            LBrace 152..153 "{"
+            Annotation 153..155
+              At 153..154 "@"
+              Name 154..155
+                Identifier 154..155 "A"
+            Comma 155..156 ","
+            Whitespace 156..157 " "
+            Annotation 157..169
+              At 157..158 "@"
+              Name 158..159
+                Identifier 158..159 "B"
+              AnnotationArguments 159..169
+                LParen 159..160 "("
+                ElementValuePair 160..168
+                  Identifier 160..161 "x"
+                  Whitespace 161..162 " "
+                  Eq 162..163 "="
+                  Whitespace 163..164 " "
+                  ElementValueArray 164..168
+                    LBrace 164..165 "{"
+                    Annotation 165..167
+                      At 165..166 "@"
+                      Name 166..167
+                        Identifier 166..167 "C"
+                    RBrace 167..168 "}"
+                RParen 168..169 ")"
+            RBrace 169..170 "}"
+          RParen 170..171 ")"
+      LineTerminator 171..172 "\n"
+      Annotation 172..186
+        At 172..173 "@"
+        Name 173..186
+          Name 173..176
+            Name 173..174
+              Identifier 173..174 "a"
+            Dot 174..175 "."
+            Identifier 175..176 "b"
+          Dot 176..177 "."
+          Identifier 177..186 "Qualified"
+      LineTerminator 186..187 "\n"
+      Annotation 187..195
+        At 187..188 "@"
+        Name 188..193
+          Identifier 188..193 "Empty"
+        AnnotationArguments 193..195
+          LParen 193..194 "("
+          RParen 194..195 ")"
+      LineTerminator 195..196 "\n"
+      LineComment 196..258 "// javac rejects a mix of values and pairs only after parsing."
+      LineTerminator 258..259 "\n"
+      Annotation 259..275
+        At 259..260 "@"
+        Name 260..265
+          Identifier 260..265 "Mixed"
+        AnnotationArguments 265..275
+          LParen 265..266 "("
+          LiteralExpr 266..267
+            IntLiteral 266..267 "1"
+          Comma 267..268 ","
+          Whitespace 268..269 " "
+          ElementValuePair 269..274
+            Identifier 269..270 "x"
+            Whitespace 270..271 " "
+            Eq 271..272 "="
+            Whitespace 272..273 " "
+            LiteralExpr 273..274
+              IntLiteral 273..274 "2"
+          RParen 274..275 ")"
+    LineTerminator 275..276 "\n"
+    ClassKw 276..281 "class"
+    Whitespace 281..282 " "
+    Identifier 282..283 "A"
+    Whitespace 283..284 " "
+    ClassBody 284..286
+      LBrace 284..285 "{"
+      RBrace 285..286 "}"
+  LineTerminator 286..287 "\n"
+  Eof 287..287 ""

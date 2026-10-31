@@ -1,0 +1,25 @@
+CompilationUnit 0..24 [error]
+  ClassDecl 0..23 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..23 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      MethodDecl 12..23 [error]
+        VoidType 12..16
+          VoidKw 12..16 "void"
+        Whitespace 16..17 " "
+        Identifier 17..18 "f"
+        FormalParameters 18..20
+          LParen 18..19 "("
+          RParen 19..20 ")"
+        Whitespace 20..21 " "
+        Error 21..23 [error]
+          LBrace 21..22 "{"
+          RBrace 22..23 "}"
+  LineTerminator 23..24 "\n"
+  Eof 24..24 ""
+error 21..22 @21 UnexpectedToken(LBrace): unexpected '{'

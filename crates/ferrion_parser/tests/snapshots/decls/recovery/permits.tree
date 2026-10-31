@@ -1,0 +1,36 @@
+CompilationUnit 0..49 [error]
+  ClassDecl 0..20 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    PermitsClause 8..17
+      PermitsKw 8..15 "permits"
+      Whitespace 15..16 " "
+      ClassType 16..17
+        Identifier 16..17 "B"
+    Whitespace 17..18 " "
+    ClassBody 18..20
+      LBrace 18..19 "{"
+      RBrace 19..20 "}"
+  LineTerminator 20..21 "\n"
+  ClassDecl 21..48
+    Modifiers 21..27
+      SealedKw 21..27 "sealed"
+    Whitespace 27..28 " "
+    ClassKw 28..33 "class"
+    Whitespace 33..34 " "
+    Identifier 34..35 "C"
+    Whitespace 35..36 " "
+    PermitsClause 36..45
+      PermitsKw 36..43 "permits"
+      Whitespace 43..44 " "
+      ClassType 44..45
+        Identifier 44..45 "D"
+    Whitespace 45..46 " "
+    ClassBody 46..48
+      LBrace 46..47 "{"
+      RBrace 47..48 "}"
+  LineTerminator 48..49 "\n"
+  Eof 49..49 ""
+error 8..15 @8 PermitsWithoutSealed: only a sealed class or interface has a 'permits' clause

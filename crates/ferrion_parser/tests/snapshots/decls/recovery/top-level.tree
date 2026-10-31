@@ -1,0 +1,67 @@
+CompilationUnit 0..74 [error]
+  ClassDecl 0..10
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..10
+      LBrace 8..9 "{"
+      RBrace 9..10 "}"
+  LineTerminator 10..11 "\n"
+  Error 11..12 [error]
+    RBrace 11..12 "}"
+  LineTerminator 12..13 "\n"
+  Error 13..16 [error]
+    Eq 13..14 "="
+    Whitespace 14..15 " "
+    IntLiteral 15..16 "5"
+  Semi 16..17 ";"
+  LineTerminator 17..18 "\n"
+  Error 18..21 [error]
+    LBrace 18..19 "{"
+    Whitespace 19..20 " "
+    RBrace 20..21 "}"
+  LineTerminator 21..22 "\n"
+  Error 22..28 [error]
+    Modifiers 22..28
+      StaticKw 22..28 "static"
+  Whitespace 28..29 " "
+  Error 29..50 [error]
+    LBrace 29..30 "{"
+    Whitespace 30..31 " "
+    RBrace 31..32 "}"
+    LineTerminator 32..33 "\n"
+    Identifier 33..34 "A"
+    LParen 34..35 "("
+    RParen 35..36 ")"
+    Whitespace 36..37 " "
+    LBrace 37..38 "{"
+    RBrace 38..39 "}"
+    LineTerminator 39..40 "\n"
+    ImportKw 40..46 "import"
+    Whitespace 46..47 " "
+    Identifier 47..48 "a"
+    Dot 48..49 "."
+    Identifier 49..50 "b"
+  Semi 50..51 ";"
+  LineTerminator 51..52 "\n"
+  Error 52..61 [error]
+    PackageKw 52..59 "package"
+    Whitespace 59..60 " "
+    Identifier 60..61 "c"
+  Semi 61..62 ";"
+  LineTerminator 62..63 "\n"
+  ClassDecl 63..73
+    ClassKw 63..68 "class"
+    Whitespace 68..69 " "
+    Identifier 69..70 "B"
+    Whitespace 70..71 " "
+    ClassBody 71..73
+      LBrace 71..72 "{"
+      RBrace 72..73 "}"
+  LineTerminator 73..74 "\n"
+  Eof 74..74 ""
+error 11..12 @11 ExpectedDeclaration(RBrace): unexpected '}': expected a declaration
+error 18..19 @18 ExpectedDeclaration(LBrace): unexpected '{': expected a declaration
+error 29..30 @29 ExpectedDeclaration(LBrace): unexpected '{': expected a declaration
+error 52..59 @52 ExpectedDeclaration(PackageKw): unexpected 'package': expected a declaration

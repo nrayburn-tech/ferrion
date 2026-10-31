@@ -1,0 +1,179 @@
+CompilationUnit 0..277 [error]
+  RecordDecl 0..17
+    RecordKw 0..6 "record"
+    Whitespace 6..7 " "
+    Identifier 7..12 "Empty"
+    RecordHeader 12..14
+      LParen 12..13 "("
+      RParen 13..14 ")"
+    Whitespace 14..15 " "
+    ClassBody 15..17
+      LBrace 15..16 "{"
+      RBrace 16..17 "}"
+  LineTerminator 17..18 "\n"
+  LineTerminator 18..19 "\n"
+  RecordDecl 19..48
+    RecordKw 19..25 "record"
+    Whitespace 25..26 " "
+    Identifier 26..31 "Point"
+    RecordHeader 31..45
+      LParen 31..32 "("
+      RecordComponent 32..37
+        PrimitiveType 32..35
+          IntKw 32..35 "int"
+        Whitespace 35..36 " "
+        Identifier 36..37 "x"
+      Comma 37..38 ","
+      Whitespace 38..39 " "
+      RecordComponent 39..44
+        PrimitiveType 39..42
+          IntKw 39..42 "int"
+        Whitespace 42..43 " "
+        Identifier 43..44 "y"
+      RParen 44..45 ")"
+    Whitespace 45..46 " "
+    ClassBody 46..48
+      LBrace 46..47 "{"
+      RBrace 47..48 "}"
+  LineTerminator 48..49 "\n"
+  LineTerminator 49..50 "\n"
+  RecordDecl 50..240 [error]
+    Modifiers 50..56
+      PublicKw 50..56 "public"
+    Whitespace 56..57 " "
+    RecordKw 57..63 "record"
+    Whitespace 63..64 " "
+    Identifier 64..68 "Pair"
+    TypeParameters 68..74
+      Lt 68..69 "<"
+      TypeParameter 69..70
+        Identifier 69..70 "A"
+      Comma 70..71 ","
+      Whitespace 71..72 " "
+      TypeParameter 72..73
+        Identifier 72..73 "B"
+      Gt 73..74 ">"
+    RecordHeader 74..102
+      LParen 74..75 "("
+      RecordComponent 75..91
+        Modifiers 75..83
+          Annotation 75..83
+            At 75..76 "@"
+            Name 76..83
+              Identifier 76..83 "NonNull"
+        Whitespace 83..84 " "
+        ClassType 84..85
+          Identifier 84..85 "A"
+        Whitespace 85..86 " "
+        Identifier 86..91 "first"
+      Comma 91..92 ","
+      Whitespace 92..93 " "
+      RecordComponent 93..101
+        ClassType 93..94
+          Identifier 93..94 "B"
+        Whitespace 94..95 " "
+        Identifier 95..101 "second"
+      RParen 101..102 ")"
+    Whitespace 102..103 " "
+    ImplementsClause 103..136
+      ImplementsKw 103..113 "implements"
+      Whitespace 113..114 " "
+      ClassType 114..136
+        Identifier 114..124 "Comparable"
+        TypeArguments 124..136
+          Lt 124..125 "<"
+          ClassType 125..135
+            Identifier 125..129 "Pair"
+            TypeArguments 129..135
+              Lt 129..130 "<"
+              ClassType 130..131
+                Identifier 130..131 "A"
+              Comma 131..132 ","
+              Whitespace 132..133 " "
+              ClassType 133..134
+                Identifier 133..134 "B"
+              Gt 134..135 ">"
+          Gt 135..136 ">"
+    Whitespace 136..137 " "
+    ClassBody 137..240 [error]
+      LBrace 137..138 "{"
+      LineTerminator 138..139 "\n"
+      Whitespace 139..141 "  "
+      FieldDecl 141..158
+        Modifiers 141..147
+          StaticKw 141..147 "static"
+        Whitespace 147..148 " "
+        PrimitiveType 148..151
+          IntKw 148..151 "int"
+        Whitespace 151..152 " "
+        VariableDeclarator 152..157
+          Identifier 152..157 "count"
+        Semi 157..158 ";"
+      LineTerminator 158..159 "\n"
+      LineTerminator 159..160 "\n"
+      Whitespace 160..162 "  "
+      CompactConstructorDecl 162..238 [error]
+        Modifiers 162..168
+          PublicKw 162..168 "public"
+        Whitespace 168..169 " "
+        Identifier 169..173 "Pair"
+        Whitespace 173..174 " "
+        Error 174..238 [error]
+          LBrace 174..175 "{"
+          LineTerminator 175..176 "\n"
+          Whitespace 176..180 "    "
+          Identifier 180..185 "count"
+          PlusPlus 185..187 "++"
+          Semi 187..188 ";"
+          LineTerminator 188..189 "\n"
+          Whitespace 189..191 "  "
+          RBrace 191..192 "}"
+          LineTerminator 192..193 "\n"
+          LineTerminator 193..194 "\n"
+          Whitespace 194..196 "  "
+          Identifier 196..200 "Pair"
+          LParen 200..201 "("
+          Identifier 201..202 "A"
+          Whitespace 202..203 " "
+          Identifier 203..208 "first"
+          RParen 208..209 ")"
+          Whitespace 209..210 " "
+          LBrace 210..211 "{"
+          LineTerminator 211..212 "\n"
+          Whitespace 212..216 "    "
+          ThisKw 216..220 "this"
+          LParen 220..221 "("
+          Identifier 221..226 "first"
+          Comma 226..227 ","
+          Whitespace 227..228 " "
+          NullKw 228..232 "null"
+          RParen 232..233 ")"
+          Semi 233..234 ";"
+          LineTerminator 234..235 "\n"
+          Whitespace 235..237 "  "
+          RBrace 237..238 "}"
+      LineTerminator 238..239 "\n"
+      RBrace 239..240 "}"
+  LineTerminator 240..241 "\n"
+  LineTerminator 241..242 "\n"
+  RecordDecl 242..276
+    RecordKw 242..248 "record"
+    Whitespace 248..249 " "
+    Identifier 249..256 "Varargs"
+    RecordHeader 256..273
+      LParen 256..257 "("
+      RecordComponent 257..272
+        ClassType 257..263
+          Identifier 257..263 "String"
+        Varargs 263..266
+          Ellipsis 263..266 "..."
+        Whitespace 266..267 " "
+        Identifier 267..272 "names"
+      RParen 272..273 ")"
+    Whitespace 273..274 " "
+    ClassBody 274..276
+      LBrace 274..275 "{"
+      RBrace 275..276 "}"
+  LineTerminator 276..277 "\n"
+  Eof 277..277 ""
+error 174..175 @174 UnexpectedToken(LBrace): unexpected '{'

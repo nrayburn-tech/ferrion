@@ -1,0 +1,101 @@
+CompilationUnit 0..290 [error]
+  LineComment 0..13 "// release: 8"
+  LineTerminator 13..14 "\n"
+  ClassDecl 14..272 [error]
+    ClassKw 14..19 "class"
+    Whitespace 19..20 " "
+    Identifier 20..21 "A"
+    Whitespace 21..22 " "
+    ClassBody 22..272 [error]
+      LBrace 22..23 "{"
+      LineTerminator 23..24 "\n"
+      Whitespace 24..26 "  "
+      LineComment 26..114 "// At Java 8, `sealed`, `non`, `permits`, `module`, and `open` are only names, and so is"
+      LineTerminator 114..115 "\n"
+      Whitespace 115..117 "  "
+      LineComment 117..154 "// `record` where no name follows it."
+      LineTerminator 154..155 "\n"
+      Whitespace 155..157 "  "
+      FieldDecl 157..166
+        ClassType 157..163
+          Identifier 157..163 "sealed"
+        Whitespace 163..164 " "
+        VariableDeclarator 164..165
+          Identifier 164..165 "s"
+        Semi 165..166 ";"
+      LineTerminator 166..167 "\n"
+      Whitespace 167..169 "  "
+      FieldDecl 169..181
+        PrimitiveType 169..172
+          IntKw 169..172 "int"
+        Whitespace 172..173 " "
+        VariableDeclarator 173..180
+          Identifier 173..180 "permits"
+        Semi 180..181 ";"
+      LineTerminator 181..182 "\n"
+      Whitespace 182..184 "  "
+      FieldDecl 184..200
+        PrimitiveType 184..187
+          IntKw 184..187 "int"
+        Whitespace 187..188 " "
+        VariableDeclarator 188..191
+          Identifier 188..191 "non"
+        Comma 191..192 ","
+        Whitespace 192..193 " "
+        VariableDeclarator 193..199
+          Identifier 193..199 "sealed"
+        Semi 199..200 ";"
+      LineTerminator 200..201 "\n"
+      Whitespace 201..203 "  "
+      FieldDecl 203..220
+        ArrayType 203..211
+          ClassType 203..209
+            Identifier 203..209 "record"
+          Dim 209..211
+            LBracket 209..210 "["
+            RBracket 210..211 "]"
+        Whitespace 211..212 " "
+        VariableDeclarator 212..219
+          Identifier 212..219 "records"
+        Semi 219..220 ";"
+      LineTerminator 220..221 "\n"
+      Whitespace 221..223 "  "
+      MethodDecl 223..269 [error]
+        ClassType 223..229
+          Identifier 223..229 "Object"
+        Whitespace 229..230 " "
+        Identifier 230..236 "record"
+        FormalParameters 236..238
+          LParen 236..237 "("
+          RParen 237..238 ")"
+        Whitespace 238..239 " "
+        Error 239..269 [error]
+          LBrace 239..240 "{"
+          Whitespace 240..241 " "
+          ReturnKw 241..247 "return"
+          Whitespace 247..248 " "
+          NullKw 248..252 "null"
+          Semi 252..253 ";"
+          Whitespace 253..254 " "
+          RBrace 254..255 "}"
+          LineTerminator 255..256 "\n"
+          Whitespace 256..258 "  "
+          Identifier 258..264 "module"
+          Whitespace 264..265 " "
+          Identifier 265..269 "open"
+      Semi 269..270 ";"
+      LineTerminator 270..271 "\n"
+      RBrace 271..272 "}"
+  LineTerminator 272..273 "\n"
+  LineTerminator 273..274 "\n"
+  ClassDecl 274..289
+    ClassKw 274..279 "class"
+    Whitespace 279..280 " "
+    Identifier 280..286 "sealed"
+    Whitespace 286..287 " "
+    ClassBody 287..289
+      LBrace 287..288 "{"
+      RBrace 288..289 "}"
+  LineTerminator 289..290 "\n"
+  Eof 290..290 ""
+error 239..240 @239 UnexpectedToken(LBrace): unexpected '{'

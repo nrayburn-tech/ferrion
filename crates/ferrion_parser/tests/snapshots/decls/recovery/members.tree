@@ -1,0 +1,93 @@
+CompilationUnit 0..100 [error]
+  ClassDecl 0..99 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..99 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      Error 12..13 [error]
+        IntLiteral 12..13 "5"
+      LineTerminator 13..14 "\n"
+      Whitespace 14..16 "  "
+      FieldDecl 16..21 [error]
+        PrimitiveType 16..19
+          IntKw 16..19 "int"
+        Whitespace 19..20 " "
+        VariableDeclarator 20..21
+          Identifier 20..21 "x"
+      LineTerminator 21..22 "\n"
+      Whitespace 22..24 "  "
+      FieldDecl 24..33 [error]
+        PrimitiveType 24..27
+          IntKw 24..27 "int"
+        Whitespace 27..28 " "
+        VariableDeclarator 28..33
+          Identifier 28..29 "y"
+          Whitespace 29..30 " "
+          Eq 30..31 "="
+          Whitespace 31..32 " "
+          LiteralExpr 32..33
+            IntLiteral 32..33 "1"
+      Whitespace 33..34 " "
+      FieldDecl 34..40
+        PrimitiveType 34..37
+          IntKw 34..37 "int"
+        Whitespace 37..38 " "
+        VariableDeclarator 38..39
+          Identifier 38..39 "z"
+        Semi 39..40 ";"
+      LineTerminator 40..41 "\n"
+      Whitespace 41..43 "  "
+      ConstructorDecl 43..74 [error]
+        Identifier 43..44 "f"
+        FormalParameters 44..46
+          LParen 44..45 "("
+          RParen 45..46 ")"
+        Whitespace 46..47 " "
+        Error 47..74 [error]
+          LBrace 47..48 "{"
+          RBrace 48..49 "}"
+          LineTerminator 49..50 "\n"
+          Whitespace 50..52 "  "
+          VoidKw 52..56 "void"
+          Whitespace 56..57 " "
+          Identifier 57..58 "g"
+          LParen 58..59 "("
+          RParen 59..60 ")"
+          LineTerminator 60..61 "\n"
+          Whitespace 61..63 "  "
+          VoidKw 63..67 "void"
+          Whitespace 67..68 " "
+          Identifier 68..69 "h"
+          LParen 69..70 "("
+          RParen 70..71 ")"
+          Whitespace 71..72 " "
+          LBrace 72..73 "{"
+          RBrace 73..74 "}"
+      Whitespace 74..75 " "
+      Error 75..76 [error]
+        RParen 75..76 ")"
+      LineTerminator 76..77 "\n"
+      Whitespace 77..79 "  "
+      Error 79..97 [error]
+        Modifiers 79..97
+          PublicKw 79..85 "public"
+          LineTerminator 85..86 "\n"
+          Whitespace 86..88 "  "
+          Annotation 88..97
+            At 88..89 "@"
+            Name 89..97
+              Identifier 89..97 "Override"
+      LineTerminator 97..98 "\n"
+      RBrace 98..99 "}"
+  LineTerminator 99..100 "\n"
+  Eof 100..100 ""
+error 12..13 @12 ExpectedMember(IntLiteral): unexpected literal: expected a member declaration
+error 21..21 @21 Expected(Token(Semi)): ';' expected
+error 33..33 @33 Expected(Token(Semi)): ';' expected
+error 43..44 @43 MissingReturnType: a method needs a result type; a constructor takes its class's name
+error 47..48 @47 UnexpectedToken(LBrace): unexpected '{'
+error 98..99 @98 ExpectedMember(RBrace): unexpected '}': expected a member declaration

@@ -1,0 +1,81 @@
+CompilationUnit 0..130 [error]
+  ClassDecl 0..129 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..129 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      MethodDecl 12..64 [error]
+        Modifiers 12..32 [error]
+          PublicKw 12..18 "public"
+          Whitespace 18..19 " "
+          StaticKw 19..25 "static"
+          Whitespace 25..26 " "
+          PublicKw 26..32 "public"
+        Whitespace 32..33 " "
+        VoidType 33..37
+          VoidKw 33..37 "void"
+        Whitespace 37..38 " "
+        Identifier 38..39 "f"
+        FormalParameters 39..41
+          LParen 39..40 "("
+          RParen 40..41 ")"
+        Whitespace 41..42 " "
+        Error 42..64 [error]
+          LBrace 42..43 "{"
+          RBrace 43..44 "}"
+          LineTerminator 44..45 "\n"
+          Whitespace 45..47 "  "
+          FinalKw 47..52 "final"
+          Whitespace 52..53 " "
+          FinalKw 53..58 "final"
+          Whitespace 58..59 " "
+          IntKw 59..62 "int"
+          Whitespace 62..63 " "
+          Identifier 63..64 "x"
+      Semi 64..65 ";"
+      LineTerminator 65..66 "\n"
+      Whitespace 66..68 "  "
+      ClassDecl 68..92 [error]
+        Modifiers 68..81 [error]
+          SealedKw 68..74 "sealed"
+          Whitespace 74..75 " "
+          SealedKw 75..81 "sealed"
+        Whitespace 81..82 " "
+        ClassKw 82..87 "class"
+        Whitespace 87..88 " "
+        Identifier 88..89 "B"
+        Whitespace 89..90 " "
+        ClassBody 90..92
+          LBrace 90..91 "{"
+          RBrace 91..92 "}"
+      LineTerminator 92..93 "\n"
+      Whitespace 93..95 "  "
+      ClassDecl 95..127 [error]
+        Modifiers 95..116 [error]
+          NonSealedKw 95..98 "non"
+          NonSealedKw 98..99 "-"
+          NonSealedKw 99..105 "sealed"
+          Whitespace 105..106 " "
+          NonSealedKw 106..109 "non"
+          NonSealedKw 109..110 "-"
+          NonSealedKw 110..116 "sealed"
+        Whitespace 116..117 " "
+        ClassKw 117..122 "class"
+        Whitespace 122..123 " "
+        Identifier 123..124 "C"
+        Whitespace 124..125 " "
+        ClassBody 125..127
+          LBrace 125..126 "{"
+          RBrace 126..127 "}"
+      LineTerminator 127..128 "\n"
+      RBrace 128..129 "}"
+  LineTerminator 129..130 "\n"
+  Eof 130..130 ""
+error 26..32 @26 RepeatedModifier: this modifier is already given
+error 42..43 @42 UnexpectedToken(LBrace): unexpected '{'
+error 75..81 @75 RepeatedModifier: this modifier is already given
+error 110..116 @110 RepeatedModifier: this modifier is already given

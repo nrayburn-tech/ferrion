@@ -1,0 +1,126 @@
+CompilationUnit 0..130 [error]
+  RecordDecl 0..24 [error]
+    RecordKw 0..6 "record"
+    Whitespace 6..7 " "
+    Identifier 7..8 "A"
+    RecordHeader 8..21 [error]
+      LParen 8..9 "("
+      RecordComponent 9..20 [error]
+        Modifiers 9..14
+          FinalKw 9..14 "final"
+        Whitespace 14..15 " "
+        PrimitiveType 15..18
+          IntKw 15..18 "int"
+        Whitespace 18..19 " "
+        Identifier 19..20 "x"
+      RParen 20..21 ")"
+    Whitespace 21..22 " "
+    ClassBody 22..24
+      LBrace 22..23 "{"
+      RBrace 23..24 "}"
+  LineTerminator 24..25 "\n"
+  RecordDecl 25..45 [error]
+    RecordKw 25..31 "record"
+    Whitespace 31..32 " "
+    Identifier 32..33 "B"
+    RecordHeader 33..42 [error]
+      LParen 33..34 "("
+      RecordComponent 34..41 [error]
+        PrimitiveType 34..37
+          IntKw 34..37 "int"
+        Whitespace 37..38 " "
+        Identifier 38..39 "x"
+        Dim 39..41
+          LBracket 39..40 "["
+          RBracket 40..41 "]"
+      RParen 41..42 ")"
+    Whitespace 42..43 " "
+    ClassBody 43..45
+      LBrace 43..44 "{"
+      RBrace 44..45 "}"
+  LineTerminator 45..46 "\n"
+  RecordDecl 46..72 [error]
+    RecordKw 46..52 "record"
+    Whitespace 52..53 " "
+    Identifier 53..54 "C"
+    RecordHeader 54..61
+      LParen 54..55 "("
+      RecordComponent 55..60
+        PrimitiveType 55..58
+          IntKw 55..58 "int"
+        Whitespace 58..59 " "
+        Identifier 59..60 "x"
+      RParen 60..61 ")"
+    Whitespace 61..62 " "
+    ClassBody 62..72 [error]
+      LBrace 62..63 "{"
+      Whitespace 63..64 " "
+      FieldDecl 64..70 [error]
+        PrimitiveType 64..67
+          IntKw 64..67 "int"
+        Whitespace 67..68 " "
+        VariableDeclarator 68..69
+          Identifier 68..69 "y"
+        Semi 69..70 ";"
+      Whitespace 70..71 " "
+      RBrace 71..72 "}"
+  LineTerminator 72..73 "\n"
+  RecordDecl 73..97 [error]
+    RecordKw 73..79 "record"
+    Whitespace 79..80 " "
+    Identifier 80..81 "D"
+    RecordHeader 81..88
+      LParen 81..82 "("
+      RecordComponent 82..87
+        PrimitiveType 82..85
+          IntKw 82..85 "int"
+        Whitespace 85..86 " "
+        Identifier 86..87 "x"
+      RParen 87..88 ")"
+    Whitespace 88..89 " "
+    ClassBody 89..97 [error]
+      LBrace 89..90 "{"
+      Whitespace 90..91 " "
+      CompactConstructorDecl 91..95 [error]
+        Identifier 91..92 "E"
+        Whitespace 92..93 " "
+        Error 93..95 [error]
+          LBrace 93..94 "{"
+          RBrace 94..95 "}"
+      Whitespace 95..96 " "
+      RBrace 96..97 "}"
+  LineTerminator 97..98 "\n"
+  RecordDecl 98..109 [error]
+    RecordKw 98..104 "record"
+    Whitespace 104..105 " "
+    Identifier 105..106 "F"
+    Whitespace 106..107 " "
+    ClassBody 107..109
+      LBrace 107..108 "{"
+      RBrace 108..109 "}"
+  LineTerminator 109..110 "\n"
+  RecordDecl 110..129 [error]
+    RecordKw 110..116 "record"
+    Whitespace 116..117 " "
+    Identifier 117..118 "G"
+    RecordHeader 118..126 [error]
+      LParen 118..119 "("
+      RecordComponent 119..125 [error]
+        ClassType 119..120
+          Identifier 119..120 "A"
+        Whitespace 120..121 " "
+        ThisKw 121..125 "this"
+      RParen 125..126 ")"
+    Whitespace 126..127 " "
+    ClassBody 127..129
+      LBrace 127..128 "{"
+      RBrace 128..129 "}"
+  LineTerminator 129..130 "\n"
+  Eof 130..130 ""
+error 9..14 @9 RecordComponentModifiers: a record component can't have modifiers
+error 39..40 @39 RecordComponentDims: a record component's array dimensions go on its type
+error 68..69 @68 InstanceFieldInRecord: a record's fields must be static; its components are its instance fields
+error 91..92 @91 MissingReturnType: a method needs a result type; a constructor takes its class's name
+error 93..94 @93 UnexpectedToken(LBrace): unexpected '{'
+error 106..106 @106 Expected(Token(LParen)): '(' expected
+error 121..125 @121 MisplacedReceiver: a receiver parameter ('this') can only be a method's first parameter

@@ -70,7 +70,7 @@ CompilationUnit 0..203 [error]
       RBrace 97..98 "}"
   Semi 98..99 ";"
   LineTerminator 99..100 "\n"
-  NewExpr 100..110 [error]
+  NewExpr 100..110
     NewKw 100..103 "new"
     Whitespace 103..104 " "
     ClassType 104..105
@@ -79,7 +79,7 @@ CompilationUnit 0..203 [error]
       LParen 105..106 "("
       RParen 106..107 ")"
     Whitespace 107..108 " "
-    Error 108..110 [error]
+    ClassBody 108..110
       LBrace 108..109 "{"
       RBrace 109..110 "}"
   Semi 110..111 ";"
@@ -96,17 +96,21 @@ CompilationUnit 0..203 [error]
       LParen 119..120 "("
       RParen 120..121 ")"
     Whitespace 121..122 " "
-    Error 122..137 [error]
+    ClassBody 122..137 [error]
       LBrace 122..123 "{"
       Whitespace 123..124 " "
-      VoidKw 124..128 "void"
-      Whitespace 128..129 " "
-      Identifier 129..130 "m"
-      LParen 130..131 "("
-      RParen 131..132 ")"
-      Whitespace 132..133 " "
-      LBrace 133..134 "{"
-      RBrace 134..135 "}"
+      MethodDecl 124..135 [error]
+        VoidType 124..128
+          VoidKw 124..128 "void"
+        Whitespace 128..129 " "
+        Identifier 129..130 "m"
+        FormalParameters 130..132
+          LParen 130..131 "("
+          RParen 131..132 ")"
+        Whitespace 132..133 " "
+        Error 133..135 [error]
+          LBrace 133..134 "{"
+          RBrace 134..135 "}"
       Whitespace 135..136 " "
       RBrace 136..137 "}"
   Semi 137..138 ";"
@@ -163,7 +167,6 @@ error 36..41 @36 UnexpectedToken(FinalKw): unexpected 'final'
 error 60..61 @60 UnexpectedToken(Identifier): unexpected name
 error 76..77 @76 UnexpectedToken(LBrace): unexpected '{'
 error 85..86 @85 UnexpectedToken(LBrace): unexpected '{'
-error 108..109 @108 UnexpectedToken(LBrace): unexpected '{'
-error 122..123 @122 UnexpectedToken(LBrace): unexpected '{'
+error 133..134 @133 UnexpectedToken(LBrace): unexpected '{'
 error 150..151 @150 UnexpectedToken(LBrace): unexpected '{'
 error 180..181 @180 UnexpectedToken(LBrace): unexpected '{'

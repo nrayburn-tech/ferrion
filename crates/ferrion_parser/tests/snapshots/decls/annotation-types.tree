@@ -1,0 +1,177 @@
+CompilationUnit 0..319
+  AnnotationTypeDecl 0..19
+    At 0..1 "@"
+    InterfaceKw 1..10 "interface"
+    Whitespace 10..11 " "
+    Identifier 11..16 "Empty"
+    Whitespace 16..17 " "
+    ClassBody 17..19
+      LBrace 17..18 "{"
+      RBrace 18..19 "}"
+  LineTerminator 19..20 "\n"
+  LineTerminator 20..21 "\n"
+  AnnotationTypeDecl 21..230
+    Modifiers 21..27
+      PublicKw 21..27 "public"
+    Whitespace 27..28 " "
+    At 28..29 "@"
+    InterfaceKw 29..38 "interface"
+    Whitespace 38..39 " "
+    Identifier 39..43 "Info"
+    Whitespace 43..44 " "
+    ClassBody 44..230
+      LBrace 44..45 "{"
+      LineTerminator 45..46 "\n"
+      Whitespace 46..48 "  "
+      MethodDecl 48..70
+        PrimitiveType 48..51
+          IntKw 48..51 "int"
+        Whitespace 51..52 " "
+        Identifier 52..57 "value"
+        FormalParameters 57..59
+          LParen 57..58 "("
+          RParen 58..59 ")"
+        Whitespace 59..60 " "
+        DefaultValue 60..69
+          DefaultKw 60..67 "default"
+          Whitespace 67..68 " "
+          LiteralExpr 68..69
+            IntLiteral 68..69 "1"
+        Semi 69..70 ";"
+      LineTerminator 70..71 "\n"
+      LineTerminator 71..72 "\n"
+      Whitespace 72..74 "  "
+      MethodDecl 74..110
+        ArrayType 74..82
+          ClassType 74..80
+            Identifier 74..80 "String"
+          Dim 80..82
+            LBracket 80..81 "["
+            RBracket 81..82 "]"
+        Whitespace 82..83 " "
+        Identifier 83..88 "names"
+        FormalParameters 88..90
+          LParen 88..89 "("
+          RParen 89..90 ")"
+        Whitespace 90..91 " "
+        DefaultValue 91..109
+          DefaultKw 91..98 "default"
+          Whitespace 98..99 " "
+          ElementValueArray 99..109
+            LBrace 99..100 "{"
+            LiteralExpr 100..103
+              StringLiteral 100..103 "\"a\""
+            Comma 103..104 ","
+            Whitespace 104..105 " "
+            LiteralExpr 105..108
+              StringLiteral 105..108 "\"b\""
+            RBrace 108..109 "}"
+        Semi 109..110 ";"
+      LineTerminator 110..111 "\n"
+      LineTerminator 111..112 "\n"
+      Whitespace 112..114 "  "
+      MethodDecl 114..151
+        ClassType 114..122
+          Identifier 114..119 "Class"
+          TypeArguments 119..122
+            Lt 119..120 "<"
+            Wildcard 120..121
+              Question 120..121 "?"
+            Gt 121..122 ">"
+        Whitespace 122..123 " "
+        Identifier 123..127 "type"
+        FormalParameters 127..129
+          LParen 127..128 "("
+          RParen 128..129 ")"
+        Whitespace 129..130 " "
+        DefaultValue 130..150
+          DefaultKw 130..137 "default"
+          Whitespace 137..138 " "
+          ClassLiteralExpr 138..150
+            NameExpr 138..144
+              Identifier 138..144 "Object"
+            Dot 144..145 "."
+            ClassKw 145..150 "class"
+        Semi 150..151 ";"
+      LineTerminator 151..152 "\n"
+      LineTerminator 152..153 "\n"
+      Whitespace 153..155 "  "
+      MethodDecl 155..185
+        ClassType 155..160
+          Identifier 155..160 "Empty"
+        Whitespace 160..161 " "
+        Identifier 161..167 "nested"
+        FormalParameters 167..169
+          LParen 167..168 "("
+          RParen 168..169 ")"
+        Whitespace 169..170 " "
+        DefaultValue 170..184
+          DefaultKw 170..177 "default"
+          Whitespace 177..178 " "
+          Annotation 178..184
+            At 178..179 "@"
+            Name 179..184
+              Identifier 179..184 "Empty"
+        Semi 184..185 ";"
+      LineTerminator 185..186 "\n"
+      LineTerminator 186..187 "\n"
+      Whitespace 187..189 "  "
+      FieldDecl 189..206
+        PrimitiveType 189..192
+          IntKw 189..192 "int"
+        Whitespace 192..193 " "
+        VariableDeclarator 193..205
+          Identifier 193..201 "CONSTANT"
+          Whitespace 201..202 " "
+          Eq 202..203 "="
+          Whitespace 203..204 " "
+          LiteralExpr 204..205
+            IntLiteral 204..205 "2"
+        Semi 205..206 ";"
+      LineTerminator 206..207 "\n"
+      LineTerminator 207..208 "\n"
+      Whitespace 208..210 "  "
+      EnumDecl 210..228
+        EnumKw 210..214 "enum"
+        Whitespace 214..215 " "
+        Identifier 215..219 "Kind"
+        Whitespace 219..220 " "
+        EnumBody 220..228
+          LBrace 220..221 "{"
+          Whitespace 221..222 " "
+          EnumConstant 222..223
+            Identifier 222..223 "A"
+          Comma 223..224 ","
+          Whitespace 224..225 " "
+          EnumConstant 225..226
+            Identifier 225..226 "B"
+          Whitespace 226..227 " "
+          RBrace 227..228 "}"
+      LineTerminator 228..229 "\n"
+      RBrace 229..230 "}"
+  LineTerminator 230..231 "\n"
+  LineTerminator 231..232 "\n"
+  LineComment 232..274 "// javac rejects these only after parsing."
+  LineTerminator 274..275 "\n"
+  AnnotationTypeDecl 275..318
+    At 275..276 "@"
+    InterfaceKw 276..285 "interface"
+    Whitespace 285..286 " "
+    Identifier 286..293 "Generic"
+    TypeParameters 293..296
+      Lt 293..294 "<"
+      TypeParameter 294..295
+        Identifier 294..295 "T"
+      Gt 295..296 ">"
+    Whitespace 296..297 " "
+    ExtendsClause 297..315
+      ExtendsKw 297..304 "extends"
+      Whitespace 304..305 " "
+      ClassType 305..315
+        Identifier 305..315 "Annotation"
+    Whitespace 315..316 " "
+    ClassBody 316..318
+      LBrace 316..317 "{"
+      RBrace 317..318 "}"
+  LineTerminator 318..319 "\n"
+  Eof 319..319 ""

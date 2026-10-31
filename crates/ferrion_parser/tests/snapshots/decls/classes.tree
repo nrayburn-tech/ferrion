@@ -1,0 +1,101 @@
+CompilationUnit 0..180
+  PackageDecl 0..10
+    PackageKw 0..7 "package"
+    Whitespace 7..8 " "
+    Name 8..9
+      Identifier 8..9 "p"
+    Semi 9..10 ";"
+  LineTerminator 10..11 "\n"
+  LineTerminator 11..12 "\n"
+  DocComment 12..52 "/** A class with every header clause. */"
+  LineTerminator 52..53 "\n"
+  ClassDecl 53..130
+    Modifiers 53..68
+      PublicKw 53..59 "public"
+      Whitespace 59..60 " "
+      AbstractKw 60..68 "abstract"
+    Whitespace 68..69 " "
+    ClassKw 69..74 "class"
+    Whitespace 74..75 " "
+    Identifier 75..76 "A"
+    TypeParameters 76..94
+      Lt 76..77 "<"
+      TypeParameter 77..93
+        Identifier 77..78 "T"
+        Whitespace 78..79 " "
+        ExtendsKw 79..86 "extends"
+        Whitespace 86..87 " "
+        ClassType 87..93
+          Identifier 87..93 "Number"
+      Gt 93..94 ">"
+    Whitespace 94..95 " "
+    ExtendsClause 95..107
+      ExtendsKw 95..102 "extends"
+      Whitespace 102..103 " "
+      ClassType 103..107
+        Identifier 103..104 "B"
+        TypeArguments 104..107
+          Lt 104..105 "<"
+          ClassType 105..106
+            Identifier 105..106 "T"
+          Gt 106..107 ">"
+    Whitespace 107..108 " "
+    ImplementsClause 108..126
+      ImplementsKw 108..118 "implements"
+      Whitespace 118..119 " "
+      ClassType 119..120
+        Identifier 119..120 "C"
+      Comma 120..121 ","
+      Whitespace 121..122 " "
+      ClassType 122..126
+        Identifier 122..123 "D"
+        TypeArguments 123..126
+          Lt 123..124 "<"
+          ClassType 124..125
+            Identifier 124..125 "T"
+          Gt 125..126 ">"
+    Whitespace 126..127 " "
+    ClassBody 127..130
+      LBrace 127..128 "{"
+      LineTerminator 128..129 "\n"
+      RBrace 129..130 "}"
+  LineTerminator 130..131 "\n"
+  LineTerminator 131..132 "\n"
+  ClassDecl 132..148
+    Modifiers 132..137
+      FinalKw 132..137 "final"
+    Whitespace 137..138 " "
+    ClassKw 138..143 "class"
+    Whitespace 143..144 " "
+    Identifier 144..145 "E"
+    Whitespace 145..146 " "
+    ClassBody 146..148
+      LBrace 146..147 "{"
+      RBrace 147..148 "}"
+  LineTerminator 148..149 "\n"
+  LineTerminator 149..150 "\n"
+  ClassDecl 150..179
+    ClassKw 150..155 "class"
+    Whitespace 155..156 " "
+    Identifier 156..157 "F"
+    TypeParameters 157..163
+      Lt 157..158 "<"
+      TypeParameter 158..159
+        Identifier 158..159 "K"
+      Comma 159..160 ","
+      Whitespace 160..161 " "
+      TypeParameter 161..162
+        Identifier 161..162 "V"
+      Gt 162..163 ">"
+    Whitespace 163..164 " "
+    ImplementsClause 164..176
+      ImplementsKw 164..174 "implements"
+      Whitespace 174..175 " "
+      ClassType 175..176
+        Identifier 175..176 "G"
+    Whitespace 176..177 " "
+    ClassBody 177..179
+      LBrace 177..178 "{"
+      RBrace 178..179 "}"
+  LineTerminator 179..180 "\n"
+  Eof 180..180 ""
