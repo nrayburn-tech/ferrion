@@ -540,7 +540,8 @@ the position from the anchor, with these rules:
 
 - **Warnings**, on both sides, and Ferrion's errors javac reports later or never
   (`JavacPhase::Later`, `JavacPhase::Never`). The syntax-shaped errors Ferrion reports earlier than
-  javac are each to have a case in `differences/` when the version check adds them
+  javac are the version check's `later` rows, each compared with javac's full compile by the
+  version check's own tests
   ([Reported earlier than javac](parser-error-recovery.md#reported-earlier-than-javac)).
 - **`bad.file.name`**, on javac's side: javac reports it for an implicitly declared class in a file
   whose name isn't an identifier, because the class takes its name from the file. The parser never
@@ -573,6 +574,7 @@ doesn't. Category: javac error recovery, unless noted.
 | [`syntax-parenthesized-comparison-before-name.java`](../../tools/oracle-check/differences/syntax-parenthesized-comparison-before-name.java) | `(a < b) c` | `expected2` | `expected`, one token later |
 | [`syntax-lambda-parameter-annotated-after-type.java`](../../tools/oracle-check/differences/syntax-lambda-parameter-annotated-after-type.java) | `(int @A x) -> 1` | `expected` | `illegal.start.of.type` |
 | [`syntax-final-record-pattern.java`](../../tools/oracle-check/differences/syntax-final-record-pattern.java) | `case final R(var x)` | `mod.not.allowed.here` | none |
+| [`syntax-var-and-inferred-lambda-parameters.java`](../../tools/oracle-check/differences/syntax-var-and-inferred-lambda-parameters.java) | `(var a, b) -> a` at 10 | `feature.not.supported.in.source.plural` at `a`: `var` lambda parameters need 11 | `invalid.lambda.parameter.declaration` at the `(`, which javac reports from 11 and at 8 and 9 |
 
 The token check's two known differences in javac's tests are listed in `known-files.txt`:
 `diags/examples/IllegalUnicodeEscape.java` shows
@@ -623,6 +625,13 @@ And the comparisons, once the whole grammar was in and before the version check:
 | `syntax` and `tree jdk-deep-nesting --all-releases` | 200 | 0 | 0 |
 | `syntax` (the corpus) | 10,575 | 2: guava's `module-info.java` at release 8, a version error | 0 |
 | `tree` (the corpus) | 10,575 | 0 | 2 javac rejects |
+
+With the version check in, `syntax jdk-tests` matches 5,640, with 59 mismatched and 3 skipped (the
+two [known](#known-differences) `(var a, b)` lambdas at 10 among them), and `syntax` on the corpus
+matches all 10,577, guava's `module-info.java` files included. No version error or restricted name
+is left among the 59 except javac's reading of `yield(a, b);` as an invalid call at 14 and later,
+where the grammar reads a `yield` statement (2); the rest are the parser's own (49) and the lexer's,
+such as numbers out of range (8).
 
 javac's output is cached as for tokens, keyed by the oracle jar, JDK, and sections, so `syntax` and
 `tree` have caches of their own.

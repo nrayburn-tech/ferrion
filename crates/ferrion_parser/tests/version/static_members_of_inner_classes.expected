@@ -1,0 +1,13 @@
+# javac 27 at releases 8 to 27, by tools/javac-oracle (parse) and javac (later):
+# releases, phase, severity, code, feature or argument, offset.
+8-15 later error icls.cant.have.static.decl - 37
+8-15 later error icls.cant.have.static.decl - 99
+8-15 later error icls.cant.have.static.decl - 125
+8-15 later error icls.cant.have.static.decl - 136
+8-15 later error mod.not.allowed.here - 157
+8-15 later error icls.cant.have.static.decl - 172
+8-15 later error static.declaration.not.allowed.in.inner.classes - 191
+8-15 later error icls.cant.have.static.decl - 251
+8-15 later error icls.cant.have.static.decl - 303
+8-15 later error icls.cant.have.static.decl - 439
+8-15 later error icls.cant.have.static.decl - 474

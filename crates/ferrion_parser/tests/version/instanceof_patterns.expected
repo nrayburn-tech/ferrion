@@ -1,0 +1,3 @@
+# javac 27 at releases 8 to 27, by tools/javac-oracle (parse) and javac (later):
+# releases, phase, severity, code, feature or argument, offset.
+8-15 parse error feature.not.supported.in.source pattern.matching.instanceof 65

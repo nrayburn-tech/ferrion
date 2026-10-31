@@ -1,4 +1,5 @@
-//! The table's consistency, and the check on its own.
+//! The table's consistency, and the check on its own. The comparison with javac, on an input per
+//! row, is in `javac.rs`.
 
 use std::collections::HashSet;
 use std::path::Path;
@@ -8,6 +9,8 @@ use ferrion_java_version::{LATEST_RELEASE, OLDEST_RELEASE, SUPPORTED_RELEASES};
 
 use super::*;
 use crate::{JavacPhase, ParseDiagnostic, ParseDiagnosticKind as D, ParseOptions, Severity, parse};
+
+mod javac;
 
 fn read(path: &Path) -> String {
     std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()))

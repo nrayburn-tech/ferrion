@@ -1,0 +1,4 @@
+# javac 27 at releases 8 to 27, by tools/javac-oracle (parse) and javac (later):
+# releases, phase, severity, code, feature or argument, offset.
+8-13 parse error feature.not.supported.in.source.plural multiple.case.labels 59
+8-13 parse error feature.not.supported.in.source.plural switch.rules 64

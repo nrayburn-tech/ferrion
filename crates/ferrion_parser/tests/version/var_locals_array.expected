@@ -1,0 +1,4 @@
+# javac 27 at releases 8 to 27, by tools/javac-oracle (parse) and javac (later):
+# releases, phase, severity, code, feature or argument, offset.
+10-27 parse error restricted.type.not.allowed.array - 27
+8-9 parse warning restricted.type.not.allowed - 33
