@@ -980,14 +980,67 @@ mod char_literals {
     fn invalid_escapes() {
         assert_eq!(toks(r"'\q'"), [(K::CharLiteral, r"'\q'")]);
         assert_eq!(errs(r"'\q'"), [(E::InvalidEscape, r"\q")]);
-        assert_eq!(
-            errs("'\\\n'"),
-            [
-                (E::UnterminatedCharLiteral, "'\\"),
-                (E::InvalidEscape, "\\"),
-                (E::UnterminatedCharLiteral, "'")
-            ]
-        );
+    }
+
+    #[test]
+    fn escaped_line_terminator_closed_on_the_next_line() {
+        // javac makes each of these one literal, with `illegal.esc.char` at the line terminator,
+        // and keeps the `;`. A backslash written as an escape behaves the same.
+        let cases = [
+            ("'\\\n';", "\\\n"),
+            ("'\\\r\n';", "\\\r\n"),
+            ("'\\\r';", "\\\r"),
+            ("'\\u005c\n';", "\\u005c\n"),
+            ("'\\u005c\\u000a\\u0027;", "\\u005c\\u000a"),
+        ];
+        for (text, escape) in cases {
+            let literal = &text[..text.len() - 1];
+            assert_eq!(
+                toks(text),
+                [(K::CharLiteral, literal), (K::Semi, ";")],
+                "{text:?}"
+            );
+            assert_eq!(errs(text), [(E::InvalidEscape, escape)], "{text:?}");
+        }
+    }
+
+    #[test]
+    fn escaped_line_terminator_not_closed_on_the_next_line() {
+        // Without a `'` right at the start of the next line, the literal ends before the line
+        // terminator, as `'` and a line terminator does. (javac's literal runs on, to the next `'`
+        // or the end of the file.)
+        let cases: &[(&str, &[(TokenKind, &str)])] = &[
+            (
+                "'\\\nx';",
+                &[
+                    (K::CharLiteral, "'\\"),
+                    (K::Identifier, "x"),
+                    (K::CharLiteral, "';"),
+                ],
+            ),
+            (
+                "'\\\n ';",
+                &[(K::CharLiteral, "'\\"), (K::CharLiteral, "';")],
+            ),
+            ("'\\\n", &[(K::CharLiteral, "'\\")]),
+            ("'\\\r\n", &[(K::CharLiteral, "'\\")]),
+        ];
+        for &(text, expected) in cases {
+            assert_eq!(toks(text), expected, "{text:?}");
+            assert_eq!(
+                errs(text)[..2],
+                [
+                    (E::UnterminatedCharLiteral, "'\\"),
+                    (E::InvalidEscape, "\\")
+                ],
+                "{text:?}"
+            );
+            // The same as without the backslash, apart from the backslash.
+            let unescaped = text.replacen('\\', "", 1);
+            let mut unescaped_expected = expected.to_vec();
+            unescaped_expected[0].1 = "'";
+            assert_eq!(toks(&unescaped), unescaped_expected, "{unescaped:?}");
+        }
     }
 
     #[test]

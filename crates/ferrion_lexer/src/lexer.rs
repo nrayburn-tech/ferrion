@@ -471,7 +471,10 @@ impl<'a> Lexer<'a> {
 
     /// JLS §3.10.4. A literal that isn't closed right after its character is closed at the next
     /// `'` on the line, as one malformed literal, or if there isn't one, ends after the character,
-    /// as in javac.
+    /// as in javac. The one exception is a line terminator (or `\` and a line terminator) as the
+    /// character, closed by a `'` right at the start of the next line, which javac also takes as
+    /// one literal: ending it at the line break would make that `'` open a literal that takes in
+    /// the rest of its line.
     fn char_literal(&mut self, start: usize) -> TokenKind {
         self.cursor.bump();
         let units = match self.cursor.peek() {
@@ -480,17 +483,13 @@ impl<'a> Lexer<'a> {
                 return TokenKind::CharLiteral;
             }
             Some(c) if is_line_terminator(c) => {
-                // javac takes `'`, a line terminator, and `'` as one literal.
                 self.cursor.skip_invalid_escapes();
                 let lt_start = self.cursor.pos();
-                let crlf = c == '\r' && self.cursor.peek2() == Some('\n');
-                let after = self.cursor.peek_nth(if crlf { 2 } else { 1 });
-                if after != Some('\'') {
+                let Some(lt_len) = self.line_terminator_then_quote(0) else {
                     self.error_from(LexErrorKind::UnterminatedCharLiteral, start);
                     return TokenKind::CharLiteral;
-                }
-                self.cursor.bump();
-                if crlf {
+                };
+                for _ in 0..lt_len {
                     self.cursor.bump();
                 }
                 self.error_from(LexErrorKind::LineTerminatorInCharLiteral, lt_start);
@@ -503,6 +502,16 @@ impl<'a> Lexer<'a> {
                 return TokenKind::CharLiteral;
             }
             Some('\\') => {
+                if let Some(lt_len) = self.line_terminator_then_quote(1) {
+                    self.cursor.skip_invalid_escapes();
+                    let escape_start = self.cursor.pos();
+                    for _ in 0..=lt_len {
+                        self.cursor.bump();
+                    }
+                    self.error_from(LexErrorKind::InvalidEscape, escape_start);
+                    self.cursor.bump();
+                    return TokenKind::CharLiteral;
+                }
                 self.escape_sequence(false);
                 1
             }
@@ -528,6 +537,17 @@ impl<'a> Lexer<'a> {
             self.error_from(LexErrorKind::UnterminatedCharLiteral, start);
         }
         TokenKind::CharLiteral
+    }
+
+    /// If the character `n` ahead starts a line terminator with a `'` right after it, how many
+    /// characters the line terminator is.
+    fn line_terminator_then_quote(&self, n: usize) -> Option<usize> {
+        let len = match self.cursor.peek_nth(n)? {
+            '\r' if self.cursor.peek_nth(n + 1) == Some('\n') => 2,
+            c if is_line_terminator(c) => 1,
+            _ => return None,
+        };
+        (self.cursor.peek_nth(n + len) == Some('\'')).then_some(len)
     }
 
     /// Whether an unescaped `'` comes before the end of the line.

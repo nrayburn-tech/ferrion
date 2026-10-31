@@ -64,7 +64,8 @@ pub enum LexErrorKind {
     /// `\u` not followed by four hex digits.
     InvalidUnicodeEscape,
     /// An escape sequence in a character literal, string literal, or text block that isn't one of
-    /// JLS §3.10.7's.
+    /// JLS §3.10.7's. A `\` and a line terminator in a character literal closed by a `'` at the
+    /// start of the next line are one invalid escape, as in javac.
     InvalidEscape,
     UnterminatedComment,
     UnterminatedCharLiteral,
