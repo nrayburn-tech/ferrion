@@ -50,6 +50,11 @@ jobs:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
       - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
 
+  fuzz:
+    uses: ./.github/workflows/fuzz.yml
+    with:
+      seconds: 60
+
   scancode:
     runs-on: ubuntu-latest
     steps:
