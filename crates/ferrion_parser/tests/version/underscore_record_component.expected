@@ -1,0 +1,6 @@
+# javac 27 at releases 8 to 27, by tools/javac-oracle (parse) and javac (later):
+# releases, phase, severity, code, feature or argument, offset.
+8-15 parse error feature.not.supported.in.source.plural records 0
+8 parse warning underscore.as.identifier - 13
+9-21 parse error underscore.as.identifier - 13
+22-27 parse error use.of.underscore.not.allowed.non.variable - 13

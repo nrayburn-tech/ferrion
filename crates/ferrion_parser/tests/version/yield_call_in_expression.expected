@@ -1,0 +1,4 @@
+# javac 27 at releases 8 to 27, by tools/javac-oracle (parse) and javac (later):
+# releases, phase, severity, code, feature or argument, offset.
+8-13 parse warning invalid.yield - 68
+14-27 parse error invalid.yield - 68

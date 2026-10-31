@@ -1,0 +1,3 @@
+@SuppressWarnings("""
+    x""")
+class A {}

@@ -1,0 +1,3 @@
+@Deprecated
+module m {
+}

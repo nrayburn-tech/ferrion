@@ -216,17 +216,14 @@ test checks that each is listed:
 - statements before 'super()' or 'this()' (flexible constructor bodies), below 25;
 - primitive types in patterns (preview).
 
-The version check's tests compare them with javac's full compile, on the inputs in
-`crates/ferrion_parser/tests/version/`.
-
 The mechanism, so the list stays complete:
 
 - every diagnostic kind and every feature row records `javac_phase: Parse | Later | Never`;
 - the comparison with javac's parsing phase leaves out `Later` and `Never` diagnostics;
-- each `Later` kind or feature has a case in `tools/oracle-check/differences/` whose snapshot shows
-  javac's full compile reporting it, and no error from javac's parse;
-- the normalization document lists them, and a test checks that the list, the cases, and the table
-  agree, as the lexer's differences are checked.
+- each `Later` feature has an input in `crates/ferrion_parser/tests/version/`, named after the
+  row, whose `.expected` holds javac's full compile at every release: the error, and no error from
+  javac's parse. The version check's tests compare Ferrion's diagnostics with it at each release,
+  and check that every row has its input and that this list names every `Later` row.
 
 Diagnostics javac never reports (`NestingTooDeep`) have `javac_phase: Never`. They are deliberate
 departures, listed the same way.

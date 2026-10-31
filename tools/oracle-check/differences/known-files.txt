@@ -6,3 +6,7 @@
 tokens jdk-tests/test/langtools/tools/javac/diags/examples/IllegalUnicodeEscape.java invalid-unicode-escape-alone
 # javac lexes a text block opened mid-line as code; the lexer keeps one `TextBlock`.
 tokens jdk-tests/test/langtools/tools/javac/diags/examples/TextBlockOpenDelimiter.java text-block-opened-mid-line
+# At 10, javac reports only that `var` lambda parameters need 11; the grammar reports mixing `var`
+# with an inferred parameter first.
+syntax jdk-tests/test/langtools/tools/javac/diags/examples/VarInImplicitLambda.java syntax-var-and-inferred-lambda-parameters
+syntax jdk-tests/test/langtools/tools/javac/var_implicit_lambda/VarInImplicitLambdaNegTest01.java syntax-var-and-inferred-lambda-parameters
