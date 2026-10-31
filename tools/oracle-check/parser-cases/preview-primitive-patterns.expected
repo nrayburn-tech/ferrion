@@ -1,0 +1,28 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  none
+tree at 27:
+  COMPILATION_UNIT 0..120 @0 "class A {\n  boolean f(Object o) {\n    re"…
+    CLASS 0..120 @0 "class A {\n  boolean f(Object o) {\n    re"…
+      MODIFIERS -1..-1 @-1
+      METHOD 12..118 @20 "boolean f(Object o) {\n    return switch "…
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 12..19 @12 "boolean"
+        VARIABLE 22..30 @29 "Object o"
+          MODIFIERS -1..-1 @-1
+          IDENTIFIER 22..28 @22 "Object"
+        BLOCK 32..118 @32 "{\n    return switch (o) {\n      case int"…
+          RETURN 38..114 @38 "return switch (o) {\n      case int i -> "…
+            SWITCH_EXPRESSION 45..113 @45 "switch (o) {\n      case int i -> true;\n "…
+              PARENTHESIZED 52..55 @52 "(o)"
+                IDENTIFIER 53..54 @53 "o"
+              CASE 64..83 @64 "case int i -> true;"
+                PATTERN_CASE_LABEL 69..74 @69 "int i"
+                  BINDING_PATTERN 69..74 @69 "int i"
+                    VARIABLE 69..74 @73 "int i"
+                      MODIFIERS -1..-1 @-1
+                      PRIMITIVE_TYPE 69..72 @69 "int"
+                BOOLEAN_LITERAL 78..82 @78 "true"
+              CASE 90..107 @90 "default -> false;"
+                DEFAULT_CASE_LABEL 90..97 @90 "default"
+                BOOLEAN_LITERAL 101..106 @101 "false"

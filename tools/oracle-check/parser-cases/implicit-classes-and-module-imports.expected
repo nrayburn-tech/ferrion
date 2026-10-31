@@ -1,0 +1,25 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 8:
+  ERROR compiler.err.feature.not.supported.in.source.plural 28..28 @28 [compiler.misc.feature.module.imports, 8, 25] module imports are not supported in -source 8
+  ERROR compiler.err.feature.not.supported.in.source.plural 47..47 @47 [compiler.misc.feature.implicit.classes, 8, 25] implicitly declared classes are not supported in -source 8
+diagnostics at 24:
+  ERROR compiler.err.feature.not.supported.in.source.plural 28..28 @28 [compiler.misc.feature.module.imports, 24, 25] module imports are not supported in -source 24
+  ERROR compiler.err.feature.not.supported.in.source.plural 47..47 @47 [compiler.misc.feature.implicit.classes, 24, 25] implicitly declared classes are not supported in -source 24
+diagnostics at 25:
+  ERROR compiler.err.bad.file.name 47..47 @47 [implicit-classes-and-module-imports] bad file name: implicit-classes-and-module-imports
+tree at 25:
+  COMPILATION_UNIT 21..86 @21 "import module java.base;\n\nvoid main() {\n"…
+    IMPORT 21..45 @21 "import module java.base;"
+      MEMBER_SELECT 35..44 @39 "java.base"
+        IDENTIFIER 35..39 @35 "java"
+    CLASS 47..86 @47 "void main() {\n  System.out.println();\n}"
+      MODIFIERS -1..-1 @-1
+      METHOD 47..86 @52 "void main() {\n  System.out.println();\n}"
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 47..51 @47 "void"
+        BLOCK 59..86 @59 "{\n  System.out.println();\n}"
+          EXPRESSION_STATEMENT 63..84 @63 "System.out.println();"
+            METHOD_INVOCATION 63..83 @81 "System.out.println()"
+              MEMBER_SELECT 63..81 @73 "System.out.println"
+                MEMBER_SELECT 63..73 @69 "System.out"
+                  IDENTIFIER 63..69 @63 "System"

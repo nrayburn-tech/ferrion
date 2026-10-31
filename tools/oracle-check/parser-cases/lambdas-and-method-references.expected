@@ -1,0 +1,124 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  none
+tree at 27:
+  COMPILATION_UNIT 0..563 @0 "import java.util.function.*;\n\nclass A {\n"…
+    IMPORT 0..28 @0 "import java.util.function.*;"
+      MEMBER_SELECT 7..27 @25 "java.util.function.*"
+        MEMBER_SELECT 7..25 @16 "java.util.function"
+          MEMBER_SELECT 7..16 @11 "java.util"
+            IDENTIFIER 7..11 @7 "java"
+    CLASS 30..563 @30 "class A {\n  Runnable r = () -> {};\n  Fun"…
+      MODIFIERS -1..-1 @-1
+      VARIABLE 42..64 @51 "Runnable r = () -> {};"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 42..50 @42 "Runnable"
+        LAMBDA_EXPRESSION 55..63 @55 "() -> {}"
+          BLOCK 61..63 @61 "{}"
+      VARIABLE 67..113 @93 "Function<String, Integer> f = s -> s.len"…
+        MODIFIERS -1..-1 @-1
+        PARAMETERIZED_TYPE 67..92 @75 "Function<String, Integer>"
+          IDENTIFIER 67..75 @67 "Function"
+          IDENTIFIER 76..82 @76 "String"
+          IDENTIFIER 84..91 @84 "Integer"
+        LAMBDA_EXPRESSION 97..112 @97 "s -> s.length()"
+          VARIABLE 97..98 @97 "s"
+            MODIFIERS -1..-1 @-1
+          METHOD_INVOCATION 102..112 @110 "s.length()"
+            MEMBER_SELECT 102..110 @103 "s.length"
+              IDENTIFIER 102..103 @102 "s"
+      VARIABLE 116..174 @154 "BiFunction<Integer, Integer, Integer> g "…
+        MODIFIERS -1..-1 @-1
+        PARAMETERIZED_TYPE 116..153 @126 "BiFunction<Integer, Integer, Integer>"
+          IDENTIFIER 116..126 @116 "BiFunction"
+          IDENTIFIER 127..134 @127 "Integer"
+          IDENTIFIER 136..143 @136 "Integer"
+          IDENTIFIER 145..152 @145 "Integer"
+        LAMBDA_EXPRESSION 158..173 @158 "(x, y) -> x + y"
+          VARIABLE 159..160 @159 "x"
+            MODIFIERS -1..-1 @-1
+          VARIABLE 162..163 @162 "y"
+            MODIFIERS -1..-1 @-1
+          PLUS 168..173 @170 "x + y"
+            IDENTIFIER 168..169 @168 "x"
+            IDENTIFIER 172..173 @172 "y"
+      VARIABLE 177..259 @215 "BiFunction<Integer, Integer, Integer> h "…
+        MODIFIERS -1..-1 @-1
+        PARAMETERIZED_TYPE 177..214 @187 "BiFunction<Integer, Integer, Integer>"
+          IDENTIFIER 177..187 @177 "BiFunction"
+          IDENTIFIER 188..195 @188 "Integer"
+          IDENTIFIER 197..204 @197 "Integer"
+          IDENTIFIER 206..213 @206 "Integer"
+        LAMBDA_EXPRESSION 219..258 @219 "(Integer x, Integer y) -> { return x; }"
+          VARIABLE 220..229 @228 "Integer x"
+            MODIFIERS -1..-1 @-1
+            IDENTIFIER 220..227 @220 "Integer"
+          VARIABLE 231..240 @239 "Integer y"
+            MODIFIERS -1..-1 @-1
+            IDENTIFIER 231..238 @231 "Integer"
+          BLOCK 245..258 @245 "{ return x; }"
+            RETURN 247..256 @247 "return x;"
+              IDENTIFIER 254..255 @254 "x"
+      VARIABLE 262..324 @300 "BiFunction<Integer, Integer, Integer> v "…
+        MODIFIERS -1..-1 @-1
+        PARAMETERIZED_TYPE 262..299 @272 "BiFunction<Integer, Integer, Integer>"
+          IDENTIFIER 262..272 @262 "BiFunction"
+          IDENTIFIER 273..280 @273 "Integer"
+          IDENTIFIER 282..289 @282 "Integer"
+          IDENTIFIER 291..298 @291 "Integer"
+        LAMBDA_EXPRESSION 304..323 @304 "(var x, var y) -> x"
+          VARIABLE 305..310 @309 "var x"
+            MODIFIERS -1..-1 @-1
+            VAR_TYPE 305..308 @305 "var"
+          VARIABLE 312..317 @316 "var y"
+            MODIFIERS -1..-1 @-1
+            VAR_TYPE 312..315 @312 "var"
+          IDENTIFIER 322..323 @322 "x"
+      VARIABLE 327..372 @353 "Function<String, Integer> m = String::le"…
+        MODIFIERS -1..-1 @-1
+        PARAMETERIZED_TYPE 327..352 @335 "Function<String, Integer>"
+          IDENTIFIER 327..335 @327 "Function"
+          IDENTIFIER 336..342 @336 "String"
+          IDENTIFIER 344..351 @344 "Integer"
+        MEMBER_REFERENCE 357..371 @357 "String::length"
+          IDENTIFIER 357..363 @357 "String"
+      VARIABLE 375..398 @387 "Supplier<A> n = A::new;"
+        MODIFIERS -1..-1 @-1
+        PARAMETERIZED_TYPE 375..386 @383 "Supplier<A>"
+          IDENTIFIER 375..383 @375 "Supplier"
+          IDENTIFIER 384..385 @384 "A"
+        MEMBER_REFERENCE 391..397 @391 "A::new"
+          IDENTIFIER 391..392 @391 "A"
+      VARIABLE 401..442 @425 "Function<int[], Object> c = int[]::clone"…
+        MODIFIERS -1..-1 @-1
+        PARAMETERIZED_TYPE 401..424 @409 "Function<int[], Object>"
+          IDENTIFIER 401..409 @401 "Function"
+          ARRAY_TYPE 410..415 @413 "int[]"
+            PRIMITIVE_TYPE 410..413 @410 "int"
+          IDENTIFIER 417..423 @417 "Object"
+        MEMBER_REFERENCE 429..441 @429 "int[]::clone"
+          ARRAY_TYPE 429..434 @432 "int[]"
+            PRIMITIVE_TYPE 429..432 @429 "int"
+      VARIABLE 445..520 @487 "Function<java.util.List<String>, Integer"…
+        MODIFIERS -1..-1 @-1
+        PARAMETERIZED_TYPE 445..486 @453 "Function<java.util.List<String>, Integer"…
+          IDENTIFIER 445..453 @445 "Function"
+          PARAMETERIZED_TYPE 454..476 @468 "java.util.List<String>"
+            MEMBER_SELECT 454..468 @463 "java.util.List"
+              MEMBER_SELECT 454..463 @458 "java.util"
+                IDENTIFIER 454..458 @454 "java"
+            IDENTIFIER 469..475 @469 "String"
+          IDENTIFIER 478..485 @478 "Integer"
+        MEMBER_REFERENCE 491..519 @491 "java.util.List<String>::size"
+          PARAMETERIZED_TYPE 491..513 @505 "java.util.List<String>"
+            MEMBER_SELECT 491..505 @500 "java.util.List"
+              MEMBER_SELECT 491..500 @495 "java.util"
+                IDENTIFIER 491..495 @491 "java"
+            IDENTIFIER 506..512 @506 "String"
+      VARIABLE 523..561 @541 "Supplier<Integer> s = super::hashCode;"
+        MODIFIERS -1..-1 @-1
+        PARAMETERIZED_TYPE 523..540 @531 "Supplier<Integer>"
+          IDENTIFIER 523..531 @523 "Supplier"
+          IDENTIFIER 532..539 @532 "Integer"
+        MEMBER_REFERENCE 545..560 @545 "super::hashCode"
+          IDENTIFIER 545..550 @545 "super"

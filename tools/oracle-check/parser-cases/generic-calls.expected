@@ -1,0 +1,57 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  none
+tree at 27:
+  COMPILATION_UNIT 0..248 @0 "class A<T> {\n  <U> void g() {}\n  void f("…
+    CLASS 0..248 @0 "class A<T> {\n  <U> void g() {}\n  void f("…
+      MODIFIERS -1..-1 @-1
+      TYPE_PARAMETER 8..9 @8 "T"
+      METHOD 15..30 @24 "<U> void g() {}"
+        MODIFIERS 15..15 @15 ""
+        PRIMITIVE_TYPE 19..23 @19 "void"
+        TYPE_PARAMETER 16..17 @16 "U"
+        BLOCK 28..30 @28 "{}"
+      METHOD 33..246 @38 "void f() {\n    this.<String>g();\n    jav"…
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 33..37 @33 "void"
+        BLOCK 42..246 @42 "{\n    this.<String>g();\n    java.util.Li"…
+          EXPRESSION_STATEMENT 48..65 @48 "this.<String>g();"
+            METHOD_INVOCATION 48..64 @62 "this.<String>g()"
+              IDENTIFIER 54..60 @54 "String"
+              MEMBER_SELECT 48..62 @52 "this.<String>g"
+                IDENTIFIER 48..52 @48 "this"
+          VARIABLE 70..139 @93 "java.util.List<String> l = java.util.Col"…
+            MODIFIERS -1..-1 @-1
+            PARAMETERIZED_TYPE 70..92 @84 "java.util.List<String>"
+              MEMBER_SELECT 70..84 @79 "java.util.List"
+                MEMBER_SELECT 70..79 @74 "java.util"
+                  IDENTIFIER 70..74 @70 "java"
+              IDENTIFIER 85..91 @85 "String"
+            METHOD_INVOCATION 97..138 @136 "java.util.Collections.<String>emptyList("…
+              IDENTIFIER 120..126 @120 "String"
+              MEMBER_SELECT 97..136 @118 "java.util.Collections.<String>emptyList"
+                MEMBER_SELECT 97..118 @106 "java.util.Collections"
+                  MEMBER_SELECT 97..106 @101 "java.util"
+                    IDENTIFIER 97..101 @97 "java"
+          VARIABLE 144..182 @151 "Object o = new <String>A<String>() {};"
+            MODIFIERS -1..-1 @-1
+            IDENTIFIER 144..150 @144 "Object"
+            NEW_CLASS 155..181 @155 "new <String>A<String>() {}"
+              PARAMETERIZED_TYPE 167..176 @168 "A<String>"
+                IDENTIFIER 167..168 @167 "A"
+                IDENTIFIER 169..175 @169 "String"
+              IDENTIFIER 160..166 @160 "String"
+              CLASS 179..181 @179 "{}"
+                MODIFIERS -1..-1 @-1
+          VARIABLE 187..242 @210 "java.util.List<String> d = new java.util"…
+            MODIFIERS -1..-1 @-1
+            PARAMETERIZED_TYPE 187..209 @201 "java.util.List<String>"
+              MEMBER_SELECT 187..201 @196 "java.util.List"
+                MEMBER_SELECT 187..196 @191 "java.util"
+                  IDENTIFIER 187..191 @187 "java"
+              IDENTIFIER 202..208 @202 "String"
+            NEW_CLASS 214..241 @214 "new java.util.ArrayList<>()"
+              PARAMETERIZED_TYPE 218..239 @237 "java.util.ArrayList<>"
+                MEMBER_SELECT 218..237 @227 "java.util.ArrayList"
+                  MEMBER_SELECT 218..227 @222 "java.util"
+                    IDENTIFIER 218..222 @218 "java"

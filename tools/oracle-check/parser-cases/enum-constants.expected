@@ -1,0 +1,45 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  none
+tree at 27:
+  COMPILATION_UNIT 0..78 @0 "enum E {\n  A, B(1), C { void f() {} }, @"…
+    ENUM 0..78 @0 "enum E {\n  A, B(1), C { void f() {} }, @"…
+      MODIFIERS -1..-1 @-1
+      VARIABLE 11..12 @11 "A"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 11..-1 @11
+        NEW_CLASS 11..-1 @11
+          IDENTIFIER 11..-1 @11
+      VARIABLE 14..18 @14 "B(1)"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 14..-1 @14
+        NEW_CLASS 15..18 @15 "(1)"
+          IDENTIFIER 14..-1 @14
+          INT_LITERAL 16..17 @16 "1"
+      VARIABLE 20..37 @20 "C { void f() {} }"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 20..-1 @20
+        NEW_CLASS 22..37 @22 "{ void f() {} }"
+          IDENTIFIER 20..-1 @20
+          ENUM 20..37 @20 "C { void f() {} }"
+            MODIFIERS -1..-1 @-1
+            METHOD 24..35 @29 "void f() {}"
+              MODIFIERS -1..-1 @-1
+              PRIMITIVE_TYPE 24..28 @24 "void"
+              BLOCK 33..35 @33 "{}"
+      VARIABLE 39..52 @39 "@Deprecated D"
+        MODIFIERS 39..50 @39 "@Deprecated"
+          ANNOTATION 39..50 @39 "@Deprecated"
+            IDENTIFIER 40..50 @40 "Deprecated"
+        IDENTIFIER 51..-1 @51
+        NEW_CLASS 51..-1 @51
+          IDENTIFIER 51..-1 @51
+      METHOD 56..62 @56 "E() {}"
+        MODIFIERS -1..-1 @-1
+        BLOCK 60..62 @60 "{}"
+      METHOD 65..76 @65 "E(int x) {}"
+        MODIFIERS -1..-1 @-1
+        VARIABLE 67..72 @71 "int x"
+          MODIFIERS -1..-1 @-1
+          PRIMITIVE_TYPE 67..70 @67 "int"
+        BLOCK 74..76 @74 "{}"

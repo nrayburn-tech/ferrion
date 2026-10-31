@@ -1,0 +1,7 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  none
+tree at 27:
+  COMPILATION_UNIT 13..23 @13 "class A {}"
+    CLASS 13..23 @13 "class A {}"
+      MODIFIERS -1..-1 @-1

@@ -1,0 +1,2 @@
+// a comment
+class A {}

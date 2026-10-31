@@ -153,7 +153,7 @@ fn ferrion_lines(bytes: &[u8]) -> Result<(Prepared, Vec<String>)> {
 
 /// The lines only in `old` (`-`) and only in `new` (`+`), in order. Snapshots are short, so a
 /// longest-common-subsequence table is fine.
-fn line_diff(old: &str, new: &str) -> String {
+pub fn line_diff(old: &str, new: &str) -> String {
     let old: Vec<&str> = old.lines().collect();
     let new: Vec<&str> = new.lines().collect();
     let mut common = vec![vec![0usize; new.len() + 1]; old.len() + 1];

@@ -6,7 +6,8 @@
 //! for byte. `oracle syntax` and `oracle tree` are the parser's checks (see [`syntax`]); until the
 //! parser is plugged in, they run and summarize javac's side only. Later phases add their own
 //! checks (see [`check::Check`]). `oracle differences` checks the known differences the corpus
-//! doesn't exercise (see [`differences`]).
+//! doesn't exercise (see [`differences`]), and `oracle parser-cases` the snapshots of javac's
+//! parser output (see [`parser_cases`]).
 //!
 //! Besides the corpus projects, the checks can run on OpenJDK's javac tests, named `jdk-tests`
 //! (or `jdk-deep-nesting` for its deep-nesting stress tests only), once `cargo corpus jdk-tests`
@@ -21,6 +22,7 @@ mod check;
 mod differences;
 mod inventory;
 mod oracle;
+mod parser_cases;
 mod report;
 mod run;
 mod syntax;
@@ -51,6 +53,8 @@ checks:
   tree          compare tree positions with javac's; for now, run javac and summarize its trees
   differences   check the known differences in tools/oracle-check/differences against their
                 snapshots, at the latest release (takes only --oracle-jar and --bless)
+  parser-cases  check the snapshots of javac's parser output in tools/oracle-check/parser-cases
+                (takes only --oracle-jar and --bless)
 
 options:
   --release <N>        compare every file at release N (repeatable); by default, each file is
@@ -177,6 +181,7 @@ fn run() -> Result<bool> {
         "syntax" => run_check(&syntax::Syntax(syntax::NoParser), &options),
         "tree" => run_check(&syntax::Tree(syntax::NoParser), &options),
         "differences" => differences::run(options.oracle_jar, options.bless),
+        "parser-cases" => parser_cases::run(options.oracle_jar, options.bless),
         other => usage(&format!("unknown check `{other}`")),
     }
 }

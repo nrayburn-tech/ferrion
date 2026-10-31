@@ -1,0 +1,37 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 8:
+  WARNING compiler.warn.restricted.type.not.allowed 57..57 @57 [var, JDK10] as of release 10, 'var' is a restricted type name and cannot be used for type declarations or as the element type of an array
+  WARNING compiler.warn.underscore.as.identifier 72..72 @72 [] as of release 9, '_' is a keyword, and may not be used as an identifier
+  WARNING compiler.warn.underscore.as.identifier 90..90 @90 [] as of release 9, '_' is a keyword, and may not be used as an identifier
+diagnostics at 9:
+  WARNING compiler.warn.restricted.type.not.allowed 57..57 @57 [var, JDK10] as of release 10, 'var' is a restricted type name and cannot be used for type declarations or as the element type of an array
+  ERROR compiler.err.feature.not.supported.in.source.plural 72..72 @72 [compiler.misc.feature.unnamed.variables, 9, 22] unnamed variables are not supported in -source 9
+  ERROR compiler.err.underscore.as.identifier 90..90 @90 [] as of release 9, '_' is a keyword, and may not be used as an identifier
+diagnostics at 10:
+  ERROR compiler.err.feature.not.supported.in.source.plural 72..72 @72 [compiler.misc.feature.unnamed.variables, 10, 22] unnamed variables are not supported in -source 10
+  ERROR compiler.err.underscore.as.identifier 90..90 @90 [] as of release 9, '_' is a keyword, and may not be used as an identifier
+diagnostics at 21:
+  ERROR compiler.err.feature.not.supported.in.source.plural 72..72 @72 [compiler.misc.feature.unnamed.variables, 21, 22] unnamed variables are not supported in -source 21
+  ERROR compiler.err.underscore.as.identifier 90..90 @90 [] as of release 9, '_' is a keyword, and may not be used as an identifier
+diagnostics at 22:
+  ERROR compiler.err.use.of.underscore.not.allowed.non.variable 90..90 @90 [] underscore not allowed here
+tree at 22:
+  COMPILATION_UNIT 26..98 @26 "class A {\n  void f() {\n    var v = 1;\n  "…
+    CLASS 26..98 @26 "class A {\n  void f() {\n    var v = 1;\n  "…
+      MODIFIERS -1..-1 @-1
+      METHOD 38..82 @43 "void f() {\n    var v = 1;\n    int _ = 2;"…
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 38..42 @38 "void"
+        BLOCK 47..82 @47 "{\n    var v = 1;\n    int _ = 2;\n  }"
+          VARIABLE 53..63 @57 "var v = 1;"
+            MODIFIERS -1..-1 @-1
+            VAR_TYPE 53..56 @53 "var"
+            INT_LITERAL 61..62 @61 "1"
+          VARIABLE 68..78 @72 "int _ = 2;"
+            MODIFIERS -1..-1 @-1
+            PRIMITIVE_TYPE 68..71 @68 "int"
+            INT_LITERAL 76..77 @76 "2"
+      METHOD 85..96 @90 "void _() {}"
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 85..89 @85 "void"
+        BLOCK 94..96 @94 "{}"

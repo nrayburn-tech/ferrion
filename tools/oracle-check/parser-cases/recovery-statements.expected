@@ -1,0 +1,48 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  ERROR compiler.err.illegal.start.of.expr 35..35 @35 [] illegal start of expression
+  ERROR compiler.err.illegal.start.of.expr 46..46 @46 [] illegal start of expression
+  ERROR compiler.err.expected 62..62 @62 [';'] ';' expected
+  ERROR compiler.err.expected 76..76 @76 [';'] ';' expected
+  ERROR compiler.err.expected 106..106 @106 [';'] ';' expected
+  ERROR compiler.err.else.without.if 134..138 @129 [] 'else' without 'if'
+tree at 27:
+  COMPILATION_UNIT 0..142 @0 "class A {\n  void f() {\n    int x = ;\n   "…
+    CLASS 0..142 @0 "class A {\n  void f() {\n    int x = ;\n   "…
+      MODIFIERS -1..-1 @-1
+      METHOD 12..85 @17 "void f() {\n    int x = ;\n    g(1, );\n   "…
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 12..16 @12 "void"
+        BLOCK 21..85 @21 "{\n    int x = ;\n    g(1, );\n    int y = "…
+          VARIABLE 27..36 @31 "int x = ;"
+            MODIFIERS -1..-1 @-1
+            PRIMITIVE_TYPE 27..30 @27 "int"
+            ERRONEOUS 35..35 @35 ""
+          EXPRESSION_STATEMENT 41..48 @41 "g(1, );"
+            METHOD_INVOCATION 41..47 @42 "g(1, )"
+              IDENTIFIER 41..42 @41 "g"
+              INT_LITERAL 43..44 @43 "1"
+              ERRONEOUS 46..46 @46 ""
+          VARIABLE 53..67 @57 "int y = 2\n    "
+            MODIFIERS -1..-1 @-1
+            PRIMITIVE_TYPE 53..56 @53 "int"
+            INT_LITERAL 61..62 @61 "2"
+          VARIABLE 67..77 @71 "int z = 1 "
+            MODIFIERS -1..-1 @-1
+            PRIMITIVE_TYPE 67..70 @67 "int"
+            INT_LITERAL 75..76 @75 "1"
+      METHOD 88..108 @92 "int g() { return 1 }"
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 88..91 @88 "int"
+        BLOCK 96..108 @96 "{ return 1 }"
+          RETURN 98..107 @98 "return 1 "
+            INT_LITERAL 105..106 @105 "1"
+      METHOD 111..140 @116 "void h() { if (x) else y(); }"
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 111..115 @111 "void"
+        BLOCK 120..140 @120 "{ if (x) else y(); }"
+          IF 122..138 @122 "if (x) else y();"
+            PARENTHESIZED 125..128 @125 "(x)"
+              IDENTIFIER 126..127 @126 "x"
+            EXPRESSION_STATEMENT 134..138 @129 "y();"
+              ERRONEOUS 134..138 @129 "y();"
