@@ -670,7 +670,8 @@ fn new_expr(p: &mut Parser<'_>, m: Marker, qualified: bool) -> CompletedMarker {
     if p.at(LParen) {
         arguments(p);
         if p.at(LBrace) {
-            p.nested(decls::class_body);
+            // The body counts its own nesting.
+            decls::class_body(p);
         }
         return m.complete(p, NewExpr);
     }
@@ -747,7 +748,8 @@ fn switch_expr(p: &mut Parser<'_>) -> CompletedMarker {
         p.expect(RParen);
     }
     if p.at(LBrace) {
-        p.nested(stmts::switch_block);
+        // The switch block counts its own nesting.
+        stmts::switch_block(p);
     } else {
         p.error_expected(Expected::Token(LBrace));
     }
@@ -893,7 +895,8 @@ fn lambda(p: &mut Parser<'_>) -> CompletedMarker {
     parameters.complete(p, LambdaParameters);
     p.expect(Arrow);
     if p.at(LBrace) {
-        p.nested(stmts::block);
+        // The block counts its own nesting.
+        stmts::block(p);
     } else if expr(p).is_none() {
         expression_expected(p);
     }
