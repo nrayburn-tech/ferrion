@@ -1,0 +1,25 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 24:
+  ERROR compiler.err.feature.not.supported.in.source.plural 33..33 @33 [compiler.misc.feature.implicit.classes, 24, 25] implicitly declared classes are not supported in -source 24
+diagnostics at 25:
+  ERROR compiler.err.bad.file.name 33..33 @33 [implicit-class-members] bad file name: implicit-class-members
+tree at 25:
+  COMPILATION_UNIT 19..85 @19 "import a.b;\n;\nint x = 1, y;\n; class B {}"…
+    IMPORT 19..30 @19 "import a.b;"
+      MEMBER_SELECT 26..29 @27 "a.b"
+        IDENTIFIER 26..27 @26 "a"
+    CLASS 33..85 @33 "int x = 1, y;\n; class B {} ;\nString s = "…
+      MODIFIERS -1..-1 @-1
+      VARIABLE 33..43 @37 "int x = 1,"
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 33..36 @33 "int"
+        INT_LITERAL 41..42 @41 "1"
+      VARIABLE 33..46 @44 "int x = 1, y;"
+        MODIFIERS -1..-1 @-1 shared
+        PRIMITIVE_TYPE 33..36 @33 shared "int"
+      CLASS 49..59 @49 "class B {}"
+        MODIFIERS -1..-1 @-1
+      VARIABLE 62..83 @69 "String s = \"a\" + \"b\";"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 62..68 @62 "String"
+        STRING_LITERAL 73..82 @73 "\"a\" + \"b\""

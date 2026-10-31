@@ -6,7 +6,9 @@ that tree positions match the javac oracle, and that deep-nesting stress tests, 
 pass. `cargo oracle syntax` and `cargo oracle tree` (`tools/oracle-check`) will check them. This
 document records javac's side: what the oracle reports, how javac positions each construct, which
 nodes have no positions, how parse diagnostics vary across releases, and how javac recovers from
-errors. The parser work fills in Ferrion's side, in the sections marked **Ferrion side: to do**.
+errors, then Ferrion's side: how its tree and errors are put in javac's terms
+([Ferrion's tree in javac's terms](#ferrions-tree-in-javacs-terms),
+[Ferrion's errors in javac's terms](#ferrions-errors-in-javacs-terms)).
 
 Everything about javac here was learned by running the oracle on inputs, never from javac's
 source: on small inputs written for the purpose, most of them kept as
@@ -21,23 +23,31 @@ For each file and release:
 - **javac:** the oracle's `diagnostics` and `tree` sections (`--sections diagnostics,tree`), from
   parsing the file in a javac task of its own, with `--release <N> -proc:none`. Nothing after
   parsing runs, so errors javac reports while entering or attributing the file are never in it.
-- **Ferrion:** to do. `tools/oracle-check/src/syntax.rs` defines the interface the parser
-  implements (`Parser`: parse the file at each release it's compared at, since the parser reads
-  some valid code differently by release, then give the errors and the tree in javac's terms).
-  Until it's implemented, `NoParser` stands in, and both checks run javac, cache its output, and
-  report counts without comparing: each file-release is counted as `not-compared`.
+- **Ferrion:** `ferrion_parser::parse` on the file's decoded text, at the release. The parser
+  reads some valid code differently by release (`yield`), so it parses the file once for each
+  release it's compared at. `tools/oracle-check/src/syntax.rs` defines the interface (`Parser`),
+  and `tools/oracle-check/src/ferrion.rs` implements it: the errors and the tree in javac's
+  terms, as described below.
 
 The comparisons are in `syntax.rs`:
 
-- `syntax` compares javac's errors (warnings left out) with the parser's at each release: both
-  have errors or neither does, and the first error in source order has the same code and
-  `position`. This is the Phase 2 exit criterion for syntax errors, as decided in review. Later
-  errors aren't compared: they depend on each parser's recovery after the first error, and
-  matching them would mean reproducing javac's.
-- `tree`, provisional until the parser work settles it with the normalization below, compares
-  every node, as `(kind, start, end, depth)` in javac's order, for files javac reports no error
-  for. Files javac rejects are skipped and listed, since javac's tree after an error depends on
-  its recovery.
+- `syntax` compares javac's errors with Ferrion's at each release: both have errors or neither
+  does, and the first error has the same code and `position`. This is the Phase 2 exit criterion
+  for syntax errors, as decided in review. Ferrion's first error is its first in source order;
+  javac's is the first it reported, since javac reports some errors about a construct after the
+  construct's own (`a.b.;` gets `<identifier> expected` after the second `.`, then `not a
+  statement` at that `.`). Later errors aren't compared: they depend on each parser's recovery
+  after the first error, and matching them would mean reproducing javac's. Left out on javac's
+  side: warnings, and `bad.file.name`, which depends on the file's name (see
+  [Errors left out](#errors-left-out)). Left out on Ferrion's: its warnings, and errors javac
+  reports later or never (`JavacPhase::Later` and `Never`).
+- `tree` compares every node as `[kind, start, end, depth, preferred, shared]`, all six, in
+  javac's order, for files javac reports no error for. Ferrion's tree is turned into javac's
+  nodes, in javac's order, by the rules in
+  [Ferrion's tree in javac's terms](#ferrions-tree-in-javacs-terms); nothing is sorted or dropped
+  on javac's side. Files javac rejects are skipped and listed, since javac's tree after an error
+  depends on its recovery. A file Ferrion reports an error for and javac doesn't is compared
+  anyway; Ferrion's `Error` nodes become `ERRONEOUS` leaves, so it mismatches there.
 
 ## The oracle's output
 
@@ -135,7 +145,22 @@ chain is long.
 snapshot of javac's diagnostics at the releases the case names (`// releases: 8 16` on its first
 line) and its tree at the last of them. `cargo oracle parser-cases` regenerates the snapshots and
 fails if one changed, so a JDK that moves a position or changes an error is noticed; `--bless`
-writes them. `cargo test` checks that this document links every case. The cases are cited below.
+writes them. `cargo test` checks that this document links every case, and, without a JDK, runs
+both comparisons on every case against its snapshot: the `syntax` comparison at each release,
+and the `tree` comparison at the last (see [Pending](#pending)). The cases are cited below.
+
+Besides the cases cited elsewhere, these cover what the mapping does with constructs the others
+don't: [`declarations.java`](../../tools/oracle-check/parser-cases/declarations.java) (type
+declarations, members without bodies, enum constants, annotation elements),
+[`types-and-annotations.java`](../../tools/oracle-check/parser-cases/types-and-annotations.java)
+(type annotations, C-style and annotated dimensions, variable arity parameters, array creation),
+[`expressions-in-fields.java`](../../tools/oracle-check/parser-cases/expressions-in-fields.java)
+(every operator, calls, creation, lambdas, method references),
+[`folded-strings.java`](../../tools/oracle-check/parser-cases/folded-strings.java),
+[`statements.java`](../../tools/oracle-check/parser-cases/statements.java) (every statement,
+switch rules and groups), [`patterns.java`](../../tools/oracle-check/parser-cases/patterns.java),
+[`top-level-semicolons.java`](../../tools/oracle-check/parser-cases/top-level-semicolons.java),
+and [`implicit-class-members.java`](../../tools/oracle-check/parser-cases/implicit-class-members.java).
 
 ## javac's tree
 
@@ -258,18 +283,94 @@ can be shorter than its child. In the corpus and javac's tests, 500 nodes lie ou
 parent: 415 enum bodies, 82 annotations after type parameters, and 3 annotated array types. 67
 compilation units have `start` after `end` (files with no tokens).
 
-### Ferrion side: to do
+### Ferrion's tree in javac's terms
 
-- How Ferrion's nodes map to javac's kinds (the analogue of the lexer's `javac_name`), including
-  declarations with several declarators, which javac splits into `VARIABLE`s with shared nodes.
-- Which of javac's quirks above Ferrion reproduces in its javac-terms tree, and which become
-  allowed differences: the comma in a first declarator's span, `int[][]`'s inner span, the
-  intersection type's `(`, empty modifiers at `<`, the comment-only compilation unit.
-- What Ferrion emits for synthesized nodes (enum constant types and initializers, compact
-  constructor parameters, implicit classes), or whether they're dropped from javac's side before
-  comparing.
-- Whether the comparison uses javac's child order or sorts siblings, and whether it compares
-  `preferred` too.
+`tools/oracle-check/src/ferrion/tree.rs` walks Ferrion's tree and writes javac's rows, in javac's
+order, with javac's positions. Nothing is dropped from javac's side and nothing is sorted: every
+javac node, synthesized ones included, has a rule that produces it, with its `preferred` position
+and `shared` flag. Positions are byte offsets until the comparison converts them to UTF-16.
+Unless a row says otherwise, a node spans its Ferrion node's first to last token and is preferred
+at its start, and its children are its Ferrion children's rows in source order. `java.grammar`'s
+header lists the representation decisions these rules undo.
+
+| Ferrion | javac | Rule |
+| --- | --- | --- |
+| `CompilationUnit` | `COMPILATION_UNIT` | From the first token to the end of the last, without comments; without tokens, from the end of the file to 0. |
+| `;` at the top level | `EMPTY_STATEMENT` | Only in a file with a type declaration, and only when no import or module declaration follows it ([`top-level-semicolons.java`](../../tools/oracle-check/parser-cases/top-level-semicolons.java)); never in an implicitly declared class. |
+| top-level fields and methods | `CLASS` | A file with one is an implicitly declared class: a synthesized `CLASS` with empty `MODIFIERS`, from the first member to the last token, holding every member, type declarations included ([`implicit-class-members.java`](../../tools/oracle-check/parser-cases/implicit-class-members.java)). |
+| `PackageDecl` | `PACKAGE` | Preferred at `package`; annotations, then the name. |
+| `ImportDecl` | `IMPORT` | The name; `.*` adds a `MEMBER_SELECT` to the `*`, preferred at its `.`. |
+| `Name` | `MEMBER_SELECT`, `IDENTIFIER` | A qualified name is a `MEMBER_SELECT` preferred at its `.`. |
+| `ModuleDecl`, directives | `MODULE`, `REQUIRES`, `EXPORTS`, `OPENS`, `USES`, `PROVIDES` | `MODULE` starts at its first annotation, or else at `module`, never at `open` ([`open-module.java`](../../tools/oracle-check/parser-cases/open-module.java)), and is preferred at `module`; annotations, name, directives. A directive's children are its names. |
+| `Modifiers` | `MODIFIERS` | Its annotations as `ANNOTATION`s. Absent: -1..-1, or an empty span at the `<` of a method's or constructor's type parameters. A method's annotations after its type parameters are its children, outside its span. An annotation interface's include the `@` of `@interface`. |
+| `Annotation` | `ANNOTATION`, `TYPE_ANNOTATION` | `ANNOTATION` in modifiers, packages, modules, and element values; `TYPE_ANNOTATION` on types, dimensions, and type parameters. The name, then a single value, or an `ASSIGNMENT` (preferred at `=`) per pair. `{...}` is a `NEW_ARRAY`. |
+| `ClassDecl`, `InterfaceDecl`, `EnumDecl`, `RecordDecl`, `AnnotationTypeDecl` | `CLASS`, `INTERFACE`, `ENUM`, `RECORD`, `ANNOTATION_TYPE` | Preferred at the keyword. Modifiers, type parameters, `extends`, `implements`, and `permits` types, then a record's components as `VARIABLE`s, then the members. A `;` in a body has no node. |
+| `FieldDecl`, `LocalVarDecl` | `VARIABLE` per declarator | Each from the declaration's start, preferred at its name. All but the last end after their `,`. Declarators after the first repeat the modifiers and type, `shared` ([`declarators.java`](../../tools/oracle-check/parser-cases/declarators.java)). |
+| `Dim`s after a name, or a method's parameters | `ARRAY_TYPE` | They wrap the type, the first outermost, each from the type's start to the last `]`, preferred at its `[`. The wrapped type stays shared. |
+| `MethodDecl`, `ConstructorDecl` | `METHOD` | Preferred at the name. Modifiers, result type, type parameters, parameters, the receiver parameter last, `throws` types, body, default value. |
+| `CompactConstructorDecl` | `METHOD` | Its parameters are copies of the record's components: every node keeps its start and preferred position and has no end, and each `VARIABLE` is preferred where its type is ([`records.java`](../../tools/oracle-check/parser-cases/records.java)). |
+| `Initializer` | `BLOCK` | From `static`, if any. |
+| `FormalParameter`, `RecordComponent`, typed `LambdaParameter` | `VARIABLE` | To the end of the name and its dimensions, preferred at the name. |
+| `ReceiverParameter` | `VARIABLE` | Preferred at `this` (or its qualifier); its name is an `IDENTIFIER` `this` or a `MEMBER_SELECT`. |
+| `EnumConstant` | `VARIABLE` | Preferred at its start. A synthesized `IDENTIFIER` and `NEW_CLASS` (its class another such `IDENTIFIER`), starting at the name with no end. With arguments or a body, the `NEW_CLASS` spans from `(` (or `{`) to the end; `()` alone is like no arguments. A body is an `ENUM` from the name to `}` ([`enum-constants.java`](../../tools/oracle-check/parser-cases/enum-constants.java)). |
+| `TypeParameter` | `TYPE_PARAMETER` | Annotations, then bounds. |
+| `PrimitiveType`, `VoidType` | `PRIMITIVE_TYPE` | Annotated: an `ANNOTATED_TYPE` preferred at the first annotation, except an array creation's element type, preferred at the keyword. |
+| `ClassType` | `IDENTIFIER`, `MEMBER_SELECT`, `ANNOTATED_TYPE`, `PARAMETERIZED_TYPE`, `VAR_TYPE` | Per segment: a `PARAMETERIZED_TYPE` (preferred at `<`) around an `ANNOTATED_TYPE` (from the segment's start to its name, preferred at the first annotation) around a `MEMBER_SELECT` or `IDENTIFIER`. `var` in a local variable, lambda parameter, or pattern is `VAR_TYPE`, from release 10. |
+| `ArrayType` | `ARRAY_TYPE` | A layer per `Dim`, the first outermost, each spanning the whole type, preferred at its `[`; an annotated one is wrapped in an `ANNOTATED_TYPE` with the same span and position. After a class type (not a primitive one), an annotated first `Dim`'s two nodes are preferred at its first annotation instead. |
+| `Varargs` | `ARRAY_TYPE` | The innermost layer, preferred at `...`. See [Variable arity parameters](#variable-arity-parameters). |
+| `IntersectionType`, `UnionType`, `Wildcard` | `INTERSECTION_TYPE`, `UNION_TYPE`, `*_WILDCARD` | A cast's intersection type starts at its `(`. A wildcard is preferred at `?`; an annotated one is wrapped in an `ANNOTATED_TYPE`. |
+| `LiteralExpr` | `*_LITERAL` | By the token's kind; text blocks are `STRING_LITERAL`s. See [Folded strings](#folded-strings). |
+| `-` before a decimal integer literal | `INT_LITERAL`, `LONG_LITERAL` | javac makes `-1`, `- 1L`, and `-2147483648` one literal from the `-`; not `-0`, `-01`, `-0x1`, `-1.0`, or `-(1)`. |
+| `NameExpr`, `ThisExpr`, `SuperExpr` | `IDENTIFIER`, `MEMBER_SELECT` | Qualified: a `MEMBER_SELECT` preferred at the `.`. |
+| `FieldAccessExpr`, `ClassLiteralExpr` | `MEMBER_SELECT` | Preferred at the `.`. |
+| `ArrayAccessExpr` | `ARRAY_ACCESS` | Preferred at `[`. |
+| `MethodCallExpr`, `ConstructorCallExpr` | `METHOD_INVOCATION` | Preferred at `(`. Type arguments, then the method: a `MEMBER_SELECT` from the receiver to the name (spanning the type arguments) preferred at the `.`, or an `IDENTIFIER`, which for `<T>this()` starts at `<`. Then the arguments. |
+| `NewExpr` | `NEW_CLASS` | Preferred at `new`. Outer expression, class, type arguments, arguments, then a body as a `CLASS` with empty modifiers. |
+| `ArrayCreationExpr` | `NEW_ARRAY` | Preferred at `new`. The element type wrapped in the dimensions that aren't the array's own (all `[]` after `[n]`, or all but the first), each spanning from the element type to the last `]`; the sizes; the initializer's elements; then the annotations of the sizes and of the array's own `[]` as `TYPE_ANNOTATION`s. |
+| `ArrayInitializer` | `NEW_ARRAY` | Preferred at `{`. |
+| `PrefixExpr`, `PostfixExpr`, `BinaryExpr`, `AssignExpr` | `UNARY_MINUS`, `POSTFIX_INCREMENT`, `PLUS`, `PLUS_ASSIGNMENT`, ... | By the operator, preferred at it; runs of `>` tokens are one operator. |
+| `InstanceofExpr`, `ConditionalExpr` | `INSTANCE_OF`, `CONDITIONAL_EXPRESSION` | Preferred at `instanceof` and `?`. |
+| `CastExpr`, `ParenExpr` | `TYPE_CAST`, `PARENTHESIZED` | Preferred at `(`. |
+| `LambdaExpr` | `LAMBDA_EXPRESSION` | A `VARIABLE` per parameter (an inferred one is just its name, with empty modifiers), then the body. |
+| `MethodRefExpr` | `MEMBER_REFERENCE` | The qualifier, then the type arguments. |
+| `SwitchExpr`, `SwitchStmt` | `SWITCH_EXPRESSION`, `SWITCH` | The selector's parentheses as a `PARENTHESIZED`, then the cases. |
+| `SwitchRule` | `CASE` | The labels, the guard's condition, and the body; in a switch statement an expression body is an `EXPRESSION_STATEMENT` to the `;`. |
+| `SwitchGroup` | `CASE` per label | Each from its `case` or `default` to its `:`, the last to its last statement, which it holds. |
+| case elements | `CONSTANT_CASE_LABEL`, `PATTERN_CASE_LABEL`, `DEFAULT_CASE_LABEL` | One per element, and per `default`. |
+| `TypePattern` | `BINDING_PATTERN` | Around a `VARIABLE` with the same span, preferred at the name. |
+| `RecordPattern`, `UnnamedPattern` | `DECONSTRUCTION_PATTERN`, `ANY_PATTERN` | A nested record pattern's type `var` is a `VAR_TYPE`. `ANY_PATTERN` is empty, at the end of the `_` ([`patterns.java`](../../tools/oracle-check/parser-cases/patterns.java)). |
+| `IfStmt`, `WhileStmt`, `DoStmt`, `SynchronizedStmt` | `IF`, `WHILE_LOOP`, `DO_WHILE_LOOP`, `SYNCHRONIZED` | The parentheses around the condition are a `PARENTHESIZED`. |
+| `ForStmt` | `FOR_LOOP` | Initializers, condition, updates, body. Expressions in the header are `EXPRESSION_STATEMENT`s without a `;`. |
+| `TryStmt` | `TRY` | Resources, block, `CATCH`es, the `finally` block. A resource ends after the `;` that follows it, if one does. |
+| other statements | `BLOCK`, `EXPRESSION_STATEMENT`, `RETURN`, ... | The statement's kind; a `YieldStmt` is `YIELD`. |
+| `Error` | `ERRONEOUS` | A leaf. |
+
+#### Variable arity parameters
+
+javac makes the `...` the innermost dimension: `String[]... a` is an `ARRAY_TYPE` for `[]` around
+one for `...`. Without annotations on the dimensions, every layer spans the whole type, preferred
+at its `[` or `...`. With them, javac positions the layers its own way, observed as follows, where
+*E* is the end of the last token before `...` and the `...`'s layer always spans the whole type:
+
+- the first `[]`: annotated, its `ARRAY_TYPE` ends at *E*, and it and its `ANNOTATED_TYPE`
+  (which spans the whole type) are preferred at its first annotation; unannotated, it spans the
+  whole type;
+- every other `[]`: its `ARRAY_TYPE` and any `ANNOTATED_TYPE` end at *E*, preferred at its `[`;
+- the `...`: annotated, its `ANNOTATED_TYPE` is preferred at the first annotation;
+- with annotations on the `...` and no `[]`, the element type ends at *E*, after them.
+
+[`types-and-annotations.java`](../../tools/oracle-check/parser-cases/types-and-annotations.java)
+has each combination.
+
+#### Folded strings
+
+javac's parser joins adjacent string literals in a chain of `+` into one `STRING_LITERAL`
+spanning them, but only in the chain at the top of a binary expression: the `+` operators reached
+from the expression's root through left operands, when the root is a `+`. A chain under another
+operator (`x == "a" + "b"`), or after another operator in it (`"a" + "b" - 1`), isn't folded, and
+parentheses start a new expression. Text blocks count; character literals don't. In a chain with
+a fold, every `+` of the chain is preferred at its right operand's start instead of the operator
+([`folded-strings.java`](../../tools/oracle-check/parser-cases/folded-strings.java)).
 
 ## javac's parse diagnostics
 
@@ -391,15 +492,67 @@ running the oracle on the cases and javac's tests:
 - Some version errors cascade, because javac doesn't parse the newer syntax at older releases:
   `sealed ... permits` adds `'{' expected`, a local record adds `';' expected` twice.
 
-### Ferrion side: to do
+### Ferrion's errors in javac's terms
 
-- How Ferrion's errors map to javac's codes and positions, and which of javac's diagnostics are
-  compared: errors only, or warnings too; the first error, or all of them; codes, or codes and
-  arguments.
-- The syntax-shaped errors Ferrion reports earlier than javac (preview features, and any others),
-  each with an input that shows it.
-- Allowed differences, in SCOPE.md's categories, with a row each, as in the
-  [lexer's list](lexer-oracle-normalization.md#allowed-differences).
+`tools/oracle-check/src/ferrion.rs` turns each `ParseDiagnostic` into javac's code and position.
+Compared are errors only, the first one, by code and `position`; arguments aren't compared, and
+messages are Ferrion's own. Each `ParseDiagnosticKind` documents its javac code and anchor
+(`crates/ferrion_parser/src/diagnostic.rs`, with a table in
+[parser-error-recovery.md](parser-error-recovery.md)); the mapping takes the code from the kind and
+the position from the anchor, with these rules:
+
+- **The end of the file.** javac reports any syntax error it meets at the end of the file as
+  `premature.eof`, at the end of the last token. Ferrion reports what's missing (`Expected`,
+  `ExpectedDeclaration(Eof)`, `UnexpectedToken(Eof)`, `StatementExpected`, ...), anchored at the
+  end of the previous token or at the end of the file. Any syntax error whose next token is the end
+  of the file becomes `premature.eof` at the end of the last token (0 in a file without tokens).
+  It sorts after Ferrion's other errors, since javac meets it last: after an unclosed comment that
+  ends the file, for example.
+- **By release.** `ExpectedDeclaration` is `expected3` (class, interface, or enum) before 16,
+  `expected4` (or record) from 16 to 24, and `class.method.or.field.expected` from 25.
+- **Several tokens.** `Expected(OneOf(..))` is `expected2`, `expected3`, or `expected4` by how
+  many tokens it names; `Expected(Token(WithKw))` is `expected.str`.
+- **The generic kinds.** `UnexpectedToken` and `ExpressionExpected` are `illegal.start.of.expr`;
+  `TypeExpected` and `ExpectedMember` are `illegal.start.of.type`.
+- **Lexical errors.** The lexer's one kind per mistake is javac's code by the token's text, and its
+  span points at the mistake where javac's position doesn't:
+
+  | Lexer | javac | Position |
+  | --- | --- | --- |
+  | `IllegalCharacter` | `illegal.char`, or `illegal.nonascii.digit` for a digit that isn't ASCII | the character |
+  | `InvalidUnicodeEscape` | `illegal.unicode.esc` | the end of the escape so far |
+  | `InvalidEscape` | `illegal.esc.char` | the character after the `\` |
+  | `UnterminatedComment` | `unclosed.comment` | the `/*` |
+  | `UnterminatedCharLiteral`, `MultipleCharsInCharLiteral` | `unclosed.char.lit` | the literal's start |
+  | `UnterminatedStringLiteral`, `UnterminatedTextBlock` | `unclosed.str.lit`, `unclosed.text.block` | the literal's start |
+  | `EmptyCharLiteral`, `LineTerminatorInCharLiteral` | `empty.char.lit`, `illegal.line.end.in.char.lit` | the literal's start |
+  | `TextBlockOpeningNotOnOwnLine` | `illegal.text.block.open` | the text after `"""` |
+  | `MalformedNumber` on underscores | `illegal.underscore` | the last underscore |
+  | `MalformedNumber` on a digit of a binary literal | `illegal.digit.in.binary.literal` | the digit's offset without the `0b`: two before it |
+  | `MalformedNumber` on a digit of an octal literal | `illegal.digit.in.octal.literal` | the digit |
+  | `MalformedNumber` on the literal | `invalid.hex.number` (`0x` without digits), `invalid.binary.number` (`0b` without digits), otherwise `malformed.fp.lit` | the literal's start |
+
+#### Errors left out
+
+- **Warnings**, on both sides, and Ferrion's errors javac reports later or never
+  (`JavacPhase::Later`, `JavacPhase::Never`). The syntax-shaped errors Ferrion reports earlier than
+  javac are each to have a case in `differences/` when the version check adds them
+  ([Reported earlier than javac](parser-error-recovery.md#reported-earlier-than-javac)).
+- **`bad.file.name`**, on javac's side: javac reports it for an implicitly declared class in a file
+  whose name isn't an identifier, because the class takes its name from the file. The parser never
+  sees file names, and naming the class is semantic analysis's concern. It's the only error javac
+  reports while parsing that depends on something besides the text and the release
+  ([`implicit-classes-and-module-imports.java`](../../tools/oracle-check/parser-cases/implicit-classes-and-module-imports.java),
+  [`implicit-class-members.java`](../../tools/oracle-check/parser-cases/implicit-class-members.java)).
+
+## Pending
+
+`cargo test` runs both comparisons on every snapshot case; the comparisons that don't match yet
+are listed, each with its reason, in `PENDING` in `tools/oracle-check/src/ferrion/tests.rs`, and
+the test fails when a listed one starts to match. All of them wait for the version check (W4):
+the version errors of `implicit-class-members.java`, `implicit-classes-and-module-imports.java`,
+`records.java`, `sealed-and-text-blocks.java`, and `switches-and-patterns.java`, and the
+restricted names of `var-and-underscore.java`. Every tree comparison matches.
 
 ## Running it
 
@@ -412,10 +565,10 @@ cargo oracle syntax jdk-tests
 ```
 
 `cargo oracle syntax` and `cargo oracle tree` take projects, `jdk-tests`, and `jdk-deep-nesting`,
-and the options of `cargo oracle tokens`. Until the parser is plugged in, each prints the usual
-table with a `not-compared` column, the diagnostic codes javac reported (how often, and in how many
-file-releases), and for `tree` the number of nodes, those without positions, and the deepest
-trees. Observed when this was written, with 10 JVMs:
+and the options of `cargo oracle tokens`. Each prints the usual table, the diagnostic codes javac
+reported (how often, and in how many file-releases), and for `tree` the number of nodes, those
+without positions, and the deepest trees. Observed with javac's output measured when this was
+first written, with 10 JVMs:
 
 | Run | File-releases | javac's time | Parse errors | Deepest |
 | --- | --- | --- | --- | --- |

@@ -8,8 +8,7 @@
 //!
 //! `oracle parser-cases` regenerates every snapshot with javac and fails if one changed, so a new
 //! JDK that moves a position or changes an error is noticed. `--bless` writes the new snapshots.
-//! The parser's side will be added to the snapshots when it exists, as the lexer's is in
-//! `differences`.
+//! `cargo test` compares Ferrion's errors and tree with each snapshot (see `ferrion::tests`).
 
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
@@ -23,7 +22,7 @@ use crate::oracle::{Oracle, Output, Section};
 const DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/parser-cases");
 
 /// Each case's input, in name order.
-fn cases() -> Result<Vec<PathBuf>> {
+pub(crate) fn cases() -> Result<Vec<PathBuf>> {
     let mut cases = Vec::new();
     for entry in std::fs::read_dir(DIR).with_context(|| format!("reading {DIR}"))? {
         let path = entry?.path();
@@ -40,7 +39,7 @@ fn expected_path(case: &Path) -> PathBuf {
 }
 
 /// The releases a case names in its first line, or the latest.
-fn releases(text: &str) -> Result<Vec<u32>> {
+pub(crate) fn releases(text: &str) -> Result<Vec<u32>> {
     let Some(list) = text
         .lines()
         .next()

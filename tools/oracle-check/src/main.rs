@@ -3,9 +3,8 @@
 //!
 //! `oracle tokens` checks the lexer: its tokens and comments must match javac's after the
 //! normalization in docs/design/lexer-oracle-normalization.md, and must reproduce every file byte
-//! for byte. `oracle syntax` and `oracle tree` are the parser's checks (see [`syntax`]); until the
-//! parser is plugged in, they run and summarize javac's side only. Later phases add their own
-//! checks (see [`check::Check`]). `oracle differences` checks the known differences the corpus
+//! for byte. `oracle syntax` and `oracle tree` are the parser's checks (see [`syntax`] and
+//! [`ferrion`]). Later phases add their own checks (see [`check::Check`]). `oracle differences` checks the known differences the corpus
 //! doesn't exercise (see [`differences`]), and `oracle parser-cases` the snapshots of javac's
 //! parser output (see [`parser_cases`]).
 //!
@@ -20,6 +19,7 @@ mod allowed;
 mod cache;
 mod check;
 mod differences;
+mod ferrion;
 mod inventory;
 mod oracle;
 mod parser_cases;
@@ -48,9 +48,9 @@ usage: oracle <check> [<option>...] [<project>...]
 checks:
   tokens        compare the lexer's tokens and comments with javac's, and check that the
                 tokens reproduce each file
-  syntax        compare syntax errors with javac's parsing-phase errors; for now, run javac and
-                summarize its errors (the parser isn't plugged in yet)
-  tree          compare tree positions with javac's; for now, run javac and summarize its trees
+  syntax        compare the first syntax error with javac's first parsing-phase error, at each
+                release
+  tree          compare the tree with javac's, node by node, for files javac accepts
   differences   check the known differences in tools/oracle-check/differences against their
                 snapshots, at the latest release (takes only --oracle-jar and --bless)
   parser-cases  check the snapshots of javac's parser output in tools/oracle-check/parser-cases
@@ -178,8 +178,8 @@ fn run() -> Result<bool> {
     let options = parse_args(std::env::args().skip(1));
     match options.check.as_str() {
         "tokens" => run_check(&tokens::Tokens, &options),
-        "syntax" => run_check(&syntax::Syntax(syntax::NoParser), &options),
-        "tree" => run_check(&syntax::Tree(syntax::NoParser), &options),
+        "syntax" => run_check(&syntax::Syntax(ferrion::Ferrion), &options),
+        "tree" => run_check(&syntax::Tree(ferrion::Ferrion), &options),
         "differences" => differences::run(options.oracle_jar, options.bless),
         "parser-cases" => parser_cases::run(options.oracle_jar, options.bless),
         other => usage(&format!("unknown check `{other}`")),

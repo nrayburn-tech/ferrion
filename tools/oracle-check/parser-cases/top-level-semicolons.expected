@@ -1,0 +1,24 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 8:
+  WARNING compiler.warn.extraneous.semicolon 29..29 @29 [] extraneous semicolon
+  WARNING compiler.warn.extraneous.semicolon 43..43 @43 [] extraneous semicolon
+diagnostics at 20:
+  WARNING compiler.warn.extraneous.semicolon 29..29 @29 [] extraneous semicolon
+  WARNING compiler.warn.extraneous.semicolon 43..43 @43 [] extraneous semicolon
+tree at 20:
+  COMPILATION_UNIT 18..88 @18 "package p;\n;\nimport a.b; ;\nimport c.d;\n;"…
+    PACKAGE 18..28 @18 "package p;"
+      IDENTIFIER 26..27 @26 "p"
+    IMPORT 31..42 @31 "import a.b;"
+      MEMBER_SELECT 38..41 @39 "a.b"
+        IDENTIFIER 38..39 @38 "a"
+    IMPORT 45..56 @45 "import c.d;"
+      MEMBER_SELECT 52..55 @53 "c.d"
+        IDENTIFIER 52..53 @52 "c"
+    EMPTY_STATEMENT 57..58 @57 ";"
+    CLASS 59..69 @59 "class A {}"
+      MODIFIERS -1..-1 @-1
+    EMPTY_STATEMENT 70..71 @70 ";"
+    INTERFACE 72..86 @72 "interface B {}"
+      MODIFIERS -1..-1 @-1
+    EMPTY_STATEMENT 87..88 @87 ";"

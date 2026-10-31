@@ -13,6 +13,9 @@ corpus = { path = "../corpus" }
 ferrion_diagnostics = { path = "../../crates/ferrion_diagnostics" }
 ferrion_java_version = { path = "../../crates/ferrion_java_version" }
 ferrion_lexer = { path = "../../crates/ferrion_lexer" }
+ferrion_parser = { path = "../../crates/ferrion_parser" }
+ferrion_stack = { path = "../../crates/ferrion_stack" }
+ferrion_syntax = { path = "../../crates/ferrion_syntax" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.11"

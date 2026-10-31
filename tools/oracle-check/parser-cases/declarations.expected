@@ -1,0 +1,218 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  none
+tree at 27:
+  COMPILATION_UNIT 0..990 @0 "public abstract class A<T extends Number"…
+    CLASS 0..990 @16 "public abstract class A<T extends Number"…
+      MODIFIERS 0..15 @0 "public abstract"
+      TYPE_PARAMETER 24..56 @24 "T extends Number & Comparable<T>"
+        IDENTIFIER 34..40 @34 "Number"
+        PARAMETERIZED_TYPE 43..56 @53 "Comparable<T>"
+          IDENTIFIER 43..53 @43 "Comparable"
+          IDENTIFIER 54..55 @54 "T"
+      TYPE_PARAMETER 58..59 @58 "U"
+      PARAMETERIZED_TYPE 69..73 @70 "B<T>"
+        IDENTIFIER 69..70 @69 "B"
+        IDENTIFIER 71..72 @71 "T"
+      IDENTIFIER 85..86 @85 "C"
+      PARAMETERIZED_TYPE 88..92 @89 "D<U>"
+        IDENTIFIER 88..89 @88 "D"
+        IDENTIFIER 90..91 @90 "U"
+      VARIABLE 101..149 @127 "private static final long serialVersionU"…
+        MODIFIERS 101..121 @101 "private static final"
+        PRIMITIVE_TYPE 122..126 @122 "long"
+        LONG_LITERAL 146..148 @146 "1L"
+      VARIABLE 101..161 @150 "private static final long serialVersionU"…
+        MODIFIERS 101..121 @101 shared "private static final"
+        PRIMITIVE_TYPE 122..126 @122 shared "long"
+        LONG_LITERAL 158..160 @158 "2L"
+      VARIABLE 101..168 @162 "private static final long serialVersionU"…
+        MODIFIERS 101..121 @101 shared "private static final"
+        PRIMITIVE_TYPE 122..126 @122 shared "long"
+      METHOD 171..203 @185 "abstract void m() throws E1, E2;"
+        MODIFIERS 171..179 @171 "abstract"
+        PRIMITIVE_TYPE 180..184 @180 "void"
+        IDENTIFIER 196..198 @196 "E1"
+        IDENTIFIER 200..202 @200 "E2"
+      METHOD 206..272 @227 "protected native int n(int a, final Stri"…
+        MODIFIERS 206..222 @206 "protected native"
+        PRIMITIVE_TYPE 223..226 @223 "int"
+        VARIABLE 229..234 @233 "int a"
+          MODIFIERS -1..-1 @-1
+          PRIMITIVE_TYPE 229..232 @229 "int"
+        VARIABLE 236..253 @252 "final String... b"
+          MODIFIERS 236..241 @236 "final"
+          ARRAY_TYPE 242..251 @248 "String..."
+            IDENTIFIER 242..248 @242 "String"
+        IDENTIFIER 262..271 @262 "Exception"
+      METHOD 275..319 @308 "@Override public abstract String toStrin"…
+        MODIFIERS 275..300 @275 "@Override public abstract"
+          ANNOTATION 275..284 @275 "@Override"
+            IDENTIFIER 276..284 @276 "Override"
+        IDENTIFIER 301..307 @301 "String"
+      METHOD 322..347 @343 "public <V> @A String q();"
+        MODIFIERS 322..328 @322 "public"
+          ANNOTATION 333..335 @333 "@A"
+            IDENTIFIER 334..335 @334 "A"
+        IDENTIFIER 336..342 @336 "String"
+        TYPE_PARAMETER 330..331 @330 "V"
+      METHOD 350..381 @364 "abstract void r(A this, int x);"
+        MODIFIERS 350..358 @350 "abstract"
+        PRIMITIVE_TYPE 359..363 @359 "void"
+        VARIABLE 374..379 @378 "int x"
+          MODIFIERS -1..-1 @-1
+          PRIMITIVE_TYPE 374..377 @374 "int"
+        VARIABLE 366..372 @368 "A this"
+          MODIFIERS -1..-1 @-1
+          IDENTIFIER 366..367 @366 "A"
+          IDENTIFIER 368..372 @368 "this"
+      METHOD 384..412 @399 "abstract int[] s() @A [] [];"
+        MODIFIERS 384..392 @384 "abstract"
+        ANNOTATED_TYPE 393..411 @406 "int[] s() @A [] []"
+          TYPE_ANNOTATION 403..405 @403 "@A"
+            IDENTIFIER 404..405 @404 "A"
+          ARRAY_TYPE 393..411 @406 "int[] s() @A [] []"
+            ARRAY_TYPE 393..411 @409 "int[] s() @A [] []"
+              ARRAY_TYPE 393..398 @396 "int[]"
+                PRIMITIVE_TYPE 393..396 @393 "int"
+      METHOD 415..444 @429 "abstract void t(@A A A.this);"
+        MODIFIERS 415..423 @415 "abstract"
+        PRIMITIVE_TYPE 424..428 @424 "void"
+        VARIABLE 431..442 @436 "@A A A.this"
+          MODIFIERS 431..433 @431 "@A"
+            ANNOTATION 431..433 @431 "@A"
+              IDENTIFIER 432..433 @432 "A"
+          IDENTIFIER 434..435 @434 "A"
+          MEMBER_SELECT 436..442 @437 "A.this"
+            IDENTIFIER 436..437 @436 "A"
+      INTERFACE 447..497 @447 "interface I { int C = 1; void m(); <T> v"…
+        MODIFIERS -1..-1 @-1
+        VARIABLE 461..471 @465 "int C = 1;"
+          MODIFIERS -1..-1 @-1
+          PRIMITIVE_TYPE 461..464 @461 "int"
+          INT_LITERAL 469..470 @469 "1"
+        METHOD 472..481 @477 "void m();"
+          MODIFIERS -1..-1 @-1
+          PRIMITIVE_TYPE 472..476 @472 "void"
+        METHOD 482..495 @491 "<T> void g();"
+          MODIFIERS 482..482 @482 ""
+          PRIMITIVE_TYPE 486..490 @486 "void"
+          TYPE_PARAMETER 483..484 @483 "T"
+      ANNOTATION_TYPE 500..591 @508 "public @interface Ann { int v() default "…
+        MODIFIERS 500..508 @500 "public @"
+        METHOD 524..542 @528 "int v() default 1;"
+          MODIFIERS -1..-1 @-1
+          PRIMITIVE_TYPE 524..527 @524 "int"
+          INT_LITERAL 540..541 @540 "1"
+        METHOD 543..575 @552 "String[] w() default {\"a\", \"b\"};"
+          MODIFIERS -1..-1 @-1
+          ARRAY_TYPE 543..551 @549 "String[]"
+            IDENTIFIER 543..549 @543 "String"
+          NEW_ARRAY 564..574 @564 "{\"a\", \"b\"}"
+            STRING_LITERAL 565..568 @565 "\"a\""
+            STRING_LITERAL 570..573 @570 "\"b\""
+        METHOD 576..589 @585 "Class<?> c();"
+          MODIFIERS -1..-1 @-1
+          PARAMETERIZED_TYPE 576..584 @581 "Class<?>"
+            IDENTIFIER 576..581 @576 "Class"
+            UNBOUNDED_WILDCARD 582..583 @582 "?"
+      ANNOTATION_TYPE 594..612 @595 "@interface Bare {}"
+        MODIFIERS 594..595 @594 "@"
+      ENUM 615..681 @615 "enum En implements I { X, Y(1), @Depreca"…
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 634..635 @634 "I"
+        VARIABLE 638..639 @638 "X"
+          MODIFIERS -1..-1 @-1
+          IDENTIFIER 638..-1 @638
+          NEW_CLASS 638..-1 @638
+            IDENTIFIER 638..-1 @638
+        VARIABLE 641..645 @641 "Y(1)"
+          MODIFIERS -1..-1 @-1
+          IDENTIFIER 641..-1 @641
+          NEW_CLASS 642..645 @642 "(1)"
+            IDENTIFIER 641..-1 @641
+            INT_LITERAL 643..644 @643 "1"
+        VARIABLE 647..664 @647 "@Deprecated Z { }"
+          MODIFIERS 647..658 @647 "@Deprecated"
+            ANNOTATION 647..658 @647 "@Deprecated"
+              IDENTIFIER 648..658 @648 "Deprecated"
+          IDENTIFIER 659..-1 @659
+          NEW_CLASS 661..664 @661 "{ }"
+            IDENTIFIER 659..-1 @659
+            ENUM 659..664 @659 "Z { }"
+              MODIFIERS -1..-1 @-1
+        VARIABLE 666..673 @666 "W() { }"
+          MODIFIERS -1..-1 @-1
+          IDENTIFIER 666..-1 @666
+          NEW_CLASS 667..673 @667 "() { }"
+            IDENTIFIER 666..-1 @666
+            ENUM 666..673 @666 "W() { }"
+              MODIFIERS -1..-1 @-1
+        VARIABLE 675..678 @675 "V()"
+          MODIFIERS -1..-1 @-1
+          IDENTIFIER 675..-1 @675
+          NEW_CLASS 675..-1 @675
+            IDENTIFIER 675..-1 @675
+      ENUM 684..700 @684 "enum Empty { ; }"
+        MODIFIERS -1..-1 @-1
+      RECORD 703..764 @703 "record Rec<R>(@Deprecated int a, String."…
+        MODIFIERS -1..-1 @-1
+        TYPE_PARAMETER 714..715 @714 "R"
+        IDENTIFIER 760..761 @760 "I"
+        VARIABLE 717..734 @733 "@Deprecated int a"
+          MODIFIERS 717..728 @717 "@Deprecated"
+            ANNOTATION 717..728 @717 "@Deprecated"
+              IDENTIFIER 718..728 @718 "Deprecated"
+          PRIMITIVE_TYPE 729..732 @729 "int"
+        VARIABLE 736..747 @746 "String... b"
+          MODIFIERS -1..-1 @-1
+          ARRAY_TYPE 736..745 @742 "String..."
+            IDENTIFIER 736..742 @736 "String"
+      INTERFACE 767..801 @774 "sealed interface S permits F, G {}"
+        MODIFIERS 767..773 @767 "sealed"
+        IDENTIFIER 794..795 @794 "F"
+        IDENTIFIER 797..798 @797 "G"
+      CLASS 804..833 @810 "final class F implements S {}"
+        MODIFIERS 804..809 @804 "final"
+        IDENTIFIER 829..830 @829 "S"
+      CLASS 836..870 @847 "non-sealed class G implements S {}"
+        MODIFIERS 836..846 @836 "non-sealed"
+        IDENTIFIER 866..867 @866 "S"
+      CLASS 873..894 @880 "static class Inner {}"
+        MODIFIERS 873..879 @873 "static"
+      CLASS 897..988 @970 "@A(1) @B(x = 1, y = \"s\") @Cc({1, 2}) @Dd"…
+        MODIFIERS 897..969 @897 "@A(1) @B(x = 1, y = \"s\") @Cc({1, 2}) @Dd"…
+          ANNOTATION 897..902 @897 "@A(1)"
+            IDENTIFIER 898..899 @898 "A"
+            INT_LITERAL 900..901 @900 "1"
+          ANNOTATION 903..921 @903 "@B(x = 1, y = \"s\")"
+            IDENTIFIER 904..905 @904 "B"
+            ASSIGNMENT 906..911 @908 "x = 1"
+              IDENTIFIER 906..907 @906 "x"
+              INT_LITERAL 910..911 @910 "1"
+            ASSIGNMENT 913..920 @915 "y = \"s\""
+              IDENTIFIER 913..914 @913 "y"
+              STRING_LITERAL 917..920 @917 "\"s\""
+          ANNOTATION 922..933 @922 "@Cc({1, 2})"
+            IDENTIFIER 923..925 @923 "Cc"
+            NEW_ARRAY 926..932 @926 "{1, 2}"
+              INT_LITERAL 927..928 @927 "1"
+              INT_LITERAL 930..931 @930 "2"
+          ANNOTATION 934..941 @934 "@Dd(@E)"
+            IDENTIFIER 935..937 @935 "Dd"
+            ANNOTATION 938..940 @938 "@E"
+              IDENTIFIER 939..940 @939 "E"
+          ANNOTATION 942..959 @942 "@Ff(z = {@E, @E})"
+            IDENTIFIER 943..945 @943 "Ff"
+            ASSIGNMENT 946..958 @948 "z = {@E, @E}"
+              IDENTIFIER 946..947 @946 "z"
+              NEW_ARRAY 950..958 @950 "{@E, @E}"
+                ANNOTATION 951..953 @951 "@E"
+                  IDENTIFIER 952..953 @952 "E"
+                ANNOTATION 955..957 @955 "@E"
+                  IDENTIFIER 956..957 @956 "E"
+          ANNOTATION 960..964 @960 "@G()"
+            IDENTIFIER 961..962 @961 "G"
+          ANNOTATION 965..969 @965 "@p.H"
+            MEMBER_SELECT 966..969 @967 "p.H"
+              IDENTIFIER 966..967 @966 "p"
