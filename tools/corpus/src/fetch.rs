@@ -41,7 +41,7 @@ pub fn fetch(project: &Project, dirs: &Dirs) -> Result<()> {
 /// Checks out the project at its pinned commit, and returns the checkout's path.
 pub fn checkout(project: &Project, dirs: &Dirs) -> Result<PathBuf> {
     let dir = dirs.checkout(project);
-    if head(&dir).as_deref() == Some(project.commit.as_str()) {
+    if is_checked_out(project, dirs) {
         return Ok(dir);
     }
     println!("{}: checking out {}", project.name, project.commit);
@@ -52,6 +52,11 @@ pub fn checkout(project: &Project, dirs: &Dirs) -> Result<PathBuf> {
         .args([&project.repository, &project.commit]))?;
     run(git(&dir).args(["checkout", "--quiet", "--force", "--detach", "FETCH_HEAD"]))?;
     Ok(dir)
+}
+
+/// Whether the project is checked out at its pinned commit.
+pub fn is_checked_out(project: &Project, dirs: &Dirs) -> bool {
+    head(&dirs.checkout(project)).as_deref() == Some(project.commit.as_str())
 }
 
 fn head(dir: &Path) -> Option<String> {
