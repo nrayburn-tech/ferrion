@@ -12,14 +12,15 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum TokenKind {
     // Trivia (JLS §3.6, §3.7).
-    /// Spaces, tabs, and form feeds.
+    /// Spaces, tabs, and form feeds. Also an ASCII SUB (control-Z) that ends the text, which
+    /// JLS §3.5 says to ignore.
     Whitespace,
     /// One CR, LF, or CRLF, written directly or as Unicode escapes.
     LineTerminator,
     /// `// ...`, up to but not including the line terminator.
     LineComment,
     /// `/// ...`, a Markdown documentation comment line in Java 23 and later, and a plain line
-    /// comment before that.
+    /// comment before that. Like javac, any comment starting with three or more slashes is one.
     DocLineComment,
     /// `/* ... */`
     BlockComment,
