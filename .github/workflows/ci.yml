@@ -80,6 +80,12 @@ jobs:
           distribution: temurin
           java-version: "27"
           cache: maven
+      # cargo test checks that the tables come from the latest release; this checks that they're
+      # what that JDK reports.
+      - name: Check that the Unicode tables match the JDK
+        run: |
+          java tools/unicode-tables/UnicodeTables.java > crates/ferrion_lexer/src/unicode_tables.rs
+          git diff --exit-code -- crates/ferrion_lexer/src/unicode_tables.rs
       - name: Build the javac oracle
         working-directory: tools/javac-oracle
         run: mvn --batch-mode --no-transfer-progress package
