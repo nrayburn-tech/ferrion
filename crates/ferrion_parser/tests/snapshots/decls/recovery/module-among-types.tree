@@ -1,0 +1,39 @@
+CompilationUnit 0..47 [error]
+  ClassDecl 0..10
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..10
+      LBrace 8..9 "{"
+      RBrace 9..10 "}"
+  LineTerminator 10..11 "\n"
+  Error 11..35 [error]
+    ModuleDecl 11..35
+      ModuleKw 11..17 "module"
+      Whitespace 17..18 " "
+      Name 18..19
+        Identifier 18..19 "m"
+      Whitespace 19..20 " "
+      LBrace 20..21 "{"
+      Whitespace 21..22 " "
+      RequiresDirective 22..33
+        RequiresKw 22..30 "requires"
+        Whitespace 30..31 " "
+        Name 31..32
+          Identifier 31..32 "a"
+        Semi 32..33 ";"
+      Whitespace 33..34 " "
+      RBrace 34..35 "}"
+  LineTerminator 35..36 "\n"
+  ClassDecl 36..46
+    ClassKw 36..41 "class"
+    Whitespace 41..42 " "
+    Identifier 42..43 "B"
+    Whitespace 43..44 " "
+    ClassBody 44..46
+      LBrace 44..45 "{"
+      RBrace 45..46 "}"
+  LineTerminator 46..47 "\n"
+  Eof 47..47 ""
+error 11..17 @11 ExpectedDeclaration(Identifier): unexpected name: expected a declaration

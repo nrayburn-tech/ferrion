@@ -1,0 +1,80 @@
+CompilationUnit 0..120 [error]
+  ModuleDecl 0..119 [error]
+    ModuleKw 0..6 "module"
+    Whitespace 6..7 " "
+    Name 7..8
+      Identifier 7..8 "m"
+    Whitespace 8..9 " "
+    LBrace 9..10 "{"
+    LineTerminator 10..11 "\n"
+    Whitespace 11..13 "  "
+    RequiresDirective 13..22 [error]
+      RequiresKw 13..21 "requires"
+      Semi 21..22 ";"
+    LineTerminator 22..23 "\n"
+    Whitespace 23..25 "  "
+    RequiresDirective 25..35 [error]
+      RequiresKw 25..33 "requires"
+      Whitespace 33..34 " "
+      Name 34..35
+        Identifier 34..35 "a"
+    LineTerminator 35..36 "\n"
+    Whitespace 36..38 "  "
+    Error 38..43 [error]
+      Identifier 38..41 "foo"
+      Whitespace 41..42 " "
+      Identifier 42..43 "a"
+    Error 43..44 [error]
+      Semi 43..44 ";"
+    LineTerminator 44..45 "\n"
+    Whitespace 45..47 "  "
+    ExportsDirective 47..60 [error]
+      ExportsKw 47..54 "exports"
+      Whitespace 54..55 " "
+      Name 55..56
+        Identifier 55..56 "a"
+      Whitespace 56..57 " "
+      ToKw 57..59 "to"
+      Semi 59..60 ";"
+    LineTerminator 60..61 "\n"
+    Whitespace 61..63 "  "
+    ProvidesDirective 63..74 [error]
+      ProvidesKw 63..71 "provides"
+      Whitespace 71..72 " "
+      Name 72..73
+        Identifier 72..73 "b"
+      Semi 73..74 ";"
+    LineTerminator 74..75 "\n"
+    Whitespace 75..77 "  "
+    ExportsDirective 77..87 [error]
+      ExportsKw 77..84 "exports"
+      Whitespace 84..85 " "
+      Name 85..86
+        Identifier 85..86 "c"
+      Dot 86..87 "."
+    Error 87..88 [error]
+      Star 87..88 "*"
+    Error 88..89 [error]
+      Semi 88..89 ";"
+    LineTerminator 89..90 "\n"
+    Whitespace 90..92 "  "
+    RequiresDirective 92..117 [error]
+      RequiresKw 92..100 "requires"
+      Whitespace 100..101 " "
+      StaticKw 101..107 "static"
+      Whitespace 107..108 " "
+      StaticKw 108..114 "static"
+      Whitespace 114..115 " "
+      Name 115..116
+        Identifier 115..116 "d"
+      Semi 116..117 ";"
+    LineTerminator 117..118 "\n"
+    RBrace 118..119 "}"
+  LineTerminator 119..120 "\n"
+  Eof 120..120 ""
+error 21..21 @21 Expected(Identifier): name expected
+error 35..35 @35 Expected(Token(Semi)): ';' expected
+error 59..59 @59 Expected(Identifier): name expected
+error 73..73 @73 Expected(Token(WithKw)): 'with' expected
+error 87..87 @87 Expected(Identifier): name expected
+error 108..114 @108 RepeatedModifier: this modifier is already given

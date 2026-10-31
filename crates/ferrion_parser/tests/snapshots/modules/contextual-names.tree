@@ -1,0 +1,48 @@
+CompilationUnit 0..94
+  ModuleDecl 0..93
+    ModuleKw 0..6 "module"
+    Whitespace 6..7 " "
+    Name 7..27
+      Name 7..18
+        Name 7..13
+          Identifier 7..13 "module"
+        Dot 13..14 "."
+        Identifier 14..18 "open"
+      Dot 18..19 "."
+      Identifier 19..27 "requires"
+    Whitespace 27..28 " "
+    LBrace 28..29 "{"
+    LineTerminator 29..30 "\n"
+    Whitespace 30..32 "  "
+    RequiresDirective 32..49
+      RequiresKw 32..40 "requires"
+      Whitespace 40..41 " "
+      Name 41..48
+        Identifier 41..48 "exports"
+      Semi 48..49 ";"
+    LineTerminator 49..50 "\n"
+    Whitespace 50..52 "  "
+    RequiresDirective 52..69
+      RequiresKw 52..60 "requires"
+      Whitespace 60..61 " "
+      Name 61..68
+        Name 61..63
+          Identifier 61..63 "to"
+        Dot 63..64 "."
+        Identifier 64..68 "with"
+      Semi 68..69 ";"
+    LineTerminator 69..70 "\n"
+    Whitespace 70..72 "  "
+    ExportsDirective 72..91
+      ExportsKw 72..79 "exports"
+      Whitespace 79..80 " "
+      Name 80..90
+        Name 80..85
+          Identifier 80..85 "opens"
+        Dot 85..86 "."
+        Identifier 86..90 "uses"
+      Semi 90..91 ";"
+    LineTerminator 91..92 "\n"
+    RBrace 92..93 "}"
+  LineTerminator 93..94 "\n"
+  Eof 94..94 ""

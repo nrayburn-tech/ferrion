@@ -10,7 +10,7 @@
 use ferrion_diagnostics::Span;
 use ferrion_syntax::token_sets;
 
-use super::{IDENT, exprs, name, stmts, types};
+use super::{IDENT, exprs, modules, name, stmts, types};
 use crate::SyntaxKind::{self, *};
 use crate::diagnostic::{Expected, ParseDiagnosticKind};
 use crate::parser::{CompletedMarker, Marker, Parser, TokenSet};
@@ -95,6 +95,33 @@ const LIST_RECOVERY: TokenSet = TokenSet::new(&[Comma, LBrace, Semi, ThrowsKw]);
 /// declarations and, for an implicitly declared class, methods and fields. Consumes every token
 /// up to `Eof`.
 pub(crate) fn compilation_unit_items(p: &mut Parser<'_>) {
+    // javac reads `module` or `open` as the start of a module declaration only in the first
+    // declaration, after any annotations, however it goes on.
+    let (after_modifiers, has_keywords) = scan_modifiers(p, 0);
+    if modules::at_module_decl(p, after_modifiers) {
+        let m = p.start();
+        if has_keywords {
+            if let (Some(modifiers), _) = modifiers_info(p) {
+                let e = modifiers.precede(p);
+                error_at_current(p, ParseDiagnosticKind::ModifierNotAllowed);
+                e.complete(p, Error);
+            }
+        } else {
+            annotations(p);
+        }
+        modules::module_decl(p, m);
+        if !p.at_eof() {
+            p.error_expected(Expected::Token(Eof));
+        }
+        let mut progress = p.progress();
+        while !p.at_eof() {
+            p.error_and_bump();
+            if !progress.advanced(p) {
+                break;
+            }
+        }
+        return;
+    }
     let body = Body {
         kind: BodyKind::TopLevel,
         name: None,
@@ -103,6 +130,13 @@ pub(crate) fn compilation_unit_items(p: &mut Parser<'_>) {
     while !p.at_eof() {
         if p.at(Semi) {
             p.bump();
+        } else if modules::at_module_decl_after_types(p) {
+            // A module declaration among type declarations: javac reports it at its start.
+            error_at_current(p, ParseDiagnosticKind::ExpectedDeclaration(p.current()));
+            let e = p.start();
+            let m = p.start();
+            modules::module_decl(p, m);
+            e.complete(p, Error);
         } else if let Some(tokens) = at_misplaced_sealed(p) {
             // javac reports `sealed` where it starts what looks like a declaration but isn't a
             // modifier: `sealed record R() {}`, `sealed int x;`.
@@ -923,5 +957,20 @@ fn complete_or_abandon(p: &mut Parser<'_>, m: Marker, kind: SyntaxKind) {
         m.complete(p, kind);
     } else {
         m.abandon(p);
+    }
+}
+
+/// The index of the token after the annotations and modifier keywords starting `n` tokens ahead,
+/// and whether there are keywords among them.
+fn scan_modifiers(p: &Parser<'_>, mut n: usize) -> (usize, bool) {
+    let mut keywords = false;
+    loop {
+        let next = types::annotations_end(p, n);
+        if p.nth_at_set(next, MODIFIER_KEYWORDS) {
+            keywords = true;
+            n = next + 1;
+        } else {
+            return (next, keywords);
+        }
     }
 }

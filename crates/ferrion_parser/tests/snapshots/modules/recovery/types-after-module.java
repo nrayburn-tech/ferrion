@@ -1,0 +1,2 @@
+module m {}
+class A {}

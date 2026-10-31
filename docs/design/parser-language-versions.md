@@ -159,7 +159,7 @@ one as a keyword only where the grammar has that keyword and the lookahead confi
 
 | Keyword | Read as a keyword | Lookahead |
 | --- | --- | --- |
-| `module`, `open` | at the start of a module declaration, after imports and annotations | `open`? `module` name `{` |
+| `module`, `open` | in the first declaration after the imports, after its annotations; later, before a name and `{`, or `open module`, as an error | none: `module m;` there is a module declaration missing its `{` |
 | `requires`, `transitive`, `exports`, `opens`, `to`, `uses`, `provides`, `with` | in a module declaration's body | position in the directive |
 | `module` | in `import module M;` | followed by a name, not `.` |
 | `record` | where a type declaration can start | followed by a name, at every release: `record r;` is a record missing its header |
@@ -168,7 +168,7 @@ one as a keyword only where the grammar has that keyword and the lookahead confi
 | `yield` | at the start of a statement, at 14+ | not followed by `=`, `.`, `[`, `++`, or `--` (exact set settled with the oracle) |
 | `when` | after a `case` pattern | followed by an expression |
 
-The lookahead for `record` and `sealed` is javac's, found with the oracle, so
+The lookahead for `module`, `open`, `record`, and `sealed` is javac's, found with the oracle, so
 that Ferrion reads invalid code as javac does and reports the same first error. `non-sealed` is
 three adjacent tokens with no trivia between them; with trivia (`non - sealed`) it is an
 expression. Where the parser reads an identifier as a keyword, it records the keyword kind in

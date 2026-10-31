@@ -1,0 +1,29 @@
+CompilationUnit 0..27
+  ModuleDecl 0..26
+    Annotation 0..2
+      At 0..1 "@"
+      Name 1..2
+        Identifier 1..2 "A"
+    Whitespace 2..3 " "
+    Annotation 3..8
+      At 3..4 "@"
+      Name 4..5
+        Identifier 4..5 "B"
+      AnnotationArguments 5..8
+        LParen 5..6 "("
+        LiteralExpr 6..7
+          IntLiteral 6..7 "1"
+        RParen 7..8 ")"
+    LineTerminator 8..9 "\n"
+    OpenKw 9..13 "open"
+    Whitespace 13..14 " "
+    ModuleKw 14..20 "module"
+    Whitespace 20..21 " "
+    Name 21..22
+      Identifier 21..22 "m"
+    Whitespace 22..23 " "
+    LBrace 23..24 "{"
+    LineTerminator 24..25 "\n"
+    RBrace 25..26 "}"
+  LineTerminator 26..27 "\n"
+  Eof 27..27 ""
