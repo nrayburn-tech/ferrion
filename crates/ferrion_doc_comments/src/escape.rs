@@ -4,12 +4,13 @@
 //! that can close an inline tag. The parsers do the same: they read a comment's characters through
 //! [`chars`], which translates escapes and says where each character is written.
 //!
-//! The rules match the lexer's: a `\` begins an escape when it is preceded by an even number of
-//! contiguous backslashes as written, a backslash produced by an escape never begins another one,
-//! two escapes that form a UTF-16 surrogate pair are one character, and a surrogate that isn't part
-//! of a pair is U+FFFD. One thing differs: the lexer drops a malformed escape (`\u` not followed by
-//! four hex digits), but here it stays as written, so no text of a comment is lost. The lexer has
-//! already reported it.
+//! Escapes are found by the lexer's [`unicode_escapes`], so the rules are the lexer's. One thing
+//! differs: the lexer drops a malformed escape (`\u` not followed by four hex digits), but here it
+//! stays as written, so no text of a comment is lost. The lexer has already reported it.
+
+use std::iter::Peekable;
+
+use ferrion_lexer::{Escapes, Span, unicode_escapes};
 
 /// A character of a comment, and where it is written: its own bytes, or the escape for it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -24,16 +25,11 @@ pub(crate) struct Char {
 /// The characters of `text[start..end]`, with Unicode escapes translated. Backslashes before
 /// `start` count toward the even-backslash rule. `start` and `end` must be character boundaries.
 pub(crate) fn chars(text: &str, start: usize, end: usize) -> Chars<'_> {
-    let backslashes = text.as_bytes()[..start]
-        .iter()
-        .rev()
-        .take_while(|&&b| b == b'\\')
-        .count();
     Chars {
         text,
         pos: start,
         end,
-        backslashes,
+        escapes: unicode_escapes(text, Span::new(start as u32, end as u32)).peekable(),
     }
 }
 
@@ -41,8 +37,7 @@ pub(crate) struct Chars<'a> {
     text: &'a str,
     pos: usize,
     end: usize,
-    /// The number of contiguous backslashes as written just before `pos`.
-    backslashes: usize,
+    escapes: Peekable<Escapes<'a>>,
 }
 
 impl Iterator for Chars<'_> {
@@ -51,28 +46,11 @@ impl Iterator for Chars<'_> {
     fn next(&mut self) -> Option<Char> {
         let start = self.pos;
         let ch = self.text[start..self.end].chars().next()?;
-        if ch == '\\'
-            && self.backslashes.is_multiple_of(2)
-            && let Some((end, unit)) = scan(self.text.as_bytes(), start, self.end)
+        // A malformed escape is read as the characters it's written with.
+        if let Some(escape) = self.escapes.next_if(|e| e.start as usize == start)
+            && let Some(ch) = escape.ch
         {
-            self.backslashes = 0;
-            let ch = match unit {
-                0xD800..=0xDBFF => match scan(self.text.as_bytes(), end, self.end) {
-                    Some((low_end, low @ 0xDC00..=0xDFFF)) => {
-                        self.pos = low_end;
-                        let c = 0x10000 + ((unit - 0xD800) << 10) + (low - 0xDC00);
-                        char::from_u32(c).unwrap_or(char::REPLACEMENT_CHARACTER)
-                    }
-                    _ => {
-                        self.pos = end;
-                        char::REPLACEMENT_CHARACTER
-                    }
-                },
-                _ => {
-                    self.pos = end;
-                    char::from_u32(unit).unwrap_or(char::REPLACEMENT_CHARACTER)
-                }
-            };
+            self.pos = escape.end as usize;
             return Some(Char {
                 ch,
                 start: start as u32,
@@ -80,7 +58,6 @@ impl Iterator for Chars<'_> {
                 escaped: true,
             });
         }
-        self.backslashes = if ch == '\\' { self.backslashes + 1 } else { 0 };
         self.pos += ch.len_utf8();
         Some(Char {
             ch,
@@ -89,27 +66,6 @@ impl Iterator for Chars<'_> {
             escaped: false,
         })
     }
-}
-
-/// Reads a well-formed escape starting at `start` and not reading past `end`: where it ends and
-/// the UTF-16 code unit it stands for. The caller has checked the even-backslash rule.
-fn scan(bytes: &[u8], start: usize, end: usize) -> Option<(usize, u32)> {
-    if bytes.get(start) != Some(&b'\\') || start + 1 >= end || bytes[start + 1] != b'u' {
-        return None;
-    }
-    let mut pos = start + 1;
-    while pos < end && bytes[pos] == b'u' {
-        pos += 1;
-    }
-    let mut unit = 0;
-    for _ in 0..4 {
-        let digit = bytes[..end]
-            .get(pos)
-            .and_then(|&b| (b as char).to_digit(16))?;
-        unit = unit * 16 + digit;
-        pos += 1;
-    }
-    Some((pos, unit))
 }
 
 /// `text[start..end]` with Unicode escapes translated.

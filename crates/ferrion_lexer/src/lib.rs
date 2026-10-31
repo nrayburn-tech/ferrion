@@ -26,6 +26,7 @@ mod unicode_tables;
 
 use std::borrow::Cow;
 
+pub use escape::{Escape, Escapes};
 pub use ferrion_diagnostics::Span;
 pub use kind::{ContextualKeyword, TokenKind};
 
@@ -103,4 +104,11 @@ pub fn cooked_text(text: &str, token: Token) -> Cow<'_, str> {
             .fixed_text()
             .is_some_and(|text| text.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_'));
     escape::cook(text, token.span, is_name)
+}
+
+/// The Unicode escapes (JLS §3.3) in `text[span]`, in order, invalid ones included, found by the
+/// same rules as the lexer's. Backslashes before `span` count toward the rule that an escape's `\`
+/// follows an even number of backslashes, but an escape that begins before `span` isn't found.
+pub fn unicode_escapes(text: &str, span: Span) -> Escapes<'_> {
+    Escapes::new(text.as_bytes(), span.start as usize, span.end as usize)
 }

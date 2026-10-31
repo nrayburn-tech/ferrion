@@ -15,7 +15,7 @@ use crate::{Span, ident};
 /// A Unicode escape: `\`, one or more `u`s, and four hex digits, or, when invalid, as much of that
 /// as is present.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct Escape {
+pub struct Escape {
     /// The offset of the `\`.
     pub start: u32,
     pub end: u32,
@@ -35,8 +35,9 @@ impl Escape {
     }
 }
 
-/// Iterates over the Unicode escapes in `bytes[start..end]`, in order.
-pub(crate) struct Escapes<'a> {
+/// Iterates over the Unicode escapes in a range of a text, in order. Made by
+/// [`unicode_escapes`](crate::unicode_escapes).
+pub struct Escapes<'a> {
     bytes: &'a [u8],
     pos: usize,
     end: usize,
@@ -47,7 +48,7 @@ pub(crate) struct Escapes<'a> {
 impl<'a> Escapes<'a> {
     /// Escapes in `bytes[start..end]`. Backslashes before `start` count toward the even-backslash
     /// rule, but escapes that begin before `start` aren't found.
-    pub fn new(bytes: &'a [u8], start: usize, end: usize) -> Escapes<'a> {
+    pub(crate) fn new(bytes: &'a [u8], start: usize, end: usize) -> Escapes<'a> {
         let backslashes = bytes[..start]
             .iter()
             .rev()

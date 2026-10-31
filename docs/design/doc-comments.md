@@ -68,8 +68,9 @@ end lines, exactly as they would for javadoc.
   its span's text with escapes translated (the fuzz targets check this too). A formatter that
   rewraps text can compare the two: where they differ, the text has escapes, and the formatter
   should keep its source text rather than the value.
-- **Escape rules match the lexer's:** the even-backslash rule, multiple `u`s, surrogate pairs joined
-  into one character, and a lone surrogate read as U+FFFD.
+- **Escapes are found by the lexer's `unicode_escapes`,** so the rules are the lexer's: the
+  even-backslash rule, multiple `u`s, surrogate pairs joined into one character, and a lone
+  surrogate read as U+FFFD.
 - **One difference from the lexer:** a malformed escape (`\u` without four hex digits) stays as
   written in the content, where the lexer drops it. The lexer has already reported it, and
   keeping it means no text of the comment is lost.
