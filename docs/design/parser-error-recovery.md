@@ -103,17 +103,25 @@ the whole declaration, since everything in it depends on the header.
    rule above and the language server's mid-edit states: a half-typed member access (`foo.`), an
    unclosed `(`, `{`, string, or comment, a missing `;`, a statement typed at class level, an
    annotation with no declaration, an unfinished lambda or switch.
-2. **The corpus mutation test.** For each corpus file, at random tokens (seeded, so reproducible):
-   delete the token, duplicate it, insert a token from a small vocabulary (`{`, `}`, `(`, `)`, `;`,
-   `.`, `=`, an identifier), or truncate the file there. Parse the clean and the broken file, and
-   check:
+2. **The corpus mutation test** (`cargo parser-check mutate`). For corpus files that parse
+   without errors, at random tokens (seeded, with a fixed sample size, so reproducible): delete
+   the token, duplicate it, insert a token from a small vocabulary (`{`, `}`, `(`, `)`, `;`, `.`,
+   `=`, an identifier), truncate the file there, or delete a delimiter (`(`, `)`, `[`, `]`, `{`,
+   `}`), which unbalances them. Inserted text has spaces around it, so it never joins a
+   neighbouring token. Parse the clean and the broken file, and check:
    - **invariants:** no panic, the tree reproduces the broken text, the tree is valid, and at least
-     one error is reported for a change that breaks the syntax;
-   - **preservation:** each member declaration of the clean file that doesn't overlap the change's
-     unit is present in the broken file's tree, with the same kind, name, and text. The share
+     one error is reported for a change that breaks the syntax. Whether a change breaks the syntax
+     isn't decidable without a parser to trust, so the check is made where it is certain: when the
+     broken file's delimiters don't balance. The others without an error are counted;
+   - **preservation:** each member declaration of the clean file that doesn't overlap the change is
+     present in the broken file's tree, at the same place shifted by the change, with the same
+     kind, name, and text. Overlap is generous, so that the metric doesn't depend on how the change
+     is attributed to units: a declaration that touches the change, such as one that starts right
+     where a token is inserted, is left out, and so is each one enclosing the change. The share
      preserved, per mutation kind, is the quality metric. CI fails if it drops below a threshold set
-     from the first measurement and raised as recovery improves. The same is measured for
-     statements in method bodies.
+     from the first measurement and raised as recovery improves, in
+     `tools/parser-check/thresholds.toml`. The same is measured for statements in bodies, by kind
+     and text, and for package and import declarations.
 
    The A2 range-formatting test (break files at random tokens and check that unaffected ranges
    format as in the clean file) is the same harness with a different check.

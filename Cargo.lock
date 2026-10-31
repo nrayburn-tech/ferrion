@@ -274,6 +274,8 @@ dependencies = [
  "corpus",
  "ferrion_diagnostics",
  "ferrion_parser",
+ "serde",
+ "toml",
 ]
 
 [[package]]

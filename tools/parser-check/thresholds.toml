@@ -1,0 +1,29 @@
+# The corpus mutation test's gate (`cargo parser-check mutate`, docs/design/parser-error-recovery.md):
+# the least share of the clean file's member declarations, statements, and package and import
+# declarations that recovery must preserve after each kind of mutation, as a fraction. A share
+# below its threshold fails the run; so does a positive threshold with nothing measured.
+#
+# PLACEHOLDER: every threshold is 0 until the grammar for statements is written, since until then
+# method bodies are errors and most files are skipped. Then set each from the first measurement of
+# the CI sample (`--seed 1 --sample 2000`), a little below it, and raise it as recovery improves.
+
+[members]
+delete = 0.0
+duplicate = 0.0
+insert = 0.0
+truncate = 0.0
+delete-delimiter = 0.0
+
+[statements]
+delete = 0.0
+duplicate = 0.0
+insert = 0.0
+truncate = 0.0
+delete-delimiter = 0.0
+
+[imports]
+delete = 0.0
+duplicate = 0.0
+insert = 0.0
+truncate = 0.0
+delete-delimiter = 0.0

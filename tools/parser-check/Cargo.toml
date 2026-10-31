@@ -1,6 +1,6 @@
 [package]
 name = "parser-check"
-description = "Checks the parser on the corpus: round trips and throughput."
+description = "Checks the parser on the corpus: round trips, throughput, and recovery quality."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -12,6 +12,8 @@ anyhow = "1"
 corpus = { path = "../corpus" }
 ferrion_diagnostics = { path = "../../crates/ferrion_diagnostics" }
 ferrion_parser = { path = "../../crates/ferrion_parser" }
+serde = { version = "1", features = ["derive"] }
+toml = "1"
 
 [lints]
 workspace = true

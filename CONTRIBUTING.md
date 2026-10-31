@@ -259,6 +259,20 @@ parsed at the releases their tests compile them at. Any failure fails the run; s
 are counted, since the oracle comparison decides which are right. `--verbose` prints each file
 before parsing it, to find one that aborts the process.
 
+The corpus mutation test measures error recovery, as
+[docs/design/parser-error-recovery.md](docs/design/parser-error-recovery.md) describes. It breaks
+files at seeded random tokens, checks each broken file as `round-trip` does, and measures the share
+of declarations, statements, and imports recovery preserves, per kind of mutation:
+
+```bash
+cargo parser-check mutate --seed 1 --sample 2000
+```
+
+The run fails if a share is below its threshold in `tools/parser-check/thresholds.toml`. When
+recovery improves, raise the thresholds to a little below the new measurement of the CI sample
+above. `--verbose` lists the first declarations lost (`--limit` sets how many), with the mutation
+that lost them.
+
 ### Tests
 
 - Every bug fix comes with a regression test.
