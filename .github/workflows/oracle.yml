@@ -1,0 +1,54 @@
+name: Oracle
+
+# The full javac comparison: every corpus file at every supported release. Pull requests compare
+# each file at its own release only (see ci.yml).
+
+on:
+  schedule:
+    # Mondays at 05:17 UTC.
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  tokens:
+    name: tokens at every release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "27"
+          cache: maven
+      - name: Build the javac oracle
+        working-directory: tools/javac-oracle
+        run: mvn --batch-mode --no-transfer-progress package
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      # The corpus and javac's output are kept out of target/, so the Rust cache doesn't save them.
+      - name: Check out the corpus
+        run: cargo corpus checkout
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Compare the lexer with javac at every release
+        run: cargo oracle tokens --all-releases --json oracle-report.json
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+          FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: oracle-report
+          path: oracle-report.json
+          if-no-files-found: ignore
