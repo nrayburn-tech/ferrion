@@ -3,27 +3,28 @@
 # declarations that recovery must preserve after each kind of mutation, as a fraction. A share
 # below its threshold fails the run; so does a positive threshold with nothing measured.
 #
-# PLACEHOLDER: every threshold is 0 until the grammar for statements is written, since until then
-# method bodies are errors and most files are skipped. Then set each from the first measurement of
-# the CI sample (`--seed 1 --sample 2000`), a little below it, and raise it as recovery improves.
+# Pull requests run `--seed 1 --sample 2000`, and the weekly Oracle workflow `--seed 2 --sample
+# 20000` against the same thresholds. Each is set about a point below the lower of the two
+# measurements, shown next to it (seed 1, then seed 2), taken when the whole grammar was first
+# written. Raise them as recovery improves, and say why when one has to come down.
 
 [members]
-delete = 0.0
-duplicate = 0.0
-insert = 0.0
-truncate = 0.0
-delete-delimiter = 0.0
+delete = 0.98 # 99.72%, 99.68%
+duplicate = 0.98 # 99.84%, 99.43%
+insert = 0.94 # 95.97%, 95.59%
+truncate = 0.99 # 100.00%, 100.00%
+delete-delimiter = 0.98 # 99.38%, 99.05%
 
 [statements]
-delete = 0.0
-duplicate = 0.0
-insert = 0.0
-truncate = 0.0
-delete-delimiter = 0.0
+delete = 0.98 # 99.68%, 99.63%
+duplicate = 0.98 # 99.70%, 99.65%
+insert = 0.95 # 97.82%, 96.90%
+truncate = 0.99 # 100.00%, 100.00%
+delete-delimiter = 0.98 # 99.06%, 99.31%
 
 [imports]
-delete = 0.0
-duplicate = 0.0
-insert = 0.0
-truncate = 0.0
-delete-delimiter = 0.0
+delete = 0.97 # 98.63%, 98.22%
+duplicate = 0.94 # 96.64%, 95.28%
+insert = 0.90 # 91.36%, 91.52%
+truncate = 0.99 # 100.00%, 100.00%
+delete-delimiter = 0.99 # 100.00%, 100.00%
