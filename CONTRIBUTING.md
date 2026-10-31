@@ -130,6 +130,10 @@ cargo deny check
 ```
 
 ```bash
+cargo deny --manifest-path fuzz/Cargo.toml check
+```
+
+```bash
 python3 tools/scancode/scan.py
 ```
 
