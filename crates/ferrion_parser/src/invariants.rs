@@ -9,13 +9,13 @@
 use std::sync::Arc;
 
 use ferrion_diagnostics::SourceText;
-use ferrion_java_version::LATEST_RELEASE;
+use ferrion_java_version::PRIMARY_RELEASES;
 
 use crate::{Parse, ParseOptions, Severity, parse};
 
-/// The releases [`check_bytes`] parses at: the oldest, both sides of the `yield` reading, and
-/// the latest.
-pub const RELEASES: [u32; 4] = [8, 13, 14, LATEST_RELEASE];
+/// The releases [`check_bytes`] parses at: the primary releases, the LTS releases and the latest.
+/// They include both sides of the `yield` reading (a name at 11, a statement from 17).
+pub const RELEASES: &[u32] = PRIMARY_RELEASES;
 
 /// Reads `bytes` as a source file and checks [`check_text`] at each of [`RELEASES`]. Bytes that
 /// aren't a supported source file are checked as their lossy UTF-8 text, so that every input
@@ -25,7 +25,7 @@ pub fn check_bytes(bytes: &[u8]) -> Result<(), String> {
         Ok(source) => Arc::from(source.text()),
         Err(_) => Arc::from(String::from_utf8_lossy(bytes).as_ref()),
     };
-    for release in RELEASES {
+    for &release in RELEASES {
         check_text(&text, release).map_err(|e| format!("at release {release}: {e}"))?;
     }
     Ok(())
