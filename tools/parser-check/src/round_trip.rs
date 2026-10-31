@@ -7,6 +7,9 @@
 //! parsed at. It also counts the parses with syntax errors and with `NestingTooDeep`, so later
 //! rounds can see the grammar fill in. Neither fails the check: the oracle comparison decides
 //! which errors are right.
+//!
+//! Each tree's `CommentMap` is built too, without a panic, and the time it takes is reported
+//! separately. (`invariants::check` checks the map's contents.)
 
 use std::panic::{self, AssertUnwindSafe};
 use std::sync::Arc;
@@ -14,6 +17,7 @@ use std::time::{Duration, Instant};
 
 use corpus::sources::Source;
 use ferrion_diagnostics::SourceText;
+use ferrion_parser::syntax::comments::CommentMap;
 use ferrion_parser::{Parse, ParseDiagnosticKind, ParseOptions, Severity, invariants, parse};
 
 use crate::{Options, on_small_stack};
@@ -27,6 +31,8 @@ struct Stats {
     /// Bytes parsed, counting a file once per release.
     bytes: u64,
     parse_time: Duration,
+    /// Time spent in `CommentMap::new`.
+    comments_time: Duration,
     /// Files that aren't UTF-8 or ASCII, which Ferrion skips.
     skipped: usize,
     with_errors: usize,
@@ -40,6 +46,7 @@ impl Stats {
         self.parses += other.parses;
         self.bytes += other.bytes;
         self.parse_time += other.parse_time;
+        self.comments_time += other.comments_time;
         self.skipped += other.skipped;
         self.with_errors += other.with_errors;
         self.too_deep += other.too_deep;
@@ -52,13 +59,14 @@ impl Stats {
         };
         println!(
             "{name}: {} files, {} parses, {:.1} MB in {seconds:.2} s of parsing: {:.1} MB/s, {:.0} \
-             files/s; {} with syntax errors, {} too deeply nested, {} skipped (not UTF-8), {} \
-             failed",
+             files/s; comment maps in {:.2} s; {} with syntax errors, {} too deeply nested, {} \
+             skipped (not UTF-8), {} failed",
             self.files,
             self.parses,
             self.bytes as f64 / 1e6,
             rate(self.bytes as f64 / 1e6),
             rate(self.parses as f64),
+            self.comments_time.as_secs_f64(),
             self.with_errors,
             self.too_deep,
             self.skipped,
@@ -121,6 +129,15 @@ fn check_all(sources: &[Source], verbose: bool) -> Stats {
                 Err(_) => Some("parse panicked".to_owned()),
                 Ok(parsed) => {
                     count(&mut stats, &parsed);
+                    let start = Instant::now();
+                    let map = panic::catch_unwind(|| drop(CommentMap::new(&parsed.tree)));
+                    stats.comments_time += start.elapsed();
+                    if map.is_err() {
+                        stats.failures.push(format!(
+                            "{} at {release}: CommentMap::new panicked",
+                            source.display
+                        ));
+                    }
                     check(&bytes, &text, release, &parsed)
                 }
             };
