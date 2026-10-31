@@ -1,0 +1,11 @@
+# OpenJDK's javac tests, fetched at test time as parser inputs. Their license isn't compatible with
+# Ferrion's, so nothing fetched from them is committed (CONTRIBUTING.md, "Test inputs").
+#
+# Only `paths` are checked out, from a partial clone that downloads file contents only for them, so
+# no implementation source is ever fetched. `tag` is the GA tag of the latest supported release,
+# and `commit` is the commit it points to.
+
+repository = "https://github.com/openjdk/jdk"
+tag = "jdk-27-ga"
+commit = "815ff4dc327fe17f2433c7d115a5a503af10f3c4"
+paths = ["test/langtools/tools/javac"]
