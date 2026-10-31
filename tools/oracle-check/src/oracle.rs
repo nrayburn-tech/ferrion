@@ -9,13 +9,15 @@ use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-/// The parts of the oracle's output, which `--sections` selects. The oracle also writes
-/// `diagnostics` and `tree`, for the checks to come.
+/// The parts of the oracle's output, which `--sections` selects.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Section {
     Tokens,
     Comments,
     ScanDiagnostics,
+    /// What javac reports while parsing, version errors and warnings included.
+    Diagnostics,
+    Tree,
 }
 
 impl Section {
@@ -24,12 +26,20 @@ impl Section {
             Section::Tokens => "tokens",
             Section::Comments => "comments",
             Section::ScanDiagnostics => "scanDiagnostics",
+            Section::Diagnostics => "diagnostics",
+            Section::Tree => "tree",
         }
     }
 }
 
 /// `[kind, start, end]`, with UTF-16 offsets.
 pub type Spanned = (String, u32, u32);
+
+/// A tree node: `[kind, start, end, depth, preferred, shared]`. Kinds are javac's `Tree.Kind`
+/// names, positions are UTF-16 offsets or -1 when javac has none, and nodes are in the pre-order
+/// of javac's `TreeScanner`. `preferred` is where javac reports diagnostics about the node, and
+/// `shared` is 1 when the same node was already written under another parent.
+pub type Node = (String, i64, i64, u32, i64, u8);
 
 /// What the oracle reports for one file, without the file's path and release, so the same output
 /// at two releases is stored once.
@@ -42,6 +52,10 @@ pub struct Output {
     pub comments: Option<Vec<Spanned>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub scan_diagnostics: Option<Vec<Diagnostic>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub diagnostics: Option<Vec<Diagnostic>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tree: Option<Vec<Node>>,
     /// The oracle couldn't read the file.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
@@ -66,7 +80,16 @@ pub struct Diagnostic {
     pub start: i64,
     pub position: i64,
     pub end: i64,
+    /// The arguments: a nested diagnostic's code (`compiler.misc.feature.records`), or text.
+    #[serde(default)]
+    pub args: Vec<String>,
     pub message: String,
+}
+
+impl Diagnostic {
+    pub fn is_error(&self) -> bool {
+        self.kind == "ERROR"
+    }
 }
 
 /// One line of the oracle's output.
@@ -90,7 +113,7 @@ pub struct Oracle {
 }
 
 /// Bumped when the cached form of the output changes.
-const OUTPUT_FORMAT: &str = "1";
+const OUTPUT_FORMAT: &str = "2";
 
 impl Oracle {
     /// Uses the JDK at `JAVA_HOME`.
@@ -231,6 +254,17 @@ mod tests {
         assert!(!stored.contains("release") && !stored.contains("A.java"));
         assert!(!stored.contains("error"));
         assert_eq!(serde_json::from_str::<Output>(&stored).unwrap(), output);
+    }
+
+    #[test]
+    fn parse_sections() {
+        let line = r#"{"file":"A.java","release":"8","diagnostics":[{"kind":"ERROR","code":"compiler.err.feature.not.supported.in.source.plural","start":0,"position":0,"end":0,"args":["compiler.misc.feature.records","8","16"],"message":"records are not supported in -source 8"}],"tree":[["COMPILATION_UNIT",0,18,0,0,0],["MODIFIERS",-1,-1,2,-1,0]]}"#;
+        let output = serde_json::from_str::<Line>(line).unwrap().output;
+        let diagnostics = output.diagnostics.unwrap();
+        assert!(diagnostics[0].is_error());
+        assert_eq!(diagnostics[0].args[0], "compiler.misc.feature.records");
+        let tree = output.tree.unwrap();
+        assert_eq!(tree[1], ("MODIFIERS".into(), -1, -1, 2, -1, 0));
     }
 
     #[test]

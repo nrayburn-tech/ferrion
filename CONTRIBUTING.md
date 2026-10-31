@@ -218,6 +218,20 @@ It fails if javac's output or the lexer's no longer matches a snapshot. When a c
 malformed input" section of the normalization document to match. `cargo test` checks the lexer's
 side of the snapshots without a JDK.
 
+The parser's checks run the same way. Until the parser is plugged in, they run javac, cache its
+output, and summarize it (diagnostic codes, tree sizes and depths) without comparing:
+
+```bash
+cargo oracle syntax
+```
+
+```bash
+cargo oracle tree
+```
+
+Besides corpus projects, both take `jdk-tests`, javac's tests fetched by `cargo corpus jdk-tests`,
+each compared at the releases its test compiles it at.
+
 ### Tests
 
 - Every bug fix comes with a regression test.
