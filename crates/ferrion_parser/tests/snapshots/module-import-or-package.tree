@@ -1,0 +1,35 @@
+CompilationUnit 0..107
+  LineComment 0..53 "// `module` is a keyword only when a name follows it."
+  LineTerminator 53..54 "\n"
+  ImportDecl 54..72
+    ImportKw 54..60 "import"
+    Whitespace 60..61 " "
+    Name 61..71
+      Name 61..69
+        Name 61..67
+          Identifier 61..67 "module"
+        Dot 67..68 "."
+        Identifier 68..69 "a"
+      Dot 69..70 "."
+      Identifier 70..71 "B"
+    Semi 71..72 ";"
+  LineTerminator 72..73 "\n"
+  ImportDecl 73..89
+    ImportKw 73..79 "import"
+    Whitespace 79..80 " "
+    ModuleKw 80..86 "module"
+    Whitespace 86..87 " "
+    Name 87..88
+      Identifier 87..88 "m"
+    Semi 88..89 ";"
+  LineTerminator 89..90 "\n"
+  ImportDecl 90..106
+    ImportKw 90..96 "import"
+    Whitespace 96..97 " "
+    Name 97..103
+      Identifier 97..103 "module"
+    Dot 103..104 "."
+    Star 104..105 "*"
+    Semi 105..106 ";"
+  LineTerminator 106..107 "\n"
+  Eof 107..107 ""

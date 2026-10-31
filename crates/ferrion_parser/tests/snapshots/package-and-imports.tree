@@ -1,0 +1,114 @@
+CompilationUnit 0..242
+  LineComment 0..32 "// A comment before the package."
+  LineTerminator 32..33 "\n"
+  PackageDecl 33..57
+    PackageKw 33..40 "package"
+    Whitespace 40..41 " "
+    Name 41..56
+      Name 41..52
+        Name 41..44
+          Identifier 41..44 "com"
+        Dot 44..45 "."
+        Identifier 45..52 "example"
+      Dot 52..53 "."
+      Identifier 53..56 "app"
+    Semi 56..57 ";"
+  LineTerminator 57..58 "\n"
+  LineTerminator 58..59 "\n"
+  ImportDecl 59..81
+    ImportKw 59..65 "import"
+    Whitespace 65..66 " "
+    Name 66..80
+      Name 66..75
+        Name 66..70
+          Identifier 66..70 "java"
+        Dot 70..71 "."
+        Identifier 71..75 "util"
+      Dot 75..76 "."
+      Identifier 76..80 "List"
+    Semi 80..81 ";"
+  LineTerminator 81..82 "\n"
+  ImportDecl 82..116
+    ImportKw 82..88 "import"
+    Whitespace 88..89 " "
+    StaticKw 89..95 "static"
+    Whitespace 95..96 " "
+    Name 96..115
+      Name 96..109
+        Name 96..105
+          Name 96..100
+            Identifier 96..100 "java"
+          Dot 100..101 "."
+          Identifier 101..105 "util"
+        Dot 105..106 "."
+        Identifier 106..109 "Map"
+      Dot 109..110 "."
+      Identifier 110..115 "entry"
+    Semi 115..116 ";"
+  LineTerminator 116..117 "\n"
+  ImportDecl 117..136
+    ImportKw 117..123 "import"
+    Whitespace 123..124 " "
+    Name 124..133
+      Name 124..128
+        Identifier 124..128 "java"
+      Dot 128..129 "."
+      Identifier 129..133 "util"
+    Dot 133..134 "."
+    Star 134..135 "*"
+    Semi 135..136 ";"
+  LineTerminator 136..137 "\n"
+  ImportDecl 137..175
+    ImportKw 137..143 "import"
+    Whitespace 143..144 " "
+    StaticKw 144..150 "static"
+    Whitespace 150..151 " "
+    Name 151..172
+      Name 151..160
+        Name 151..155
+          Identifier 151..155 "java"
+        Dot 155..156 "."
+        Identifier 156..160 "util"
+      Dot 160..161 "."
+      Identifier 161..172 "Collections"
+    Dot 172..173 "."
+    Star 173..174 "*"
+    Semi 174..175 ";"
+  LineTerminator 175..176 "\n"
+  ImportDecl 176..200
+    ImportKw 176..182 "import"
+    Whitespace 182..183 " "
+    ModuleKw 183..189 "module"
+    Whitespace 189..190 " "
+    Name 190..199
+      Name 190..194
+        Identifier 190..194 "java"
+      Dot 194..195 "."
+      Identifier 195..199 "base"
+    Semi 199..200 ";"
+  LineTerminator 200..201 "\n"
+  ImportDecl 201..227
+    ImportKw 201..207 "import"
+    Whitespace 207..208 " "
+    BlockComment 208..220 "/* inside */"
+    Whitespace 220..221 " "
+    Name 221..226
+      Name 221..224
+        Name 221..222
+          Identifier 221..222 "a"
+        Dot 222..223 "."
+        Identifier 223..224 "b"
+      Dot 224..225 "."
+      Identifier 225..226 "C"
+    Semi 226..227 ";"
+  LineTerminator 227..228 "\n"
+  LineTerminator 228..229 "\n"
+  Unparsed 229..241
+    ClassKw 229..234 "class"
+    Whitespace 234..235 " "
+    Identifier 235..238 "App"
+    Whitespace 238..239 " "
+    LBrace 239..240 "{"
+    RBrace 240..241 "}"
+  LineTerminator 241..242 "\n"
+  Eof 242..242 ""

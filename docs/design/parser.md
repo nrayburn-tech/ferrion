@@ -141,7 +141,9 @@ never from javac's source or any other incompatible implementation's. The `rowan
 (MIT OR Apache-2.0) was used through its public API in a throwaway prototype, outside the
 repository, to measure it. The ideas of a lossless syntax tree with trivia as tokens, typed views
 over an untyped tree, and parser events with markers come from rust-analyzer's and rowan's published
-design documentation (MIT OR Apache-2.0).
+design documentation (MIT OR Apache-2.0). Ferrion's parser events and markers were written from
+that documentation, not from rust-analyzer's code, and share some of its names (`Marker`,
+`precede`).
 
 ## Decisions made in review
 

@@ -1,0 +1,17 @@
+CompilationUnit 0..21 [error]
+  PackageDecl 0..8 [error]
+    PackageKw 0..7 "package"
+    Semi 7..8 ";"
+  LineTerminator 8..9 "\n"
+  ImportDecl 9..20
+    ImportKw 9..15 "import"
+    Whitespace 15..16 " "
+    Name 16..19
+      Name 16..17
+        Identifier 16..17 "a"
+      Dot 17..18 "."
+      Identifier 18..19 "B"
+    Semi 19..20 ";"
+  LineTerminator 20..21 "\n"
+  Eof 21..21 ""
+error 7..7 @7 Expected(Identifier): name expected

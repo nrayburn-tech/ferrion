@@ -1,0 +1,6 @@
+CompilationUnit 0..43
+  LineComment 0..24 "// Nothing but comments."
+  LineTerminator 24..25 "\n"
+  BlockComment 25..42 "/* and a block */"
+  LineTerminator 42..43 "\n"
+  Eof 43..43 ""
