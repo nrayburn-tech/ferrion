@@ -157,8 +157,8 @@ cargo corpus lock <project>
 
 ### javac oracle
 
-`tools/javac-oracle` dumps javac's tokens, comments, parse diagnostics, and tree positions as JSON
-lines. Build it with the newest GA JDK:
+`tools/javac-oracle` dumps javac's tokens, comments, scanner diagnostics, parse diagnostics, and
+tree positions as JSON lines. Build it with the newest GA JDK:
 
 ```bash
 mvn --batch-mode --file tools/javac-oracle/pom.xml package
@@ -167,6 +167,28 @@ mvn --batch-mode --file tools/javac-oracle/pom.xml package
 ```bash
 java -jar tools/javac-oracle/target/javac-oracle.jar --release 17 Example.java
 ```
+
+`--sections tokens,comments` limits the output to the named sections (`tokens`, `comments`,
+`scanDiagnostics`, `diagnostics`, `tree`), and `@files.txt` reads paths from a file, one per line.
+
+`tools/oracle-check` compares Ferrion with the oracle across the corpus. With `JAVA_HOME` set to
+the newest GA JDK, the oracle built, and the corpus checked out (`cargo corpus checkout`, which
+skips the jars), compare the lexer's tokens with javac's, and check that they reproduce each file:
+
+```bash
+cargo oracle tokens
+```
+
+By default, each file is compared at its source set's release, as in pull-request CI. Name
+projects to compare only those, `--release <N>` to compare every file at release N, or
+`--all-releases` for every supported release, which a scheduled workflow runs weekly. `--file
+<path>` compares a file of your own, `--json <file>` writes the full report, and `--help` lists the
+other options. Any mismatch fails the run; the normalization and the allowed differences are in
+[docs/design/lexer-oracle-normalization.md](docs/design/lexer-oracle-normalization.md).
+
+javac's output is cached in `target/oracle`, or in `FERRION_ORACLE_CACHE` if it is set, keyed by
+the oracle jar, the JDK, the release, and each file's content, so a rerun only runs javac for what
+changed. Delete the directory to start over.
 
 ### Tests
 
