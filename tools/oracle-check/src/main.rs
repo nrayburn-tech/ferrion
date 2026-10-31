@@ -21,6 +21,7 @@ mod check;
 mod differences;
 mod ferrion;
 mod inventory;
+mod known;
 mod oracle;
 mod parser_cases;
 mod report;
@@ -52,7 +53,8 @@ checks:
                 release
   tree          compare the tree with javac's, node by node, for files javac accepts
   differences   check the known differences in tools/oracle-check/differences against their
-                snapshots, at the latest release (takes only --oracle-jar and --bless)
+                snapshots, at the latest release or the releases a case names (takes only
+                --oracle-jar and --bless)
   parser-cases  check the snapshots of javac's parser output in tools/oracle-check/parser-cases
                 (takes only --oracle-jar and --bless)
 
@@ -239,7 +241,8 @@ fn run_check<C: Check>(check: &C, options: &Options) -> Result<bool> {
     let mut cache = Cache::open(&cache_root, &oracle.key, &releases)
         .with_context(|| format!("opening the cache in {}", cache_root.display()))?;
 
-    let (results, timings) = run::run(check, &files, &oracle, &mut cache, options.jobs)?;
+    let (mut results, timings) = run::run(check, &files, &oracle, &mut cache, options.jobs)?;
+    known::apply(check.name(), &files, &mut results)?;
     let report = Report::new(check.name(), &files, &results, &timings, options.limit);
     print!("{}", report.text(options.limit));
     println!(

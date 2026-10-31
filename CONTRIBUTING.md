@@ -172,6 +172,9 @@ cargo corpus jdk-tests
 at. `tools/corpus/jdk-tests-deep-nesting.txt` lists javac's deep-nesting stress tests among them,
 by path; see [docs/design/parser-oracle-normalization.md](docs/design/parser-oracle-normalization.md)
 for how they were chosen. Don't study the tests beyond what selecting and running them needs.
+Finding the construct at a reported mismatch is part of running them; record it as a known
+difference with an input of your own, written from javac's output rather than from the test, and
+list the test by path in `tools/oracle-check/differences/known-files.txt`.
 
 ### javac oracle
 

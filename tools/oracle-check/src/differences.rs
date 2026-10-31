@@ -1,17 +1,22 @@
-//! Known differences from javac that the corpus doesn't exercise.
+//! Known differences from javac that the corpus doesn't exercise, or that it does and are
+//! listed by file in `differences/known-files.txt` (see [`crate::known`]).
 //!
 //! The corpus has no lexical errors and no byte-order marks, so how the lexer and javac differ on
 //! malformed input, and the allowed differences no corpus file triggers, would otherwise go
 //! unchecked. Each case in `differences/` is a small input written for the purpose, with a snapshot
-//! next to it (`<id>.expected`): javac's items and errors, the lexer's items and errors, both in
-//! javac's terms, the allowed differences counted, and where the two first differ. The cases are
-//! described in docs/design/lexer-oracle-normalization.md.
+//! next to it (`<id>.expected`). A lexer case's snapshot has javac's items and errors, the lexer's
+//! items and errors, both in javac's terms, the allowed differences counted, and where the two
+//! first differ; the lexer cases are described in docs/design/lexer-oracle-normalization.md. A
+//! syntax case (`syntax-<id>.java`) shows a first syntax error that differs from javac's: its
+//! snapshot has javac's parse errors and Ferrion's at each release the case names (`// releases:`,
+//! as in `parser-cases`); the syntax cases are described in
+//! docs/design/parser-oracle-normalization.md.
 //!
 //! `oracle differences` regenerates every snapshot with javac and fails if one changed, which
-//! catches a change on either side: the lexer's recovery, or javac's in a new JDK. `--bless`
-//! writes the new snapshots instead. The lexer's side is also checked by `cargo test`, without a
-//! JDK.
+//! catches a change on either side: Ferrion's, or javac's in a new JDK. `--bless` writes the new
+//! snapshots instead. Ferrion's side is also checked by `cargo test`, without a JDK.
 
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, anyhow, bail};
@@ -20,7 +25,9 @@ use ferrion_java_version::LATEST_RELEASE;
 
 use crate::allowed::Allowed;
 use crate::check::Check;
-use crate::oracle::{Oracle, Output};
+use crate::ferrion::Ferrion;
+use crate::oracle::{Oracle, Output, Section};
+use crate::syntax::{Parser, Prepared as SyntaxPrepared, javac_errors};
 use crate::tokens::{Prepared, Tokens, first_difference, javac_items};
 
 const DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/differences");
@@ -42,10 +49,19 @@ fn expected_path(case: &Path) -> PathBuf {
     case.with_extension("expected")
 }
 
+/// Whether a case shows a syntax difference rather than a lexer one.
+fn is_syntax_case(case: &Path) -> bool {
+    case.file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.starts_with("syntax-"))
+}
+
 /// Regenerates each case's snapshot, and returns whether all of them are unchanged. With `bless`,
 /// changed snapshots are written instead.
 pub fn run(oracle_jar: PathBuf, bless: bool) -> Result<bool> {
-    let cases = cases()?;
+    let (syntax, cases): (Vec<PathBuf>, Vec<PathBuf>) =
+        cases()?.into_iter().partition(|case| is_syntax_case(case));
+    let mut changed = run_syntax(&oracle_jar, &syntax, bless)?;
     let oracle = Oracle::new(oracle_jar, Tokens.sections())?;
     if oracle.jdk < LATEST_RELEASE {
         bail!(
@@ -61,7 +77,6 @@ pub fn run(oracle_jar: PathBuf, bless: bool) -> Result<bool> {
         outputs[i] = Some(output);
     })?;
 
-    let mut changed = 0;
     for (case, output) in cases.iter().zip(outputs) {
         let output = output
             .context("the oracle produced no output")?
@@ -72,22 +87,120 @@ pub fn run(oracle_jar: PathBuf, bless: bool) -> Result<bool> {
         }
         let bytes = std::fs::read(case)?;
         let actual = snapshot(&bytes, &output).with_context(|| case.display().to_string())?;
-        let path = expected_path(case);
-        let expected = std::fs::read_to_string(&path).unwrap_or_default();
-        if actual == expected {
-            continue;
+        changed += usize::from(update(case, &actual, bless)?);
+    }
+    println!("{} cases, {changed} changed", cases.len() + syntax.len());
+    Ok(bless || changed == 0)
+}
+
+/// Compares a case's snapshot with `actual`, or writes it with `bless`. Returns whether it
+/// changed.
+fn update(case: &Path, actual: &str, bless: bool) -> Result<bool> {
+    let path = expected_path(case);
+    let expected = std::fs::read_to_string(&path).unwrap_or_default();
+    if actual == expected {
+        return Ok(false);
+    }
+    if bless {
+        std::fs::write(&path, actual)?;
+        println!("updated {}", path.display());
+    } else {
+        println!("{} changed:", path.display());
+        print!("{}", line_diff(&expected, actual));
+    }
+    Ok(true)
+}
+
+/// Regenerates the syntax cases' snapshots. Returns how many changed.
+fn run_syntax(oracle_jar: &Path, cases: &[PathBuf], bless: bool) -> Result<usize> {
+    let oracle = Oracle::new(oracle_jar.to_path_buf(), &[Section::Diagnostics])?;
+    let scratch = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/oracle/differences");
+    std::fs::create_dir_all(&scratch)?;
+    let mut changed = 0;
+    for case in cases {
+        let text = std::fs::read_to_string(case)?;
+        let mut outputs = BTreeMap::new();
+        for release in crate::parser_cases::releases(&text)? {
+            let mut output = None;
+            oracle.run(
+                release,
+                &[case.as_path()],
+                &scratch.join("syntax"),
+                |_, o| {
+                    output = Some(o);
+                },
+            )?;
+            let output = output
+                .context("the oracle produced no output")?
+                .map_err(|message| anyhow!(message))?;
+            if let Some(failure) = output.failure() {
+                bail!("javac failed on {}: {failure}", case.display());
+            }
+            outputs.insert(release, output);
         }
-        changed += 1;
-        if bless {
-            std::fs::write(&path, &actual)?;
-            println!("updated {}", path.display());
+        let actual = syntax_snapshot(&text, &outputs)?;
+        changed += usize::from(update(case, &actual, bless)?);
+    }
+    Ok(changed)
+}
+
+/// A syntax case's snapshot: at each release, javac's parse errors, then Ferrion's, and whether
+/// the first ones are the same.
+fn syntax_snapshot(text: &str, outputs: &BTreeMap<u32, Output>) -> Result<String> {
+    let mut lines = vec![
+        "# javac's parse errors, then Ferrion's in javac's terms, at each release. Regenerate with \
+         `cargo oracle differences --bless`."
+            .to_owned(),
+    ];
+    for (&release, output) in outputs {
+        let javac: Vec<(String, i64)> = javac_errors(output)
+            .into_iter()
+            .map(|d| (d.code.clone(), d.position))
+            .collect();
+        let ferrion = ferrion_errors(text, release)?;
+        lines.push(format!("at {release}:"));
+        for (code, position) in &javac {
+            lines.push(format!("javac   error {code} at {position}"));
+        }
+        for (code, position) in &ferrion {
+            lines.push(format!("ferrion error {code} at {position}"));
+        }
+        // As the syntax check compares them: javac's first as reported, Ferrion's first in
+        // source order.
+        lines.push(if javac.first() == ferrion.first() {
+            "first errors: same".to_owned()
         } else {
-            println!("{} changed:", path.display());
-            print!("{}", line_diff(&expected, &actual));
+            "first errors: differ".to_owned()
+        });
+    }
+    Ok(lines.join("\n") + "\n")
+}
+
+/// Ferrion's errors at a release, in javac's terms, in the order the syntax check uses.
+fn ferrion_errors(text: &str, release: u32) -> Result<Vec<(String, i64)>> {
+    let source = SourceText::decode(text.as_bytes()).map_err(|reason| anyhow!("{reason}"))?;
+    let prepared = SyntaxPrepared::new(&source);
+    let parsed = Ferrion
+        .parse(&source, release)
+        .context("the parser gave nothing")?;
+    Ok(Ferrion
+        .errors(&parsed)
+        .into_iter()
+        .map(|e| (e.code, prepared.utf16(e.position)))
+        .collect())
+}
+
+/// Ferrion's lines of a syntax snapshot, with the release lines, for checking without a JDK.
+#[cfg(test)]
+fn ferrion_syntax_lines(text: &str, releases: &[u32]) -> Result<Vec<String>> {
+    let mut lines = Vec::new();
+    for &release in releases {
+        lines.push(format!("at {release}:"));
+        for (code, position) in ferrion_errors(text, release)? {
+            lines.push(format!("ferrion error {code} at {position}"));
         }
     }
-    println!("{} cases, {changed} changed", cases.len());
-    Ok(bless || changed == 0)
+    Ok(lines)
 }
 
 fn snapshot(bytes: &[u8], output: &Output) -> Result<String> {
@@ -185,16 +298,60 @@ pub fn line_diff(old: &str, new: &str) -> String {
 mod tests {
     use super::*;
 
-    /// The document that describes every case.
+    /// The documents that describe the lexer cases and the syntax cases.
     const DOC: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../docs/design/lexer-oracle-normalization.md"
     );
+    const SYNTAX_DOC: &str = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../docs/design/parser-oracle-normalization.md"
+    );
+
+    /// Ferrion's side of every syntax snapshot, which needs no JDK.
+    #[test]
+    fn the_parser_matches_every_syntax_snapshot() {
+        let cases: Vec<PathBuf> = cases()
+            .unwrap()
+            .into_iter()
+            .filter(|case| is_syntax_case(case))
+            .collect();
+        assert!(!cases.is_empty());
+        let mut failures = Vec::new();
+        for case in &cases {
+            let text = std::fs::read_to_string(case).unwrap();
+            let expected = std::fs::read_to_string(expected_path(case))
+                .unwrap_or_else(|_| panic!("{} has no snapshot", case.display()));
+            let expected: Vec<&str> = expected
+                .lines()
+                .filter(|line| line.starts_with("at ") || line.starts_with("ferrion "))
+                .collect();
+            let releases = crate::parser_cases::releases(&text).unwrap();
+            let actual = ferrion_syntax_lines(&text, &releases).unwrap();
+            if actual != expected {
+                failures.push(format!(
+                    "{}:\n{}",
+                    case.display(),
+                    line_diff(&expected.join("\n"), &actual.join("\n"))
+                ));
+            }
+        }
+        assert!(
+            failures.is_empty(),
+            "the parser no longer matches these snapshots; if the change is intended, run \
+             `cargo oracle differences --bless` and update the normalization document:\n{}",
+            failures.join("\n")
+        );
+    }
 
     /// The lexer's side of every snapshot, which needs no JDK.
     #[test]
     fn the_lexer_matches_every_snapshot() {
-        let cases = cases().unwrap();
+        let cases: Vec<PathBuf> = cases()
+            .unwrap()
+            .into_iter()
+            .filter(|case| !is_syntax_case(case))
+            .collect();
         assert!(!cases.is_empty());
         let mut failures = Vec::new();
         for case in &cases {
@@ -224,11 +381,17 @@ mod tests {
     #[test]
     fn the_document_describes_every_case() {
         let doc = std::fs::read_to_string(DOC).unwrap();
+        let syntax_doc = std::fs::read_to_string(SYNTAX_DOC).unwrap();
         for case in cases().unwrap() {
             let name = case.file_name().unwrap().to_str().unwrap();
+            let (doc, path) = if is_syntax_case(&case) {
+                (&syntax_doc, SYNTAX_DOC)
+            } else {
+                (&doc, DOC)
+            };
             assert!(
                 doc.contains(&format!("differences/{name}")),
-                "{name} isn't described in {DOC}"
+                "{name} isn't described in {path}"
             );
         }
     }

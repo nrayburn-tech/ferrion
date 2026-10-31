@@ -8,7 +8,7 @@ document records javac's side: what the oracle reports, how javac positions each
 nodes have no positions, how parse diagnostics vary across releases, and how javac recovers from
 errors, then Ferrion's side: how its tree and errors are put in javac's terms
 ([Ferrion's tree in javac's terms](#ferrions-tree-in-javacs-terms),
-[Ferrion's errors in javac's terms](#ferrions-errors-in-javacs-terms)).
+[Ferrion's errors in javac's terms](#ferrions-errors-in-javacs-terms)), and the known differences.
 
 Everything about javac here was learned by running the oracle on inputs, never from javac's
 source: on small inputs written for the purpose, most of them kept as
@@ -48,6 +48,10 @@ The comparisons are in `syntax.rs`:
   on javac's side. Files javac rejects are skipped and listed, since javac's tree after an error
   depends on its recovery. A file Ferrion reports an error for and javac doesn't is compared
   anyway; Ferrion's `Error` nodes become `ERRONEOUS` leaves, so it mismatches there.
+
+Both report a file as matched, mismatched, or skipped. A mismatch of a file listed in
+`tools/oracle-check/differences/known-files.txt` is reported as skipped instead, with the case in
+`differences/` that shows the difference (see [Known differences](#known-differences)).
 
 ## The oracle's output
 
@@ -545,6 +549,38 @@ the position from the anchor, with these rules:
   ([`implicit-classes-and-module-imports.java`](../../tools/oracle-check/parser-cases/implicit-classes-and-module-imports.java),
   [`implicit-class-members.java`](../../tools/oracle-check/parser-cases/implicit-class-members.java)).
 
+## Known differences
+
+A difference that would fail a comparison, and that the parser keeps for a reason, has a case in
+`tools/oracle-check/differences/`, like the
+[lexer's](lexer-oracle-normalization.md#known-differences-on-malformed-input). A syntax case, `syntax-<id>.java`, has a snapshot of javac's parse errors and Ferrion's at each
+release it names; `cargo oracle differences` regenerates it with javac and `cargo test` checks
+Ferrion's side. Files of the corpus or of javac's tests that show a known difference are listed,
+with the case, in `differences/known-files.txt`, and their mismatches are reported as skipped.
+
+The first syntax errors below differ from javac's, and the grammar leaves them so for now: each is
+a mistake javac reports in a way the parser doesn't follow yet, or one it reports where javac
+doesn't. Category: javac error recovery, unless noted.
+
+| Case | Input | javac's first error | Ferrion's |
+| --- | --- | --- | --- |
+| [`syntax-annotation-alone.java`](../../tools/oracle-check/differences/syntax-annotation-alone.java) | `@A` alone in a file | none | `premature.eof` |
+| [`syntax-sealed-annotation-interface.java`](../../tools/oracle-check/differences/syntax-sealed-annotation-interface.java) | `sealed @interface I {}` as a member | `expected` | none |
+| [`syntax-annotation-after-constructor-type-parameters.java`](../../tools/oracle-check/differences/syntax-annotation-after-constructor-type-parameters.java) | `<T> @Deprecated A() {}` | `illegal.start.of.type` | none |
+| [`syntax-compact-constructor-type-parameters.java`](../../tools/oracle-check/differences/syntax-compact-constructor-type-parameters.java) | `<T> R {}` in a record | none | `expected` |
+| [`syntax-compact-constructor-throws.java`](../../tools/oracle-check/differences/syntax-compact-constructor-throws.java) | `R throws Exception {}` in a record | `invalid.canonical.constructor.in.record` | `expected` |
+| [`syntax-wrong-receiver.java`](../../tools/oracle-check/differences/syntax-wrong-receiver.java) | `A this.x` as a parameter | `wrong.receiver` | `expected3` |
+| [`syntax-parenthesized-comparison-before-name.java`](../../tools/oracle-check/differences/syntax-parenthesized-comparison-before-name.java) | `(a < b) c` | `expected2` | `expected`, one token later |
+| [`syntax-lambda-parameter-annotated-after-type.java`](../../tools/oracle-check/differences/syntax-lambda-parameter-annotated-after-type.java) | `(int @A x) -> 1` | `expected` | `illegal.start.of.type` |
+| [`syntax-permits-without-sealed.java`](../../tools/oracle-check/differences/syntax-permits-without-sealed.java) | `class A permits B {}` at 16 | `expected` (`'{'`), since `permits` isn't a keyword before 17 | `invalid.permits.clause`; the version check is to report it |
+| [`syntax-final-record-pattern.java`](../../tools/oracle-check/differences/syntax-final-record-pattern.java) | `case final R(var x)` | `mod.not.allowed.here` | none |
+
+The token check's two known differences in javac's tests are listed in `known-files.txt`:
+`diags/examples/IllegalUnicodeEscape.java` shows
+[`invalid-unicode-escape-alone.java`](../../tools/oracle-check/differences/invalid-unicode-escape-alone.java),
+and `diags/examples/TextBlockOpenDelimiter.java` shows
+[`text-block-opened-mid-line.java`](../../tools/oracle-check/differences/text-block-opened-mid-line.java).
+
 ## Pending
 
 `cargo test` runs both comparisons on every snapshot case; the comparisons that don't match yet
@@ -576,6 +612,17 @@ first written, with 10 JVMs:
 | `tree jdk-tests` | 5,702 | 21 s | 229 | 302 |
 | `tree jdk-deep-nesting --all-releases` | 200 | 3 s | 0 | 302 |
 | `tree` (the corpus) | 10,577 | 37 s | 2 | 187 |
+
+And the comparisons, once the whole grammar was in and before the version check:
+
+| Run | Matched | Mismatched | Skipped |
+| --- | --- | --- | --- |
+| `tokens jdk-tests` | 5,699 | 0 | 3: the two [known differences](#known-differences) and a file that isn't UTF-8 |
+| `syntax jdk-tests` | 5,591 | 110: 56 version errors and restricted names, the rest the parser's and lexer's own | 1 |
+| `tree jdk-tests` | 5,467 | 6, all files Ferrion reports an error for and javac doesn't | 229 javac rejects |
+| `syntax` and `tree jdk-deep-nesting --all-releases` | 200 | 0 | 0 |
+| `syntax` (the corpus) | 10,575 | 2: guava's `module-info.java` at release 8, a version error | 0 |
+| `tree` (the corpus) | 10,575 | 0 | 2 javac rejects |
 
 javac's output is cached as for tokens, keyed by the oracle jar, JDK, and sections, so `syntax` and
 `tree` have caches of their own.
