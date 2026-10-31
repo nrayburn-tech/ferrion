@@ -1,0 +1,146 @@
+CompilationUnit 0..169
+  ClassType 0..7
+    Identifier 0..4 "List"
+    TypeArguments 4..7
+      Lt 4..5 "<"
+      Wildcard 5..6
+        Question 5..6 "?"
+      Gt 6..7 ">"
+  Semi 7..8 ";"
+  LineTerminator 8..9 "\n"
+  ClassType 9..31
+    Identifier 9..13 "List"
+    TypeArguments 13..31
+      Lt 13..14 "<"
+      Wildcard 14..30
+        Question 14..15 "?"
+        Whitespace 15..16 " "
+        ExtendsKw 16..23 "extends"
+        Whitespace 23..24 " "
+        ClassType 24..30
+          Identifier 24..30 "Number"
+      Gt 30..31 ">"
+  Semi 31..32 ";"
+  LineTerminator 32..33 "\n"
+  ClassType 33..74
+    Identifier 33..36 "Map"
+    TypeArguments 36..74
+      Lt 36..37 "<"
+      Wildcard 37..46
+        Question 37..38 "?"
+        Whitespace 38..39 " "
+        SuperKw 39..44 "super"
+        Whitespace 44..45 " "
+        ClassType 45..46
+          Identifier 45..46 "K"
+      Comma 46..47 ","
+      Whitespace 47..48 " "
+      Wildcard 48..73
+        Question 48..49 "?"
+        Whitespace 49..50 " "
+        ExtendsKw 50..57 "extends"
+        Whitespace 57..58 " "
+        ClassType 58..73
+          Identifier 58..62 "List"
+          TypeArguments 62..73
+            Lt 62..63 "<"
+            Wildcard 63..72
+              Question 63..64 "?"
+              Whitespace 64..65 " "
+              SuperKw 65..70 "super"
+              Whitespace 70..71 " "
+              ClassType 71..72
+                Identifier 71..72 "V"
+            Gt 72..73 ">"
+      Gt 73..74 ">"
+  Semi 74..75 ";"
+  LineTerminator 75..76 "\n"
+  ClassType 76..86
+    Identifier 76..80 "List"
+    TypeArguments 80..86
+      Lt 80..81 "<"
+      Wildcard 81..85
+        Annotation 81..83
+          At 81..82 "@"
+          Name 82..83
+            Identifier 82..83 "A"
+        Whitespace 83..84 " "
+        Question 84..85 "?"
+      Gt 85..86 ">"
+  Semi 86..87 ";"
+  LineTerminator 87..88 "\n"
+  ClassType 88..111
+    Identifier 88..92 "List"
+    TypeArguments 92..111
+      Lt 92..93 "<"
+      Wildcard 93..110
+        Annotation 93..95
+          At 93..94 "@"
+          Name 94..95
+            Identifier 94..95 "A"
+        Whitespace 95..96 " "
+        Question 96..97 "?"
+        Whitespace 97..98 " "
+        ExtendsKw 98..105 "extends"
+        Whitespace 105..106 " "
+        ClassType 106..110
+          Annotation 106..108
+            At 106..107 "@"
+            Name 107..108
+              Identifier 107..108 "B"
+          Whitespace 108..109 " "
+          Identifier 109..110 "C"
+      Gt 110..111 ">"
+  Semi 111..112 ";"
+  LineTerminator 112..113 "\n"
+  ClassType 113..124
+    Identifier 113..117 "List"
+    TypeArguments 117..124
+      Lt 117..118 "<"
+      ArrayType 118..123
+        PrimitiveType 118..121
+          IntKw 118..121 "int"
+        Dim 121..123
+          LBracket 121..122 "["
+          RBracket 122..123 "]"
+      Gt 123..124 ">"
+  Semi 124..125 ";"
+  LineTerminator 125..126 "\n"
+  ClassType 126..150
+    Identifier 126..130 "List"
+    TypeArguments 130..150
+      Lt 130..131 "<"
+      ClassType 131..149
+        Identifier 131..135 "List"
+        TypeArguments 135..149
+          Lt 135..136 "<"
+          ClassType 136..148
+            Identifier 136..140 "List"
+            TypeArguments 140..148
+              Lt 140..141 "<"
+              ClassType 141..147
+                Identifier 141..147 "String"
+              Gt 147..148 ">"
+          Gt 148..149 ">"
+      Gt 149..150 ">"
+  Semi 150..151 ";"
+  LineTerminator 151..152 "\n"
+  ClassType 152..167
+    Identifier 152..155 "Map"
+    TypeArguments 155..167
+      Lt 155..156 "<"
+      ClassType 156..157
+        Identifier 156..157 "K"
+      Comma 157..158 ","
+      Whitespace 158..159 " "
+      ClassType 159..166
+        Identifier 159..163 "List"
+        TypeArguments 163..166
+          Lt 163..164 "<"
+          ClassType 164..165
+            Identifier 164..165 "V"
+          Gt 165..166 ">"
+      Gt 166..167 ">"
+  Semi 167..168 ";"
+  LineTerminator 168..169 "\n"
+  Eof 169..169 ""

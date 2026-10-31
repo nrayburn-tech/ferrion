@@ -1,0 +1,4 @@
+@A int;
+java.util.@A List;
+@A Map.@B Entry;
+a.b.@C D<@E F>;

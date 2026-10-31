@@ -1,0 +1,111 @@
+CompilationUnit 0..93 [error]
+  ClassType 0..6 [error]
+    Identifier 0..4 "List"
+    TypeArguments 4..6 [error]
+      Lt 4..5 "<"
+      Gt 5..6 ">"
+  Semi 6..7 ";"
+  LineTerminator 7..8 "\n"
+  ClassType 8..15 [error]
+    Identifier 8..12 "List"
+    TypeArguments 12..15 [error]
+      Lt 12..13 "<"
+      Comma 13..14 ","
+      Gt 14..15 ">"
+  Semi 15..16 ";"
+  LineTerminator 16..17 "\n"
+  ClassType 17..23 [error]
+    Identifier 17..21 "List"
+    TypeArguments 21..23 [error]
+      Lt 21..22 "<"
+      ClassType 22..23
+        Identifier 22..23 "A"
+  Whitespace 23..24 " "
+  Error 24..26 [error]
+    Identifier 24..25 "B"
+    Gt 25..26 ">"
+  Semi 26..27 ";"
+  LineTerminator 27..28 "\n"
+  ClassType 28..43 [error]
+    Identifier 28..32 "List"
+    TypeArguments 32..43 [error]
+      Lt 32..33 "<"
+      Wildcard 33..42 [error]
+        Question 33..34 "?"
+        Whitespace 34..35 " "
+        ExtendsKw 35..42 "extends"
+      Gt 42..43 ">"
+  Semi 43..44 ";"
+  LineTerminator 44..45 "\n"
+  ArrayType 45..53 [error]
+    ClassType 45..51 [error]
+      Identifier 45..49 "List"
+      TypeArguments 49..51 [error]
+        Lt 49..50 "<"
+        Wildcard 50..51
+          Question 50..51 "?"
+    Dim 51..53
+      LBracket 51..52 "["
+      RBracket 52..53 "]"
+  Error 53..54 [error]
+    Gt 53..54 ">"
+  Semi 54..55 ";"
+  LineTerminator 55..56 "\n"
+  ArrayType 56..60 [error]
+    PrimitiveType 56..59
+      IntKw 56..59 "int"
+    Dim 59..60 [error]
+      LBracket 59..60 "["
+  Error 60..61 [error]
+    IntLiteral 60..61 "1"
+  Error 61..62 [error]
+    RBracket 61..62 "]"
+  Semi 62..63 ";"
+  LineTerminator 63..64 "\n"
+  ClassType 64..68 [error]
+    ClassType 64..67
+      ClassType 64..65
+        Identifier 64..65 "a"
+      Dot 65..66 "."
+      Identifier 66..67 "b"
+    Dot 67..68 "."
+  Semi 68..69 ";"
+  LineTerminator 69..70 "\n"
+  ClassType 70..72 [error]
+    ClassType 70..71
+      Identifier 70..71 "a"
+    Dot 71..72 "."
+  Error 72..76 [error]
+    Lt 72..73 "<"
+    Identifier 73..74 "B"
+    Gt 74..75 ">"
+    Identifier 75..76 "c"
+  Semi 76..77 ";"
+  LineTerminator 77..78 "\n"
+  PrimitiveType 78..81
+    IntKw 78..81 "int"
+  Whitespace 81..82 " "
+  Error 82..84 [error]
+    At 82..83 "@"
+    Identifier 83..84 "A"
+  Semi 84..85 ";"
+  LineTerminator 85..86 "\n"
+  ClassType 86..91 [error]
+    Identifier 86..90 "List"
+    TypeArguments 90..91 [error]
+      Lt 90..91 "<"
+  Semi 91..92 ";"
+  LineTerminator 92..93 "\n"
+  Eof 93..93 ""
+error 5..6 @5 TypeExpected(Gt): expected a type, found '>'
+error 13..14 @13 TypeExpected(Comma): expected a type, found ','
+error 14..15 @14 TypeExpected(Gt): expected a type, found '>'
+error 24..24 @24 Expected(OneOf([Gt, Comma])): '>' or ',' expected
+error 42..43 @42 TypeExpected(Gt): expected a type, found '>'
+error 51..51 @51 Expected(OneOf([Gt, Comma])): '>' or ',' expected
+error 53..53 @53 Expected(Token(Semi)): ';' expected
+error 60..60 @60 Expected(Token(RBracket)): ']' expected
+error 68..68 @68 Expected(Identifier): name expected
+error 72..73 @72 TypeExpected(Lt): expected a type, found '<'
+error 82..83 @82 TypeExpected(At): expected a type, found '@'
+error 91..92 @91 TypeExpected(Semi): expected a type, found ';'

@@ -1,0 +1,5 @@
+int[];
+String[][];
+int @A [] @B [];
+List<String>[];
+a.b.C<D>[];

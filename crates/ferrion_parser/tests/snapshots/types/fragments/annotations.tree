@@ -1,0 +1,68 @@
+CompilationUnit 0..60
+  PrimitiveType 0..6
+    Annotation 0..2
+      At 0..1 "@"
+      Name 1..2
+        Identifier 1..2 "A"
+    Whitespace 2..3 " "
+    IntKw 3..6 "int"
+  Semi 6..7 ";"
+  LineTerminator 7..8 "\n"
+  ClassType 8..25
+    ClassType 8..17
+      ClassType 8..12
+        Identifier 8..12 "java"
+      Dot 12..13 "."
+      Identifier 13..17 "util"
+    Dot 17..18 "."
+    Annotation 18..20
+      At 18..19 "@"
+      Name 19..20
+        Identifier 19..20 "A"
+    Whitespace 20..21 " "
+    Identifier 21..25 "List"
+  Semi 25..26 ";"
+  LineTerminator 26..27 "\n"
+  ClassType 27..42
+    ClassType 27..33
+      Annotation 27..29
+        At 27..28 "@"
+        Name 28..29
+          Identifier 28..29 "A"
+      Whitespace 29..30 " "
+      Identifier 30..33 "Map"
+    Dot 33..34 "."
+    Annotation 34..36
+      At 34..35 "@"
+      Name 35..36
+        Identifier 35..36 "B"
+    Whitespace 36..37 " "
+    Identifier 37..42 "Entry"
+  Semi 42..43 ";"
+  LineTerminator 43..44 "\n"
+  ClassType 44..58
+    ClassType 44..47
+      ClassType 44..45
+        Identifier 44..45 "a"
+      Dot 45..46 "."
+      Identifier 46..47 "b"
+    Dot 47..48 "."
+    Annotation 48..50
+      At 48..49 "@"
+      Name 49..50
+        Identifier 49..50 "C"
+    Whitespace 50..51 " "
+    Identifier 51..52 "D"
+    TypeArguments 52..58
+      Lt 52..53 "<"
+      ClassType 53..57
+        Annotation 53..55
+          At 53..54 "@"
+          Name 54..55
+            Identifier 54..55 "E"
+        Whitespace 55..56 " "
+        Identifier 56..57 "F"
+      Gt 57..58 ">"
+  Semi 58..59 ";"
+  LineTerminator 59..60 "\n"
+  Eof 60..60 ""

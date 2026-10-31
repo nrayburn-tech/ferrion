@@ -1,0 +1,61 @@
+CompilationUnit 0..77
+  PrimitiveType 0..3
+    IntKw 0..3 "int"
+  Semi 3..4 ";"
+  LineTerminator 4..5 "\n"
+  PrimitiveType 5..12
+    BooleanKw 5..12 "boolean"
+  Semi 12..13 ";"
+  LineTerminator 13..14 "\n"
+  ClassType 14..17
+    Identifier 14..17 "var"
+  Semi 17..18 ";"
+  LineTerminator 18..19 "\n"
+  ClassType 19..33
+    ClassType 19..28
+      ClassType 19..23
+        Identifier 19..23 "java"
+      Dot 23..24 "."
+      Identifier 24..28 "util"
+    Dot 28..29 "."
+    Identifier 29..33 "List"
+  Semi 33..34 ";"
+  LineTerminator 34..35 "\n"
+  ClassType 35..50
+    ClassType 35..38
+      Identifier 35..38 "Map"
+    Dot 38..39 "."
+    Identifier 39..44 "Entry"
+    TypeArguments 44..50
+      Lt 44..45 "<"
+      ClassType 45..46
+        Identifier 45..46 "K"
+      Comma 46..47 ","
+      Whitespace 47..48 " "
+      ClassType 48..49
+        Identifier 48..49 "V"
+      Gt 49..50 ">"
+  Semi 50..51 ";"
+  LineTerminator 51..52 "\n"
+  ClassType 52..69
+    ClassType 52..60
+      Identifier 52..57 "Outer"
+      TypeArguments 57..60
+        Lt 57..58 "<"
+        ClassType 58..59
+          Identifier 58..59 "A"
+        Gt 59..60 ">"
+    Dot 60..61 "."
+    Identifier 61..66 "Inner"
+    TypeArguments 66..69
+      Lt 66..67 "<"
+      ClassType 67..68
+        Identifier 67..68 "B"
+      Gt 68..69 ">"
+  Semi 69..70 ";"
+  LineTerminator 70..71 "\n"
+  VoidType 71..75
+    VoidKw 71..75 "void"
+  Semi 75..76 ";"
+  LineTerminator 76..77 "\n"
+  Eof 77..77 ""

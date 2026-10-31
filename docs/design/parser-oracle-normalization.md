@@ -385,6 +385,9 @@ running the oracle on the cases and javac's tests:
   the stray code a field or method. Before 25 this adds an `implicit.classes` version error, and
   the file name can add `bad.file.name`
   ([`recovery-top-level.java`](../../tools/oracle-check/parser-cases/recovery-top-level.java)).
+- A type parameter list's `>` directly followed by another `>` doesn't close it: in
+  `class A<T extends Comparable<T>>> {}`, javac reports `> expected` at the second `>`
+  ([`type-parameters-closed-by-a-shift.java`](../../tools/oracle-check/parser-cases/type-parameters-closed-by-a-shift.java)).
 - Some version errors cascade, because javac doesn't parse the newer syntax at older releases:
   `sealed ... permits` adds `'{' expected`, a local record adds `';' expected` twice.
 
