@@ -190,6 +190,15 @@ pub fn ferrion_items(
                 i += 1;
                 continue;
             }
+            TokenKind::LineComment
+                if tokens
+                    .get(i + 1)
+                    .is_some_and(|next| next.kind == TokenKind::Eof) =>
+            {
+                allowed.add(Allowed::LineCommentAtEndOfFile);
+                i += 1;
+                continue;
+            }
             TokenKind::LineComment => (ItemClass::Comment, "LINE", i),
             TokenKind::BlockComment if text.get(token.span.range()) == Some("/**/") => {
                 allowed.add(Allowed::EmptyBlockComment);
@@ -729,6 +738,26 @@ mod tests {
                 token("EOF", 37, 37),
             ]
         );
+    }
+
+    #[test]
+    fn a_line_comment_ending_the_file_is_left_out() {
+        let (items, allowed) = ours(&[(Semi, ";"), (LineComment, "// a")], false);
+        let kinds: Vec<_> = items.iter().map(|item| item.kind).collect();
+        assert_eq!(kinds, ["SEMI", "EOF"]);
+        assert_eq!(allowed.get(Allowed::LineCommentAtEndOfFile), 1);
+
+        let (items, allowed) = ours(
+            &[
+                (LineComment, "// a"),
+                (LineTerminator, "\n"),
+                (DocLineComment, "/// b"),
+            ],
+            false,
+        );
+        let kinds: Vec<_> = items.iter().map(|item| item.kind).collect();
+        assert_eq!(kinds, ["LINE", "JAVADOC_LINE", "EOF"]);
+        assert!(allowed.is_empty());
     }
 
     #[test]
