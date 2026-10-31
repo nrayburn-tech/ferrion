@@ -267,3 +267,30 @@ To turn a failure into a regression test:
 - Write commit messages with a short, imperative subject line ("Add lexer support for text
   blocks"), and a body wrapped at 72 columns that explains what changed and why.
 - Complete the checklist in the pull-request template, including the provenance item.
+
+### Rebase, don't merge
+
+History on `main` is linear, so each commit can be read, bisected, and reverted on its own.
+
+- **Branch from `main`, and rebase to catch up.** Bring a branch up to date with `main` by
+  rebasing it, not by merging `main` into it:
+
+  ```bash
+  git fetch origin
+  ```
+
+  ```bash
+  git rebase origin/main
+  ```
+
+  Then push with `git push --force-with-lease`, which refuses to overwrite commits on the remote
+  that you haven't seen.
+- **No merge commits in a pull request.** Combine work from several branches by rebasing one onto
+  another, not by merging them.
+- **Each commit stands on its own.** Every commit builds and passes the checks above, and does one
+  thing. Before review, tidy the series with `git rebase -i origin/main`: squash fixups into the
+  commit they fix, and split commits that do several things. Address review feedback the same
+  way, with `git commit --fixup` and `git rebase -i --autosquash`, rather than with "fix review"
+  commits.
+- **Pull requests land by rebasing** them onto `main`, never with a merge commit. A pull request
+  whose commits don't stand on their own is squashed into one instead.
