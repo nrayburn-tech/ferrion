@@ -145,3 +145,24 @@ fn nesting_below_the_limit_has_no_error() {
         ">".repeat(3_000)
     ));
 }
+
+#[test]
+fn case_label_expressions_end_at_an_arrow() {
+    const CASE_LABEL: Fragment = Fragment {
+        grammar: super::case_label_expr,
+        missing: D::ExpressionExpected,
+    };
+    for (text, kind) in [
+        ("A -> f()", NameExpr),
+        ("(a) -> f()", ParenExpr),
+        ("a && (b) -> f()", BinaryExpr),
+        ("a ? b : c -> f()", ConditionalExpr),
+    ] {
+        let parsed = run(text, LATEST_RELEASE, CASE_LABEL);
+        assert!(!kinds(&parsed).contains(&LambdaExpr), "{text}");
+        assert_eq!(kinds(&parsed)[1], kind, "{text}");
+    }
+    // Nested deeper, a lambda is still one.
+    let parsed = run("f(x -> x) -> g()", LATEST_RELEASE, CASE_LABEL);
+    assert!(kinds(&parsed).contains(&LambdaExpr));
+}
