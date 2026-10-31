@@ -1,0 +1,20 @@
+# javac --release 27, then Ferrion, both in javac's terms. Regenerate with `cargo oracle differences --bless`.
+javac   CLASS 0..5 "class"
+javac   IDENTIFIER 6..7 "A"
+javac   LBRACE 8..9 "{"
+javac   INT 12..15 "int"
+javac   IDENTIFIER 16..17 "x"
+javac   SEMI 17..18 ";"
+javac   ERROR 19..37 "/* abc\n  int y;\n}\n"
+javac   EOF 37..37 ""
+javac   error compiler.err.unclosed.comment at 19
+ferrion CLASS 0..5 "class"
+ferrion IDENTIFIER 6..7 "A"
+ferrion LBRACE 8..9 "{"
+ferrion INT 12..15 "int"
+ferrion IDENTIFIER 16..17 "x"
+ferrion SEMI 17..18 ";"
+ferrion BLOCK comment 19..37 "/* abc\n  int y;\n}\n"
+ferrion EOF 37..37 ""
+ferrion error UnterminatedComment 19..21 "/*"
+first difference at item 7

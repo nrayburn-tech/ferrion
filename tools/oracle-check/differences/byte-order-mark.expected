@@ -1,0 +1,14 @@
+# javac --release 27, then Ferrion, both in javac's terms. Regenerate with `cargo oracle differences --bless`.
+javac   CLASS 1..6 "class"
+javac   IDENTIFIER 7..8 "A"
+javac   LBRACE 9..10 "{"
+javac   RBRACE 10..11 "}"
+javac   EOF 12..12 ""
+javac   error compiler.err.illegal.char at 0
+ferrion CLASS 1..6 "class"
+ferrion IDENTIFIER 7..8 "A"
+ferrion LBRACE 9..10 "{"
+ferrion RBRACE 10..11 "}"
+ferrion EOF 12..12 ""
+allowed byte-order-mark 1
+same after normalization
