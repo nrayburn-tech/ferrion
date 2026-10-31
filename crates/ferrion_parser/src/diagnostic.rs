@@ -131,6 +131,60 @@ pub enum ParseDiagnosticKind {
     /// `[]` after a receiver parameter's `this`. Anchor: the `[`, as for javac's
     /// `array.and.receiver`.
     ReceiverWithDims,
+    /// Where a statement must follow (the body of an `if`, a loop, a label, or a switch rule in a
+    /// switch statement), a token that can't start one: `}`, `case`, or `default`. Anchor: the
+    /// start of the token, as for javac's `illegal.start.of.stmt`.
+    StatementExpected,
+    /// An expression statement whose expression can't be a statement, such as `a + b;`. Its span
+    /// covers the expression. Anchor: javac's position for the expression: its operator for a
+    /// binary, conditional, or `instanceof` expression, its `.` or `[` for a field or array
+    /// access or a class literal, and otherwise its start, as for javac's `not.stmt`.
+    NotAStatement,
+    /// A local variable declaration where only a statement is allowed, as the body of an `if`, a
+    /// loop, a label, or a switch rule. Anchor: the first declarator's name, as for javac's
+    /// `variable.not.allowed`.
+    LocalVariableNotAllowed,
+    /// A local class, interface, enum, or record where only a statement is allowed. Anchor: its
+    /// `class`, `interface`, `enum`, or `record` keyword, as for javac's `class.not.allowed`.
+    LocalClassNotAllowed,
+    /// `sealed` or `non-sealed` as the first modifier of a local class or interface. Anchor: the
+    /// modifier, as for javac's `sealed.or.non.sealed.local.classes.not.allowed`.
+    SealedLocalClass,
+    /// `else` without an `if` before it. Anchor: the `else`, as for javac's `else.without.if`.
+    ElseWithoutIf,
+    /// `catch` without a `try` before it. Anchor: the `catch`, as for javac's
+    /// `catch.without.try`.
+    CatchWithoutTry,
+    /// `finally` without a `try` before it. Anchor: the `finally`, as for javac's
+    /// `finally.without.try`.
+    FinallyWithoutTry,
+    /// A `try` with no resources, `catch`, or `finally`. Anchor: the `try`, as for javac's
+    /// `try.without.catch.finally.or.resource.decls`.
+    TryWithoutCatch,
+    /// A resource that is an expression but not a variable or field, as in `try (open()) {}`.
+    /// Anchor: as for [`NotAStatement`](Self::NotAStatement), but a method call's is its `(`, as
+    /// for javac's `try.with.resources.expr.needs.var`.
+    ResourceNotAVariable,
+    /// An enhanced `for` whose variable isn't declared: `for (x : xs)`. Anchor: the start of
+    /// the variable, as for javac's `bad.initializer`.
+    ForEachWithoutDeclaration,
+    /// A `case` or `default` label outside a switch block. Anchor: the `case` or `default`, as for
+    /// javac's `orphaned`.
+    CaseOutsideSwitch,
+    /// In a switch block, a token other than `case`, `default`, or `}`. Its span covers the run
+    /// of tokens put in an `Error` node. Anchor: the start of the first, as for javac's
+    /// `expected3` (case, default, or `}`).
+    CaseExpected,
+    /// `default` as a case element anywhere but after `null` (`case null, default`). Anchor: the
+    /// `default`, as for javac's `default.label.not.allowed`.
+    DefaultNotAllowed,
+    /// A guard (`when`) on a label without a pattern: `default`, or `case null, default`. Its
+    /// span covers the condition. Anchor: the `when`, as for javac's `guard.not.allowed`.
+    GuardNotAllowed,
+    /// A statement other than an expression statement, a block, or `throw` as the body of a
+    /// switch rule in a switch statement. Anchor: the start of the statement, as for javac's
+    /// `switch.case.unexpected.statement`.
+    StatementNotAllowedInRule,
 }
 
 /// What an [`Expected`](ParseDiagnosticKind::Expected) error expected.
@@ -174,7 +228,23 @@ impl ParseDiagnosticKind {
             | ParseDiagnosticKind::VarargsNotLast
             | ParseDiagnosticKind::VarargsWithDims
             | ParseDiagnosticKind::MisplacedReceiver
-            | ParseDiagnosticKind::ReceiverWithDims => JavacPhase::Parse,
+            | ParseDiagnosticKind::ReceiverWithDims
+            | ParseDiagnosticKind::StatementExpected
+            | ParseDiagnosticKind::NotAStatement
+            | ParseDiagnosticKind::LocalVariableNotAllowed
+            | ParseDiagnosticKind::LocalClassNotAllowed
+            | ParseDiagnosticKind::SealedLocalClass
+            | ParseDiagnosticKind::ElseWithoutIf
+            | ParseDiagnosticKind::CatchWithoutTry
+            | ParseDiagnosticKind::FinallyWithoutTry
+            | ParseDiagnosticKind::TryWithoutCatch
+            | ParseDiagnosticKind::ResourceNotAVariable
+            | ParseDiagnosticKind::ForEachWithoutDeclaration
+            | ParseDiagnosticKind::CaseOutsideSwitch
+            | ParseDiagnosticKind::CaseExpected
+            | ParseDiagnosticKind::DefaultNotAllowed
+            | ParseDiagnosticKind::GuardNotAllowed
+            | ParseDiagnosticKind::StatementNotAllowedInRule => JavacPhase::Parse,
             ParseDiagnosticKind::NestingTooDeep => JavacPhase::Never,
         }
     }
@@ -284,6 +354,42 @@ impl ParseDiagnostic {
             }
             ParseDiagnosticKind::ReceiverWithDims => {
                 "a receiver parameter can't have array dimensions".to_owned()
+            }
+            ParseDiagnosticKind::StatementExpected => "statement expected".to_owned(),
+            ParseDiagnosticKind::NotAStatement => {
+                "this expression can't be used as a statement".to_owned()
+            }
+            ParseDiagnosticKind::LocalVariableNotAllowed => {
+                "a variable can't be declared here; put the statement in a block".to_owned()
+            }
+            ParseDiagnosticKind::LocalClassNotAllowed => {
+                "a class can't be declared here; put the statement in a block".to_owned()
+            }
+            ParseDiagnosticKind::SealedLocalClass => {
+                "a local class can't be sealed or non-sealed".to_owned()
+            }
+            ParseDiagnosticKind::ElseWithoutIf => "'else' without 'if'".to_owned(),
+            ParseDiagnosticKind::CatchWithoutTry => "'catch' without 'try'".to_owned(),
+            ParseDiagnosticKind::FinallyWithoutTry => "'finally' without 'try'".to_owned(),
+            ParseDiagnosticKind::TryWithoutCatch => {
+                "'try' needs resources, a 'catch', or a 'finally'".to_owned()
+            }
+            ParseDiagnosticKind::ResourceNotAVariable => {
+                "a resource must be a declaration, a variable, or a field".to_owned()
+            }
+            ParseDiagnosticKind::ForEachWithoutDeclaration => {
+                "the variable of an enhanced 'for' must be declared here".to_owned()
+            }
+            ParseDiagnosticKind::CaseOutsideSwitch => "case label outside a switch".to_owned(),
+            ParseDiagnosticKind::CaseExpected => "'case', 'default', or '}' expected".to_owned(),
+            ParseDiagnosticKind::DefaultNotAllowed => {
+                "'default' can only follow 'null' in a case label".to_owned()
+            }
+            ParseDiagnosticKind::GuardNotAllowed => {
+                "only a case label with a pattern can have a guard".to_owned()
+            }
+            ParseDiagnosticKind::StatementNotAllowedInRule => {
+                "a switch rule's body must be an expression, a block, or 'throw'".to_owned()
             }
             ParseDiagnosticKind::NestingTooDeep => format!(
                 "too deeply nested: more than {} levels",
