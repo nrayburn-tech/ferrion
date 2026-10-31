@@ -4,7 +4,7 @@ use crate::escape::Escape;
 
 /// A position in a text, reading characters with Unicode escapes translated (JLS §3.3).
 ///
-/// Offsets are always raw byte offsets, so an escape such as `A` is one character `A` that
+/// Offsets are always raw byte offsets, so an escape such as `\u0041` is one character `A` that
 /// spans six bytes. Invalid escapes are skipped over as if they weren't there, which is what javac
 /// does after reporting them; the lexer decides which token their text belongs to.
 #[derive(Clone)]
