@@ -1,0 +1,92 @@
+CompilationUnit 0..191 [error]
+  LineComment 0..96 "// javac parses any type after `extends` and `implements`, and rejects these only after parsing."
+  LineTerminator 96..97 "\n"
+  ClassDecl 97..144
+    ClassKw 97..102 "class"
+    Whitespace 102..103 " "
+    Identifier 103..104 "A"
+    Whitespace 104..105 " "
+    ExtendsClause 105..118
+      ExtendsKw 105..112 "extends"
+      Whitespace 112..113 " "
+      ArrayType 113..118
+        PrimitiveType 113..116
+          IntKw 113..116 "int"
+        Dim 116..118
+          LBracket 116..117 "["
+          RBracket 117..118 "]"
+    Whitespace 118..119 " "
+    ImplementsClause 119..141
+      ImplementsKw 119..129 "implements"
+      Whitespace 129..130 " "
+      ArrayType 130..133
+        ClassType 130..131
+          Identifier 130..131 "B"
+        Dim 131..133
+          LBracket 131..132 "["
+          RBracket 132..133 "]"
+      Comma 133..134 ","
+      Whitespace 134..135 " "
+      ClassType 135..141
+        ClassType 135..139
+          Identifier 135..136 "C"
+          TypeArguments 136..139
+            Lt 136..137 "<"
+            ClassType 137..138
+              Identifier 137..138 "D"
+            Gt 138..139 ">"
+        Dot 139..140 "."
+        Identifier 140..141 "E"
+    Whitespace 141..142 " "
+    ClassBody 142..144
+      LBrace 142..143 "{"
+      RBrace 143..144 "}"
+  LineTerminator 144..145 "\n"
+  LineTerminator 145..146 "\n"
+  ClassDecl 146..190 [error]
+    ClassKw 146..151 "class"
+    Whitespace 151..152 " "
+    Identifier 152..153 "F"
+    Whitespace 153..154 " "
+    ClassBody 154..190 [error]
+      LBrace 154..155 "{"
+      LineTerminator 155..156 "\n"
+      Whitespace 156..158 "  "
+      MethodDecl 158..188 [error]
+        VoidType 158..162
+          VoidKw 158..162 "void"
+        Whitespace 162..163 " "
+        Identifier 163..164 "f"
+        FormalParameters 164..166
+          LParen 164..165 "("
+          RParen 165..166 ")"
+        Whitespace 166..167 " "
+        ThrowsClause 167..185
+          ThrowsKw 167..173 "throws"
+          Whitespace 173..174 " "
+          ClassType 174..178
+            Annotation 174..176
+              At 174..175 "@"
+              Name 175..176
+                Identifier 175..176 "G"
+            Whitespace 176..177 " "
+            Identifier 177..178 "H"
+          Comma 178..179 ","
+          Whitespace 179..180 " "
+          ClassType 180..185
+            ClassType 180..183
+              ClassType 180..181
+                Identifier 180..181 "a"
+              Dot 181..182 "."
+              Identifier 182..183 "b"
+            Dot 183..184 "."
+            Identifier 184..185 "I"
+        Whitespace 185..186 " "
+        Error 186..188 [error]
+          LBrace 186..187 "{"
+          RBrace 187..188 "}"
+      LineTerminator 188..189 "\n"
+      RBrace 189..190 "}"
+  LineTerminator 190..191 "\n"
+  Eof 191..191 ""
+error 186..187 @186 UnexpectedToken(LBrace): unexpected '{'
