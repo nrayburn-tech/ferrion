@@ -61,6 +61,10 @@ pub(crate) struct Parser<'t> {
     /// The depth at which `->` ends an expression instead of starting a lambda, set by
     /// [`Parser::without_lambdas`].
     no_lambda_depth: Option<u32>,
+    /// Whether `NestingTooDeep` was reported in the construct at the limit that is still open.
+    /// Until the parser climbs back out of it, constructs that are too deep are skipped without
+    /// another report, so one mistake gets one diagnostic.
+    too_deep_reported: bool,
     /// Whether an error was reported since a token was last consumed normally. While it is, no
     /// more errors are reported, so each mistake gets one diagnostic.
     recovering: bool,
@@ -98,6 +102,7 @@ impl<'t> Parser<'t> {
             release,
             depth: 0,
             no_lambda_depth: None,
+            too_deep_reported: false,
             recovering: false,
         }
     }
@@ -438,7 +443,9 @@ impl<'t> Parser<'t> {
     /// Runs `f`, a recursive part of the grammar, one level deeper. Grows the stack if it runs
     /// low. At [`NESTING_LIMIT`] levels, reports `NestingTooDeep` instead, puts the current token
     /// (and the group it opens, or the rest of the construct up to a `;`, `,`, or closing
-    /// delimiter) in an `Error` node, and returns `None`.
+    /// delimiter) in an `Error` node, and returns `None`. Within one construct at the limit, only
+    /// the first such skip is reported: in `if (a) ...` at the limit, the condition and the body
+    /// are both too deep, and that is one mistake.
     pub fn nested<R>(&mut self, f: impl FnOnce(&mut Parser<'t>) -> Option<R>) -> Option<R> {
         if self.depth >= NESTING_LIMIT {
             self.skip_too_deep();
@@ -447,6 +454,8 @@ impl<'t> Parser<'t> {
         self.depth += 1;
         let result = ferrion_stack::ensure_stack(|| f(self));
         self.depth -= 1;
+        // Back out of the construct at the limit, if this was it.
+        self.too_deep_reported = false;
         result
     }
 
@@ -472,7 +481,10 @@ impl<'t> Parser<'t> {
 
     fn skip_too_deep(&mut self) {
         let span = self.nth_span(0);
-        self.error(ParseDiagnosticKind::NestingTooDeep, span, span.start);
+        if !self.too_deep_reported {
+            self.error(ParseDiagnosticKind::NestingTooDeep, span, span.start);
+            self.too_deep_reported = true;
+        }
         if self.at_eof() {
             return;
         }

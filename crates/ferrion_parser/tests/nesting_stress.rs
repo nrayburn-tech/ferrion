@@ -43,11 +43,7 @@ const LEVELS: &[(&str, usize)] = &[
 /// Nesting patterns that report `NestingTooDeep` more than once past the limit, against the
 /// design's one diagnostic per mistake, with why. Their test fails once they report one, so that
 /// they come off the list when it's fixed.
-const REPORTED_MORE_THAN_ONCE: &[&str] = &[
-    // At the limit, `if (a)`'s condition is too deep and is skipped up to its `)`; then the
-    // statement goes on to its body, which is too deep again, and is reported again.
-    "if_statements",
-];
+const REPORTED_MORE_THAN_ONCE: &[&str] = &[];
 
 /// How many levels below the limit the enclosing class, member, and statement may take.
 const MARGIN: usize = 32;

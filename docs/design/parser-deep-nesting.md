@@ -103,7 +103,9 @@ Structures that can't be flat get a hand-written `Drop` that frees with an expli
   arguments. Each recursive entry point calls `ensure_stack` and increments a depth counter.
 - **The nesting limit:** at the limit, the parser reports `NestingTooDeep` at the token that would
   go deeper, skips to the matching closing delimiter (an iterative scan of the tokens), and puts the
-  skipped tokens in an `ERROR` node. The file then has a syntax error, so the formatter skips it and
+  skipped tokens in an `ERROR` node. Other parts of the construct at the limit that would go deeper
+  too, such as an `if`'s condition and its body, are skipped without another report, so that the
+  mistake gets one diagnostic. The file then has a syntax error, so the formatter skips it and
   rules treat that region as affected. The limit is a deliberate departure from javac, recorded with
   the other differences. With `ensure_stack`, the limit doesn't need to be tied to a stack size;
   10,000 is several times what javac handles with its default stack.

@@ -314,6 +314,39 @@ fn nesting_too_deep_without_a_group() {
 }
 
 #[test]
+fn nesting_too_deep_once_per_construct_at_the_limit() {
+    let parsed = run("a ; b ; c ; d ;", |p| {
+        let skip = |p: &mut Parser<'_>| {
+            let result = p.nested(|p| {
+                p.bump();
+                Some(())
+            });
+            assert!(result.is_none());
+            p.bump();
+        };
+        p.depth = NESTING_LIMIT - 1;
+        p.nested(|p| {
+            // Two constructs too deep in the one at the limit: one report.
+            skip(p);
+            skip(p);
+            Some(())
+        });
+        // Out of it and back in: reported again.
+        p.nested(|p| {
+            skip(p);
+            Some(())
+        });
+        p.depth = 0;
+        p.bump();
+        p.bump();
+    });
+    assert_eq!(
+        diagnostics(&parsed),
+        [(D::NestingTooDeep, 0), (D::NestingTooDeep, 8)]
+    );
+}
+
+#[test]
 fn lambdas_only_where_allowed() {
     run("x", |p| {
         assert!(p.lambdas_allowed());
