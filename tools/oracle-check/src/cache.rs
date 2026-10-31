@@ -82,7 +82,6 @@ impl Cache {
         self.index.get(&(release, *source)).map(String::as_str)
     }
 
-    /// Reads a stored output.
     pub fn read(&self, hash: &str) -> Result<Output> {
         let path = self.output_file(hash);
         let text = std::fs::read_to_string(&path)

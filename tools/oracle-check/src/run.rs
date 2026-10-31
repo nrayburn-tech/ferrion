@@ -120,7 +120,6 @@ fn run_javac(
         jobs.min(chunks.len()),
     );
 
-    // Workers take chunks from the end, so the last releases run first.
     let chunk_count = chunks.len();
     let chunks = Mutex::new(chunks);
     let (sender, receiver) = mpsc::channel::<Message>();

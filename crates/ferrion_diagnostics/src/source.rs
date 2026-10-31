@@ -145,7 +145,7 @@ impl SourceText {
         &self.text
     }
 
-    /// Whether the file starts with a byte-order mark, as its [`Encoding`] records.
+    /// Whether the file starts with a byte-order mark.
     pub fn has_bom(&self) -> bool {
         matches!(self.encoding, Encoding::Utf8 { bom: true })
     }

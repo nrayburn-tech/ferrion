@@ -23,7 +23,6 @@ use crate::check::Check;
 use crate::oracle::{Oracle, Output};
 use crate::tokens::{Prepared, Tokens, first_difference, javac_items};
 
-/// The cases' directory.
 const DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/differences");
 
 /// Each case's input, in name order.
@@ -91,7 +90,6 @@ pub fn run(oracle_jar: PathBuf, bless: bool) -> Result<bool> {
     Ok(bless || changed == 0)
 }
 
-/// A case's snapshot.
 fn snapshot(bytes: &[u8], output: &Output) -> Result<String> {
     let (prepared, ferrion) = ferrion_lines(bytes)?;
     let ours = prepared.items().map_err(|panic| anyhow!("{panic}"))?;
