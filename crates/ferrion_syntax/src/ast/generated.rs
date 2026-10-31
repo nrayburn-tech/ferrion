@@ -3630,7 +3630,7 @@ impl<'t> LambdaParameters<'t> {
 }
 
 /// ```text
-/// LambdaParameter = Modifiers? ty:Type? Varargs? name:Ident
+/// LambdaParameter = Modifiers? ty:Type? Varargs? name:Ident dims:Dim*
 /// ```
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct LambdaParameter<'t>(SyntaxNode<'t>);
@@ -3664,6 +3664,10 @@ impl<'t> LambdaParameter<'t> {
 
     pub fn name(self) -> Option<SyntaxToken<'t>> {
         support::token(self.0, token_sets::IDENT, None, None)
+    }
+
+    pub fn dims(self) -> AstChildren<'t, Dim<'t>> {
+        support::children(self.0, None, None)
     }
 }
 
