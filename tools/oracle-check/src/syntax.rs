@@ -25,15 +25,17 @@ const CONTEXT: usize = 3;
 /// as [`SourceText::text`] gives it, after any byte-order mark; the checks convert them to javac's
 /// UTF-16 offsets.
 pub trait Parser: Sync {
-    /// A parsed file, before the version check.
-    type Parsed: Sync;
+    /// A file parsed at one release.
+    type Parsed;
 
-    /// Parses a file, or returns `None` when there's no parser to compare. Called once per file,
-    /// however many releases it's compared at.
-    fn parse(&self, source: &SourceText) -> Option<Self::Parsed>;
+    /// Parses a file at `release`, or returns `None` when there's no parser to compare. Called
+    /// once for each release the file is compared at, since the parser reads some valid code
+    /// differently by release (`yield`, docs/design/parser-language-versions.md).
+    fn parse(&self, source: &SourceText, release: u32) -> Option<Self::Parsed>;
 
-    /// The syntax errors at `release`, version errors included, with javac's codes.
-    fn errors(&self, parsed: &Self::Parsed, release: u32) -> Vec<SyntaxError>;
+    /// The syntax errors at the release the file was parsed at, version errors included, with
+    /// javac's codes.
+    fn errors(&self, parsed: &Self::Parsed) -> Vec<SyntaxError>;
 
     /// The tree with javac's node kinds, in the pre-order of javac's `TreeScanner`.
     fn tree(&self, parsed: &Self::Parsed) -> Vec<TreeNode>;
@@ -66,11 +68,11 @@ pub struct NoParser;
 impl Parser for NoParser {
     type Parsed = std::convert::Infallible;
 
-    fn parse(&self, _source: &SourceText) -> Option<Self::Parsed> {
+    fn parse(&self, _source: &SourceText, _release: u32) -> Option<Self::Parsed> {
         None
     }
 
-    fn errors(&self, parsed: &Self::Parsed, _release: u32) -> Vec<SyntaxError> {
+    fn errors(&self, parsed: &Self::Parsed) -> Vec<SyntaxError> {
         match *parsed {}
     }
 
@@ -79,35 +81,37 @@ impl Parser for NoParser {
     }
 }
 
-/// A file prepared for either check: its text, for positions, and the parser's result.
-pub struct Prepared<T> {
-    text: String,
+/// A file prepared for either check: its text, to parse at each release, and its line index, for
+/// positions.
+pub struct Prepared {
+    source: SourceText,
     index: LineIndex,
-    bom: bool,
-    /// The parse, `None` without a parser, or the parser's panic message.
-    parsed: Result<Option<T>, String>,
 }
 
-impl<T> Prepared<T> {
-    fn new<P: Parser<Parsed = T>>(parser: &P, source: &SourceText) -> Prepared<T> {
-        let parsed = catch_unwind(AssertUnwindSafe(|| parser.parse(source))).map_err(|payload| {
+/// A parse at one release: `None` without a parser, or the parser's panic message.
+type Parse<T> = Result<Option<T>, String>;
+
+impl Prepared {
+    fn new(source: &SourceText) -> Prepared {
+        Prepared {
+            source: source.clone(),
+            index: LineIndex::new(source.text()),
+        }
+    }
+
+    fn parse<P: Parser>(&self, parser: &P, release: u32) -> Parse<P::Parsed> {
+        catch_unwind(AssertUnwindSafe(|| parser.parse(&self.source, release))).map_err(|payload| {
             payload
                 .downcast_ref::<&str>()
                 .map(|s| s.to_string())
                 .or_else(|| payload.downcast_ref::<String>().cloned())
                 .unwrap_or_else(|| "the parser panicked".to_owned())
-        });
-        Prepared {
-            text: source.text().to_owned(),
-            index: LineIndex::new(source.text()),
-            bom: source.has_bom(),
-            parsed,
-        }
+        })
     }
 
     /// A byte offset as javac counts it: UTF-16, with the byte-order mark as one character.
     fn utf16(&self, byte: u32) -> i64 {
-        i64::from(self.index.utf16_offset(byte) + u32::from(self.bom))
+        i64::from(self.index.utf16_offset(byte) + u32::from(self.source.has_bom()))
     }
 
     /// The 1-based line and column of a javac offset, or of the start for -1.
@@ -115,8 +119,8 @@ impl<T> Prepared<T> {
         let utf16 = u32::try_from(utf16).unwrap_or(0);
         let byte = self
             .index
-            .byte_offset(utf16.saturating_sub(u32::from(self.bom)))
-            .unwrap_or(self.text.len() as u32);
+            .byte_offset(utf16.saturating_sub(u32::from(self.source.has_bom())))
+            .unwrap_or(self.source.text().len() as u32);
         let at = self.index.line_col(byte);
         (at.line + 1, at.col + 1)
     }
@@ -167,7 +171,7 @@ fn javac_errors(output: &Output) -> Vec<&Diagnostic> {
 
 /// The common start of both checks' outcomes: javac's summary, its first error, and the status
 /// when there's nothing to compare.
-fn start_outcome<'a, T>(prepared: &'a Prepared<T>, output: &Output) -> (Outcome, Option<&'a T>) {
+fn start_outcome<T>(prepared: &Prepared, parse: Parse<T>, output: &Output) -> (Outcome, Option<T>) {
     let mut outcome = Outcome {
         summary: summarize(output),
         javac_error: javac_errors(output)
@@ -175,9 +179,9 @@ fn start_outcome<'a, T>(prepared: &'a Prepared<T>, output: &Output) -> (Outcome,
             .map(|diagnostic| prepared.located(diagnostic)),
         ..Outcome::default()
     };
-    match &prepared.parsed {
+    match parse {
         Err(panic) => {
-            outcome.status = Status::Panicked(panic.clone());
+            outcome.status = Status::Panicked(panic);
             (outcome, None)
         }
         Ok(None) => {
@@ -192,7 +196,7 @@ fn start_outcome<'a, T>(prepared: &'a Prepared<T>, output: &Output) -> (Outcome,
 pub struct Syntax<P>(pub P);
 
 impl<P: Parser> Check for Syntax<P> {
-    type Prepared = Prepared<P::Parsed>;
+    type Prepared = Prepared;
 
     fn name(&self) -> &'static str {
         "syntax"
@@ -203,7 +207,7 @@ impl<P: Parser> Check for Syntax<P> {
     }
 
     fn prepare(&self, source: &SourceText, _bytes: &[u8]) -> Self::Prepared {
-        Prepared::new(&self.0, source)
+        Prepared::new(source)
     }
 
     fn depends_on_release(&self) -> bool {
@@ -211,13 +215,14 @@ impl<P: Parser> Check for Syntax<P> {
     }
 
     fn compare(&self, prepared: &Self::Prepared, release: u32, output: &Output) -> Outcome {
-        let (mut outcome, parsed) = start_outcome(prepared, output);
+        let parse = prepared.parse(&self.0, release);
+        let (mut outcome, parsed) = start_outcome(prepared, parse, output);
         let Some(parsed) = parsed else {
             return outcome;
         };
         let ours: Vec<(String, i64)> = self
             .0
-            .errors(parsed, release)
+            .errors(&parsed)
             .into_iter()
             .map(|error| (error.code, prepared.utf16(error.position)))
             .collect();
@@ -232,11 +237,7 @@ impl<P: Parser> Check for Syntax<P> {
 
 /// Compares errors as `(code, position)`: both sides must have errors or neither, and the first
 /// in source order must be the same.
-fn compare_errors<T>(
-    prepared: &Prepared<T>,
-    ours: &[(String, i64)],
-    javac: &[(String, i64)],
-) -> Status {
+fn compare_errors(prepared: &Prepared, ours: &[(String, i64)], javac: &[(String, i64)]) -> Status {
     let first = |errors: &[(String, i64)]| -> Option<(String, i64)> {
         errors.iter().min_by_key(|(_, position)| *position).cloned()
     };
@@ -282,7 +283,7 @@ fn compare_errors<T>(
 pub struct Tree<P>(pub P);
 
 impl<P: Parser> Check for Tree<P> {
-    type Prepared = Prepared<P::Parsed>;
+    type Prepared = Prepared;
 
     fn name(&self) -> &'static str {
         "tree"
@@ -293,11 +294,16 @@ impl<P: Parser> Check for Tree<P> {
     }
 
     fn prepare(&self, source: &SourceText, _bytes: &[u8]) -> Self::Prepared {
-        Prepared::new(&self.0, source)
+        Prepared::new(source)
     }
 
-    fn compare(&self, prepared: &Self::Prepared, _release: u32, output: &Output) -> Outcome {
-        let (mut outcome, parsed) = start_outcome(prepared, output);
+    fn depends_on_release(&self) -> bool {
+        true
+    }
+
+    fn compare(&self, prepared: &Self::Prepared, release: u32, output: &Output) -> Outcome {
+        let parse = prepared.parse(&self.0, release);
+        let (mut outcome, parsed) = start_outcome(prepared, parse, output);
         let Some(parsed) = parsed else {
             return outcome;
         };
@@ -313,7 +319,7 @@ impl<P: Parser> Check for Tree<P> {
         let position = |offset: Option<u32>| offset.map_or(-1, |byte| prepared.utf16(byte));
         let ours: Vec<(&str, i64, i64, u32)> = self
             .0
-            .tree(parsed)
+            .tree(&parsed)
             .iter()
             .map(|node| {
                 (
@@ -346,7 +352,7 @@ impl<P: Parser> Check for Tree<P> {
 
 type Row<'a> = (&'a str, i64, i64, u32);
 
-fn describe_tree<T>(prepared: &Prepared<T>, ours: &[Row], javac: &[Row], at: usize) -> Mismatch {
+fn describe_tree(prepared: &Prepared, ours: &[Row], javac: &[Row], at: usize) -> Mismatch {
     let summary = match (ours.get(at), javac.get(at)) {
         (Some(a), Some(b)) if a.0 != b.0 => format!("ferrion has {}, javac has {}", a.0, b.0),
         (Some(a), Some(b)) if a.3 != b.3 => format!("{} is at a different depth", a.0),
@@ -389,22 +395,23 @@ mod tests {
     }
 
     impl Parser for Fixed {
-        type Parsed = ();
+        /// The release the file was parsed at.
+        type Parsed = u32;
 
-        fn parse(&self, _source: &SourceText) -> Option<()> {
-            Some(())
+        fn parse(&self, _source: &SourceText, release: u32) -> Option<u32> {
+            Some(release)
         }
 
-        fn errors(&self, _parsed: &(), release: u32) -> Vec<SyntaxError> {
+        fn errors(&self, release: &u32) -> Vec<SyntaxError> {
             // Like a version check: errors only before 16.
-            if release < 16 {
+            if *release < 16 {
                 self.errors.clone()
             } else {
                 Vec::new()
             }
         }
 
-        fn tree(&self, _parsed: &()) -> Vec<TreeNode> {
+        fn tree(&self, _release: &u32) -> Vec<TreeNode> {
             self.tree.clone()
         }
     }
@@ -513,6 +520,7 @@ mod tests {
                 node("MODIFIERS", None, None, 2),
             ],
         });
+        assert!(check.depends_on_release());
         let prepared = check.prepare(&text, text.text().as_bytes());
         let mut output = Output {
             diagnostics: Some(Vec::new()),
