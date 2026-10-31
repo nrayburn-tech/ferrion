@@ -584,12 +584,12 @@ These are out of scope for the first releases:
   SpotBugs, OpenJDK, Lombok, and others) may not be copied or ported unless that use is compatible
   with MIT OR Apache-2.0. Their documentation and observable behavior may be used as references.
 - **Provenance checks:**
-  - ScanCode runs in CI to detect copied license headers and verbatim snippets;
+  - ScanCode runs in CI to detect copied license notices and copyright statements;
   - a clean-room policy is documented in `CONTRIBUTING.md`;
   - a pull-request checklist item confirms nothing was copied or ported.
 
-  A port from Java to Rust cannot be reliably detected automatically, so the policy and checklist
-  matter as much as the tooling.
+  Copied code without a notice, and a port from Java to Rust, cannot be reliably detected
+  automatically, so the policy and checklist matter as much as the tooling.
 
 ## Non-goals
 
