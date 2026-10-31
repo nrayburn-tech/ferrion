@@ -33,12 +33,26 @@ diagnostics can produce javac's positions.
 - **Verification:** javac's tree positions and parsing-phase errors, per release, and no panic or
   stack overflow on any input.
 
-## The crate
+## The crates
 
-`ferrion_parser` is internal (`publish = false`, SCOPE.md), so its API serves the workspace and can
-change freely. Its shape:
+The tree and the parser are two internal crates (`publish = false`, SCOPE.md), so their APIs serve
+the workspace and can change freely:
+
+- **`ferrion_syntax`** holds the tree and nothing that parses: `SyntaxTree`, `SyntaxKind`, the
+  cursors, the typed views generated from `java.grammar`, `NodeMap`, `SyntaxPtr`, the tree
+  invariants, and later the comment classification.
+- **`ferrion_parser`** depends on it and holds `parse`, the parser, its grammar, the event builder,
+  the diagnostics, and later the version check. It re-exports `ferrion_syntax` for convenience.
+
+The formatter, the linter, the rules, and semantic analysis read trees and never parse, so they
+depend on `ferrion_syntax` alone. Changing how a construct is parsed then rebuilds only
+`ferrion_parser` and what calls `parse`, and the generated code in `ferrion_syntax` rebuilds only
+when `java.grammar` changes. The builder makes a tree through one constructor,
+`SyntaxTree::new`, which takes the finished arrays and checks them in debug builds; the tree's
+fields stay private.
 
 ```rust
+// ferrion_parser
 pub struct ParseOptions {
     pub release: u32, // in ferrion_java_version::SUPPORTED_RELEASES
 }
@@ -51,7 +65,14 @@ pub struct Parse {
     pub diagnostics: Vec<ParseDiagnostic>,  // lexical, syntax, and version, in source order
 }
 
-// The tree and its cursors (parser-syntax-tree.md).
+pub struct ParseDiagnostic;         // kind, severity, span, javac anchor and phase
+                                    // (parser-error-recovery.md)
+pub mod version;  // Feature table and the version check
+
+#[doc(hidden)]
+pub mod invariants; // parse validation for tests and fuzz targets, like the lexer's
+
+// ferrion_syntax: the tree and its cursors (parser-syntax-tree.md)
 pub struct SyntaxTree;              // tokens + pre-order nodes + text + release
 pub struct NodeId(u32);
 pub struct TokenId(u32);
@@ -63,23 +84,20 @@ pub struct SyntaxPtr;               // kind + span, to find a node again in a re
 
 pub mod ast;      // typed views (generated): CompilationUnit, ClassDecl, IfStmt, BinaryExpr, ...
 pub mod comments; // CommentMap: leading, trailing, dangling; doc comment lookup
-pub mod version;  // Feature table and the version check
-
-pub struct ParseDiagnostic;         // kind, severity, span, javac anchor (parser-error-recovery.md)
 
 #[doc(hidden)]
-pub mod invariants; // tree validation for tests and fuzz targets, like the lexer's
+pub mod invariants; // tree validation for tests and fuzz targets
 ```
 
 Inside, the parser is split by area (`grammar/` with declarations, types, expressions, statements,
 patterns, and modules), around a shared core of token lookahead, event emission, and recovery
-helpers. The event builder, the tree, the version check, and the comment classification are
-separate modules.
+helpers. The event builder and the version check are separate modules.
 
-Dependencies: `ferrion_lexer`, `ferrion_diagnostics` (spans, `SourceText`), `ferrion_java_version`,
-and a new `ferrion_stack` (see [deep nesting](parser-deep-nesting.md#where-the-helper-lives)). Doc
-comments are parsed by `ferrion_doc_comments`, from the text of the tokens the tree identifies, when
-a consumer asks.
+Dependencies: `ferrion_syntax` depends on `ferrion_lexer` (token types) and `ferrion_diagnostics`
+(spans). `ferrion_parser` adds `ferrion_syntax`, `ferrion_java_version`, and a new
+`ferrion_stack` (see [deep nesting](parser-deep-nesting.md#where-the-helper-lives)). Doc comments
+are parsed by `ferrion_doc_comments`, from the text of the tokens the tree identifies, when a
+consumer asks.
 
 `parse` takes the text rather than lexed tokens so that callers can't pair a tree with the wrong
 tokens, and returns lexical errors among its diagnostics. Callers that only want tokens keep using

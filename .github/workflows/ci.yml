@@ -44,6 +44,18 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - run: cargo test --workspace --locked
 
+  codegen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      # The syntax tree's SyntaxKind and typed views are generated from its grammar file.
+      - name: Check that the generated syntax code matches crates/ferrion_syntax/java.grammar
+        run: |
+          cargo codegen
+          git diff --exit-code
+
   deny:
     runs-on: ubuntu-latest
     steps:

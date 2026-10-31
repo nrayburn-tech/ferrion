@@ -1,3 +1,4 @@
 [alias]
+codegen = "run --quiet --package codegen --"
 corpus = "run --quiet --package corpus --"
 oracle = "run --quiet --release --package oracle-check --"

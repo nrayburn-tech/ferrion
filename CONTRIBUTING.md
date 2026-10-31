@@ -250,6 +250,16 @@ is updated to match.
 - Fuzz failures are reduced and kept as regression tests.
 - Generated rule documentation is checked in CI, so regenerate it when rule metadata changes.
 
+### Generated syntax code
+
+The syntax tree's `SyntaxKind` and typed views (`ferrion_syntax::ast`) are generated from
+`crates/ferrion_syntax/java.grammar`, which lists every node kind and its children. After changing
+the grammar, regenerate them; CI checks that they're up to date:
+
+```bash
+cargo codegen
+```
+
 ### Fuzzing
 
 The fuzz targets are in `fuzz/`, a [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz) project

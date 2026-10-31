@@ -1,0 +1,11 @@
+[package]
+name = "codegen"
+description = "Generates the syntax tree's SyntaxKind and typed views from java.grammar."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
