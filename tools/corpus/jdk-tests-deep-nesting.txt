@@ -16,9 +16,8 @@ test/langtools/tools/javac/lambda/speculative/NestedLambdaGenerics.java # 68
 test/langtools/tools/javac/lambda/speculative/NestedLambdaNoGenerics.java # 68
 test/langtools/tools/javac/lambda/speculative/T8046685.java             # 54
 
-# Tests whose names say they're about deep nesting, but whose files are shallow (less than 36
-# levels): they build their deeply nested input when they run, so they aren't inputs here. Ferrion's
-# own stress tests should generate input of the same shapes.
+# Tests whose names say they're about deep nesting, but whose javac trees measure as shallow (less
+# than 36 levels), so they aren't deep-nesting inputs here.
 #
 #   test/langtools/tools/javac/DeepStringConcat.java
 #   test/langtools/tools/javac/expression/DeeplyChainedNonPolyExpressionTest.java

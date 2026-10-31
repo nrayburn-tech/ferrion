@@ -163,10 +163,11 @@ enabled (the dialect JEP 467 specifies), in four steps:
 4. **Sections.** The main description and each tag's body are separate Markdown documents, so a link
    reference definition applies within its section, as the specification says. Before a section is
    parsed, each inline tag in it is replaced by inert text of the same length (a Private Use Area
-   character, repeated and padded), which keeps every offset and stands in for the tag: emphasis
-   and links form around it as they would around a word. The tree is then built from the parser's
-   events, with the placeholders replaced by the tags. Where the structure has no room for a tag
-   (inside a link destination, say), its source text is put back instead.
+   character, repeated and padded), as JEP 467 describes for rendering with a placeholder
+   character. That keeps every offset and stands in for the tag: emphasis and links form around it
+   as they would around a word. The tree is then built from the parser's events, with the
+   placeholders replaced by the tags. Where the structure has no room for a tag (inside a link
+   destination, say), its source text is put back instead.
 
 **Links to program elements** are reference links (`[List]`, `[List][]`, `[a list][List]`) whose
 label has no link reference definition and reads as a reference. javadoc 27 links `[List]`,
@@ -174,7 +175,8 @@ label has no link reference definition and reads as a reference. javadoc 27 link
 resolves to nothing, such as `[Nope]`, and leaves `[see above]` and `[1]` as text. The parser makes
 the first two kinds links (resolving is for consumers) and leaves the rest as text. Array
 parameters are written `[String#copyValueOf(char\[\])]`, and the reference parser reads `\[\]` as
-`[]`.
+`[]`. `[List]`, `[a list][List]`, `[java.base/]`, and `[String#copyValueOf(char\[\])]` are JEP
+467's examples.
 
 ## Nesting and time
 

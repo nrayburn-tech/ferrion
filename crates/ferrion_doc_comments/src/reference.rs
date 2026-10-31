@@ -446,6 +446,7 @@ mod tests {
 
     #[test]
     fn markdown_escaped_brackets() {
+        // JEP 467's example of an array parameter in a Markdown link.
         let (r, ok) = reference("String#copyValueOf(char\\[\\])");
         assert!(ok);
         assert_eq!(

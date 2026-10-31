@@ -121,9 +121,9 @@ three more nested-lambda tests from 54 to 68. The next deepest input is 50 level
 
 Four tests whose names are about deep nesting (`DeepStringConcat.java`,
 `DeeplyChainedNonPolyExpressionTest.java`, `SOEDeeplyNestedBlocksTest.java`,
-`SOEForDeeplyNestedTypeTest.java`) are shallow files that build their input when they run, so
-they aren't inputs; the list names them, and Ferrion's stress tests should generate inputs of the
-same shapes (and deeper ones, like the 10,000-level inputs above).
+`SOEForDeeplyNestedTypeTest.java`) measure as shallow (less than 36 levels), so they aren't
+deep-nesting inputs; the list names them. Ferrion's own stress tests generate their deep inputs,
+like the 10,000-level inputs above.
 
 For comparison, the deepest corpus tree is 187 levels (a long chain of calls in guava's
 `ArbitraryInstances.java`); chained calls and binary operators make left-deep trees as deep as the
@@ -366,7 +366,7 @@ reports earlier than javac, which ROADMAP.md says is documented.
 ### Error recovery
 
 javac doesn't stop at the first error, but it reports few errors per mistake. In broad terms, from
-the cases and javac's tests:
+running the oracle on the cases and javac's tests:
 
 - After an error, javac skips to the end of the statement or member and goes on: `int z = 1 2 3;`
   reports one `';' expected` at `2`, then nothing until the next statement. A statement or member

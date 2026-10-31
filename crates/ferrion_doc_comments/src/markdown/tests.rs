@@ -208,7 +208,8 @@ fn tags_that_are_not_tags() {
 fn links_to_program_elements() {
     // javadoc links `[List]`, `[List][]`, `[a list][List]`, `[List#add(Object)]`, `[ List ]`,
     // `[java.base/]`, and `[m()]`, reports "reference not found" for `[Nope]`, and leaves
-    // `[see above]` and `[1]` as text.
+    // `[see above]` and `[1]` as text. `[List]`, `[a list][List]`, `[java.base/]`, and
+    // `[String#copyValueOf(char\[\])]` are JEP 467's examples.
     let text = comment(
         " [List] [List][] [a *list*][List] [List#add(Object)] [ List ] [java.base/] [m()]\n \
          [Nope] [see above] [1] [x](http://e.com) [d] [String#copyValueOf(char\\[\\])]\n\n \
