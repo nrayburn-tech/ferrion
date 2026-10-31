@@ -269,8 +269,8 @@ cargo parser-check mutate --seed 1 --sample 2000
 ```
 
 The run fails if a share is below its threshold in `tools/parser-check/thresholds.toml`. When
-recovery improves, raise the thresholds to a little below the new measurement of the CI sample
-above. `--verbose` lists the first declarations lost (`--limit` sets how many), with the mutation
+recovery improves, raise the thresholds to a little below the new measurements of the sample above
+and of the weekly one (`--seed 2 --sample 20000`), as the file explains. `--verbose` lists the first declarations lost (`--limit` sets how many), with the mutation
 that lost them.
 
 ### Tests
