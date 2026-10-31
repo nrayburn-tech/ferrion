@@ -1,0 +1,35 @@
+abstract class A<@X T extends java.util.@Y List<?>> {
+  java.util.Map.Entry<? extends Number, ? super @Z Integer> a;
+  @X java.util.List<String>[] b;
+  java.util.@X List<String> c;
+  int @X [] e, f[], g;
+  java.util.List<int[]>[][] h;
+  @X String[] @Y [] i;
+  Outer.@X Inner<String>.Deeper j;
+  int @A [] @B [] k[] @C [];
+  java.util.List<@X ? extends @Y String> l;
+  abstract void m(String @A ... a);
+  abstract void n(String @A [] ... b);
+  abstract void o(String [] @A ... c);
+  abstract void p(String @A [] @B ... d);
+  abstract void q(int @A [] f, final @X int g[], String[]... e);
+  abstract void r(String @A [] @B [] ... a);
+  abstract void s(String @A [] [] @C ... c);
+  abstract void t(java.util.@X List<String> @A ... f);
+  abstract <@X U> void u(int @A @B ... g);
+  Object v = new int[1][][];
+  Object w = new int @A [1] @B [] @C [];
+  Object x = new int @A [] @B [] @C [] {};
+  Object y = new @A int @B [] {1, 2};
+  Object z = new int @A [1] @B [2];
+  Object aa = new @X String @Y [1] @Z [];
+  Object bb = new java.util.@X ArrayList<@Y String>();
+  Object cc = (@X int @Y []) null;
+  Object dd = new A.@X B();
+  Object ee = new java.util.List<?>[1];
+  Object ff = new int[][] {{1}, {}};
+  int[] gg = {1, 2};
+  String @A [] @B [] hh;
+  java.lang.String @A [] ii;
+  String[] @A [] jj;
+}

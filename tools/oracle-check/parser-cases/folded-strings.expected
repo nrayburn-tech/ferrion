@@ -1,0 +1,130 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  none
+tree at 27:
+  COMPILATION_UNIT 0..565 @0 "class F {\n  Object a = \"a\" + \"b\" + \"c\";\n"…
+    CLASS 0..565 @0 "class F {\n  Object a = \"a\" + \"b\" + \"c\";\n"…
+      MODIFIERS -1..-1 @-1
+      VARIABLE 12..39 @19 "Object a = \"a\" + \"b\" + \"c\";"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 12..18 @12 "Object"
+        STRING_LITERAL 23..38 @23 "\"a\" + \"b\" + \"c\""
+      VARIABLE 42..79 @49 "Object b = \"a\" + \"b\" + 1 + \"c\" + \"d\";"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 42..48 @42 "Object"
+        PLUS 53..78 @69 "\"a\" + \"b\" + 1 + \"c\" + \"d\""
+          PLUS 53..66 @65 "\"a\" + \"b\" + 1"
+            STRING_LITERAL 53..62 @53 "\"a\" + \"b\""
+            INT_LITERAL 65..66 @65 "1"
+          STRING_LITERAL 69..78 @69 "\"c\" + \"d\""
+      VARIABLE 82..111 @89 "Object c = 1 + 2 + \"a\" + \"b\";"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 82..88 @82 "Object"
+        PLUS 93..110 @101 "1 + 2 + \"a\" + \"b\""
+          PLUS 93..98 @97 "1 + 2"
+            INT_LITERAL 93..94 @93 "1"
+            INT_LITERAL 97..98 @97 "2"
+          STRING_LITERAL 101..110 @101 "\"a\" + \"b\""
+      VARIABLE 114..143 @121 "Object d = (\"a\" + \"b\") + \"c\";"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 114..120 @114 "Object"
+        PLUS 125..142 @137 "(\"a\" + \"b\") + \"c\""
+          PARENTHESIZED 125..136 @125 "(\"a\" + \"b\")"
+            STRING_LITERAL 126..135 @126 "\"a\" + \"b\""
+          STRING_LITERAL 139..142 @139 "\"c\""
+      VARIABLE 146..172 @153 "Object e = x == \"a\" + \"b\";"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 146..152 @146 "Object"
+        EQUAL_TO 157..171 @159 "x == \"a\" + \"b\""
+          IDENTIFIER 157..158 @157 "x"
+          PLUS 162..171 @166 "\"a\" + \"b\""
+            STRING_LITERAL 162..165 @162 "\"a\""
+            STRING_LITERAL 168..171 @168 "\"b\""
+      VARIABLE 175..200 @182 "Object f = \"a\" + \"b\" - 1;"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 175..181 @175 "Object"
+        MINUS 186..199 @196 "\"a\" + \"b\" - 1"
+          PLUS 186..195 @190 "\"a\" + \"b\""
+            STRING_LITERAL 186..189 @186 "\"a\""
+            STRING_LITERAL 192..195 @192 "\"b\""
+          INT_LITERAL 198..199 @198 "1"
+      VARIABLE 203..257 @210 "Object g = \"a\" + \"b\" + x * 2 + \"c\" + \"d\""…
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 203..209 @203 "Object"
+        EQUAL_TO 214..256 @244 "\"a\" + \"b\" + x * 2 + \"c\" + \"d\" == \"e\" + \""…
+          PLUS 214..243 @238 "\"a\" + \"b\" + x * 2 + \"c\" + \"d\""
+            PLUS 214..237 @232 "\"a\" + \"b\" + x * 2 + \"c\""
+              PLUS 214..231 @224 "\"a\" + \"b\" + x * 2"
+                PLUS 214..223 @218 "\"a\" + \"b\""
+                  STRING_LITERAL 214..217 @214 "\"a\""
+                  STRING_LITERAL 220..223 @220 "\"b\""
+                MULTIPLY 226..231 @228 "x * 2"
+                  IDENTIFIER 226..227 @226 "x"
+                  INT_LITERAL 230..231 @230 "2"
+              STRING_LITERAL 234..237 @234 "\"c\""
+            STRING_LITERAL 240..243 @240 "\"d\""
+          PLUS 247..256 @251 "\"e\" + \"f\""
+            STRING_LITERAL 247..250 @247 "\"e\""
+            STRING_LITERAL 253..256 @253 "\"f\""
+      VARIABLE 260..297 @267 "Object h = x ? \"a\" + \"b\" : \"c\" + \"d\";"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 260..266 @260 "Object"
+        CONDITIONAL_EXPRESSION 271..296 @273 "x ? \"a\" + \"b\" : \"c\" + \"d\""
+          IDENTIFIER 271..272 @271 "x"
+          STRING_LITERAL 275..284 @275 "\"a\" + \"b\""
+          STRING_LITERAL 287..296 @287 "\"c\" + \"d\""
+      VARIABLE 300..351 @307 "Object i = \"a\" + \"b\" + \"c\" + \"d\" - \"e\" +"…
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 300..306 @300 "Object"
+        PLUS 311..350 @341 "\"a\" + \"b\" + \"c\" + \"d\" - \"e\" + \"f\" + \"g\""
+          MINUS 311..338 @333 "\"a\" + \"b\" + \"c\" + \"d\" - \"e\""
+            PLUS 311..332 @327 "\"a\" + \"b\" + \"c\" + \"d\""
+              PLUS 311..326 @321 "\"a\" + \"b\" + \"c\""
+                PLUS 311..320 @315 "\"a\" + \"b\""
+                  STRING_LITERAL 311..314 @311 "\"a\""
+                  STRING_LITERAL 317..320 @317 "\"b\""
+                STRING_LITERAL 323..326 @323 "\"c\""
+              STRING_LITERAL 329..332 @329 "\"d\""
+            STRING_LITERAL 335..338 @335 "\"e\""
+          STRING_LITERAL 341..350 @341 "\"f\" + \"g\""
+      VARIABLE 354..383 @361 "Object j = x + \"b\" + \"c\" + x;"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 354..360 @354 "Object"
+        PLUS 365..382 @381 "x + \"b\" + \"c\" + x"
+          PLUS 365..378 @369 "x + \"b\" + \"c\""
+            IDENTIFIER 365..366 @365 "x"
+            STRING_LITERAL 369..378 @369 "\"b\" + \"c\""
+          IDENTIFIER 381..382 @381 "x"
+      VARIABLE 386..413 @393 "Object k = \"a\" + 'b' + \"c\";"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 386..392 @386 "Object"
+        PLUS 397..412 @407 "\"a\" + 'b' + \"c\""
+          PLUS 397..406 @401 "\"a\" + 'b'"
+            STRING_LITERAL 397..400 @397 "\"a\""
+            CHAR_LITERAL 403..406 @403 "'b'"
+          STRING_LITERAL 409..412 @409 "\"c\""
+      VARIABLE 416..466 @423 "Object l = \"a\" + \"\"\"\n    b\n    \"\"\" + f(\""…
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 416..422 @416 "Object"
+        PLUS 427..465 @453 "\"a\" + \"\"\"\n    b\n    \"\"\" + f(\"c\" + \"d\")"
+          STRING_LITERAL 427..450 @427 "\"a\" + \"\"\"\n    b\n    \"\"\""
+          METHOD_INVOCATION 453..465 @454 "f(\"c\" + \"d\")"
+            IDENTIFIER 453..454 @453 "f"
+            STRING_LITERAL 455..464 @455 "\"c\" + \"d\""
+      VARIABLE 469..508 @476 "Object m = \"a\" + \"b\" instanceof Object;"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 469..475 @469 "Object"
+        INSTANCE_OF 480..507 @490 "\"a\" + \"b\" instanceof Object"
+          PLUS 480..489 @484 "\"a\" + \"b\""
+            STRING_LITERAL 480..483 @480 "\"a\""
+            STRING_LITERAL 486..489 @486 "\"b\""
+          IDENTIFIER 501..507 @501 "Object"
+      VARIABLE 511..527 @525 "static Object x;"
+        MODIFIERS 511..517 @511 "static"
+        IDENTIFIER 518..524 @518 "Object"
+      METHOD 530..563 @551 "static native Object f(Object o);"
+        MODIFIERS 530..543 @530 "static native"
+        IDENTIFIER 544..550 @544 "Object"
+        VARIABLE 553..561 @560 "Object o"
+          MODIFIERS -1..-1 @-1
+          IDENTIFIER 553..559 @553 "Object"

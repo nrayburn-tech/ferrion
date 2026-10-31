@@ -1,0 +1,117 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  none
+tree at 27:
+  COMPILATION_UNIT 0..381 @0 "class P {\n  Object o;\n  Object a = o ins"…
+    CLASS 0..381 @0 "class P {\n  Object o;\n  Object a = o ins"…
+      MODIFIERS -1..-1 @-1
+      VARIABLE 12..21 @19 "Object o;"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 12..18 @12 "Object"
+      VARIABLE 24..100 @31 "Object a = o instanceof final P x && o i"…
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 24..30 @24 "Object"
+        CONDITIONAL_AND 35..99 @58 "o instanceof final P x && o instanceof R"…
+          INSTANCE_OF 35..57 @37 "o instanceof final P x"
+            IDENTIFIER 35..36 @35 "o"
+            BINDING_PATTERN 48..57 @48 "final P x"
+              VARIABLE 48..57 @56 "final P x"
+                MODIFIERS 48..53 @48 "final"
+                IDENTIFIER 54..55 @54 "P"
+          INSTANCE_OF 61..99 @63 "o instanceof R(var y, R(int z, var w))"
+            IDENTIFIER 61..62 @61 "o"
+            DECONSTRUCTION_PATTERN 74..99 @74 "R(var y, R(int z, var w))"
+              IDENTIFIER 74..75 @74 "R"
+              BINDING_PATTERN 76..81 @76 "var y"
+                VARIABLE 76..81 @80 "var y"
+                  MODIFIERS -1..-1 @-1
+                  VAR_TYPE 76..79 @76 "var"
+              DECONSTRUCTION_PATTERN 83..98 @83 "R(int z, var w)"
+                IDENTIFIER 83..84 @83 "R"
+                BINDING_PATTERN 85..90 @85 "int z"
+                  VARIABLE 85..90 @89 "int z"
+                    MODIFIERS -1..-1 @-1
+                    PRIMITIVE_TYPE 85..88 @85 "int"
+                BINDING_PATTERN 92..97 @92 "var w"
+                  VARIABLE 92..97 @96 "var w"
+                    MODIFIERS -1..-1 @-1
+                    VAR_TYPE 92..95 @92 "var"
+      VARIABLE 103..143 @110 "Object b = o instanceof R(_, _) ? 1 : 2;"
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 103..109 @103 "Object"
+        CONDITIONAL_EXPRESSION 114..142 @135 "o instanceof R(_, _) ? 1 : 2"
+          INSTANCE_OF 114..134 @116 "o instanceof R(_, _)"
+            IDENTIFIER 114..115 @114 "o"
+            DECONSTRUCTION_PATTERN 127..134 @127 "R(_, _)"
+              IDENTIFIER 127..128 @127 "R"
+              ANY_PATTERN 130..130 @130 ""
+              ANY_PATTERN 133..133 @133 ""
+          INT_LITERAL 137..138 @137 "1"
+          INT_LITERAL 141..142 @141 "2"
+      VARIABLE 146..198 @153 "Object n = o instanceof R(var(var x, var"…
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 146..152 @146 "Object"
+        INSTANCE_OF 157..197 @159 "o instanceof R(var(var x, var y), var z)"
+          IDENTIFIER 157..158 @157 "o"
+          DECONSTRUCTION_PATTERN 170..197 @170 "R(var(var x, var y), var z)"
+            IDENTIFIER 170..171 @170 "R"
+            DECONSTRUCTION_PATTERN 172..189 @172 "var(var x, var y)"
+              VAR_TYPE 172..175 @172 "var"
+              BINDING_PATTERN 176..181 @176 "var x"
+                VARIABLE 176..181 @180 "var x"
+                  MODIFIERS -1..-1 @-1
+                  VAR_TYPE 176..179 @176 "var"
+              BINDING_PATTERN 183..188 @183 "var y"
+                VARIABLE 183..188 @187 "var y"
+                  MODIFIERS -1..-1 @-1
+                  VAR_TYPE 183..186 @183 "var"
+            BINDING_PATTERN 191..196 @191 "var z"
+              VARIABLE 191..196 @195 "var z"
+                MODIFIERS -1..-1 @-1
+                VAR_TYPE 191..194 @191 "var"
+      VARIABLE 201..345 @208 "Object c = switch (o) {\n    case R(_, va"…
+        MODIFIERS -1..-1 @-1
+        IDENTIFIER 201..207 @201 "Object"
+        SWITCH_EXPRESSION 212..344 @212 "switch (o) {\n    case R(_, var _) -> 1;\n"…
+          PARENTHESIZED 219..222 @219 "(o)"
+            IDENTIFIER 220..221 @220 "o"
+          CASE 229..251 @229 "case R(_, var _) -> 1;"
+            PATTERN_CASE_LABEL 234..245 @234 "R(_, var _)"
+              DECONSTRUCTION_PATTERN 234..245 @234 "R(_, var _)"
+                IDENTIFIER 234..235 @234 "R"
+                ANY_PATTERN 237..237 @237 ""
+                BINDING_PATTERN 239..244 @239 "var _"
+                  VARIABLE 239..244 @243 "var _"
+                    MODIFIERS -1..-1 @-1
+                    VAR_TYPE 239..242 @239 "var"
+            INT_LITERAL 249..250 @249 "1"
+          CASE 256..275 @256 "case String _ -> 2;"
+            PATTERN_CASE_LABEL 261..269 @261 "String _"
+              BINDING_PATTERN 261..269 @261 "String _"
+                VARIABLE 261..269 @268 "String _"
+                  MODIFIERS -1..-1 @-1
+                  IDENTIFIER 261..267 @261 "String"
+            INT_LITERAL 273..274 @273 "2"
+          CASE 280..311 @280 "case Integer i when i > 0 -> 3;"
+            PATTERN_CASE_LABEL 285..294 @285 "Integer i"
+              BINDING_PATTERN 285..294 @285 "Integer i"
+                VARIABLE 285..294 @293 "Integer i"
+                  MODIFIERS -1..-1 @-1
+                  IDENTIFIER 285..292 @285 "Integer"
+            GREATER_THAN 300..305 @302 "i > 0"
+              IDENTIFIER 300..301 @300 "i"
+              INT_LITERAL 304..305 @304 "0"
+            INT_LITERAL 309..310 @309 "3"
+          CASE 316..340 @316 "case null, default -> 4;"
+            CONSTANT_CASE_LABEL 321..325 @321 "null"
+              NULL_LITERAL 321..325 @321 "null"
+            DEFAULT_CASE_LABEL 327..334 @327 "default"
+            INT_LITERAL 338..339 @338 "4"
+      RECORD 348..379 @348 "record R(Object x, Object y) {}"
+        MODIFIERS -1..-1 @-1
+        VARIABLE 357..365 @364 "Object x"
+          MODIFIERS -1..-1 @-1
+          IDENTIFIER 357..363 @357 "Object"
+        VARIABLE 367..375 @374 "Object y"
+          MODIFIERS -1..-1 @-1
+          IDENTIFIER 367..373 @367 "Object"

@@ -1,0 +1,9 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  none
+tree at 27:
+  COMPILATION_UNIT 0..28 @0 "open module m {\n  opens a;\n}"
+    MODULE 5..28 @5 "module m {\n  opens a;\n}"
+      IDENTIFIER 12..13 @12 "m"
+      OPENS 18..26 @18 "opens a;"
+        IDENTIFIER 24..25 @24 "a"

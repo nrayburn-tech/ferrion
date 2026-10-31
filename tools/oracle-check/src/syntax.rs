@@ -2,14 +2,13 @@
 //! and `oracle tree` compares tree positions with javac's. What javac reports, and the
 //! normalization, are in docs/design/parser-oracle-normalization.md.
 //!
-//! Ferrion's side is behind [`Parser`], which the parser implements when it exists. Until then,
-//! [`NoParser`] stands in: both checks run javac, cache its output, and summarize it (diagnostic
-//! codes, tree sizes and depths), and every result is [`Status::NotCompared`].
+//! Ferrion's side is behind [`Parser`], which [`crate::ferrion::Ferrion`] implements. Both checks
+//! also summarize javac's output (diagnostic codes, tree sizes and depths).
 //!
 //! `syntax` compares whether there are errors and, if there are, the first one in source order by
 //! code and position. Later errors depend on each parser's recovery, so they aren't compared.
-//! `tree` compares every node of files javac reports no errors for; it is provisional, and the
-//! parser work settles it along with the normalization.
+//! `tree` compares every node of files javac reports no errors for, as `[kind, start, end, depth,
+//! preferred, shared]` in javac's order.
 
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
@@ -34,7 +33,7 @@ pub trait Parser: Sync {
     fn parse(&self, source: &SourceText, release: u32) -> Option<Self::Parsed>;
 
     /// The syntax errors at the release the file was parsed at, version errors included, with
-    /// javac's codes.
+    /// javac's codes, in the order javac would report them; the first is compared.
     fn errors(&self, parsed: &Self::Parsed) -> Vec<SyntaxError>;
 
     /// The tree with javac's node kinds, in the pre-order of javac's `TreeScanner`.
@@ -60,25 +59,10 @@ pub struct TreeNode {
     pub end: Option<u32>,
     /// The depth below the compilation unit, which is 0.
     pub depth: u32,
-}
-
-/// The stand-in until there is a parser: it parses nothing, so nothing is compared.
-pub struct NoParser;
-
-impl Parser for NoParser {
-    type Parsed = std::convert::Infallible;
-
-    fn parse(&self, _source: &SourceText, _release: u32) -> Option<Self::Parsed> {
-        None
-    }
-
-    fn errors(&self, parsed: &Self::Parsed) -> Vec<SyntaxError> {
-        match *parsed {}
-    }
-
-    fn tree(&self, parsed: &Self::Parsed) -> Vec<TreeNode> {
-        match *parsed {}
-    }
+    /// Where javac reports diagnostics about the node, or `None` where it has no position.
+    pub preferred: Option<u32>,
+    /// Whether javac writes the node a second time, under another parent.
+    pub shared: bool,
 }
 
 /// A file prepared for either check: its text, to parse at each release, and its line index, for
@@ -89,17 +73,17 @@ pub struct Prepared {
 }
 
 /// A parse at one release: `None` without a parser, or the parser's panic message.
-type Parse<T> = Result<Option<T>, String>;
+pub type Parse<T> = Result<Option<T>, String>;
 
 impl Prepared {
-    fn new(source: &SourceText) -> Prepared {
+    pub fn new(source: &SourceText) -> Prepared {
         Prepared {
             source: source.clone(),
             index: LineIndex::new(source.text()),
         }
     }
 
-    fn parse<P: Parser>(&self, parser: &P, release: u32) -> Parse<P::Parsed> {
+    pub fn parse<P: Parser>(&self, parser: &P, release: u32) -> Parse<P::Parsed> {
         catch_unwind(AssertUnwindSafe(|| parser.parse(&self.source, release))).map_err(|payload| {
             payload
                 .downcast_ref::<&str>()
@@ -110,7 +94,7 @@ impl Prepared {
     }
 
     /// A byte offset as javac counts it: UTF-16, with the byte-order mark as one character.
-    fn utf16(&self, byte: u32) -> i64 {
+    pub fn utf16(&self, byte: u32) -> i64 {
         i64::from(self.index.utf16_offset(byte) + u32::from(self.source.has_bom()))
     }
 
@@ -159,13 +143,18 @@ fn summarize(output: &Output) -> Summary {
     summary
 }
 
-/// javac's errors, in the order it reported them. Warnings don't count.
-fn javac_errors(output: &Output) -> Vec<&Diagnostic> {
+/// Codes of errors javac reports while parsing that the comparison leaves out: `bad.file.name`
+/// depends on the file's name, which the parser never sees.
+const LEFT_OUT: &[&str] = &["compiler.err.bad.file.name"];
+
+/// javac's errors, in the order it reported them. Warnings don't count, nor errors in
+/// [`LEFT_OUT`].
+pub fn javac_errors(output: &Output) -> Vec<&Diagnostic> {
     output
         .diagnostics
         .iter()
         .flatten()
-        .filter(|diagnostic| diagnostic.is_error())
+        .filter(|diagnostic| diagnostic.is_error() && !LEFT_OUT.contains(&diagnostic.code.as_str()))
         .collect()
 }
 
@@ -236,12 +225,16 @@ impl<P: Parser> Check for Syntax<P> {
 }
 
 /// Compares errors as `(code, position)`: both sides must have errors or neither, and the first
-/// in source order must be the same.
-fn compare_errors(prepared: &Prepared, ours: &[(String, i64)], javac: &[(String, i64)]) -> Status {
-    let first = |errors: &[(String, i64)]| -> Option<(String, i64)> {
-        errors.iter().min_by_key(|(_, position)| *position).cloned()
-    };
-    let (a, b) = (first(ours), first(javac));
+/// each reports must be the same. Both are in report order, not position order: javac reports
+/// some errors about a construct after the construct's own (`a.b.;` gets `<identifier> expected`
+/// after the second `.`, then `not a statement` at that `.`).
+pub fn compare_errors(
+    prepared: &Prepared,
+    ours: &[(String, i64)],
+    javac: &[(String, i64)],
+) -> Status {
+    let a = ours.first().cloned();
+    let b = javac.first().cloned();
     if a == b {
         return Status::Matched;
     }
@@ -259,11 +252,9 @@ fn compare_errors(prepared: &Prepared, ours: &[(String, i64)], javac: &[(String,
         .map_or(0, |(_, position)| *position);
     let (line, column) = prepared.line_col(position);
     let show = |errors: &[(String, i64)]| -> Vec<Option<String>> {
-        let mut sorted = errors.to_vec();
-        sorted.sort_by_key(|(_, position)| *position);
         (0..=CONTEXT)
             .map(|i| {
-                sorted
+                errors
                     .get(i)
                     .map(|(code, position)| format!("{code} at {position}"))
             })
@@ -316,26 +307,9 @@ impl<P: Parser> Check for Tree<P> {
             ));
             return outcome;
         }
-        let position = |offset: Option<u32>| offset.map_or(-1, |byte| prepared.utf16(byte));
-        let ours: Vec<(&str, i64, i64, u32)> = self
-            .0
-            .tree(&parsed)
-            .iter()
-            .map(|node| {
-                (
-                    node.kind,
-                    position(node.start),
-                    position(node.end),
-                    node.depth,
-                )
-            })
-            .collect();
-        let javac: Vec<(&str, i64, i64, u32)> = output
-            .tree
-            .iter()
-            .flatten()
-            .map(|(kind, start, end, depth, _, _): &Node| (kind.as_str(), *start, *end, *depth))
-            .collect();
+        let nodes = self.0.tree(&parsed);
+        let ours = ferrion_rows(prepared, &nodes);
+        let javac = javac_rows(output);
         outcome.status = match ours.iter().zip(&javac).position(|(a, b)| a != b) {
             None if ours.len() == javac.len() => Status::Matched,
             None => Status::Mismatched(Box::new(describe_tree(
@@ -350,12 +324,52 @@ impl<P: Parser> Check for Tree<P> {
     }
 }
 
-type Row<'a> = (&'a str, i64, i64, u32);
+/// A tree row as compared: kind, start, end, depth, preferred, and shared, with UTF-16 positions
+/// (-1 for none).
+pub type Row<'a> = (&'a str, i64, i64, u32, i64, bool);
+
+/// Ferrion's tree rows in javac's terms.
+pub fn ferrion_rows<'a>(prepared: &Prepared, nodes: &'a [TreeNode]) -> Vec<Row<'a>> {
+    let position = |offset: Option<u32>| offset.map_or(-1, |byte| prepared.utf16(byte));
+    nodes
+        .iter()
+        .map(|node| {
+            (
+                node.kind,
+                position(node.start),
+                position(node.end),
+                node.depth,
+                position(node.preferred),
+                node.shared,
+            )
+        })
+        .collect()
+}
+
+/// javac's tree rows.
+pub fn javac_rows(output: &Output) -> Vec<Row<'_>> {
+    output
+        .tree
+        .iter()
+        .flatten()
+        .map(|(kind, start, end, depth, preferred, shared): &Node| {
+            (
+                kind.as_str(),
+                *start,
+                *end,
+                *depth,
+                *preferred,
+                *shared == 1,
+            )
+        })
+        .collect()
+}
 
 fn describe_tree(prepared: &Prepared, ours: &[Row], javac: &[Row], at: usize) -> Mismatch {
     let summary = match (ours.get(at), javac.get(at)) {
         (Some(a), Some(b)) if a.0 != b.0 => format!("ferrion has {}, javac has {}", a.0, b.0),
         (Some(a), Some(b)) if a.3 != b.3 => format!("{} is at a different depth", a.0),
+        (Some(a), Some(b)) if a.5 != b.5 => format!("{} is shared on one side only", a.0),
         (Some(a), Some(_)) => format!("the positions of {} differ", a.0),
         (Some(a), None) => format!("ferrion has {} after javac's last node", a.0),
         (None, Some(b)) => format!("ferrion has nothing where javac has {}", b.0),
@@ -367,9 +381,14 @@ fn describe_tree(prepared: &Prepared, ours: &[Row], javac: &[Row], at: usize) ->
     let window = |rows: &[Row]| -> Vec<Option<String>> {
         (start..at + CONTEXT + 1)
             .map(|i| {
-                rows.get(i).map(|(kind, start, end, depth)| {
-                    format!("{}{kind} {start}..{end}", "  ".repeat(*depth as usize))
-                })
+                rows.get(i)
+                    .map(|(kind, start, end, depth, preferred, shared)| {
+                        format!(
+                            "{}{kind} {start}..{end} @{preferred}{}",
+                            "  ".repeat(*depth as usize),
+                            if *shared { " shared" } else { "" }
+                        )
+                    })
             })
             .collect()
     };
@@ -387,8 +406,7 @@ fn describe_tree(prepared: &Prepared, ours: &[Row], javac: &[Row], at: usize) ->
 mod tests {
     use super::*;
 
-    /// A stand-in parser that gives fixed results, to test the comparisons before the real one
-    /// exists.
+    /// A stand-in parser that gives fixed results, to test the comparisons on their own.
     struct Fixed {
         errors: Vec<SyntaxError>,
         tree: Vec<TreeNode>,
@@ -434,8 +452,27 @@ mod tests {
 
     const RECORD: &str = "compiler.err.feature.not.supported.in.source.plural";
 
+    /// A parser that parses nothing.
+    struct Nothing;
+
+    impl Parser for Nothing {
+        type Parsed = std::convert::Infallible;
+
+        fn parse(&self, _source: &SourceText, _release: u32) -> Option<Self::Parsed> {
+            None
+        }
+
+        fn errors(&self, parsed: &Self::Parsed) -> Vec<SyntaxError> {
+            match *parsed {}
+        }
+
+        fn tree(&self, parsed: &Self::Parsed) -> Vec<TreeNode> {
+            match *parsed {}
+        }
+    }
+
     #[test]
-    fn without_a_parser_nothing_is_compared() {
+    fn without_a_parse_nothing_is_compared() {
         let text = source("record R() {}\n");
         let output = Output {
             diagnostics: Some(vec![
@@ -449,7 +486,7 @@ mod tests {
             ]),
             ..Output::default()
         };
-        let check = Tree(NoParser);
+        let check = Tree(Nothing);
         let prepared = check.prepare(&text, text.text().as_bytes());
         let outcome = check.compare(&prepared, 8, &output);
         assert_eq!(outcome.status, Status::NotCompared);
@@ -511,6 +548,8 @@ mod tests {
             start,
             end,
             depth,
+            preferred: start,
+            shared: false,
         };
         let check = Tree(Fixed {
             errors: Vec::new(),
@@ -542,7 +581,22 @@ mod tests {
         };
         assert_eq!(mismatch.summary, "the positions of CLASS differ");
         assert_eq!(mismatch.at, 1);
-        assert_eq!(mismatch.javac[1].as_deref(), Some("  CLASS 6..15"));
+        assert_eq!(mismatch.javac[1].as_deref(), Some("  CLASS 6..15 @6"));
+
+        output.tree.as_mut().unwrap()[1].2 = 16;
+        output.tree.as_mut().unwrap()[2].5 = 1;
+        let Status::Mismatched(mismatch) = check.compare(&prepared, 27, &output).status else {
+            panic!("expected a mismatch");
+        };
+        assert_eq!(mismatch.summary, "MODIFIERS is shared on one side only");
+        output.tree.as_mut().unwrap()[2].5 = 0;
+
+        // `bad.file.name` depends on the file's name, so it's left out.
+        output.diagnostics = Some(vec![diagnostic("ERROR", "compiler.err.bad.file.name", 6)]);
+        assert_eq!(
+            check.compare(&prepared, 27, &output).status,
+            Status::Matched
+        );
 
         // A file javac reports an error for isn't compared.
         output.diagnostics = Some(vec![diagnostic("ERROR", "compiler.err.expected", 6)]);
