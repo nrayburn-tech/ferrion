@@ -174,6 +174,55 @@ java -jar tools/javac-oracle/target/javac-oracle.jar --release 17 Example.java
 - Fuzz failures are reduced and kept as regression tests.
 - Generated rule documentation is checked in CI, so regenerate it when rule metadata changes.
 
+### Fuzzing
+
+The fuzz targets are in `fuzz/`, a [cargo-fuzz](https://github.com/rust-fuzz/cargo-fuzz) project
+with its own workspace. It builds with the nightly toolchain pinned in `fuzz/rust-toolchain.toml`,
+which rustup uses for commands run from `fuzz/`; everything else stays on the stable toolchain. Run
+the commands below from `fuzz/`, after installing the toolchain and cargo-fuzz once:
+
+```bash
+rustup toolchain install && cargo install cargo-fuzz --version 0.13.2 --locked
+```
+
+- `lex` reads arbitrary bytes as a source file and lexes its text.
+- `lex_fragments` lexes text built from fragments of Java, such as keywords, comment and text block
+  delimiters, and Unicode escapes, to reach states that random bytes rarely do.
+
+Both fail when `ferrion_lexer::invariants` finds that the lexer broke a promise its API documents,
+or when the lexer panics. Run a target, reading the committed seeds in `seeds/` and keeping what it
+finds in `corpus/` (ignored by git):
+
+```bash
+mkdir -p corpus/lex && cargo fuzz run --sanitizer none --debug-assertions lex corpus/lex seeds/lex -- -dict=java.dict -timeout=10
+```
+
+The lexer has no unsafe code, so AddressSanitizer is turned off, which makes fuzzing about twice as
+fast; debug assertions catch arithmetic overflow. Pass the same two flags to every `cargo fuzz`
+command, or it rebuilds the targets. Add `-max_total_time=<seconds>` after `--` to stop after a
+while. CI runs every target for 60 seconds (`.github/workflows/fuzz.yml`, called from `ci.yml`), and
+a weekly scheduled run of the same workflow runs each for 30 minutes and keeps its corpus in the
+Actions cache. Crashing inputs are uploaded as the `fuzz-artifacts` artifact.
+
+To turn a failure into a regression test:
+
+1. Minimize the input. `tmin` prints the path of the minimized input:
+
+   ```bash
+   cargo fuzz tmin --sanitizer none --debug-assertions lex artifacts/lex/crash-<hash>
+   ```
+
+2. Copy it to `crates/ferrion_lexer/tests/fuzz-regressions/`, under a name that says what it
+   covers. A `lex_fragments` input is a list of fragment numbers, not source text, so write its text
+   there instead:
+
+   ```bash
+   FERRION_FUZZ_SAVE_TEXT=../crates/ferrion_lexer/tests/fuzz-regressions/<name>.java cargo fuzz run --sanitizer none --debug-assertions lex_fragments artifacts/lex_fragments/<minimized>
+   ```
+
+3. Fix the bug. `cargo test --package ferrion_lexer --test fuzz_regressions` runs every file there
+   through the same checks, on the stable toolchain.
+
 ## Pull requests
 
 - Keep each pull request focused on one change.
