@@ -1,0 +1,50 @@
+CompilationUnit 0..68 [error]
+  ClassDecl 0..19 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ExtendsClause 8..15 [error]
+      ExtendsKw 8..15 "extends"
+    Whitespace 15..16 " "
+    ClassBody 16..19
+      LBrace 16..17 "{"
+      LineTerminator 17..18 "\n"
+      RBrace 18..19 "}"
+  LineTerminator 19..20 "\n"
+  LineTerminator 20..21 "\n"
+  ClassDecl 21..43 [error]
+    ClassKw 21..26 "class"
+    Whitespace 26..27 " "
+    Identifier 27..28 "B"
+    Whitespace 28..29 " "
+    ImplementsClause 29..39 [error]
+      ImplementsKw 29..39 "implements"
+    Whitespace 39..40 " "
+    ClassBody 40..43
+      LBrace 40..41 "{"
+      LineTerminator 41..42 "\n"
+      RBrace 42..43 "}"
+  LineTerminator 43..44 "\n"
+  LineTerminator 44..45 "\n"
+  ClassDecl 45..67 [error]
+    ClassKw 45..50 "class"
+    Whitespace 50..51 " "
+    Identifier 51..52 "C"
+    TypeParameters 52..63 [error]
+      Lt 52..53 "<"
+      TypeParameter 53..62 [error]
+        Identifier 53..54 "T"
+        Whitespace 54..55 " "
+        ExtendsKw 55..62 "extends"
+      Gt 62..63 ">"
+    Whitespace 63..64 " "
+    ClassBody 64..67
+      LBrace 64..65 "{"
+      LineTerminator 65..66 "\n"
+      RBrace 66..67 "}"
+  LineTerminator 67..68 "\n"
+  Eof 68..68 ""
+error 16..17 @16 TypeExpected(LBrace): expected a type, found '{'
+error 40..41 @40 TypeExpected(LBrace): expected a type, found '{'
+error 62..63 @62 TypeExpected(Gt): expected a type, found '>'

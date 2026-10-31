@@ -1,0 +1,104 @@
+CompilationUnit 0..110 [error]
+  ClassDecl 0..109 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..109 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      MethodDecl 12..97 [error]
+        VoidType 12..16
+          VoidKw 12..16 "void"
+        Whitespace 16..17 " "
+        Identifier 17..18 "m"
+        FormalParameters 18..20
+          LParen 18..19 "("
+          RParen 19..20 ")"
+        Whitespace 20..21 " "
+        Block 21..97 [error]
+          LBrace 21..22 "{"
+          LineTerminator 22..23 "\n"
+          Whitespace 23..27 "    "
+          LocalVarDecl 27..41 [error]
+            PrimitiveType 27..30
+              IntKw 27..30 "int"
+            LineTerminator 30..31 "\n"
+            Whitespace 31..35 "    "
+            VariableDeclarator 35..41
+              Identifier 35..41 "String"
+          Whitespace 41..42 " "
+          ExprStmt 42..47 [error]
+            AssignExpr 42..45 [error]
+              NameExpr 42..43
+                Identifier 42..43 "s"
+              Whitespace 43..44 " "
+              Eq 44..45 "="
+            Whitespace 45..46 " "
+            Semi 46..47 ";"
+          LineTerminator 47..48 "\n"
+          Whitespace 48..52 "    "
+          ForStmt 52..81 [error]
+            ForKw 52..55 "for"
+            Whitespace 55..56 " "
+            LParen 56..57 "("
+            ForInit 57..66
+              LocalVarDecl 57..66
+                PrimitiveType 57..60
+                  IntKw 57..60 "int"
+                Whitespace 60..61 " "
+                VariableDeclarator 61..66
+                  Identifier 61..62 "i"
+                  Whitespace 62..63 " "
+                  Eq 63..64 "="
+                  Whitespace 64..65 " "
+                  LiteralExpr 65..66
+                    IntLiteral 65..66 "0"
+            Semi 66..67 ";"
+            Whitespace 67..68 " "
+            BinaryExpr 68..71 [error]
+              NameExpr 68..69
+                Identifier 68..69 "i"
+              Whitespace 69..70 " "
+              Lt 70..71 "<"
+            Whitespace 71..72 " "
+            Semi 72..73 ";"
+            Whitespace 73..74 " "
+            ForUpdate 74..77
+              PostfixExpr 74..77
+                NameExpr 74..75
+                  Identifier 74..75 "i"
+                PlusPlus 75..77 "++"
+            RParen 77..78 ")"
+            Whitespace 78..79 " "
+            Block 79..81
+              LBrace 79..80 "{"
+              RBrace 80..81 "}"
+          LineTerminator 81..82 "\n"
+          Whitespace 82..86 "    "
+          WhileStmt 86..93 [error]
+            WhileKw 86..91 "while"
+            Whitespace 91..92 " "
+            LParen 92..93 "("
+          LineTerminator 93..94 "\n"
+          Whitespace 94..96 "  "
+          RBrace 96..97 "}"
+      LineTerminator 97..98 "\n"
+      LineTerminator 98..99 "\n"
+      Whitespace 99..101 "  "
+      FieldDecl 101..107
+        PrimitiveType 101..104
+          IntKw 101..104 "int"
+        Whitespace 104..105 " "
+        VariableDeclarator 105..106
+          Identifier 105..106 "y"
+        Semi 106..107 ";"
+      LineTerminator 107..108 "\n"
+      RBrace 108..109 "}"
+  LineTerminator 109..110 "\n"
+  Eof 110..110 ""
+error 41..41 @41 Expected(Token(Semi)): ';' expected
+error 46..47 @46 ExpressionExpected(Semi): expected an expression, found ';'
+error 72..73 @72 ExpressionExpected(Semi): expected an expression, found ';'
+error 96..97 @96 ExpressionExpected(RBrace): expected an expression, found '}'

@@ -1,0 +1,76 @@
+CompilationUnit 0..72 [error]
+  ClassDecl 0..71 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..71 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      FieldDecl 12..21 [error]
+        PrimitiveType 12..15
+          IntKw 12..15 "int"
+        Whitespace 15..16 " "
+        VariableDeclarator 16..21
+          Identifier 16..17 "a"
+          Whitespace 17..18 " "
+          Eq 18..19 "="
+          Whitespace 19..20 " "
+          LiteralExpr 20..21
+            IntLiteral 20..21 "1"
+      LineTerminator 21..22 "\n"
+      Whitespace 22..24 "  "
+      FieldDecl 24..30
+        PrimitiveType 24..27
+          IntKw 24..27 "int"
+        Whitespace 27..28 " "
+        VariableDeclarator 28..29
+          Identifier 28..29 "b"
+        Semi 29..30 ";"
+      LineTerminator 30..31 "\n"
+      LineTerminator 31..32 "\n"
+      Whitespace 32..34 "  "
+      MethodDecl 34..69 [error]
+        VoidType 34..38
+          VoidKw 34..38 "void"
+        Whitespace 38..39 " "
+        Identifier 39..40 "m"
+        FormalParameters 40..42
+          LParen 40..41 "("
+          RParen 41..42 ")"
+        Whitespace 42..43 " "
+        Block 43..69 [error]
+          LBrace 43..44 "{"
+          LineTerminator 44..45 "\n"
+          Whitespace 45..49 "    "
+          ExprStmt 49..54 [error]
+            AssignExpr 49..54
+              NameExpr 49..50
+                Identifier 49..50 "a"
+              Whitespace 50..51 " "
+              Eq 51..52 "="
+              Whitespace 52..53 " "
+              LiteralExpr 53..54
+                IntLiteral 53..54 "1"
+          LineTerminator 54..55 "\n"
+          Whitespace 55..59 "    "
+          ExprStmt 59..65
+            AssignExpr 59..64
+              NameExpr 59..60
+                Identifier 59..60 "b"
+              Whitespace 60..61 " "
+              Eq 61..62 "="
+              Whitespace 62..63 " "
+              LiteralExpr 63..64
+                IntLiteral 63..64 "2"
+            Semi 64..65 ";"
+          LineTerminator 65..66 "\n"
+          Whitespace 66..68 "  "
+          RBrace 68..69 "}"
+      LineTerminator 69..70 "\n"
+      RBrace 70..71 "}"
+  LineTerminator 71..72 "\n"
+  Eof 72..72 ""
+error 21..21 @21 Expected(Token(Semi)): ';' expected
+error 54..54 @54 Expected(Token(Semi)): ';' expected

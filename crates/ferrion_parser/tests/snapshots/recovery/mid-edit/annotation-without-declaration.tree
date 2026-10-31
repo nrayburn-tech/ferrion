@@ -1,0 +1,60 @@
+CompilationUnit 0..83 [error]
+  ClassDecl 0..25 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..25 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      Error 12..23 [error]
+        Modifiers 12..23
+          Annotation 12..23
+            At 12..13 "@"
+            Name 13..23
+              Identifier 13..23 "Deprecated"
+      LineTerminator 23..24 "\n"
+      RBrace 24..25 "}"
+  LineTerminator 25..26 "\n"
+  LineTerminator 26..27 "\n"
+  ClassDecl 27..82 [error]
+    ClassKw 27..32 "class"
+    Whitespace 32..33 " "
+    Identifier 33..34 "B"
+    Whitespace 34..35 " "
+    ClassBody 35..82 [error]
+      LBrace 35..36 "{"
+      LineTerminator 36..37 "\n"
+      Whitespace 37..39 "  "
+      FieldDecl 39..70
+        Modifiers 39..61
+          Annotation 39..61
+            At 39..40 "@"
+            Name 40..56
+              Identifier 40..56 "SuppressWarnings"
+            AnnotationArguments 56..61
+              LParen 56..57 "("
+              LiteralExpr 57..60
+                StringLiteral 57..60 "\"x\""
+              RParen 60..61 ")"
+        LineTerminator 61..62 "\n"
+        Whitespace 62..64 "  "
+        PrimitiveType 64..67
+          IntKw 64..67 "int"
+        Whitespace 67..68 " "
+        VariableDeclarator 68..69
+          Identifier 68..69 "x"
+        Semi 69..70 ";"
+      LineTerminator 70..71 "\n"
+      Whitespace 71..73 "  "
+      Error 73..82 [error]
+        Modifiers 73..82
+          Annotation 73..82
+            At 73..74 "@"
+            Name 74..82
+              Identifier 74..82 "Override"
+  LineTerminator 82..83 "\n"
+  Eof 83..83 ""
+error 24..25 @24 ExpectedMember(RBrace): unexpected '}': expected a member declaration
+error 83..83 @83 ExpectedMember(Eof): unexpected end of file: expected a member declaration

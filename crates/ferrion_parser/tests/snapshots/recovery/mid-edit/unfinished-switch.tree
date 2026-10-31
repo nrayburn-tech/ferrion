@@ -1,0 +1,98 @@
+CompilationUnit 0..106 [error]
+  ClassDecl 0..105 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..105 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      FieldDecl 12..61 [error]
+        PrimitiveType 12..15
+          IntKw 12..15 "int"
+        Whitespace 15..16 " "
+        VariableDeclarator 16..60 [error]
+          Identifier 16..17 "x"
+          Whitespace 17..18 " "
+          Eq 18..19 "="
+          Whitespace 19..20 " "
+          SwitchExpr 20..60 [error]
+            SwitchKw 20..26 "switch"
+            Whitespace 26..27 " "
+            LParen 27..28 "("
+            NameExpr 28..29
+              Identifier 28..29 "a"
+            RParen 29..30 ")"
+            Whitespace 30..31 " "
+            SwitchBlock 31..60 [error]
+              LBrace 31..32 "{"
+              Whitespace 32..33 " "
+              SwitchRule 33..44 [error]
+                SwitchLabel 33..39
+                  CaseKw 33..37 "case"
+                  Whitespace 37..38 " "
+                  LiteralExpr 38..39
+                    IntLiteral 38..39 "1"
+                Whitespace 39..40 " "
+                Arrow 40..42 "->"
+                Whitespace 42..43 " "
+                Semi 43..44 ";"
+              Whitespace 44..45 " "
+              SwitchRule 45..58
+                SwitchLabel 45..52
+                  DefaultKw 45..52 "default"
+                Whitespace 52..53 " "
+                Arrow 53..55 "->"
+                Whitespace 55..56 " "
+                LiteralExpr 56..57
+                  IntLiteral 56..57 "2"
+                Semi 57..58 ";"
+              Whitespace 58..59 " "
+              RBrace 59..60 "}"
+        Semi 60..61 ";"
+      LineTerminator 61..62 "\n"
+      Whitespace 62..64 "  "
+      FieldDecl 64..105 [error]
+        PrimitiveType 64..67
+          IntKw 64..67 "int"
+        Whitespace 67..68 " "
+        VariableDeclarator 68..105 [error]
+          Identifier 68..69 "y"
+          Whitespace 69..70 " "
+          Eq 70..71 "="
+          Whitespace 71..72 " "
+          SwitchExpr 72..105 [error]
+            SwitchKw 72..78 "switch"
+            Whitespace 78..79 " "
+            LParen 79..80 "("
+            NameExpr 80..81
+              Identifier 80..81 "a"
+            RParen 81..82 ")"
+            Whitespace 82..83 " "
+            SwitchBlock 83..105 [error]
+              LBrace 83..84 "{"
+              Whitespace 84..85 " "
+              SwitchRule 85..100 [error]
+                SwitchLabel 85..91
+                  CaseKw 85..89 "case"
+                  Whitespace 89..90 " "
+                  LiteralExpr 90..91
+                    IntLiteral 90..91 "1"
+                Whitespace 91..92 " "
+                Arrow 92..94 "->"
+                LineTerminator 94..95 "\n"
+                Whitespace 95..97 "  "
+                PrimitiveType 97..100
+                  IntKw 97..100 "int"
+              Whitespace 100..101 " "
+              Error 101..103 [error]
+                Identifier 101..102 "z"
+                Semi 102..103 ";"
+              LineTerminator 103..104 "\n"
+              RBrace 104..105 "}"
+  LineTerminator 105..106 "\n"
+  Eof 106..106 ""
+error 43..44 @43 ExpressionExpected(Semi): expected an expression, found ';'
+error 101..102 @101 ClassLiteralExpected: a type in an expression must be followed by '.class' or '::'
+error 105..105 @105 Expected(Token(Semi)): ';' expected

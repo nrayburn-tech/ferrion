@@ -1,0 +1,39 @@
+CompilationUnit 0..37 [error]
+  ClassDecl 0..11
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..11
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      RBrace 10..11 "}"
+  LineTerminator 11..12 "\n"
+  Error 12..13 [error]
+    RBrace 12..13 "}"
+  LineTerminator 13..14 "\n"
+  LineTerminator 14..15 "\n"
+  ClassDecl 15..35
+    ClassKw 15..20 "class"
+    Whitespace 20..21 " "
+    Identifier 21..22 "B"
+    Whitespace 22..23 " "
+    ClassBody 23..35
+      LBrace 23..24 "{"
+      LineTerminator 24..25 "\n"
+      Whitespace 25..27 "  "
+      FieldDecl 27..33
+        PrimitiveType 27..30
+          IntKw 27..30 "int"
+        Whitespace 30..31 " "
+        VariableDeclarator 31..32
+          Identifier 31..32 "x"
+        Semi 32..33 ";"
+      LineTerminator 33..34 "\n"
+      RBrace 34..35 "}"
+  Error 35..36 [error]
+    RBrace 35..36 "}"
+  LineTerminator 36..37 "\n"
+  Eof 37..37 ""
+error 12..13 @12 ExpectedDeclaration(RBrace): unexpected '}': expected a declaration
+error 35..36 @35 ExpectedDeclaration(RBrace): unexpected '}': expected a declaration

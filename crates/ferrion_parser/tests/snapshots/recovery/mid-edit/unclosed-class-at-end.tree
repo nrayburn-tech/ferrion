@@ -1,0 +1,53 @@
+CompilationUnit 0..58 [error]
+  PackageDecl 0..10
+    PackageKw 0..7 "package"
+    Whitespace 7..8 " "
+    Name 8..9
+      Identifier 8..9 "p"
+    Semi 9..10 ";"
+  LineTerminator 10..11 "\n"
+  LineTerminator 11..12 "\n"
+  ImportDecl 12..23
+    ImportKw 12..18 "import"
+    Whitespace 18..19 " "
+    Name 19..22
+      Name 19..20
+        Identifier 19..20 "a"
+      Dot 20..21 "."
+      Identifier 21..22 "B"
+    Semi 22..23 ";"
+  LineTerminator 23..24 "\n"
+  LineTerminator 24..25 "\n"
+  ClassDecl 25..57 [error]
+    ClassKw 25..30 "class"
+    Whitespace 30..31 " "
+    Identifier 31..32 "A"
+    Whitespace 32..33 " "
+    ClassBody 33..57 [error]
+      LBrace 33..34 "{"
+      LineTerminator 34..35 "\n"
+      Whitespace 35..37 "  "
+      FieldDecl 37..43
+        PrimitiveType 37..40
+          IntKw 37..40 "int"
+        Whitespace 40..41 " "
+        VariableDeclarator 41..42
+          Identifier 41..42 "x"
+        Semi 42..43 ";"
+      LineTerminator 43..44 "\n"
+      Whitespace 44..46 "  "
+      MethodDecl 46..57
+        VoidType 46..50
+          VoidKw 46..50 "void"
+        Whitespace 50..51 " "
+        Identifier 51..52 "m"
+        FormalParameters 52..54
+          LParen 52..53 "("
+          RParen 53..54 ")"
+        Whitespace 54..55 " "
+        Block 55..57
+          LBrace 55..56 "{"
+          RBrace 56..57 "}"
+  LineTerminator 57..58 "\n"
+  Eof 58..58 ""
+error 57..57 @57 Expected(Token(RBrace)): '}' expected

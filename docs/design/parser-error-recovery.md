@@ -98,11 +98,14 @@ the whole declaration, since everything in it depends on the header.
 
 ## Testing recovered trees
 
-1. **Snapshots.** Inputs with errors in `crates/ferrion_parser/tests/recovery/`, each with its
-   printed tree and diagnostics as an expected file, reviewed like code. They cover each recovery
-   rule above and the language server's mid-edit states: a half-typed member access (`foo.`), an
+1. **Snapshots.** Inputs with errors in `recovery` directories under
+   `crates/ferrion_parser/tests/snapshots/`, each with its printed tree and diagnostics as an
+   expected file, reviewed like code, and written with the other snapshots (`FERRION_BLESS=1`).
+   They cover each recovery rule above, in each area's own `recovery` directory, and the language
+   server's mid-edit states, in `recovery/mid-edit/`: a half-typed member access (`foo.`), an
    unclosed `(`, `{`, string, or comment, a missing `;`, a statement typed at class level, an
-   annotation with no declaration, an unfinished lambda or switch.
+   annotation with no declaration, an unfinished lambda or switch. A test checks that each reports
+   an error.
 2. **The corpus mutation test** (`cargo parser-check mutate`). For corpus files that parse
    without errors, at random tokens (seeded, with a fixed sample size, so reproducible): delete
    the token, duplicate it, insert a token from a small vocabulary (`{`, `}`, `(`, `)`, `;`, `.`,

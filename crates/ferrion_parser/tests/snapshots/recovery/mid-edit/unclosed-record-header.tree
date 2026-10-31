@@ -1,0 +1,41 @@
+CompilationUnit 0..41 [error]
+  RecordDecl 0..18 [error]
+    RecordKw 0..6 "record"
+    Whitespace 6..7 " "
+    Identifier 7..8 "R"
+    RecordHeader 8..14 [error]
+      LParen 8..9 "("
+      RecordComponent 9..14
+        PrimitiveType 9..12
+          IntKw 9..12 "int"
+        Whitespace 12..13 " "
+        Identifier 13..14 "x"
+    Whitespace 14..15 " "
+    ClassBody 15..18
+      LBrace 15..16 "{"
+      LineTerminator 16..17 "\n"
+      RBrace 17..18 "}"
+  LineTerminator 18..19 "\n"
+  LineTerminator 19..20 "\n"
+  RecordDecl 20..40 [error]
+    RecordKw 20..26 "record"
+    Whitespace 26..27 " "
+    Identifier 27..28 "S"
+    RecordHeader 28..37 [error]
+      LParen 28..29 "("
+      RecordComponent 29..34
+        PrimitiveType 29..32
+          IntKw 29..32 "int"
+        Whitespace 32..33 " "
+        Identifier 33..34 "x"
+      Comma 34..35 ","
+      Whitespace 35..36 " "
+      RParen 36..37 ")"
+    Whitespace 37..38 " "
+    ClassBody 38..40
+      LBrace 38..39 "{"
+      RBrace 39..40 "}"
+  LineTerminator 40..41 "\n"
+  Eof 41..41 ""
+error 14..14 @14 Expected(OneOf([Comma, RParen, LBracket])): ',', ')', or '[' expected
+error 36..37 @36 TypeExpected(RParen): expected a type, found ')'

@@ -1,0 +1,98 @@
+CompilationUnit 0..93 [error]
+  ClassDecl 0..92 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..92 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      FieldDecl 12..25 [error]
+        PrimitiveType 12..15
+          IntKw 12..15 "int"
+        Whitespace 15..16 " "
+        VariableDeclarator 16..23 [error]
+          Identifier 16..17 "a"
+          Whitespace 17..18 " "
+          Eq 18..19 "="
+          Whitespace 19..20 " "
+          BinaryExpr 20..23 [error]
+            LiteralExpr 20..21
+              IntLiteral 20..21 "1"
+            Whitespace 21..22 " "
+            Plus 22..23 "+"
+        Whitespace 23..24 " "
+        Semi 24..25 ";"
+      LineTerminator 25..26 "\n"
+      Whitespace 26..28 "  "
+      FieldDecl 28..44 [error]
+        PrimitiveType 28..31
+          IntKw 28..31 "int"
+        Whitespace 31..32 " "
+        VariableDeclarator 32..43 [error]
+          Identifier 32..33 "b"
+          Whitespace 33..34 " "
+          Eq 34..35 "="
+          Whitespace 35..36 " "
+          ConditionalExpr 36..43 [error]
+            NameExpr 36..37
+              Identifier 36..37 "x"
+            Whitespace 37..38 " "
+            Question 38..39 "?"
+            Whitespace 39..40 " "
+            Colon 40..41 ":"
+            Whitespace 41..42 " "
+            LiteralExpr 42..43
+              IntLiteral 42..43 "2"
+        Semi 43..44 ";"
+      LineTerminator 44..45 "\n"
+      Whitespace 45..47 "  "
+      FieldDecl 47..62 [error]
+        PrimitiveType 47..50
+          IntKw 47..50 "int"
+        Whitespace 50..51 " "
+        VariableDeclarator 51..60 [error]
+          Identifier 51..52 "c"
+          Whitespace 52..53 " "
+          Eq 53..54 "="
+          Whitespace 54..55 " "
+          CastExpr 55..60 [error]
+            LParen 55..56 "("
+            PrimitiveType 56..59
+              IntKw 56..59 "int"
+            RParen 59..60 ")"
+        Whitespace 60..61 " "
+        Semi 61..62 ";"
+      LineTerminator 62..63 "\n"
+      Whitespace 63..65 "  "
+      FieldDecl 65..81 [error]
+        ClassType 65..71
+          Identifier 65..71 "Object"
+        Whitespace 71..72 " "
+        VariableDeclarator 72..79 [error]
+          Identifier 72..73 "d"
+          Whitespace 73..74 " "
+          Eq 74..75 "="
+          Whitespace 75..76 " "
+          NewExpr 76..79 [error]
+            NewKw 76..79 "new"
+        Whitespace 79..80 " "
+        Semi 80..81 ";"
+      LineTerminator 81..82 "\n"
+      Whitespace 82..84 "  "
+      FieldDecl 84..90
+        PrimitiveType 84..87
+          IntKw 84..87 "int"
+        Whitespace 87..88 " "
+        VariableDeclarator 88..89
+          Identifier 88..89 "e"
+        Semi 89..90 ";"
+      LineTerminator 90..91 "\n"
+      RBrace 91..92 "}"
+  LineTerminator 92..93 "\n"
+  Eof 93..93 ""
+error 24..25 @24 ExpressionExpected(Semi): expected an expression, found ';'
+error 40..41 @40 ExpressionExpected(Colon): expected an expression, found ':'
+error 61..62 @61 ExpressionExpected(Semi): expected an expression, found ';'
+error 79..79 @79 Expected(Identifier): name expected
