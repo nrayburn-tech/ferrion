@@ -40,7 +40,7 @@ the workspace and can change freely:
 
 - **`ferrion_syntax`** holds the tree and nothing that parses: `SyntaxTree`, `SyntaxKind`, the
   cursors, the typed views generated from `java.grammar`, `NodeMap`, `SyntaxPtr`, the tree
-  invariants, and later the comment classification.
+  invariants, and the comment classification.
 - **`ferrion_parser`** depends on it and holds `parse`, the parser, its grammar, the event builder,
   the diagnostics, and later the version check. It re-exports `ferrion_syntax` for convenience.
 

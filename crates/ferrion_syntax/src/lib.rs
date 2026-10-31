@@ -7,13 +7,17 @@
 //! which documents how each construct is represented.
 //!
 //! This crate holds the tree and no parsing logic, so crates that only read trees depend on it
-//! alone and don't rebuild when the grammar's implementation changes. The comment classification
-//! (docs/design/parser-comments.md) will live here too.
+//! alone and don't rebuild when the grammar's implementation changes. [`comments`] places
+//! comments relative to nodes and finds declarations' documentation comments
+//! (docs/design/parser-comments.md).
 
 pub mod ast;
+pub mod comments;
 #[doc(hidden)]
 pub mod invariants;
 mod syntax_kind;
+#[cfg(test)]
+mod test_tree;
 mod tree;
 
 pub use syntax_kind::{SyntaxKind, token_sets};

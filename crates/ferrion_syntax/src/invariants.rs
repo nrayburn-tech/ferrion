@@ -5,11 +5,13 @@
 //! parser, or the docs: the tree reproduces the text byte for byte with the lexer's tokens; nodes
 //! are in a consistent pre-order with correct parent and `subtree_end` links; token ranges nest,
 //! aren't empty, and (except the root's) start and end on non-trivia tokens; the root covers every
-//! token; token kinds differ from the lexer's only for contextual keywords; and `CONTAINS_ERROR`
-//! is set on every `Error` node and propagated to its ancestors.
+//! token; token kinds differ from the lexer's only for contextual keywords; `CONTAINS_ERROR` is
+//! set on every `Error` node and propagated to its ancestors; and the comment map and doc comment
+//! lookup keep the promises `comments` documents.
 
 use ferrion_lexer::TokenKind;
 
+use crate::comments::{self, CommentMap, Element, Placement};
 use crate::tree::{NodeId, TokenId, flags};
 use crate::{NodeOrToken, SyntaxKind, SyntaxPtr, SyntaxTree};
 
@@ -17,7 +19,8 @@ use crate::{NodeOrToken, SyntaxKind, SyntaxPtr, SyntaxTree};
 /// its text, which `ferrion_parser::invariants` checks.
 pub fn check_tree(tree: &SyntaxTree) -> Result<(), String> {
     check_structure(tree)?;
-    check_cursors(tree)
+    check_cursors(tree)?;
+    check_comments(tree)
 }
 
 /// The arrays' part of [`check_tree`], which [`SyntaxTree::new`] runs in debug builds: linear in
@@ -189,6 +192,125 @@ fn check_cursors(tree: &SyntaxTree) -> Result<(), String> {
             let found = SyntaxPtr::new(node).resolve(tree);
             if found.map(|n| (n.kind(), n.span())) != Some((node.kind(), node.span())) {
                 return Err(format!("{node:?}: its SyntaxPtr finds {found:?}"));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Checks the comment map and doc comment lookup against the tree: every comment is placed once,
+/// in its enclosing node, on an element of that node next to it (the next or previous code token
+/// starts or ends it), and is listed under that element; its line break counts are right; and
+/// each documentation comment found is before its node with only trivia between, and is leading
+/// a node that starts where its node does.
+fn check_comments(tree: &SyntaxTree) -> Result<(), String> {
+    let lookups = tree.token_count() <= LOOKUP_LIMIT;
+    let map = CommentMap::new(tree);
+    let count = tree.token_count();
+    let is_code = |id: usize| !tree.token(TokenId::from_index(id)).is_trivia();
+    let mut prev_code = vec![None; count];
+    let mut last = None;
+    for (id, prev) in prev_code.iter_mut().enumerate() {
+        *prev = last;
+        if is_code(id) {
+            last = Some(TokenId::from_index(id));
+        }
+    }
+    let mut next_code = vec![None; count];
+    let mut next = None;
+    for (id, following) in next_code.iter_mut().enumerate().rev() {
+        *following = next;
+        if is_code(id) {
+            next = Some(TokenId::from_index(id));
+        }
+    }
+    let mut expected = tree.tokens().filter(|t| comments::is_comment(t.kind()));
+    for comment in map.comments() {
+        let fail = |problem: &str| Err(format!("comment {comment:?}: {problem}"));
+        let token = tree.token(comment.token);
+        if expected.next() != Some(token) {
+            return fail("not the next comment token in source order");
+        }
+        let enclosing = tree.node(comment.enclosing);
+        if !enclosing.token_range().contains(&comment.token)
+            || lookups && token.parent() != enclosing
+        {
+            return fail("not in its enclosing node");
+        }
+        let element = comment.element.get(tree);
+        let in_enclosing = match element {
+            NodeOrToken::Node(node) => node.parent() == Some(enclosing),
+            NodeOrToken::Token(token) => {
+                !token.is_trivia()
+                    && enclosing.token_range().contains(&token.id())
+                    && (!lookups || token.parent() == enclosing)
+            }
+        };
+        let (first, last) = match element {
+            NodeOrToken::Node(node) => (node.first_token().id(), node.last_token().id()),
+            NodeOrToken::Token(token) => (token.id(), token.id()),
+        };
+        let fits = match comment.placement {
+            Placement::Dangling => comment.element == Element::Node(comment.enclosing),
+            Placement::Leading => in_enclosing && next_code[comment.token.index()] == Some(first),
+            Placement::Trailing => in_enclosing && prev_code[comment.token.index()] == Some(last),
+        };
+        if !fits {
+            return fail("its element isn't next to it in its enclosing node");
+        }
+        let listed = match comment.placement {
+            Placement::Leading => map.leading(comment.element),
+            Placement::Trailing => map.trailing(comment.element),
+            Placement::Dangling => map.dangling(comment.element),
+        };
+        if listed
+            .binary_search_by_key(&comment.token, |c| c.token)
+            .is_err()
+        {
+            return fail("not listed under its element");
+        }
+        let breaks = |ids: &mut dyn Iterator<Item = usize>| {
+            ids.map(|id| tree.token(TokenId::from_index(id)).kind())
+                .take_while(|k| matches!(k, SyntaxKind::Whitespace | SyntaxKind::LineTerminator))
+                .filter(|&k| k == SyntaxKind::LineTerminator)
+                .count() as u32
+        };
+        let before = breaks(&mut (0..comment.token.index()).rev());
+        let after = breaks(&mut (comment.token.index() + 1..count));
+        if (before, after) != (comment.line_breaks_before, comment.line_breaks_after) {
+            return fail(&format!("{before} line breaks before it and {after} after"));
+        }
+    }
+    if expected.next().is_some() {
+        return Err("a comment token isn't in the comment map".to_owned());
+    }
+    for node in tree.nodes() {
+        let Some(doc) = comments::doc_comment(node) else {
+            continue;
+        };
+        let fail = |problem: &str| Err(format!("{node:?}'s doc comment {doc:?}: {problem}"));
+        if !comments::can_have_doc_comment(node.kind()) {
+            return fail("its kind has no doc comment");
+        }
+        let start = node.first_token().id();
+        if doc.last_token().id() >= start
+            || (doc.last_token().id().index() + 1..start.index()).any(is_code)
+        {
+            return fail("isn't before the node with only trivia between");
+        }
+        for token in doc.tokens() {
+            if !comments::is_doc_comment(token.kind(), tree.release()) {
+                return fail("isn't a documentation comment");
+            }
+            let placed = map.get(token.id());
+            let leads = placed.is_some_and(|c| match c.element {
+                Element::Node(id) => {
+                    c.placement == Placement::Leading && tree.node(id).first_token().id() == start
+                }
+                Element::Token(_) => false,
+            });
+            if !leads {
+                return fail(&format!("placed as {placed:?}, not leading the node"));
             }
         }
     }
