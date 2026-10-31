@@ -37,6 +37,7 @@
           <compilerArgs>
             <arg>--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
             <arg>--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>
+            <arg>--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>
             <arg>--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
           </compilerArgs>
         </configuration>
@@ -54,6 +55,7 @@
               <Add-Exports>
                 jdk.compiler/com.sun.tools.javac.api
                 jdk.compiler/com.sun.tools.javac.parser
+                jdk.compiler/com.sun.tools.javac.tree
                 jdk.compiler/com.sun.tools.javac.util
               </Add-Exports>
             </manifestEntries>

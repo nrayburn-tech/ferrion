@@ -19,9 +19,19 @@ import java.util.Set;
  * list file holds one path per line. Each file is analyzed on its own, so a javac failure on one
  * file is reported for that file and the rest still run. {@code --sections} limits the output to
  * the named sections (see {@link Oracle}); by default, every section is written.
+ *
+ * <p>Files are analyzed on a thread with a {@value #STACK_BYTES}-byte stack, so deeply nested input
+ * that javac can parse isn't lost to the main thread's small default stack. Input nested too deeply
+ * even for that is reported as a crash with a {@code StackOverflowError}.
  */
 public final class Main {
   private Main() {}
+
+  /**
+   * The analysis thread's stack size. The JVM reserves it but only commits what's used. With it,
+   * javac parses 10,000 nested parentheses, blocks, or classes, which overflow the default stack.
+   */
+  static final long STACK_BYTES = 1L << 30;
 
   private static final String USAGE =
       "usage: javac-oracle --release <N> [--sections <name,...>] <file | @list-file>...";
@@ -55,6 +65,19 @@ public final class Main {
       usage("no input files");
     }
 
+    String finalRelease = release;
+    Set<Oracle.Section> finalSections = sections;
+    Runnable analysis = () -> analyzeAll(files, finalRelease, finalSections);
+    Thread worker = new Thread(null, analysis, "oracle", STACK_BYTES);
+    worker.start();
+    try {
+      worker.join();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  private static void analyzeAll(List<Path> files, String release, Set<Oracle.Section> sections) {
     PrintStream out =
         new PrintStream(new FileOutputStream(FileDescriptor.out), false, StandardCharsets.UTF_8);
     for (Path file : files) {
