@@ -12,6 +12,7 @@ import com.sun.tools.javac.parser.ScannerFactory;
 import com.sun.tools.javac.parser.Tokens.Comment;
 import com.sun.tools.javac.parser.Tokens.Token;
 import com.sun.tools.javac.parser.Tokens.TokenKind;
+import com.sun.tools.javac.util.JCDiagnostic;
 import com.sun.tools.javac.util.Log;
 import java.io.IOException;
 import java.net.URI;
@@ -19,8 +20,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaFileObject;
@@ -30,60 +33,111 @@ import javax.tools.ToolProvider;
 /**
  * Analyzes one source file with javac and returns the results as one line of JSON.
  *
- * <p>Positions are UTF-16 offsets into the file's text, as javac reports them. The output has:
+ * <p>Positions are UTF-16 offsets into the file's text, as javac reports them. The output has the
+ * {@link Section}s that were asked for:
  *
  * <ul>
  *   <li>{@code tokens}: {@code [kind, start, end]} for each token, ending with {@code EOF};
  *   <li>{@code comments}: {@code [style, start, end]} for each comment, in source order;
+ *   <li>{@code scanDiagnostics}: what javac's scanner reports while producing the tokens;
  *   <li>{@code diagnostics}: everything javac reports while parsing, including language-version
  *       errors;
  *   <li>{@code tree}: {@code [kind, start, end, depth]} for each tree node, in pre-order.
  * </ul>
+ *
+ * <p>Tokens, comments, and scan diagnostics come from scanning the file on its own, so they don't
+ * depend on how the parser recovers from errors. The file is only parsed when diagnostics or the
+ * tree are asked for.
  */
 final class Oracle {
   private Oracle() {}
 
-  static String analyze(Path path, String release) throws IOException {
+  /** The parts of the output that can be asked for, by their JSON names. */
+  enum Section {
+    TOKENS("tokens"),
+    COMMENTS("comments"),
+    SCAN_DIAGNOSTICS("scanDiagnostics"),
+    DIAGNOSTICS("diagnostics"),
+    TREE("tree");
+
+    final String json;
+
+    Section(String json) {
+      this.json = json;
+    }
+
+    static Section named(String name) {
+      for (Section section : values()) {
+        if (section.json.equals(name)) {
+          return section;
+        }
+      }
+      return null;
+    }
+  }
+
+  static String analyze(Path path, String release, Set<Section> sections) throws IOException {
     String source = Files.readString(path, StandardCharsets.UTF_8);
     JavaFileObject file = new SourceFile(path.toUri(), source);
-    DiagnosticCollector<JavaFileObject> collector = new DiagnosticCollector<>();
-    JavacTask task =
-        (JavacTask)
-            ToolProvider.getSystemJavaCompiler()
-                .getTask(
-                    null,
-                    null,
-                    collector,
-                    List.of("--release", release, "-proc:none", "-Xlint:-options"),
-                    null,
-                    List.of(file));
-    Iterable<? extends CompilationUnitTree> units = task.parse();
-    List<Diagnostic<? extends JavaFileObject>> diagnostics = List.copyOf(collector.getDiagnostics());
-
     Json json = new Json();
     json.beginObject();
     json.name("file").value(path.toString());
     json.name("release").value(release);
-    writeTokens(json, task, file, source);
-    writeDiagnostics(json, diagnostics);
-    json.name("tree").beginArray();
-    SourcePositions positions = Trees.instance(task).getSourcePositions();
-    for (CompilationUnitTree unit : units) {
-      new TreeWriter(json, positions, unit).scan(unit, 0);
+    if (sections.contains(Section.TOKENS)
+        || sections.contains(Section.COMMENTS)
+        || sections.contains(Section.SCAN_DIAGNOSTICS)) {
+      // A task of its own, so the parse below reports the scanner's errors too.
+      writeScan(json, newTask(file, release, new DiagnosticCollector<>()), file, source, sections);
     }
-    json.endArray();
+    if (sections.contains(Section.DIAGNOSTICS) || sections.contains(Section.TREE)) {
+      DiagnosticCollector<JavaFileObject> collector = new DiagnosticCollector<>();
+      JavacTask task = newTask(file, release, collector);
+      Iterable<? extends CompilationUnitTree> units = task.parse();
+      if (sections.contains(Section.DIAGNOSTICS)) {
+        json.name(Section.DIAGNOSTICS.json).beginArray();
+        for (Diagnostic<? extends JavaFileObject> diagnostic : collector.getDiagnostics()) {
+          writeDiagnostic(json, diagnostic);
+        }
+        json.endArray();
+      }
+      if (sections.contains(Section.TREE)) {
+        json.name(Section.TREE.json).beginArray();
+        SourcePositions positions = Trees.instance(task).getSourcePositions();
+        for (CompilationUnitTree unit : units) {
+          new TreeWriter(json, positions, unit).scan(unit, 0);
+        }
+        json.endArray();
+      }
+    }
     json.endObject();
     return json.toString();
   }
 
-  private static void writeTokens(Json json, JavacTask task, JavaFileObject file, String source) {
+  static Set<Section> allSections() {
+    return EnumSet.allOf(Section.class);
+  }
+
+  private static JavacTask newTask(
+      JavaFileObject file, String release, DiagnosticCollector<JavaFileObject> collector) {
+    return (JavacTask)
+        ToolProvider.getSystemJavaCompiler()
+            .getTask(
+                null,
+                null,
+                collector,
+                List.of("--release", release, "-proc:none", "-Xlint:-options"),
+                null,
+                List.of(file));
+  }
+
+  private static void writeScan(
+      Json json, JavacTask task, JavaFileObject file, String source, Set<Section> sections) {
     var context = ((BasicJavacTask) task).getContext();
     Log log = Log.instance(context);
-    // The parse above already reported the scanner's errors.
-    Log.DiscardDiagnosticHandler discard = log.new DiscardDiagnosticHandler();
+    Log.DeferredDiagnosticHandler deferred = log.new DeferredDiagnosticHandler();
     JavaFileObject previous = log.useSource(file);
+    List<Token> tokens = new ArrayList<>();
     List<Comment> comments = new ArrayList<>();
-    json.name("tokens").beginArray();
     try {
       Scanner scanner = ScannerFactory.instance(context).newScanner(source, true);
       while (true) {
@@ -93,62 +147,58 @@ final class Oracle {
           // javac attaches the comments before a token to it, most recent first.
           comments.addAll(token.comments.reverse());
         }
-        json.beginArray().value(token.kind.name()).value(token.pos).value(token.endPos).endArray();
+        tokens.add(token);
         if (token.kind == TokenKind.EOF) {
           break;
         }
       }
     } finally {
       log.useSource(previous);
-      log.popDiagnosticHandler(discard);
+      log.popDiagnosticHandler(deferred);
     }
-    json.endArray();
 
-    json.name("comments").beginArray();
-    for (Comment comment : comments) {
-      int start = comment.getPos().getStartPosition();
-      json.beginArray()
-          .value(comment.getStyle().name())
-          .value(start)
-          .value(commentEnd(source, start))
-          .endArray();
+    if (sections.contains(Section.TOKENS)) {
+      json.name(Section.TOKENS.json).beginArray();
+      for (Token token : tokens) {
+        json.beginArray().value(token.kind.name()).value(token.pos).value(token.endPos).endArray();
+      }
+      json.endArray();
     }
-    json.endArray();
+    if (sections.contains(Section.COMMENTS)) {
+      json.name(Section.COMMENTS.json).beginArray();
+      for (Comment comment : comments) {
+        json.beginArray()
+            .value(comment.getStyle().name())
+            .value(comment.getPos().getStartPosition())
+            .value(comment.getPos().getEndPosition())
+            .endArray();
+      }
+      json.endArray();
+    }
+    if (sections.contains(Section.SCAN_DIAGNOSTICS)) {
+      json.name(Section.SCAN_DIAGNOSTICS.json).beginArray();
+      for (JCDiagnostic diagnostic : deferred.getDiagnostics()) {
+        writeDiagnostic(json, diagnostic);
+      }
+      json.endArray();
+    }
   }
 
-  /** javac doesn't record where a comment ends, so it's found from the comment's start. */
-  private static int commentEnd(String source, int start) {
-    if (source.startsWith("/*", start)) {
-      int close = source.indexOf("*/", start + 2);
-      return close < 0 ? source.length() : close + 2;
-    }
-    int end = start;
-    while (end < source.length() && source.charAt(end) != '\n' && source.charAt(end) != '\r') {
-      end++;
-    }
-    return end;
-  }
-
-  private static void writeDiagnostics(
-      Json json, List<Diagnostic<? extends JavaFileObject>> diagnostics) {
-    json.name("diagnostics").beginArray();
-    for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics) {
-      json.beginObject()
-          .name("kind")
-          .value(diagnostic.getKind().name())
-          .name("code")
-          .value(diagnostic.getCode())
-          .name("start")
-          .value(diagnostic.getStartPosition())
-          .name("position")
-          .value(diagnostic.getPosition())
-          .name("end")
-          .value(diagnostic.getEndPosition())
-          .name("message")
-          .value(diagnostic.getMessage(Locale.ROOT))
-          .endObject();
-    }
-    json.endArray();
+  private static void writeDiagnostic(Json json, Diagnostic<?> diagnostic) {
+    json.beginObject()
+        .name("kind")
+        .value(diagnostic.getKind().name())
+        .name("code")
+        .value(diagnostic.getCode())
+        .name("start")
+        .value(diagnostic.getStartPosition())
+        .name("position")
+        .value(diagnostic.getPosition())
+        .name("end")
+        .value(diagnostic.getEndPosition())
+        .name("message")
+        .value(diagnostic.getMessage(Locale.ROOT))
+        .endObject();
   }
 
   private static final class TreeWriter extends TreeScanner<Void, Integer> {
