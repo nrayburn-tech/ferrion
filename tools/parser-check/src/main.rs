@@ -1,0 +1,116 @@
+//! Checks the parser on the corpus, without javac: the tools/oracle-check comparisons need the
+//! oracle, and these don't.
+//!
+//! `parser-check round-trip` parses every file at the releases it's meant for, checks that the
+//! tree reproduces it byte for byte and that `ferrion_parser::invariants` holds, and reports
+//! throughput (see [`round_trip`]).
+//!
+//! The corpus is found as `tools/corpus` finds it. Checks parse on a thread with a small
+//! stack, as the deep-nesting tests do, so that recursion without `ensure_stack` overflows here
+//! instead of passing on a large stack.
+
+mod round_trip;
+
+use std::process::ExitCode;
+
+use anyhow::{Context, Result, bail};
+use corpus::Dirs;
+use corpus::project::Project;
+use corpus::sources;
+
+const USAGE: &str = "\
+usage: parser-check <check> [<option>...] [<target>...]
+
+checks:
+  round-trip  parse every file at the releases it's meant for; check that the tree reproduces
+              it byte for byte and keeps the parser's invariants, without a panic; report
+              throughput
+
+options:
+  --limit <N>        show the first N failures (default: 10)
+  --verbose          print each file before parsing it, to find one that aborts
+
+Targets default to every corpus project. `jdk-tests` names OpenJDK's javac tests, each parsed at
+the releases its jtreg header compiles it at, and `jdk-deep-nesting` only its deep-nesting stress
+tests; fetch them with `cargo corpus jdk-tests`. Projects must be checked out (`cargo corpus
+checkout`).";
+
+/// The stack size of the thread that parses, as in the deep-nesting tests.
+const STACK_SIZE: usize = 256 * 1024;
+
+pub struct Options {
+    pub limit: usize,
+    pub verbose: bool,
+}
+
+fn main() -> ExitCode {
+    match run() {
+        Ok(true) => ExitCode::SUCCESS,
+        Ok(false) => ExitCode::FAILURE,
+        Err(error) => {
+            eprintln!("error: {error:#}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn run() -> Result<bool> {
+    let mut args = std::env::args().skip(1);
+    let Some(check) = args.next() else {
+        eprintln!("{USAGE}");
+        std::process::exit(2);
+    };
+    let mut options = Options {
+        limit: 10,
+        verbose: false,
+    };
+    let mut names = Vec::new();
+    while let Some(arg) = args.next() {
+        let mut value = |name: &str| args.next().with_context(|| format!("{name} needs a value"));
+        match arg.as_str() {
+            "--limit" => options.limit = value("--limit")?.parse().context("--limit")?,
+            "--verbose" => options.verbose = true,
+            "--help" | "-h" => {
+                println!("{USAGE}");
+                return Ok(true);
+            }
+            _ if arg.starts_with('-') => bail!("unknown option `{arg}`\n\n{USAGE}"),
+            _ => names.push(arg),
+        }
+    }
+
+    let dirs = Dirs::new()?;
+    let projects = Project::load_all(&dirs.projects_file())?;
+    let targets = sources::targets(&projects, &names)?;
+    let mut selected = Vec::new();
+    for target in &targets {
+        let (files, unsupported) = target.sources(&dirs)?;
+        if unsupported > 0 {
+            eprintln!(
+                "{}: {unsupported} files compiled only before Java 8 left out",
+                target.name()
+            );
+        }
+        selected.push((target.name().to_owned(), files));
+    }
+
+    match check.as_str() {
+        "round-trip" => Ok(round_trip::run(selected, &options)),
+        _ => {
+            eprintln!("{USAGE}");
+            std::process::exit(2);
+        }
+    }
+}
+
+/// Runs `f` on a thread with a [`STACK_SIZE`] stack, and returns its result. A stack overflow
+/// aborts the process, as it would for a user.
+fn on_small_stack<R: Send + 'static>(f: impl FnOnce() -> R + Send + 'static) -> R {
+    std::thread::Builder::new()
+        .name("parse".to_owned())
+        .stack_size(STACK_SIZE)
+        .spawn(f)
+        .expect("spawning the parsing thread")
+        .join()
+        .expect("the parsing thread panicked outside a check")
+}

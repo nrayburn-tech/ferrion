@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/*", "tools/codegen", "tools/corpus", "tools/oracle-check"]
+members = ["crates/*", "tools/codegen", "tools/corpus", "tools/oracle-check", "tools/parser-check"]
 
 [workspace.package]
 version = "0.0.0"
