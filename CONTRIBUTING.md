@@ -159,6 +159,18 @@ the project's own build:
 cargo corpus lock <project>
 ```
 
+OpenJDK's javac tests are parser inputs too. Like the other incompatibly licensed test suites,
+they're fetched at test time, at the tag pinned in `tools/corpus/jdk-tests.toml`, into
+`target/corpus/jdk-tests` (or under `FERRION_CORPUS_DIR`), and never committed. Only the test
+directories are checked out, from a partial clone, so no implementation source is downloaded:
+
+```bash
+cargo corpus jdk-tests
+```
+
+`cargo corpus jdk-tests list` prints each input with the releases its jtreg header compiles it
+at. Don't study the tests beyond what selecting and running them needs.
+
 ### javac oracle
 
 `tools/javac-oracle` dumps javac's tokens, comments, scanner diagnostics, parse diagnostics (with
