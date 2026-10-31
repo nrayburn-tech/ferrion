@@ -88,3 +88,13 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - name: Fetch a corpus project
         run: cargo corpus fetch jedis
+      # Kept out of target/, so the Rust cache doesn't save them.
+      - name: Check out the corpus
+        run: cargo corpus checkout
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Compare the lexer with javac at each file's release
+        run: cargo oracle tokens
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+          FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
