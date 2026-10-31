@@ -1,0 +1,66 @@
+CompilationUnit 0..56 [error]
+  ClassDecl 0..55 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..55 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      FieldDecl 12..27 [error]
+        PrimitiveType 12..15
+          IntKw 12..15 "int"
+        Whitespace 15..16 " "
+        VariableDeclarator 16..26 [error]
+          Identifier 16..17 "x"
+          Whitespace 17..18 " "
+          Eq 18..19 "="
+          Whitespace 19..20 " "
+          MethodCallExpr 20..26 [error]
+            Identifier 20..21 "f"
+            Arguments 21..26 [error]
+              LParen 21..22 "("
+              LiteralExpr 22..23
+                IntLiteral 22..23 "1"
+              Comma 23..24 ","
+              Whitespace 24..25 " "
+              LiteralExpr 25..26
+                IntLiteral 25..26 "2"
+        Semi 26..27 ";"
+      LineTerminator 27..28 "\n"
+      Whitespace 28..30 "  "
+      FieldDecl 30..44 [error]
+        PrimitiveType 30..33
+          IntKw 30..33 "int"
+        Whitespace 33..34 " "
+        VariableDeclarator 34..43 [error]
+          Identifier 34..35 "y"
+          Whitespace 35..36 " "
+          Eq 36..37 "="
+          Whitespace 37..38 " "
+          MethodCallExpr 38..43 [error]
+            Identifier 38..39 "g"
+            Arguments 39..43 [error]
+              LParen 39..40 "("
+              ParenExpr 40..43
+                LParen 40..41 "("
+                LiteralExpr 41..42
+                  IntLiteral 41..42 "3"
+                RParen 42..43 ")"
+        Semi 43..44 ";"
+      LineTerminator 44..45 "\n"
+      Whitespace 45..47 "  "
+      FieldDecl 47..53
+        PrimitiveType 47..50
+          IntKw 47..50 "int"
+        Whitespace 50..51 " "
+        VariableDeclarator 51..52
+          Identifier 51..52 "z"
+        Semi 52..53 ";"
+      LineTerminator 53..54 "\n"
+      RBrace 54..55 "}"
+  LineTerminator 55..56 "\n"
+  Eof 56..56 ""
+error 26..26 @26 Expected(OneOf([RParen, Comma])): ')' or ',' expected
+error 43..43 @43 Expected(OneOf([RParen, Comma])): ')' or ',' expected

@@ -277,6 +277,14 @@ that lost them.
 
 - Every bug fix comes with a regression test.
 - Fuzz failures are reduced and kept as regression tests.
+- The parser's snapshot tests compare each input in `crates/ferrion_parser/tests/snapshots/` with
+  its printed tree. Broken inputs that test recovery go in a `recovery` directory there, and must
+  report an error. After an intended change, rewrite the trees and review the diff:
+
+  ```bash
+  FERRION_BLESS=1 cargo test --package ferrion_parser --test snapshots
+  ```
+
 - The deep-nesting stress tests in `crates/ferrion_parser/tests/nesting_stress.rs` generate their
   inputs. A pattern whose grammar isn't written yet is listed in `PENDING` there, and its test
   fails once it parses without errors, so that it's moved out of the list.

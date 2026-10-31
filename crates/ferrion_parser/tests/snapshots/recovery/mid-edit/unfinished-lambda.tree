@@ -1,0 +1,70 @@
+CompilationUnit 0..82 [error]
+  ClassDecl 0..81 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..81 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      FieldDecl 12..32 [error]
+        ClassType 12..20
+          Identifier 12..20 "Runnable"
+        Whitespace 20..21 " "
+        VariableDeclarator 21..30 [error]
+          Identifier 21..22 "r"
+          Whitespace 22..23 " "
+          Eq 23..24 "="
+          Whitespace 24..25 " "
+          LambdaExpr 25..30 [error]
+            LambdaParameters 25..27
+              LParen 25..26 "("
+              RParen 26..27 ")"
+            Whitespace 27..28 " "
+            Arrow 28..30 "->"
+        Whitespace 30..31 " "
+        Semi 31..32 ";"
+      LineTerminator 32..33 "\n"
+      Whitespace 33..35 "  "
+      FieldDecl 35..70 [error]
+        ClassType 35..59
+          Identifier 35..43 "Function"
+          TypeArguments 43..59
+            Lt 43..44 "<"
+            ClassType 44..50
+              Identifier 44..50 "String"
+            Comma 50..51 ","
+            Whitespace 51..52 " "
+            ClassType 52..58
+              Identifier 52..58 "String"
+            Gt 58..59 ">"
+        Whitespace 59..60 " "
+        VariableDeclarator 60..68 [error]
+          Identifier 60..61 "f"
+          Whitespace 61..62 " "
+          Eq 62..63 "="
+          Whitespace 63..64 " "
+          LambdaExpr 64..68 [error]
+            LambdaParameters 64..65
+              LambdaParameter 64..65
+                Identifier 64..65 "s"
+            Whitespace 65..66 " "
+            Arrow 66..68 "->"
+        Whitespace 68..69 " "
+        Semi 69..70 ";"
+      LineTerminator 70..71 "\n"
+      Whitespace 71..73 "  "
+      FieldDecl 73..79
+        PrimitiveType 73..76
+          IntKw 73..76 "int"
+        Whitespace 76..77 " "
+        VariableDeclarator 77..78
+          Identifier 77..78 "x"
+        Semi 78..79 ";"
+      LineTerminator 79..80 "\n"
+      RBrace 80..81 "}"
+  LineTerminator 81..82 "\n"
+  Eof 82..82 ""
+error 31..32 @31 ExpressionExpected(Semi): expected an expression, found ';'
+error 69..70 @69 ExpressionExpected(Semi): expected an expression, found ';'

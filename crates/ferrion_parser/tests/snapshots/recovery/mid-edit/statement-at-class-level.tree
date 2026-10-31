@@ -1,0 +1,63 @@
+CompilationUnit 0..67 [error]
+  ClassDecl 0..66 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..66 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      FieldDecl 12..18
+        PrimitiveType 12..15
+          IntKw 12..15 "int"
+        Whitespace 15..16 " "
+        VariableDeclarator 16..17
+          Identifier 16..17 "x"
+        Semi 17..18 ";"
+      LineTerminator 18..19 "\n"
+      Whitespace 19..21 "  "
+      Error 21..29 [error]
+        ReturnKw 21..27 "return"
+        Whitespace 27..28 " "
+        Identifier 28..29 "x"
+      Semi 29..30 ";"
+      LineTerminator 30..31 "\n"
+      Whitespace 31..33 "  "
+      ConstructorDecl 33..39 [error]
+        Identifier 33..36 "foo"
+        FormalParameters 36..38
+          LParen 36..37 "("
+          RParen 37..38 ")"
+        Semi 38..39 ";"
+      LineTerminator 39..40 "\n"
+      Whitespace 40..42 "  "
+      Error 42..55 [error]
+        IfKw 42..44 "if"
+        Whitespace 44..45 " "
+        LParen 45..46 "("
+        Identifier 46..47 "x"
+        Whitespace 47..48 " "
+        Gt 48..49 ">"
+        Whitespace 49..50 " "
+        IntLiteral 50..51 "0"
+        RParen 51..52 ")"
+        Whitespace 52..53 " "
+        LBrace 53..54 "{"
+        RBrace 54..55 "}"
+      LineTerminator 55..56 "\n"
+      Whitespace 56..58 "  "
+      FieldDecl 58..64
+        PrimitiveType 58..61
+          IntKw 58..61 "int"
+        Whitespace 61..62 " "
+        VariableDeclarator 62..63
+          Identifier 62..63 "y"
+        Semi 63..64 ";"
+      LineTerminator 64..65 "\n"
+      RBrace 65..66 "}"
+  LineTerminator 66..67 "\n"
+  Eof 67..67 ""
+error 21..27 @21 ExpectedMember(ReturnKw): unexpected 'return': expected a member declaration
+error 33..36 @33 MissingReturnType: a method needs a result type; a constructor takes its class's name
+error 42..44 @42 ExpectedMember(IfKw): unexpected 'if': expected a member declaration

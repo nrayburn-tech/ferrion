@@ -1,0 +1,68 @@
+CompilationUnit 0..73 [error]
+  ClassDecl 0..72 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..72 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      MethodDecl 12..37 [error]
+        VoidType 12..16
+          VoidKw 12..16 "void"
+        Whitespace 16..17 " "
+        Identifier 17..18 "m"
+        FormalParameters 18..20
+          LParen 18..19 "("
+          RParen 19..20 ")"
+        Whitespace 20..21 " "
+        Block 21..37 [error]
+          LBrace 21..22 "{"
+          LineTerminator 22..23 "\n"
+          Whitespace 23..27 "    "
+          LocalVarDecl 27..37
+            PrimitiveType 27..30
+              IntKw 27..30 "int"
+            Whitespace 30..31 " "
+            VariableDeclarator 31..36
+              Identifier 31..32 "x"
+              Whitespace 32..33 " "
+              Eq 33..34 "="
+              Whitespace 34..35 " "
+              LiteralExpr 35..36
+                IntLiteral 35..36 "1"
+            Semi 36..37 ";"
+      LineTerminator 37..38 "\n"
+      LineTerminator 38..39 "\n"
+      Whitespace 39..41 "  "
+      MethodDecl 41..60
+        Modifiers 41..48
+          PrivateKw 41..48 "private"
+        Whitespace 48..49 " "
+        VoidType 49..53
+          VoidKw 49..53 "void"
+        Whitespace 53..54 " "
+        Identifier 54..55 "n"
+        FormalParameters 55..57
+          LParen 55..56 "("
+          RParen 56..57 ")"
+        Whitespace 57..58 " "
+        Block 58..60
+          LBrace 58..59 "{"
+          RBrace 59..60 "}"
+      LineTerminator 60..61 "\n"
+      LineTerminator 61..62 "\n"
+      Whitespace 62..64 "  "
+      FieldDecl 64..70
+        PrimitiveType 64..67
+          IntKw 64..67 "int"
+        Whitespace 67..68 " "
+        VariableDeclarator 68..69
+          Identifier 68..69 "y"
+        Semi 69..70 ";"
+      LineTerminator 70..71 "\n"
+      RBrace 71..72 "}"
+  LineTerminator 72..73 "\n"
+  Eof 73..73 ""
+error 41..48 @41 ExpressionExpected(PrivateKw): expected an expression, found 'private'

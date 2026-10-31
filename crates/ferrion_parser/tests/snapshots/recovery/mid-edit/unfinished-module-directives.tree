@@ -1,0 +1,67 @@
+CompilationUnit 0..86 [error]
+  ModuleDecl 0..85 [error]
+    ModuleKw 0..6 "module"
+    Whitespace 6..7 " "
+    Name 7..8
+      Identifier 7..8 "m"
+    Whitespace 8..9 " "
+    LBrace 9..10 "{"
+    LineTerminator 10..11 "\n"
+    Whitespace 11..13 "  "
+    RequiresDirective 13..23 [error]
+      RequiresKw 13..21 "requires"
+      Whitespace 21..22 " "
+      Semi 22..23 ";"
+    LineTerminator 23..24 "\n"
+    Whitespace 24..26 "  "
+    ExportsDirective 26..37 [error]
+      ExportsKw 26..33 "exports"
+      Whitespace 33..34 " "
+      Name 34..37
+        Name 34..35
+          Identifier 34..35 "a"
+        Dot 35..36 "."
+        Identifier 36..37 "b"
+    LineTerminator 37..38 "\n"
+    Whitespace 38..40 "  "
+    OpensDirective 40..51 [error]
+      OpensKw 40..45 "opens"
+      Whitespace 45..46 " "
+      Name 46..51
+        Name 46..47
+          Identifier 46..47 "a"
+        Dot 47..48 "."
+        Whitespace 48..49 " "
+        Identifier 49..51 "to"
+    Whitespace 51..52 " "
+    Error 52..53 [error]
+      Identifier 52..53 "c"
+    Error 53..54 [error]
+      Semi 53..54 ";"
+    LineTerminator 54..55 "\n"
+    Whitespace 55..57 "  "
+    ProvidesDirective 57..76 [error]
+      ProvidesKw 57..65 "provides"
+      Whitespace 65..66 " "
+      Name 66..69
+        Name 66..67
+          Identifier 66..67 "a"
+        Dot 67..68 "."
+        Identifier 68..69 "B"
+      Whitespace 69..70 " "
+      WithKw 70..74 "with"
+      Whitespace 74..75 " "
+      Semi 75..76 ";"
+    LineTerminator 76..77 "\n"
+    Whitespace 77..79 "  "
+    UsesDirective 79..83 [error]
+      UsesKw 79..83 "uses"
+    LineTerminator 83..84 "\n"
+    RBrace 84..85 "}"
+  LineTerminator 85..86 "\n"
+  Eof 86..86 ""
+error 21..21 @21 Expected(Identifier): name expected
+error 37..37 @37 Expected(Token(Semi)): ';' expected
+error 51..51 @51 Expected(Token(Semi)): ';' expected
+error 74..74 @74 Expected(Identifier): name expected
+error 83..83 @83 Expected(Identifier): name expected

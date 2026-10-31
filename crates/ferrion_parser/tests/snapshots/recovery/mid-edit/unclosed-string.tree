@@ -1,0 +1,36 @@
+CompilationUnit 0..40 [error]
+  ClassDecl 0..39 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..39 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      FieldDecl 12..28 [error]
+        ClassType 12..18
+          Identifier 12..18 "String"
+        Whitespace 18..19 " "
+        VariableDeclarator 19..28 [error]
+          Identifier 19..20 "s"
+          Whitespace 20..21 " "
+          Eq 21..22 "="
+          Whitespace 22..23 " "
+          LiteralExpr 23..28 [error]
+            StringLiteral 23..28 "\"abc;"
+      LineTerminator 28..29 "\n"
+      Whitespace 29..31 "  "
+      FieldDecl 31..37
+        PrimitiveType 31..34
+          IntKw 31..34 "int"
+        Whitespace 34..35 " "
+        VariableDeclarator 35..36
+          Identifier 35..36 "y"
+        Semi 36..37 ";"
+      LineTerminator 37..38 "\n"
+      RBrace 38..39 "}"
+  LineTerminator 39..40 "\n"
+  Eof 40..40 ""
+error 23..28 @23 Lexical(UnterminatedStringLiteral): unterminated string literal
+error 28..28 @28 Expected(Token(Semi)): ';' expected

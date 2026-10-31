@@ -1,0 +1,57 @@
+CompilationUnit 0..59 [error]
+  ClassDecl 0..58 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    TypeParameters 7..9 [error]
+      Lt 7..8 "<"
+      TypeParameter 8..9
+        Identifier 8..9 "T"
+    Whitespace 9..10 " "
+    ClassBody 10..58 [error]
+      LBrace 10..11 "{"
+      LineTerminator 11..12 "\n"
+      Whitespace 12..14 "  "
+      FieldDecl 14..28 [error]
+        ClassType 14..25 [error]
+          Identifier 14..18 "List"
+          TypeArguments 18..25 [error]
+            Lt 18..19 "<"
+            ClassType 19..25
+              Identifier 19..25 "String"
+        Whitespace 25..26 " "
+        VariableDeclarator 26..27
+          Identifier 26..27 "x"
+        Semi 27..28 ";"
+      LineTerminator 28..29 "\n"
+      Whitespace 29..31 "  "
+      FieldDecl 31..47 [error]
+        ClassType 31..44 [error]
+          Identifier 31..34 "Map"
+          TypeArguments 34..44 [error]
+            Lt 34..35 "<"
+            ClassType 35..41
+              Identifier 35..41 "String"
+            Comma 41..42 ","
+            Whitespace 42..43 " "
+            Gt 43..44 ">"
+        Whitespace 44..45 " "
+        VariableDeclarator 45..46
+          Identifier 45..46 "m"
+        Semi 46..47 ";"
+      LineTerminator 47..48 "\n"
+      Whitespace 48..50 "  "
+      FieldDecl 50..56
+        PrimitiveType 50..53
+          IntKw 50..53 "int"
+        Whitespace 53..54 " "
+        VariableDeclarator 54..55
+          Identifier 54..55 "y"
+        Semi 55..56 ";"
+      LineTerminator 56..57 "\n"
+      RBrace 57..58 "}"
+  LineTerminator 58..59 "\n"
+  Eof 59..59 ""
+error 9..9 @9 Expected(Token(Gt)): '>' expected
+error 26..26 @26 Expected(OneOf([Gt, Comma])): '>' or ',' expected
+error 43..44 @43 TypeExpected(Gt): expected a type, found '>'

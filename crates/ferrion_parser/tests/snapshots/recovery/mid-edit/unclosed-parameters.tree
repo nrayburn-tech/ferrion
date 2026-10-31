@@ -1,0 +1,66 @@
+CompilationUnit 0..65 [error]
+  ClassDecl 0..64 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..64 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      MethodDecl 12..30 [error]
+        VoidType 12..16
+          VoidKw 12..16 "void"
+        Whitespace 16..17 " "
+        Identifier 17..18 "m"
+        FormalParameters 18..24 [error]
+          LParen 18..19 "("
+          FormalParameter 19..24
+            PrimitiveType 19..22
+              IntKw 19..22 "int"
+            Whitespace 22..23 " "
+            Identifier 23..24 "a"
+        Whitespace 24..25 " "
+        Block 25..30
+          LBrace 25..26 "{"
+          LineTerminator 26..27 "\n"
+          Whitespace 27..29 "  "
+          RBrace 29..30 "}"
+      LineTerminator 30..31 "\n"
+      LineTerminator 31..32 "\n"
+      Whitespace 32..34 "  "
+      MethodDecl 34..52 [error]
+        VoidType 34..38
+          VoidKw 34..38 "void"
+        Whitespace 38..39 " "
+        Identifier 39..40 "n"
+        FormalParameters 40..49 [error]
+          LParen 40..41 "("
+          FormalParameter 41..46
+            PrimitiveType 41..44
+              IntKw 41..44 "int"
+            Whitespace 44..45 " "
+            Identifier 45..46 "a"
+          Comma 46..47 ","
+          Whitespace 47..48 " "
+          RParen 48..49 ")"
+        Whitespace 49..50 " "
+        Block 50..52
+          LBrace 50..51 "{"
+          RBrace 51..52 "}"
+      LineTerminator 52..53 "\n"
+      LineTerminator 53..54 "\n"
+      Whitespace 54..56 "  "
+      FieldDecl 56..62
+        PrimitiveType 56..59
+          IntKw 56..59 "int"
+        Whitespace 59..60 " "
+        VariableDeclarator 60..61
+          Identifier 60..61 "y"
+        Semi 61..62 ";"
+      LineTerminator 62..63 "\n"
+      RBrace 63..64 "}"
+  LineTerminator 64..65 "\n"
+  Eof 65..65 ""
+error 24..24 @24 Expected(OneOf([Comma, RParen, LBracket])): ',', ')', or '[' expected
+error 48..49 @48 TypeExpected(RParen): expected a type, found ')'
