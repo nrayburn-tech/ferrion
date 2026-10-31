@@ -54,3 +54,53 @@ fn unclosed_delimiters() {
     check(format!("@A({} package p;\n", "(".repeat(100_000)));
     check("{".repeat(100_000));
 }
+
+#[test]
+fn expression_chains() {
+    let n = 100_000;
+    let chains = [
+        " + x".repeat(n),
+        ".m(1)".repeat(n),
+        "[0]".repeat(n),
+        " = x".repeat(n),
+        " ? x : x".repeat(n),
+    ];
+    for chain in chains {
+        check(format!("class A {{ Object f = x{chain}; }}\n"));
+    }
+    check(format!("class A {{ int f = {}x; }}\n", "- ".repeat(n)));
+    check(format!("class A {{ Object f = {}x; }}\n", "(T) ".repeat(n)));
+}
+
+#[test]
+fn nested_expressions() {
+    let n = 100_000;
+    for (open, close) in [
+        ("f(", ")"),
+        ("new A(", ")"),
+        ("x -> ", ""),
+        ("a ? ", " : b"),
+        ("{", "}"),
+    ] {
+        check(format!(
+            "class A {{ Object f = {}x{}; }}\n",
+            open.repeat(n),
+            close.repeat(n)
+        ));
+    }
+}
+
+#[test]
+fn nested_type_arguments() {
+    let n = 100_000;
+    check(format!(
+        "class A {{ List{}x{} f; }}\n",
+        "<List".repeat(n),
+        ">".repeat(n)
+    ));
+    check(format!(
+        "class A {{ Object f = (List{}x{}) y; }}\n",
+        "<List".repeat(n),
+        ">".repeat(n)
+    ));
+}
