@@ -711,9 +711,11 @@ impl<'t> RecordDecl<'t> {
 }
 
 /// `@interface A { ... }`. The `@` is a token of the declaration; javac's modifiers include it.
+/// javac parses an annotation interface's header like an interface's, and rejects type parameters,
+/// `extends`, and `permits` only after parsing, so the tree has them too.
 ///
 /// ```text
-/// AnnotationTypeDecl = Modifiers? '@' 'interface' name:Ident body:ClassBody
+/// AnnotationTypeDecl = Modifiers? '@' 'interface' name:Ident TypeParameters? ExtendsClause? PermitsClause? body:ClassBody
 /// ```
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct AnnotationTypeDecl<'t>(SyntaxNode<'t>);
@@ -739,6 +741,18 @@ impl<'t> AnnotationTypeDecl<'t> {
 
     pub fn name(self) -> Option<SyntaxToken<'t>> {
         support::token(self.0, token_sets::IDENT, None, None)
+    }
+
+    pub fn type_parameters(self) -> Option<TypeParameters<'t>> {
+        support::child(self.0, None, None)
+    }
+
+    pub fn extends_clause(self) -> Option<ExtendsClause<'t>> {
+        support::child(self.0, None, None)
+    }
+
+    pub fn permits_clause(self) -> Option<PermitsClause<'t>> {
+        support::child(self.0, None, None)
     }
 
     pub fn body(self) -> Option<ClassBody<'t>> {

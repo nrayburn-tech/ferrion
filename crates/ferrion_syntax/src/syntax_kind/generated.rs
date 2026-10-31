@@ -297,6 +297,8 @@ pub enum SyntaxKind {
     EnumDecl,
     RecordDecl,
     /// `@interface A { ... }`. The `@` is a token of the declaration; javac's modifiers include it.
+    /// javac parses an annotation interface's header like an interface's, and rejects type parameters,
+    /// `extends`, and `permits` only after parsing, so the tree has them too.
     AnnotationTypeDecl,
     /// A class's `extends` has one type, an interface's any number.
     ExtendsClause,
