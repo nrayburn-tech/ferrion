@@ -4,8 +4,8 @@ B1 in the [roadmap](../ROADMAP.md) reads compiled classes: class files from jars
 multi-release jars for the target release, and the JDK's platform API for that release. This
 document is the overview: what the reader serves, where the platform API comes from, the shape of
 `ferrion_classfile`, dependencies, performance, verification, and the decisions made in review.
-The inputs side of B1 (`ferrion_project`: flags, the project model, validation messages) comes
-later and isn't covered here.
+The inputs side of B1 (`ferrion_project`: flags, the project model, validation messages) is done
+with B2, and designed in [project inputs](project-inputs.md).
 
 | Topic | Document | In short |
 | --- | --- | --- |
