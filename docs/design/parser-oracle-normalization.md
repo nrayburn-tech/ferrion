@@ -496,6 +496,9 @@ running the oracle on the cases and javac's tests:
 - A type parameter list's `>` directly followed by another `>` doesn't close it: in
   `class A<T extends Comparable<T>>> {}`, javac reports `> expected` at the second `>`
   ([`type-parameters-closed-by-a-shift.java`](../../tools/oracle-check/parser-cases/type-parameters-closed-by-a-shift.java)).
+- A field of type `void` is read as a method missing its parameters: `void a;` gets `'(' expected`
+  at the `;`, and the member becomes an `ERRONEOUS` node
+  ([`void-field.java`](../../tools/oracle-check/parser-cases/void-field.java)).
 - Some version errors cascade, because javac doesn't parse the newer syntax at older releases:
   `sealed ... permits` adds `'{' expected`, a local record adds `';' expected` twice.
 
