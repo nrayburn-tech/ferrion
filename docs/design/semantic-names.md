@@ -12,9 +12,10 @@ document relies on was observed by running javac on small inputs; the
 
 ## Decision
 
-- **Symbols** are identified by stable keys: a package by name, a type by its source set view and
-  binary name, a member by its type, kind, name, and parameter types as written, a local by its
-  `NodeId` in one tree. Project-wide data never holds a `NodeId` or an offset.
+- **Symbols** are identified by stable keys: a package by name, a type by where it is declared (a
+  source set and its path of names, or a class source and binary name), a member by its type,
+  kind, name, and parameter types as written, a local by its `NodeId` in one tree. Project-wide
+  data never holds a `NodeId` or an offset.
 - **Each file has a summary:** its package, imports, and declarations with types as written,
   without bodies or offsets. Summaries are the only part of a source file that project-wide
   resolution reads.
@@ -60,10 +61,13 @@ document relies on was observed by running javac on small inputs; the
 
 - **Packages** by name, within a view. A package is "the same" across sources and the classpath:
   `p.A` in sources and `p.B` in a jar are both members of `p`.
-- **Types** by `(view, binary name)`. The view maps a binary name to one origin: a source type
-  `(file, declaration path)` or a class file `(classpath entry, entry name)`. Two source sets that
-  resolve `com.acme.Foo` to the same file share the symbol; a type in a jar used by both sets is
-  shared through B1's archive cache.
+- **Types** by where they are declared. The view maps a name to one origin: a source type
+  `(declaring source set, package, path of simple names)` or a class file `(class source, binary
+  name)`, a class source being a platform API or a classpath entry numbered across the engine. Two
+  source sets that resolve `com.acme.Foo` to the same declaration share the symbol; a class in a
+  jar or the platform that several source sets use is one symbol. A source type's path
+  (`Outer.Inner`), unlike its binary name, can't be confused with a top-level type whose name has
+  a `$`.
 - **Members** by `(type, kind, name, parameter types as written)` for source members, and by
   descriptor for class-file members. Overloads differ by their parameter types as written, as in
   the [syntax tree design](parser-syntax-tree.md#node-identity).
@@ -151,8 +155,9 @@ the members it generates to the summary.
 For a type name `p.T` in a source set S, the view answers from the first of:
 
 1. **The platform API,** for packages that a module of the platform owns (B1's `PlatformApi`).
-   The design assumes other entries can't add types to those packages; what javac does with a
-   source file or a classpath class in `java.lang` is an observation still to make.
+   Nothing else can add types to those packages: javac reports a source file in `java.lang` as
+   `package exists in another module: java.base`, and finds neither it nor a jar's
+   `java/lang/Foo.class` (observation 4).
 2. **S's own sources,** every source root and generated-source root. A source type shadows any
    class file of the same name: javac does the same for the files it compiles (observation 2).
 3. **S's classpath, in order:** each entry is a jar, a directory, or another source set, which is
@@ -160,8 +165,15 @@ For a type name `p.T` in a source set S, the view answers from the first of:
    (observed in B1).
 
 Packages exist if any of these has a type in them or, for sources, a file declares them. Packages of
-the platform that aren't exported to everyone aren't visible (B1), but their classes still resolve
-as supertypes of visible classes.
+the platform that the reading module can't see (B1's `is_visible` for the unnamed module, see
+[Modules](#modules) for a named one) give an error symbol for a type named in them, `not visible`,
+but their classes still resolve as supertypes of visible classes and as class files' names.
+
+As built (`ferrion_semantic::view`), a lookup by package and simple name reads only that type's
+part of the package entries it consults, so a new type in a package reaches only the lookups of
+its name. A class file's names are binary names, resolved in the reader's view by
+`Snapshot::resolve_binary`: the platform for its packages, then own sources (trying each way to
+split the name at `$` into a top-level type and members), then the classpath.
 
 ### Duplicates
 
@@ -179,6 +191,12 @@ A source set that depends on another (test on main, a module on its sibling) rea
 the dependency's summaries, through its own view. A dependency's type is resolved in the
 dependency's view, not the dependent's: `main`'s `Foo extends Bar` means `main`'s `Bar` even if
 `test` declares its own.
+
+javac differs here (observation 5): it compiles `test` as one namespace, with `main` on
+`-sourcepath` or as classes, so `m.Bar` is `test`'s everywhere in that compilation, `main`'s
+`Foo` included. Ferrion keeps the design, so that a dependency's types are resolved once and
+shared by every source set that reads them; a test source set that redeclares a type of the
+source set it tests is rare, and the javac comparison lists it as a known difference.
 
 Dependencies are acyclic in the project model; a cycle is a usage error (see
 [inputs](project-inputs.md#validation)).
@@ -208,7 +226,17 @@ All code is in the unnamed module until a source set has a `module-info.java`:
   `requires` and `import module` find them.
 - **`import module M`** (JLS 7.5.5) imports the public top-level types of every package that M
   exports to the current module, and of the modules M `requires transitive`. A compact compilation
-  unit imports `java.base` this way implicitly (JLS 7.3).
+  unit imports `java.base` this way implicitly (JLS 7.3). M must be read: in the unnamed module, a
+  module outside the default set is `unnamed module does not read: jdk.incubator.vector`
+  (observation 6).
+
+As built: a source set's module is a derived entry read from its `module-info.java` (found through
+the package index, which lists the files in no package). A named module's platform packages are
+visible when it reads their module (from the platform's descriptors, with `requires transitive`
+followed) and that module exports them to everyone or to it. Classpath and module path packages
+are always visible. `import module` finds a platform module, a source set's own or a
+dependency's module by its `module-info.java` (its `exports`), or a module path jar by its
+recorded name (all of its packages, leniently).
 
 ## Resolving names
 
@@ -237,11 +265,28 @@ A simple type name `T` at a point resolves to the first match, innermost first (
    on-demand imports, and ambiguous only when two module imports give different types
    (observation 3).
 
+Observed details (observation 7), as built in `ferrion_semantic::resolve`:
+
+- In a class's body, a member type wins over a type parameter of the same name; in the class's
+  header (type parameters, `extends`, `implements`, `permits`), its own members aren't in scope,
+  so the type parameter, or a top-level type of the name, is found.
+- An inherited member type wins over a single-type import, and a member type the inner class
+  inherits wins over one its outer class declares.
+- A single-type import wins over the same package, and the same package over an on-demand import.
+- A static-import-on-demand and a type-import-on-demand giving two types of a name are ambiguous
+  where the name is used, and fine while it isn't.
+- A single-static import brings in a member type of its name.
+
 A qualified type name `Q.T` resolves `Q` as a package or type name first (JLS 6.5.4, 6.5.5):
 `T` is then a member type of type `Q`, declared or inherited, or a top-level type of package `Q`.
+A type obscures a package of the same name (observation 7). An import names a type by its
+canonical name, so its first segment is a package. Members of a type variable (`T.In`, which javac
+accepts through `T`'s bound) are left to B3, and are an error symbol in B2.
 
 Access isn't checked in B2, except where JLS makes it part of what is found: a private member type
-isn't inherited (8.5), and a type in an unexported package isn't visible.
+isn't inherited (8.5), nor is a package-access one in another package, and a type in an unexported
+package isn't visible. javac finds the private member and reports `X has private access`; with
+another `X` imported, it uses the import (observation 7), as Ferrion does.
 
 ### Ambiguous names and obscuring
 
@@ -282,6 +327,22 @@ member types of enclosing classes and their supertypes. So:
   computation](semantic-incremental.md#project-symbols));
 - a type whose supertype resolution reaches itself is a cycle: every type in the cycle gets an
   error supertype in its place, and an incomplete hierarchy;
+
+As built, a source type's supertypes are resolved erased, in an entry of their own, before
+anything that needs members: the classes named in `extends` and `implements`, without their type
+arguments. A member type lookup in a type needs its supertypes, so `class A extends A.B { static
+class B {} }` reads itself and is a cycle, as javac reports (`cyclic inheritance involving A`,
+observation 8), while `class S implements Supplier<S.In>` is not, since type arguments are resolved
+with the rest of the type's entry. To find a cycle through supertypes alone (`P extends Q`, `Q
+extends P`), a type's supertypes entry reads its source supertypes' supertypes entries. A cycle is
+found by the engine's tracking of entries in progress
+([incremental computation](semantic-incremental.md#project-symbols)), and every entry found in it
+gives its cyclic value.
+
+Member types are an entry per type and view: the declared ones, each with who can inherit it, and
+the inherited ones, hidden by a declared one of the name; one inherited as two different types is
+ambiguous, and the same type by two paths is one (observation 7). The entry is incomplete when a
+supertype doesn't resolve, is cyclic, or is incomplete itself.
 - a type with any supertype that doesn't resolve, or that has an incomplete hierarchy, has an
   incomplete hierarchy (SCOPE.md): rules treat its members, overrides, and subtyping as unknown,
   and member lookups that find nothing in it give an error symbol rather than "not found".
@@ -292,8 +353,15 @@ A class file gives its binary name, flags, supertypes (`Signature` when present,
 `super_class` and `interfaces`), its fields and methods (synthetic and bridge members left out),
 its member types and its outer class from `InnerClasses`, and its record components and permitted
 subclasses. Member types are looked up through `InnerClasses`, never by splitting a binary name at
-`$`, since `$` is legal in names. A class file that's malformed gives an error symbol with B1's
-error as the root cause.
+`$`, since `$` is legal in names: `p.A$B` names a top-level class `A$B`, and `p.A.B` isn't it
+(observation 9). A class file that's malformed gives an error symbol with B1's error as the root
+cause.
+
+As built, a class file is read once into a class entry (`ferrion_semantic::symbols::ClassEntry`):
+its flags (an `InnerClasses` entry's for a member), simple name and outer class, type parameters,
+erased and generic supertypes, member types, fields, and methods with their generic signatures,
+names as binary names. It is the same for every view; whoever reads it resolves its names in its
+own view. A part that is malformed is left out, and the first problem kept.
 
 ## Errors and incompleteness
 
@@ -302,8 +370,33 @@ error as the root cause.
   file). Names whose resolution reads an error symbol get error symbols that point at the same root
   cause, so B5 reports one diagnostic.
 - Lombok-annotated types (any annotation from `lombok`) have incomplete hierarchies until B4.
+
+As built, an error symbol is the name as written and a cause: not found; no such package (`package
+nope does not exist`); ambiguous, with the candidates; not visible; a module not read, or none of
+the name; a cycle; nothing found in an incomplete hierarchy, with the type; a class file that
+couldn't be read; syntax; or a qualified name of more than 1,024 segments, of which only the first
+1,024 are resolved, since each prefix of a name is a name of its own and resolving them all costs
+the square of the name's length (the parser's stress patterns have 100,000; no Java code has
+packages that deep). Where is known by what holds it: a type entry's errors are its
+header's, listed once each, and a file's names are by node. A name qualified by one that failed
+holds the same error. Lombok is decided by the type entry: an annotation on the type or one of its
+fields that resolves to a type in a `lombok` package. A subclass of a Lombok type isn't made
+incomplete by it.
 - Syntax errors: names in a subtree with an error node resolve as usual where they can; a missing
   name is an error symbol with "syntax" as its cause.
+
+## Names in declarations
+
+For the javac comparison to start on declarations before W5 resolves bodies, every name outside
+bodies has a resolution per file, keyed by `NodeId` of the file's current tree with its byte range
+(`ferrion_semantic::decl_names`): the package declaration, imports, the module declaration,
+annotations on declarations and their element names, type parameter bounds, `extends`,
+`implements`, and `permits`, field and record component types, method and constructor signatures,
+and `throws`. Each `Name` and `ClassType` node is one name, so `java.util.List` gives the packages
+`java` and `java.util` and the type. Each resolves to a symbol (a package, module, type, type
+variable, annotation element, or a single-static import's member name) or an error symbol, and
+`Snapshot::symbol_key` gives the key of semantic.md's table: the exchange with W3's oracle is left
+for integration.
 
 ## What B2 leaves to B3
 
@@ -320,7 +413,8 @@ the start, and compared from B3.
 ## Observations
 
 Run with Temurin 27.0.1's `javac`, in a scratch directory. Each is a test in `ferrion_semantic`
-once resolution exists.
+(`tests/resolution/*.case`, resolved against a stand-in platform with the JDK's names, and each
+case's files run through javac when written).
 
 1. **Duplicate classes.** `r1/p/A.java` and `r2/p/A.java` both declare `public class p.A`, with
    different methods, and `r1/p/U.java` calls `A.one()`, which only the first declares.
@@ -338,18 +432,51 @@ once resolution exists.
 3. **Module imports** (`--release 27`). With `import module java.base;`, a same-package class
    `x.List` is used for `List` with no error, and so is `java.awt.List` with an added
    `import java.awt.*;`. With `import module java.base;` and `import module java.desktop;`, javac
-   reports `reference to List is ambiguous` (`java.awt.List` and `java.util.List`).
-
-Still to observe before the behavior is implemented, each as a small input:
-
-- a source type in a package the platform owns (`java.lang.Foo` in the unnamed module), and a
-  classpath jar with one;
-- a class whose type parameter and member type have the same name, used in its body;
-- an inherited member type and a same-named type from a single-type import, used in a subclass;
-- a static-import-on-demand and a type-import-on-demand giving two types of the same name;
-- `import module` of a module the unnamed module doesn't read by default (`jdk.incubator.vector`
-  at release 21);
-- `import` of a type in an unexported platform package (`jdk.internal.misc.Unsafe`), and the
-  message javac gives;
-- a supertype cycle through a member type (`class A extends B.C {}`, `class B extends A { class C
-  {} }`): javac's error and which uses it reports.
+   reports `reference to List is ambiguous` (`java.awt.List` and `java.util.List`). In a compact
+   unit, `import java.awt.*;` and `List l;` is `java.awt.List` over the implicit module import.
+4. **The platform's packages.** `src/java/lang/Foo.java` (`package java.lang; public class Foo`)
+   and `src/u/U.java` with a field `java.lang.Foo f`: `javac -d out src/java/lang/Foo.java
+   src/u/U.java` reports `package exists in another module: java.base` and `cannot find symbol`
+   for the field. With `Foo` compiled into `foo.jar` (`javac --patch-module java.base=jarsrc`),
+   `javac -cp foo.jar -d out src/u/U.java` reports `cannot find symbol`: a package the platform
+   owns has only the platform's classes.
+5. **Dependent source sets.** `main` declares `m.Bar` (`fromMain()`) and `m.Foo extends Bar`;
+   `test` declares its own `m.Bar` (`fromTest()`) and `t.T`, which calls `foo.fromMain()` on an
+   `m.Foo`. `javac --release 21 -implicit:none -sourcepath main -d out test/m/Bar.java
+   test/t/T.java` reports `cannot find symbol: method fromMain()`, and so does compiling `test`
+   against `main`'s classes: in `test`'s compilation, `main`'s `Foo extends Bar` is `test`'s `Bar`.
+   Ferrion resolves `main`'s types in `main`'s view by design (see
+   [Dependent source sets](#dependent-source-sets)).
+6. **Module imports and readability.** `import module jdk.incubator.vector;` with a use of
+   `VectorSpecies`: `javac --release 21` reports `module imports are not supported in -source 21`;
+   `--release 25` reports `unnamed module does not read: jdk.incubator.vector`; with
+   `--add-modules jdk.incubator.vector` it compiles. In a named module, `requires java.sql` makes
+   `java.sql`, `javax.xml`, and `java.util.logging` readable (`requires transitive`), and
+   `java.awt.List` is `package java.awt is not visible`. `import jdk.internal.misc.Unsafe;`, single
+   or on demand, is `package jdk.internal.misc is not visible` in the unnamed module at release 27,
+   and `package jdk.internal.misc does not exist` at `--release 21`, whose `ct.sym` doesn't have
+   the package; javac gives either message for the same import depending on what else it compiles
+   with it. `import nope.*;` and `import nope.Missing;` are `package nope does not exist`.
+7. **Scopes and shadowing**, each compiling unless said: `class A<T> { static class T { void
+   member() {} } T field; T method(T p) { p.member(); return p; } }` (the member type wins in the
+   body); `class A<T> extends java.util.ArrayList<T> { class T {} }` used as `String s =
+   a.get(0)` (the type parameter in the header); `class A extends B { static class B {} }` with a
+   top-level `B` (the top-level `B`, whose method `a.top()` resolves), and alone, `cannot find
+   symbol`; `class Sub extends p.Base { Entry e; }` with `import java.util.Map.Entry;` (`Base`'s
+   member wins); `import java.util.List;` in package `p` with a `p.List` (the import wins);
+   `import java.util.*;` with a `p.List` (the package wins); `import static p.Holder.*;` (a member
+   `List`) with `import java.util.*;` and a use of `List`: `reference to List is ambiguous`, and
+   no error when unused; two interfaces with a member `X` and a class implementing both:
+   `reference to X is ambiguous` when used, none when not, and none when the second interface
+   inherits the first's `X`; a private member type `X` of a superclass: `X has private access in
+   B`, or the imported `p.X` when one is imported; an inner class's inherited `X` over its outer
+   class's `X`; `import p.p; ... p.q.Z z;` with a type `p.p` having a member `q.Z` and a package
+   `p.q` with a `Z`: the type's (types obscure packages); `class A<T extends A.Holder> { ... T.In
+   x; }`: compiles (members through a bound).
+8. **Supertype cycles.** `class A extends B.C {}` and `class B extends A { class C {} }`, with
+   `class D extends A {}` and `class E { A a; B.C c; }`: `cyclic inheritance involving B`, once,
+   whichever file is first, and nothing for `D` and `E`. `class A extends A.B { static class B {} }`
+   and `interface I extends I.J { interface J {} }` are cyclic; `class A implements
+   java.util.function.Supplier<A.In> { ... static class In {} }` compiles.
+9. **Binary names with `$`.** A library with a top-level `p.A$B` (with a member `C`) and a `p.A`:
+   `p.A$B ab; p.A$B.C c;` compiles, and `p.A.B b;` is `cannot find symbol`.

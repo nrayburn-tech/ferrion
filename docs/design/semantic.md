@@ -44,13 +44,22 @@ ferrion_semantic    the engine, summaries, views, symbols, and resolution
 - `resolve`: name contexts, scopes, and the lookups of [names](semantic-names.md#resolving-names);
 - `body`: the walk over bodies, local scopes, and pattern binding scopes.
 
+As built in W4, beside `engine`, `summary`, and `packages`: `names` (the interner, and types'
+paths), `input` (the inputs, and `ProjectInput::from_project`), `classes` (class sources, their
+listings, and class files read as class entries), `view` (lookups by name, packages, modules),
+`symbols` (keys, resolved types, error symbols, and the entries' values), `resolve` (file scopes,
+the lookups, and the supertypes, member types, and type entries), `decl_names` (each file's names
+in declarations, and their keys for the javac comparison), and `testing` (a stand-in platform and
+resolution cases, for tests and the fuzz target). `body` is W5's.
+
 ```rust
 /// One per process. Holds the inputs and every memo table.
 pub struct Engine;
 impl Engine {
-    /// `ProjectInput` is the engine's own input struct (source sets: name, release, dependencies
-    /// in classpath order, files with text and a generated flag), built from
-    /// `ferrion_project::Project`. W4 adds the opened class paths and platforms.
+    /// `ProjectInput` is the engine's own input struct (source sets: name, release, classpath in
+    /// order of other source sets and opened jars and directories, platform API, files with text
+    /// and a generated flag), built from `ferrion_project::Project` and its `TypeInputs` by
+    /// `ProjectInput::from_project`.
     pub fn new(input: ProjectInput) -> Engine;
     /// Bumps the revision and replaces the text. Never waits for running work.
     pub fn set_text(&self, file: FileId, text: Arc<str>);
@@ -77,10 +86,25 @@ impl Snapshot {
         each: impl Fn(FileId) -> Result<(), Cancelled> + Sync,
     ) -> Result<(), Cancelled>;
 
-    // W4 and W5:
-    pub fn type_entry(&self, ty: TypeRef) -> Result<Arc<TypeEntry>, Cancelled>;
-    pub fn resolve_type_name(&self, set: SourceSetId, binary_name: &str)
-        -> Result<Resolution, Cancelled>;
+    // Built in W4:
+    pub fn run_symbols(&self, threads: usize) -> Result<Vec<FileId>, Cancelled>;
+    pub fn type_key(&self, file: FileId, index: usize) -> Result<TypeKey, Cancelled>;
+    pub fn supertypes(&self, ty: TypeKey) -> Result<Option<Arc<Supertypes>>, Cancelled>;
+    pub fn member_types(&self, view: SourceSetId, ty: TypeKey)
+        -> Result<Arc<MemberTypes>, Cancelled>;
+    /// A source type's resolved header; a class file's is its `class_entry`.
+    pub fn type_entry(&self, ty: TypeKey) -> Result<Option<Arc<TypeEntry>>, Cancelled>;
+    pub fn class_entry(&self, ty: TypeKey) -> Option<Arc<ClassEntry>>;
+    pub fn resolve_type_name(&self, set: SourceSetId, canonical: &str)
+        -> Result<TypeResolution, Cancelled>;
+    pub fn resolve_binary(&self, view: SourceSetId, binary: Name)
+        -> Result<Option<TypeKey>, Cancelled>;
+    pub fn module_view(&self, set: SourceSetId) -> Result<Arc<ModuleView>, Cancelled>;
+    /// Every name in the file's declarations resolved, keyed by `NodeId` of its tree.
+    pub fn decl_names(&self, file: FileId) -> Result<Arc<FileNames>, Cancelled>;
+    pub fn symbol_key(&self, symbol: &Symbol) -> Result<SymbolKey, Cancelled>;
+
+    // W5:
     /// Every name in the file resolved, keyed by `NodeId` of `tree`.
     pub fn names(&self, file: FileId) -> Result<Arc<FileNames>, Cancelled>;
 }
@@ -89,9 +113,14 @@ impl Snapshot {
 Dependencies: `ferrion_syntax` and `ferrion_parser` (the engine parses), `ferrion_lexer` (names
 with Unicode escapes translated), `ferrion_classfile` and `ferrion_diagnostics` (from W4), and
 `ferrion_stack` for the few recursive steps (body walks use the tree's flat pre-order walk with an
-explicit scope stack, so deep nesting doesn't recurse). Not `ferrion_project`: the engine takes
-its own small input struct, which the CLI and language server build from a project. No new external crates; fingerprints use the standard library's `DefaultHasher`, whose
-fixed keys make them repeatable within a process. They aren't persisted.
+explicit scope stack, so deep nesting doesn't recurse). The engine takes its own small input
+struct, so it doesn't depend on how a project is loaded; as built, the adapter that makes one from
+a `ferrion_project::Project` lives in `ferrion_semantic::input` too, which makes
+`ferrion_project` a dependency (a deviation from the plan, which put the adapter in the CLI and
+language server; one adapter beside the input it builds is simpler, and `ferrion_project` brings
+only `ferrion_classfile`, `ferrion_java_version`, and serde, which the workspace has already). No
+new external crates; fingerprints use the standard library's `DefaultHasher`, whose fixed keys
+make them repeatable within a process. They aren't persisted.
 
 ## Verification
 

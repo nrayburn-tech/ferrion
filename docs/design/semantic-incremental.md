@@ -213,9 +213,19 @@ use computes them again. `add_file`, `remove_file`, and `set_release` work the s
 change gives each of the source set's files a new version.
 
 The engine is given its inputs as `ferrion_semantic::ProjectInput`: source sets with a name, a
-release, the source sets they read from source in classpath order, and files with their text and
-whether they are generated. The CLI and language server build it from `ferrion_project::Project`,
-so the engine doesn't depend on how a project is loaded.
+release, a classpath in order (other source sets, read from source, and opened jars and
+directories, each with its path and, for the module path, its module name), a platform API, and
+files with their text and whether they are generated. `ProjectInput::from_project` builds it from a
+`ferrion_project::Project` and its opened `TypeInputs`, reading every `.java` file under each
+source set's roots; tests build it directly, with a stand-in platform
+(`ferrion_semantic::testing`). The platform is anything that implements the engine's `Platform`
+trait, which B1's `PlatformApi` does.
+
+As built, the classpath entries and platforms of every source set are numbered across the engine
+as class sources when it is made (a jar or platform that several source sets share is one), and
+don't change while it runs: a changed classpath, or a jar rebuilt on disk, makes a new engine.
+What is read from a class source (a package's listing, and each class file read as a class entry)
+is cached without dependencies and never verified.
 
 ### File summaries
 
@@ -261,8 +271,41 @@ were read, stopping at the first that differs. A result finished at a revision t
 moved is still stored, with what it read, and is verified like any other at the next revision, so
 work that the change didn't affect isn't lost. Verification recurses through entries that read
 entries, on `ferrion_stack::ensure_stack`, so a long chain of type entries can't overflow the
-stack. Entries can't yet detect a computation that reads itself; type entries (W4) need that for
-supertype cycles.
+stack.
+
+The project symbols as built in W4, each a kind of derived entry:
+
+- **A file scope** per file: its summary, each of its types' keys, and indexes by key, top-level
+  name, and outer type, made in one pass over the summary, so that a scope inside a type nested
+  ten thousand deep costs nothing more than one at the top. Its fingerprint is the summary's.
+- **A module** per source set, from its `module-info.java`, which the package index lists.
+- **Supertypes** per source type: the classes its `extends` and `implements` clauses name,
+  erased, and whether it is in a cycle.
+- **Member types** per type and view (a source type's own set): declared and inherited.
+- **A type entry** per source type: its header resolved, with the root causes of its errors.
+- **Names in declarations** per file, keyed by `NodeId` of the tree they were resolved on.
+
+A lookup by package and simple name reads one type of a package entry (`Dep::PackageType`), not
+the whole entry, so a type added to a package reaches only the lookups of its name: with whole
+package entries, lucene's "top-level class added" recomputed 1,916 type entries (all cut off),
+and with one type, 1 or 2. A computation that resolves many names reads the same entries again and
+again, and keeps each dependency once.
+
+**Cycles.** The kinds of entry that can read themselves (supertypes, which read the member types
+of the types their clauses qualify, which read their supertypes) are tracked while verified or
+computed, on a stack per thread. A request for one already on the stack is a cycle: it reads as
+`Fingerprint::CYCLE`, and every entry on the stack from that one up learns the cycle's entries.
+Each such supertypes entry gives error supertypes and records the source types of its cycle; a
+type whose source supertype's cycle names it is in that cycle too, so the result is the same
+whichever type of the cycle was asked for first, or verified first after an edit (the
+differential check found the case where it wasn't, before the cycle's types were recorded). A
+member types entry in a cycle leaves out what it can't read and is incomplete. A cycle found is
+one record shared by every entry on the stack in it, and its types one shared list, so a cycle of
+n types costs O(n) memory; each entry's fingerprint still hashes the list, so its time is
+quadratic, which the tests keep to 2,000 types. An entry that saw
+a cycle has recorded `CYCLE`, which no entry has, so it is computed again at every revision;
+cycles are rare and small. Tracking is per thread, so threads in the same cycle never wait for
+each other.
 
 ### Body results
 
@@ -274,6 +317,9 @@ them for every file it lints, in the last phase.
 
 Body results are the largest derived data after trees, so the language server keeps them for open
 files and drops the rest after use; the CLI drops each file's after its rules have run.
+
+Names in declarations (W4) are kept the same way: `run_batch` drops each file's after its callback
+has run. Kept for every lucene file, they took 57 MB, more than the summaries.
 
 ### Trees
 
@@ -292,9 +338,10 @@ about 360 MB allocated).
   the type entries its bodies need and resolve the bodies. Files are handed out by an atomic
   counter, as in the prototype, to scoped threads started for each phase; with one thread, a phase
   runs on the calling thread. Source sets are processed together, so a dependent source set's
-  summaries exist before its dependents' bodies run. `Snapshot::run_batch` runs the summary and
-  package table phases, then a callback per file in reverse order; W4 and W5 add their phases
-  before the callback.
+  summaries exist before its dependents' bodies run. `Snapshot::run_batch` runs the summary,
+  package table, and type entry phases (`Snapshot::run_symbols`, which a language server runs
+  after an edit), then, per file in reverse order, its names in declarations and a callback; W5
+  adds the names in bodies.
 - **Language server:** a writer (the message loop) applies edits and bumps the revision; requests
   run on a pool and hold `Arc`s to what they read. A request started at revision N that sees N+1
   stops and is retried or answered with "content modified", as LSP allows.
@@ -361,6 +408,39 @@ Cancellation, at 5%, 10%, ... 95% of a cold run on four threads: the setter retu
 14 µs, and the run stopped in a median of 0.5 ms (0.7 ms with trees dropped); the slowest three
 took 18, 39, and 54 ms, each a parse in flight of one of lucene's largest files.
 
+### With project symbols (W4)
+
+Measured after W4 on lucene through its lock file, with its jars and JDK 27's platform API at each
+source set's release: 79 source sets, 5,968 files, 50.3 MB, 8,688 source types, 788 class files
+read. A cold run is `run_batch`: summaries, package tables, every type's supertypes, member types,
+and entry, and every file's names in declarations. Release build, on the shared machine.
+
+| Cold run | 1 thread | 4 | 8 | Kept after | Peak |
+| --- | --- | --- | --- | --- | --- |
+| trees dropped (cache of 0 bytes) | 2.27 s | 1.00 s | 1.36 s | 79 MB | 91 MB |
+| tree cache 256 MB | | 0.75 s | | 323 MB | 324 MB |
+
+With trees dropped, every file is parsed twice (11,936 parses), the second time for its names in
+declarations. The 79 MB kept are the summaries and package tables' 36 MB, and 43 MB of file
+scopes, supertypes, member types, type entries, the class entries of the 788 class files read,
+and 60,761 distinct names. Before each computation kept each dependency once and the batch dropped
+each file's names after its callback, the same run kept 144 MB.
+
+After a cold run on four threads, `AbstractDocIdSetIterator.java` was edited, everything
+project-wide brought up to date (`run_symbols` on four threads), and the file's names resolved
+again, then undone the same way, three times each:
+
+| Edit | Time | Work |
+| --- | --- | --- |
+| The same text again | 16 to 20 ms | 1 parse and summary (cut off); everything else verified |
+| Statement added to a method body | 17 to 21 ms | the same |
+| Method renamed | 15 to 20 ms | 1 summary changed; the file's scope, and its types' supertypes and member types, computed and cut off; 1 type entry changed |
+| Top-level class added | 18 to 20 ms | also 1 index computed (cut off), 1 package entry computed, and the new type's entries |
+| `implements java.lang.Cloneable` added to a class | 16 to 25 ms | the file's 16 supertypes entries computed, 1 changed; its member types computed and cut off; 1 type entry changed; nothing in other files |
+
+Nearly all of each edit's time is verifying what didn't change: 5,968 summaries, about 3,700
+package entries, 8,800 supertypes, 9,400 member types, and 8,700 type entries.
+
 ## Checking the engine
 
 A dependency the engine fails to record would make it reuse a stale result. The check is
@@ -371,16 +451,19 @@ differential:
   each, compares every body result and type entry with a fresh engine's. A fuzz target does the
   same on corpus-derived inputs.
 
-  As built, `ferrion_semantic::invariants::check_edits` does this for summaries and package
-  tables, on a project of two source sets, with edits chosen from bytes: a fragment inserted at a
-  token, a token deleted or renamed, a statement added to a body, the same text set again, a file
-  added or removed, and a release changed. After each edit it asks only some questions, chosen
-  from the bytes, so that entries go unverified across several revisions, and checks each
-  entry's stored fingerprint against its value. The tests run it from seeds, with a batch at the
+  As built, `ferrion_semantic::invariants::check_edits` does this for summaries, package
+  tables, and, from W4, each file's type entries (with their supertypes and member types) and
+  names in declarations, compared as text with a fresh engine's, on a project of two source sets
+  on the stand-in platform, with edits chosen from bytes: a fragment inserted at a token
+  (supertypes, member types, and imports among them), a token deleted or renamed, a statement
+  added to a body, the same text set again, a file added or removed, and a release changed. After
+  each edit it asks only some questions, chosen from the bytes, so that entries go unverified
+  across several revisions, and checks each entry's stored fingerprint against its value. The tests run it from seeds, with a batch at the
   old revision running while each edit lands, and with a deeply nested file; the
   `semantic_edits` fuzz target runs it on fuzzer-chosen bytes, from seeds of small files of each
   kind rather than corpus files, whose licenses vary. Leaving out one recorded dependency (a
-  file's top-level part, read by the package table) makes each of the three tests fail.
+  file's top-level part, read by the package table) makes each of the three tests fail, and so
+  does leaving out the one a lookup by name records (W4).
 - **Corpus:** `oracle-check` runs the comparison with javac twice, once from a cold engine and once
   after replaying each file as an edit, and the results must be identical.
 
