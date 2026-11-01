@@ -1,0 +1,20 @@
+[package]
+name = "format-check"
+description = "Checks the formatter on the corpus."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+corpus.workspace = true
+ferrion_diagnostics.workspace = true
+ferrion_parser.workspace = true
+
+[target.'cfg(unix)'.dependencies]
+nix.workspace = true
+
+[lints]
+workspace = true
