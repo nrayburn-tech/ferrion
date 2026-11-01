@@ -50,6 +50,19 @@ class MemberComments {
   class EmptyWithLineComment { // Alone in the body.
   }
 
+  @A
+  /** A doc comment after an annotation. */
+  void q() {}
+
+  // A line comment before an annotation.
+  @A // A line comment after it.
+  // A line comment before the method.
+  void r() {}
+
+  void s(
+      /** A doc comment before a parameter. */
+      int a) {}
+
   class Last {
     int x; // A trailing comment, then blank lines before the brace.
   }
