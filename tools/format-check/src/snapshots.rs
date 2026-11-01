@@ -25,10 +25,6 @@ const EXPECTED: &str = ".formatted.java";
 /// `.java`, with the reason.
 const NOT_GJF: &[(&str, &str)] = &[
     (
-        "core/blank-lines",
-        "the first rule's output, until the construct rules land",
-    ),
-    (
         "core/comments",
         "the first rule's output, until the construct rules land",
     ),
