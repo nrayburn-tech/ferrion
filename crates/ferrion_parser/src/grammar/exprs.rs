@@ -31,7 +31,7 @@ use ferrion_syntax::token_sets;
 use crate::SyntaxKind::{self, *};
 use crate::diagnostic::{Expected, ParseDiagnosticKind};
 use crate::grammar::types::{self, PRIMITIVE};
-use crate::grammar::{IDENT, decls, numbers, patterns, stmts};
+use crate::grammar::{IDENT, decls, eat_name, nth_at_name, numbers, patterns, stmts};
 use crate::parser::{CompletedMarker, Marker, Parser, TokenSet};
 
 const LITERAL: TokenSet = TokenSet::new(token_sets::LITERAL);
@@ -877,7 +877,7 @@ enum ParenKind {
 /// At `(`: whether it starts a lambda, a cast, or a parenthesized expression, from the tokens
 /// after it. Where the reading is ambiguous, this follows javac's, as observed with the oracle:
 ///
-/// - `()`, `(a, b`, `(T a`, `(final`, and `(T... a` start lambdas, as does `(a) ->`;
+/// - `()`, `(a, b`, `(T a`, `(final`, `(T... a`, and `(void v` start lambdas, as does `(a) ->`;
 /// - `(a<b> c)` is a comparison unless `->` follows it, since `a < b > c` is an expression;
 /// - `(T) x`, `(int) -x`, and `(A & B) x` are casts. A cast to a type that could be an
 ///   expression (`(a)`, `(a.b)`, `(a & b)`) needs an operand that can't continue an expression,
@@ -914,11 +914,15 @@ fn classify_paren(p: &Parser<'_>) -> ParenKind {
             return cast_if_operand(p, scan.end + 1);
         }
     }
+    // `(void v) ->`: javac parses the parameter, and rejects its type later.
+    if p.nth(1) == VoidKw && (p.nth_at_set(2, IDENT) || p.nth(2) == Ellipsis) {
+        return Lambda;
+    }
     let Some(scan) = types::scan_type_info(p, 1, usize::MAX) else {
         return Parenthesized;
     };
     let next = scan.end;
-    if p.nth_at_set(next, IDENT) {
+    if nth_at_name(p, next, false) {
         if scan.ends_with_type_arguments && p.nth(next + 1) == RParen && p.nth(next + 2) != Arrow {
             return Parenthesized;
         }
@@ -1052,12 +1056,34 @@ fn lambda_parameter(p: &mut Parser<'_>) -> Option<bool> {
         p.bump();
         varargs.complete(p, Varargs);
     }
-    if p.at_set(IDENT) {
-        p.bump();
-    } else {
+    if !eat_name(p, false) {
         p.error_expected(Expected::Identifier);
+    } else if let Some(this) = qualified_this_after_name(p) {
+        // `(A a.this) ->`: javac reads a receiver parameter's name, which a lambda can't have.
+        for _ in 0..this {
+            p.bump();
+        }
+        let span = p.nth_span(0);
+        p.error(ParseDiagnosticKind::MisplacedReceiver, span, span.start);
+        p.bump();
     }
     types::dims(p);
     m.complete(p, LambdaParameter);
     Some(true)
+}
+
+/// After a parameter's name, at `.`: if names and a `this` follow (`.b.this`), how many tokens
+/// come before the `this`.
+fn qualified_this_after_name(p: &Parser<'_>) -> Option<usize> {
+    let mut n = 0;
+    while p.nth(n) == Dot {
+        if p.nth(n + 1) == ThisKw {
+            return Some(n + 1);
+        }
+        if !p.nth_at_set(n + 1, IDENT) {
+            return None;
+        }
+        n += 2;
+    }
+    None
 }

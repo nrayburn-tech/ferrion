@@ -155,6 +155,9 @@ fn syntax_code(kind: Kind, release: u32) -> &'static str {
         Kind::IntTooLarge => "int.number.too.large",
         Kind::FloatTooLarge => "fp.number.too.large",
         Kind::FloatTooSmall => "fp.number.too.small",
+        Kind::KeywordAsName(SyntaxKind::AssertKw) => "assert.as.identifier",
+        Kind::KeywordAsName(SyntaxKind::EnumKw) => "enum.as.identifier",
+        Kind::KeywordAsName(_) => "this.as.identifier",
         // Never compared (`JavacPhase::Never`).
         Kind::NestingTooDeep => "nesting.too.deep",
         // The version check's kinds, by its own mapping. Only errors get here.

@@ -29,6 +29,42 @@ use ferrion_syntax::token_sets;
 /// An identifier, or `_` (an identifier at Java 8).
 pub(crate) const IDENT: TokenSet = TokenSet::new(token_sets::IDENT);
 
+/// What can follow a declaration's name: a variable's, a parameter's, or a method's.
+const AFTER_NAME: TokenSet = TokenSet::new(&[Semi, Eq, Comma, LBracket, RParen, LParen, Colon]);
+
+/// Whether the `n`th token ahead is a declaration's name: an identifier, or `assert` or `enum`
+/// (and with `this_too`, `this`) followed by what can follow a name. javac reads those keywords
+/// as the name and reports them, as `assert` and `enum` were names before Java 1.4 and 5. Before
+/// anything else (`int\nenum E {}`), the keyword starts what it usually does.
+pub(crate) fn nth_at_name(p: &Parser<'_>, n: usize, this_too: bool) -> bool {
+    p.nth_at_set(n, IDENT) || nth_at_keyword_name(p, n, this_too)
+}
+
+fn nth_at_keyword_name(p: &Parser<'_>, n: usize, this_too: bool) -> bool {
+    let keyword = matches!(p.nth(n), AssertKw | EnumKw) || this_too && p.nth(n) == ThisKw;
+    keyword && p.nth_at_set(n + 1, AFTER_NAME)
+}
+
+/// A declaration's name (see [`nth_at_name`]), reporting a keyword. Returns `false`, consuming
+/// nothing, if there is none.
+pub(crate) fn eat_name(p: &mut Parser<'_>, this_too: bool) -> bool {
+    if p.at_set(IDENT) {
+        p.bump();
+        return true;
+    }
+    if !nth_at_keyword_name(p, 0, this_too) {
+        return false;
+    }
+    let span = p.nth_span(0);
+    p.error(
+        ParseDiagnosticKind::KeywordAsName(p.current()),
+        span,
+        span.start,
+    );
+    p.bump();
+    true
+}
+
 /// Parses a whole file.
 pub(crate) fn compilation_unit(p: &mut Parser<'_>) {
     let m = p.start();

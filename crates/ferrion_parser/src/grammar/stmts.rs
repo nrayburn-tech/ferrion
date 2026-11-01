@@ -15,7 +15,7 @@ mod tests;
 
 use crate::SyntaxKind::{self, *};
 use crate::diagnostic::{Expected, ParseDiagnosticKind};
-use crate::grammar::{IDENT, decls, exprs, patterns, types};
+use crate::grammar::{IDENT, decls, eat_name, exprs, nth_at_name, patterns, types};
 use crate::parser::{CompletedMarker, Marker, NodeAnchors, Parser, TokenSet};
 use ferrion_syntax::token_sets;
 
@@ -211,7 +211,7 @@ fn at_sealed_modifier(p: &Parser<'_>, n: usize) -> bool {
 /// Whether a type followed by a name starts at the `n`th token ahead, as in a local variable
 /// declaration without modifiers. `void` never starts one.
 fn at_local_var_decl(p: &Parser<'_>, n: usize) -> bool {
-    p.nth(n) != VoidKw && types::scan_type(p, n).is_some_and(|after| p.nth_at_set(after, IDENT))
+    p.nth(n) != VoidKw && types::scan_type(p, n).is_some_and(|after| nth_at_name(p, after, false))
 }
 
 /// Whether a local class or interface (after its modifiers) starts here.
@@ -770,8 +770,7 @@ fn catch_parameter(p: &mut Parser<'_>) {
     if types::union_type(p).is_none() {
         type_expected(p);
     }
-    if p.at_set(IDENT) {
-        p.bump();
+    if eat_name(p, false) {
         types::dims(p);
     } else {
         p.error_expected(Expected::Identifier);

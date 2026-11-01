@@ -38,7 +38,12 @@ pub(crate) fn type_(p: &mut Parser<'_>) -> Option<CompletedMarker> {
         m.complete(p, PrimitiveType)
     } else if p.at(VoidKw) {
         p.bump();
-        m.complete(p, VoidType)
+        let void = m.complete(p, VoidType);
+        if at_dim(p) {
+            // `void[]`: javac takes `void` alone as a type, and expects a name after it.
+            p.error_expected(Expected::Identifier);
+        }
+        void
     } else {
         class_type_rest(p, m, false)?
     };

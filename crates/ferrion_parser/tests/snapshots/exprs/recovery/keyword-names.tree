@@ -1,0 +1,218 @@
+CompilationUnit 0..328 [error]
+  ClassDecl 0..327 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..18 "KeywordNames"
+    Whitespace 18..19 " "
+    ClassBody 19..327 [error]
+      LBrace 19..20 "{"
+      LineTerminator 20..21 "\n"
+      Whitespace 21..25 "    "
+      FieldDecl 25..40 [error]
+        PrimitiveType 25..32
+          BooleanKw 25..32 "boolean"
+        Whitespace 32..33 " "
+        VariableDeclarator 33..39 [error]
+          AssertKw 33..39 "assert"
+        Semi 39..40 ";"
+      LineTerminator 40..41 "\n"
+      Whitespace 41..45 "    "
+      FieldDecl 45..61 [error]
+        PrimitiveType 45..48
+          IntKw 45..48 "int"
+        Whitespace 48..49 " "
+        VariableDeclarator 49..50
+          Identifier 49..50 "a"
+        Comma 50..51 ","
+        Whitespace 51..52 " "
+        VariableDeclarator 52..60 [error]
+          EnumKw 52..56 "enum"
+          Whitespace 56..57 " "
+          Eq 57..58 "="
+          Whitespace 58..59 " "
+          LiteralExpr 59..60
+            IntLiteral 59..60 "0"
+        Semi 60..61 ";"
+      LineTerminator 61..62 "\n"
+      Whitespace 62..66 "    "
+      FieldDecl 66..78 [error]
+        ClassType 66..72
+          Identifier 66..72 "String"
+        Whitespace 72..73 " "
+        VariableDeclarator 73..77 [error]
+          ThisKw 73..77 "this"
+        Semi 77..78 ";"
+      LineTerminator 78..79 "\n"
+      Whitespace 79..83 "    "
+      MethodDecl 83..97 [error]
+        VoidType 83..87
+          VoidKw 83..87 "void"
+        Whitespace 87..88 " "
+        EnumKw 88..92 "enum"
+        FormalParameters 92..94
+          LParen 92..93 "("
+          RParen 93..94 ")"
+        Whitespace 94..95 " "
+        Block 95..97
+          LBrace 95..96 "{"
+          RBrace 96..97 "}"
+      LineTerminator 97..98 "\n"
+      Whitespace 98..102 "    "
+      MethodDecl 102..211 [error]
+        VoidType 102..106
+          VoidKw 102..106 "void"
+        Whitespace 106..107 " "
+        Identifier 107..108 "m"
+        FormalParameters 108..120 [error]
+          LParen 108..109 "("
+          FormalParameter 109..119 [error]
+            PrimitiveType 109..112
+              IntKw 109..112 "int"
+            Whitespace 112..113 " "
+            AssertKw 113..119 "assert"
+          RParen 119..120 ")"
+        Whitespace 120..121 " "
+        Block 121..211 [error]
+          LBrace 121..122 "{"
+          LineTerminator 122..123 "\n"
+          Whitespace 123..131 "        "
+          LocalVarDecl 131..144 [error]
+            PrimitiveType 131..134
+              IntKw 131..134 "int"
+            Whitespace 134..135 " "
+            VariableDeclarator 135..143 [error]
+              EnumKw 135..139 "enum"
+              Whitespace 139..140 " "
+              Eq 140..141 "="
+              Whitespace 141..142 " "
+              LiteralExpr 142..143
+                IntLiteral 142..143 "1"
+            Semi 143..144 ";"
+          LineTerminator 144..145 "\n"
+          Whitespace 145..153 "        "
+          TryStmt 153..205 [error]
+            TryKw 153..156 "try"
+            Whitespace 156..157 " "
+            Block 157..168
+              LBrace 157..158 "{"
+              LineTerminator 158..159 "\n"
+              Whitespace 159..167 "        "
+              RBrace 167..168 "}"
+            Whitespace 168..169 " "
+            CatchClause 169..205 [error]
+              CatchKw 169..174 "catch"
+              Whitespace 174..175 " "
+              LParen 175..176 "("
+              CatchParameter 176..192 [error]
+                ClassType 176..185
+                  Identifier 176..185 "Exception"
+                Whitespace 185..186 " "
+                AssertKw 186..192 "assert"
+              RParen 192..193 ")"
+              Whitespace 193..194 " "
+              Block 194..205
+                LBrace 194..195 "{"
+                LineTerminator 195..196 "\n"
+                Whitespace 196..204 "        "
+                RBrace 204..205 "}"
+          LineTerminator 205..206 "\n"
+          Whitespace 206..210 "    "
+          RBrace 210..211 "}"
+      LineTerminator 211..212 "\n"
+      Whitespace 212..216 "    "
+      FieldDecl 216..219 [error]
+        PrimitiveType 216..219
+          IntKw 216..219 "int"
+      LineTerminator 219..220 "\n"
+      Whitespace 220..224 "    "
+      EnumDecl 224..233
+        EnumKw 224..228 "enum"
+        Whitespace 228..229 " "
+        Identifier 229..230 "E"
+        Whitespace 230..231 " "
+        EnumBody 231..233
+          LBrace 231..232 "{"
+          RBrace 232..233 "}"
+      LineTerminator 233..234 "\n"
+      Whitespace 234..238 "    "
+      FieldDecl 238..268 [error]
+        ClassType 238..246
+          Identifier 238..246 "Runnable"
+        Whitespace 246..247 " "
+        VariableDeclarator 247..267 [error]
+          Identifier 247..248 "r"
+          Whitespace 248..249 " "
+          Eq 249..250 "="
+          Whitespace 250..251 " "
+          LambdaExpr 251..267 [error]
+            LambdaParameters 251..261 [error]
+              LParen 251..252 "("
+              LambdaParameter 252..260 [error]
+                ClassType 252..253
+                  Identifier 252..253 "A"
+                Whitespace 253..254 " "
+                Identifier 254..255 "a"
+                Dot 255..256 "."
+                ThisKw 256..260 "this"
+              RParen 260..261 ")"
+            Whitespace 261..262 " "
+            Arrow 262..264 "->"
+            Whitespace 264..265 " "
+            Block 265..267
+              LBrace 265..266 "{"
+              RBrace 266..267 "}"
+        Semi 267..268 ";"
+      LineTerminator 268..269 "\n"
+      Whitespace 269..273 "    "
+      FieldDecl 273..306
+        ClassType 273..281
+          Identifier 273..281 "Runnable"
+        Whitespace 281..282 " "
+        VariableDeclarator 282..305
+          Identifier 282..283 "s"
+          Whitespace 283..284 " "
+          Eq 284..285 "="
+          Whitespace 285..286 " "
+          LambdaExpr 286..305
+            LambdaParameters 286..299
+              LParen 286..287 "("
+              LambdaParameter 287..298
+                VoidType 287..291
+                  VoidKw 287..291 "void"
+                Whitespace 291..292 " "
+                Identifier 292..298 "unused"
+              RParen 298..299 ")"
+            Whitespace 299..300 " "
+            Arrow 300..302 "->"
+            Whitespace 302..303 " "
+            Block 303..305
+              LBrace 303..304 "{"
+              RBrace 304..305 "}"
+        Semi 305..306 ";"
+      LineTerminator 306..307 "\n"
+      Whitespace 307..311 "    "
+      FieldDecl 311..325 [error]
+        ArrayType 311..317 [error]
+          VoidType 311..315
+            VoidKw 311..315 "void"
+          Dim 315..317
+            LBracket 315..316 "["
+            RBracket 316..317 "]"
+        Whitespace 317..318 " "
+        VariableDeclarator 318..324
+          Identifier 318..324 "values"
+        Semi 324..325 ";"
+      LineTerminator 325..326 "\n"
+      RBrace 326..327 "}"
+  LineTerminator 327..328 "\n"
+  Eof 328..328 ""
+error 33..39 @33 KeywordAsName(AssertKw): 'assert' is a keyword and can't be a name
+error 52..56 @52 KeywordAsName(EnumKw): 'enum' is a keyword and can't be a name
+error 73..77 @73 KeywordAsName(ThisKw): 'this' is a keyword and can't be a name
+error 88..92 @88 KeywordAsName(EnumKw): 'enum' is a keyword and can't be a name
+error 113..119 @113 KeywordAsName(AssertKw): 'assert' is a keyword and can't be a name
+error 135..139 @135 KeywordAsName(EnumKw): 'enum' is a keyword and can't be a name
+error 186..192 @186 KeywordAsName(AssertKw): 'assert' is a keyword and can't be a name
+error 219..219 @219 Expected(Identifier): name expected
+error 256..260 @256 MisplacedReceiver: a receiver parameter ('this') can only be a method's first parameter
+error 315..315 @315 Expected(Identifier): name expected

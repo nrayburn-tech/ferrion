@@ -10,7 +10,7 @@
 use ferrion_diagnostics::Span;
 use ferrion_syntax::token_sets;
 
-use super::{IDENT, exprs, modules, name, stmts, types};
+use super::{IDENT, eat_name, exprs, modules, name, nth_at_name, stmts, types};
 use crate::SyntaxKind::{self, *};
 use crate::diagnostic::{Expected, ParseDiagnosticKind};
 use crate::parser::{CompletedMarker, Marker, Parser, TokenSet};
@@ -719,9 +719,7 @@ fn parameter(p: &mut Parser<'_>, first: bool, component: bool) -> Option<Span> {
         return None;
     }
     let name = p.nth_span(0);
-    if p.at_set(IDENT) {
-        p.bump();
-    } else {
+    if !eat_name(p, false) {
         p.error_expected(Expected::Identifier);
     }
     if at_dims(p) {
@@ -976,9 +974,8 @@ fn member(p: &mut Parser<'_>, body: &Body) {
         let ty = types::type_(p);
         let void = ty.is_some_and(|ty| ty.kind() == VoidType);
         // javac reads `void x` as a method, missing its parameters.
-        if generic || void || p.at(LParen) || p.at_set(IDENT) && p.nth(1) == LParen {
-            if p.at_set(IDENT) {
-                p.bump();
+        if generic || void || p.at(LParen) || nth_at_name(p, 0, true) && p.nth(1) == LParen {
+            if eat_name(p, true) {
                 if void && !p.at(LParen) {
                     // javac reports it at the token after the name.
                     types::expected_at_next(p, Expected::Token(LParen));
@@ -1129,12 +1126,12 @@ fn declarators(p: &mut Parser<'_>, initialized: bool) {
 }
 
 fn variable_declarator(p: &mut Parser<'_>, initialized: bool) {
-    if !p.at_set(IDENT) {
+    if !nth_at_name(p, 0, true) {
         p.error_expected(Expected::Identifier);
         return;
     }
     let m = p.start();
-    p.bump();
+    eat_name(p, true);
     types::dims(p);
     if p.eat(Eq) {
         if exprs::variable_initializer(p).is_none() {
