@@ -10,6 +10,7 @@
 use ferrion_syntax::ast::{AstNode, ClassType};
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
 
+use super::lists::{Shape, delimited};
 use super::variables::type_then_name;
 use super::{children, emit, first_token, generic};
 use crate::document::IndentKind;
@@ -17,7 +18,9 @@ use crate::format::Formatter;
 
 pub fn format<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     match node.kind() {
-        K::TypeParameters | K::TypeArguments => angle_list(f, node),
+        K::TypeParameters | K::TypeArguments => {
+            delimited(f, node, Shape::Angle { own_group: true });
+        }
         K::TypeParameter => type_parameter(f, node),
         K::ClassType => class_type(f, node),
         K::PrimitiveType | K::Varargs | K::Dim => annotated(f, node),
@@ -28,54 +31,6 @@ pub fn format<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         K::ThrowsClause => throws_clause(f, node),
         _ => generic(f, node),
     }
-}
-
-/// A comma-separated list in angle brackets, `node`'s `<`, items, and `>`: type parameters or
-/// type arguments. Flat if it fits; otherwise broken after the `<`, with the items at +4 on one
-/// line if they fit there, or one per line. The `>` follows the last item. An empty list, the
-/// diamond, is `<>`.
-///
-/// Comments before the first item go before the items' group, so that a line comment there
-/// doesn't put each item on its own line. Comments before the `>` go inside the indent, and the
-/// `>` itself after the groups, so that a line comment trailing it doesn't break the list.
-pub(crate) fn angle_list<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
-    angle_list_in(f, node, true);
-}
-
-/// [`angle_list`], in a group of its own when `own_group`, or else broken after the `<` whenever
-/// the group it's in is broken.
-fn angle_list_in<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, own_group: bool) {
-    let close = node.last_token();
-    let mut children = children(node)
-        .filter(|c| c.as_token().is_none_or(|t| t.id() != close.id()))
-        .peekable();
-    if let Some(open) = children.next() {
-        emit(f, open);
-    }
-    let Some(&first) = children.peek() else {
-        f.token(close);
-        return;
-    };
-    if own_group {
-        f.start_group();
-    }
-    f.indent(IndentKind::Continuation, |f| {
-        f.soft_line();
-        f.comments_before(first_token(first).id());
-        f.group(|f| {
-            for child in children {
-                emit(f, child);
-                if child.kind() == K::Comma {
-                    f.line();
-                }
-            }
-        });
-        f.comments_before(close.id());
-    });
-    if own_group {
-        f.end();
-    }
-    f.token(close);
 }
 
 /// `@A T extends B & C`: the annotations, then the name, with a line break between them when the
@@ -353,7 +308,7 @@ fn class_type<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     for child in children(last) {
         match child {
             NodeOrToken::Node(node) if node.kind() == K::TypeArguments => {
-                angle_list_in(f, node, false);
+                delimited(f, node, Shape::Angle { own_group: false });
             }
             _ => segment_child(f, child),
         }

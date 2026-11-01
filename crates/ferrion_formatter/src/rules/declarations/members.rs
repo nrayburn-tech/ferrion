@@ -4,9 +4,10 @@
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
 use super::annotations::{self, After, Layout};
-use super::{ListLayout, delimited_list, emit, first_token, parts, separated};
+use super::{emit, first_token, parts};
 use crate::document::IndentKind;
 use crate::format::Formatter;
+use crate::rules::lists::{Shape, delimited, separated};
 use crate::rules::variables::{name_part, single_declarator, type_then_name, value_after_eq};
 
 /// The rule for a field: its annotations as [`annotations::field_layout`] says, then the type
@@ -59,11 +60,7 @@ fn variables<'t>(f: &mut Formatter<'t>, parts: &[NodeOrToken<'t>]) {
         _ => {
             emit(f, *ty);
             f.space();
-            f.group(|f| {
-                f.indent(IndentKind::Continuation, |f| {
-                    separated(f, declarators, false)
-                })
-            });
+            f.group(|f| f.indent(IndentKind::Continuation, |f| separated(f, declarators)));
         }
     }
 }
@@ -93,7 +90,7 @@ pub(super) fn declarator<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
 /// Its annotations go on their own lines. Then three breaks, outermost first, each taken only if
 /// what it ends doesn't fit on the line: after the type parameters, then between the return type
 /// and the name (`Type name(` must fit), and then in the parameters (see
-/// [`super::ListLayout::Parameters`]). `throws` goes on the next line at +4 when it doesn't fit
+/// [`Shape::Parameters`]). `throws` goes on the next line at +4 when it doesn't fit
 /// on the line of the `)`, or the parameters went one per line. The parameters are indented from
 /// the name when a break before it is taken.
 pub(super) fn method<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
@@ -190,7 +187,7 @@ fn method_tail<'t>(f: &mut Formatter<'t>, parts: &[NodeOrToken<'t>]) {
     for &part in header {
         match part {
             NodeOrToken::Node(list) if list.kind() == K::FormalParameters => {
-                parameters = delimited_list(f, list, ListLayout::Parameters);
+                parameters = delimited(f, list, Shape::Parameters);
             }
             NodeOrToken::Node(clause) if clause.kind() == K::ThrowsClause => {
                 let throws = |f: &mut Formatter<'t>| {

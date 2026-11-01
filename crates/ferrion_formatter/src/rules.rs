@@ -11,6 +11,7 @@
 mod comments;
 pub mod declarations;
 pub mod expressions;
+mod lists;
 pub mod statements;
 pub mod types;
 mod variables;

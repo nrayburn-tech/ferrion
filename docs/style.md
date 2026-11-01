@@ -127,8 +127,11 @@ parentheses, with the values on the lines between the braces at +2.
 
 An array of values that doesn't fit is filled, as many to a line as fit, if no value is wider than
 9 columns, and otherwise has one value per line, or all of them on one line between the broken
-braces if they fit there. A trailing comma keeps the braces broken. A pair's value breaks onto the
-next line at +4 when it doesn't fit, as a variable's value does, unless it's an array.
+braces if they fit there. A trailing comma keeps the braces broken, and so does a comment on a line
+of its own before the first value. A pair's value breaks onto the next line at +4 when it doesn't
+fit, as a variable's value does, unless it's an array. Comments in the arguments are placed as in a
+call's (see [Arguments](#arguments)); a line comment after the last one breaks them, with the `)`
+on a line of its own at +4.
 
 ### Type declarations
 
@@ -263,6 +266,10 @@ void copy(
 
 A parameter's name moves onto the next line at +4 when the parameter doesn't fit on its line. An
 empty parameter list with a block comment in it gets a space before the `)`, `(/* none */ )`.
+Comments in the parameters are placed as in a call's arguments (see [Arguments](#arguments)),
+except that a line comment after the last parameter puts the `)` on a line of its own at +4
+without breaking the parameters. Type arguments and parameters do the same, with the `>` at the
+type's indentation.
 
 ### Annotation type elements
 

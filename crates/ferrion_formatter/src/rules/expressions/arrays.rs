@@ -2,10 +2,10 @@
 
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
-use super::lists::{self, Delimited};
 use super::{Indentation, elements, emit, spaced};
 use crate::document::IndentKind;
 use crate::format::Formatter;
+use crate::rules::lists::{self, Shape};
 
 /// `a[i]`: on one line, or a line break after the `[` and the index at +4.
 pub fn access<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
@@ -77,5 +77,5 @@ pub fn dim_expr<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
 
 /// `{a, b}` (see [`lists::delimited`]).
 pub fn initializer<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
-    lists::delimited(f, node, Delimited::Initializer);
+    lists::delimited(f, node, Shape::Initializer { values: false });
 }
