@@ -17,11 +17,12 @@ use std::cell::Cell;
 
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
-use super::{ListLayout, delimited_list, emit, first_token, fits_flat, fits_on_line, parts};
+use super::{emit, fits_on_line, parts};
 use crate::document::IndentKind;
 use crate::format::Formatter;
 use crate::modifiers::{self, Item};
 use crate::rules::comments::leads_on_code_line;
+use crate::rules::lists::{Shape, delimited};
 use crate::rules::variables::value_after_eq;
 
 /// How a declaration's modifiers are laid out; see the module's documentation.
@@ -324,12 +325,13 @@ pub(super) fn arguments<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                     .any(|value| value.kind() == K::ElementValueArray)
         })
     });
-    let layout = if arguments >= 2 && array_pair {
-        ListLayout::Broken
-    } else {
-        ListLayout::OnePerLine
-    };
-    delimited_list(f, node, layout);
+    delimited(
+        f,
+        node,
+        Shape::Annotation {
+            broken: arguments >= 2 && array_pair,
+        },
+    );
 }
 
 /// The rule for an element-value pair, `name = value`, breaking after the `=` as a variable
@@ -350,66 +352,8 @@ pub(super) fn pair<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     }
 }
 
-/// The widest an element can be, in columns, for an array of values to be filled, as many to a
-/// line as fit, rather than one per line (observed in GJF).
-const FILL_WIDTH: u32 = 9;
-
-/// The rule for an array of element values, `{a, b}`: on one line if it fits; otherwise the
-/// values go on the lines between the braces at +2, as many to a line as fit if each is at most
-/// [`FILL_WIDTH`] wide, and otherwise all on one line or one per line. A trailing comma keeps the
-/// braces broken.
+/// The rule for an array of element values, `{a, b}`, laid out as an array initializer (see
+/// [`Shape::Initializer`]).
 pub(super) fn array<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
-    f.comments_before(node.first_token().id());
-    let parts = parts(node);
-    let [open, items @ .., close] = parts.as_slice() else {
-        parts.into_iter().for_each(|part| emit(f, part));
-        return;
-    };
-    if items.is_empty() {
-        emit(f, *open);
-        super::dangling(f, first_token(*close));
-        emit(f, *close);
-        return;
-    }
-    let trailing_comma = items.last().is_some_and(|part| part.kind() == K::Comma);
-    let fill = items.iter().all(|part| match part.as_node() {
-        Some(value) => fits_flat(value, FILL_WIDTH, true),
-        None => part.kind() == K::Comma,
-    });
-    f.group(|f| {
-        emit(f, *open);
-        f.indent(IndentKind::Block, |f| {
-            f.soft_line();
-            if fill {
-                f.fill(|f| filled(f, items));
-            } else {
-                f.group(|f| super::separated(f, items, false));
-            }
-            f.comments_before(first_token(*close).id());
-        });
-        if trailing_comma {
-            f.hard_line();
-        } else {
-            f.soft_line();
-        }
-    });
-    // After the group, so that a line comment after it doesn't break the array.
-    emit(f, *close);
-}
-
-/// Emits `items`, values and the commas between them, in a fill.
-fn filled<'t>(f: &mut Formatter<'t>, items: &[ferrion_syntax::NodeOrToken<'t>]) {
-    let mut after_comma = false;
-    for &part in items {
-        if part.kind() == K::Comma {
-            emit(f, part);
-            after_comma = true;
-            continue;
-        }
-        if after_comma {
-            f.fill_break(false);
-        }
-        emit(f, part);
-        after_comma = false;
-    }
+    delimited(f, node, Shape::Initializer { values: true });
 }

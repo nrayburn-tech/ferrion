@@ -4,10 +4,11 @@
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
 
 use super::annotations::{self, After, Layout};
-use super::{doc_comment_before, emit, first_token, fits_on_line, parts, separated};
+use super::{doc_comment_before, emit, first_token, fits_on_line, parts};
 use crate::document::IndentKind;
 use crate::format::Formatter;
 use crate::rules::comments::{block_comment_after, has_comments_before, leads_on_code_line};
+use crate::rules::lists::separated;
 
 /// The rule for a class, interface, enum, record, or annotation type declaration.
 ///
@@ -152,7 +153,7 @@ pub(super) fn clause<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         emit(f, items[0]);
     } else {
         f.space();
-        f.group(|f| f.indent(IndentKind::Continuation, |f| separated(f, items, false)));
+        f.group(|f| f.indent(IndentKind::Continuation, |f| separated(f, items)));
     }
 }
 

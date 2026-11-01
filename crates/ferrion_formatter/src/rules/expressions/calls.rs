@@ -3,10 +3,10 @@
 use ferrion_syntax::ast::{self, AstNode};
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
-use super::lists::{self, Delimited};
 use super::{Indentation, elements, emit, spaced};
 use crate::document::IndentKind;
 use crate::format::Formatter;
+use crate::rules::lists::{self, Shape};
 
 /// A chain of method calls and field accesses, `a.b(x).c`, flattened into its root (`a`) and
 /// its links (`.b(x)`, `.c`), innermost first, so that a chain of any length is formatted in a
@@ -252,15 +252,7 @@ pub fn arguments<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, hugs: Hugs) {
         },
         _ => false,
     };
-    lists::delimited(
-        f,
-        node,
-        if hug {
-            Delimited::Hug
-        } else {
-            Delimited::Arguments
-        },
-    );
+    lists::delimited(f, node, if hug { Shape::Hug } else { Shape::Arguments });
 }
 
 /// `new Type(arguments)`, then any class body after a space.

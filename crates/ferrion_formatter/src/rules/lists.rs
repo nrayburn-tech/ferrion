@@ -1,23 +1,40 @@
-//! Delimited, comma-separated lists: arguments, array initializers, and record patterns' parts.
+//! Delimited, comma-separated lists, in every area: arguments and record patterns' parts, array
+//! initializers and annotations' arrays of values, parameters and record components,
+//! annotations' arguments, and type arguments and parameters. [`delimited`] lays them out, and
+//! [`Shape`] holds what differs between them, as observed in GJF.
+//!
+//! What they share:
+//!
+//! - **Outermost first:** an outer group breaks after the opening delimiter, and the items, at
+//!   +4 (+2 in braces), are a group, fill, or line of their own that breaks between them.
+//! - **Comments:** a comment on a line of its own before the first item goes before the items'
+//!   group, so it doesn't break it; a comment on a separator's line stays after the separator,
+//!   except one naming a parameter, `/* name= */`, which stays with the item after it; and an
+//!   empty list keeps its comments inside, with a space before the closing delimiter after a
+//!   block comment, as GJF prints `(/* none */ )`.
+//! - **Filling:** arguments and initializers whose items are all at most [`FILL_WIDTH`] wide are
+//!   filled, as many on a line as fit.
 
 use ferrion_syntax::comments::is_comment;
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
 
-use super::{Indentation, elements, emit, first_token, lambdas};
+use super::comments::has_comments_before;
+use super::expressions::{Indentation, lambdas};
+use super::{Area, area, children, emit, first_token};
 use crate::document::{IndentKind, width};
 use crate::format::Formatter;
-use crate::rules::comments::has_comments_before;
 
 /// GJF fills a list whose items are all at most this wide: as many on a line as fit. Otherwise a
 /// list that doesn't fit on a line puts each item on its own (observed: up to 9 fills, from 10
-/// one per line, for arguments and array initializers alike).
+/// one per line, for arguments, array initializers, and annotations' arrays of values alike).
 const FILL_WIDTH: u32 = 9;
 
-/// The shape of a delimited list.
+/// What a delimited list is, which decides how it breaks.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum Delimited {
-    /// `(a, b)`: all on the line; otherwise all on the next line at +4; otherwise one per line,
-    /// or filled. The `)` follows the last item.
+pub(crate) enum Shape {
+    /// `(a, b)` of a call or a record pattern: all on the line; otherwise all on the next line
+    /// at +4; otherwise one per line, or filled. The `)` follows the last item, in the list's
+    /// group, so a line comment before it breaks the list.
     Arguments,
     /// `(x -> {`: one item, hugged (docs/design/formatter.md, "Hugging"): it stays on the line
     /// if the line up to its first forced break fits, and the item is indented +4 only if it
@@ -25,21 +42,41 @@ pub(crate) enum Delimited {
     /// break inside when it doesn't fit on the next line either (see `Element::Alternative`):
     /// `foo(x ->` then the body at +4, or `when(a.b(` then `b`'s arguments.
     Hug,
-    /// `{a, b}`: all on the line; otherwise the items on lines of their own at +2, all on one
-    /// line, filled, or one per line, and the `}` on a line of its own. A trailing comma keeps the
-    /// items off the braces' lines.
-    Initializer,
+    /// `{a, b}`, an array initializer, or an annotation's array of values when `values`: all on
+    /// the line; otherwise the items on lines of their own at +2, all on one line, filled, or one
+    /// per line, and the `}` on a line of its own. A trailing comma keeps the items off the
+    /// braces' lines. In an array of values, a comment on a line of its own before the first
+    /// value puts the values one per line (observed), and they aren't kept in pairs.
+    Initializer { values: bool },
+    /// `(int a, int b)`, parameters or record components: as arguments, without filling, and
+    /// with the `)` after the list's group, so a line comment before it puts it on a line of its
+    /// own at +4 without breaking the list.
+    Parameters,
+    /// `@A(a = 1, b = 2)`: one per line at +4 when they don't fit, and always when `broken`. The
+    /// `)` is in the list's group, as for arguments.
+    Annotation { broken: bool },
+    /// `<A, B>`, type arguments or parameters: as parameters, with the `>` after the indent too.
+    /// In a group of its own when `own_group`, or else broken after the `<` whenever the group
+    /// around it is.
+    Angle { own_group: bool },
 }
 
-/// Formats `node`'s list, from its opening delimiter to its closing one. Children before the
-/// opening delimiter, such as a record pattern's type, are emitted as they are, with no space.
-///
-/// The list is two nested groups, so that it breaks outermost first: the outer one around the
-/// delimiters, which breaks after the opening one, and the inner one around the items, which
-/// breaks between them. Comments on their own lines before the first item go before the inner
-/// group, so they don't break it, and a comment on a separator's line stays on it, after the
-/// separator (docs/design/formatter.md, "Comments").
-pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: Delimited) {
+impl Shape {
+    fn fills(self) -> bool {
+        matches!(self, Shape::Arguments | Shape::Initializer { .. })
+    }
+}
+
+/// Formats `node`'s list, from its opening delimiter to its closing one, as `shape` says.
+/// Children before the opening delimiter, such as a record pattern's type, are emitted as they
+/// are, with no space. Returns the group of the items, if they have one, which breaks when they
+/// go one per line.
+pub(crate) fn delimited<'t>(
+    f: &mut Formatter<'t>,
+    node: SyntaxNode<'t>,
+    shape: Shape,
+) -> Option<u32> {
+    f.comments_before(node.first_token().id());
     let mut items = 0;
     let mut narrow = true;
     let mut trailing_comma = false;
@@ -51,7 +88,7 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
     let mut pairs = true;
     let mut base = None;
     let mut row = 0;
-    for element in elements(node) {
+    for element in children(node) {
         match element {
             NodeOrToken::Token(token) if is_open(token) => opened = true,
             NodeOrToken::Node(child) if opened => {
@@ -59,6 +96,7 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
                 // A comment before an item on its line counts toward its width, as GJF
                 // measures it.
                 narrow = narrow
+                    && shape.fills()
                     && !comment_on_line_before(child.first_token())
                     && fits_in(child, FILL_WIDTH);
                 trailing_comma = false;
@@ -86,10 +124,17 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
             _ => {}
         }
     }
-    // GJF keeps such pairs, one on each line, each breaking before its second item if it
-    // doesn't fit (observed).
-    let pairs = pairs && row == 2 && items >= 4 && !trailing_comma && shape != Delimited::Hug;
-    let mut elements = elements(node).peekable();
+    // GJF keeps such pairs of arguments, one on each line, each breaking before its second item
+    // if it doesn't fit (observed).
+    let pairs = pairs
+        && row == 2
+        && items >= 4
+        && !trailing_comma
+        && matches!(
+            shape,
+            Shape::Arguments | Shape::Initializer { values: false }
+        );
+    let mut elements = children(node).peekable();
     // Whatever comes before the opening delimiter.
     while let Some(&element) = elements.peek() {
         if matches!(element, NodeOrToken::Token(t) if is_open(t)) {
@@ -99,11 +144,20 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
         elements.next();
     }
     let Some(NodeOrToken::Token(open)) = elements.next() else {
-        return;
+        return None;
     };
     f.token(open);
+    // An expression's list indents with the expression rules' capped indents.
+    let capped = area(node.kind()) == Some(Area::Expressions);
+    let indentation = |f: &mut Formatter<'t>, kind| {
+        if capped {
+            Indentation::start(f, kind)
+        } else {
+            Indentation::uncapped(f, kind)
+        }
+    };
+    let close = node.last_token();
     if items == 0 {
-        let close = node.last_token();
         // `{,}`: a comma without items.
         for element in elements {
             if let NodeOrToken::Token(comma) = element
@@ -114,55 +168,52 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
         }
         if !has_comments_before(close) {
             f.token(close);
-        } else if shape == Delimited::Initializer {
+        } else if matches!(shape, Shape::Initializer { .. }) {
             // Dangling comments in braces go on lines of their own.
-            let indentation = Indentation::start(f, IndentKind::Block);
+            let indent = indentation(f, IndentKind::Block);
             f.hard_line();
             f.comments_before(close.id());
-            indentation.end(f);
+            indent.end(f);
             f.hard_line();
             f.token(close);
         } else {
             // In parentheses they stay on the line, with a space before the `)` (GJF's), unless
             // one is on a line of its own, which puts the `)` on one too, at +4.
-            let indentation = Indentation::start(f, IndentKind::Continuation);
+            let indent = indentation(f, IndentKind::Continuation);
             f.comments_before(close.id());
             f.space();
             f.token(close);
-            indentation.end(f);
+            indent.end(f);
         }
-        return;
+        return None;
     }
-    let fill = narrow && items > 1 && shape != Delimited::Hug && !pairs;
-    let close = node.last_token();
-    debug_assert!(
-        is_close(close),
-        "a list that doesn't end in its closing delimiter"
-    );
-    let items = elements.take_while(|e| !matches!(e, NodeOrToken::Token(t) if is_close(*t)));
-    let alternative = shape == Delimited::Hug
+    let fill = narrow && items > 1 && !pairs;
+    let items =
+        elements.take_while(|e| !matches!(e, NodeOrToken::Token(t) if t.id() == close.id()));
+    let alternative = shape == Shape::Hug
         && node
             .children()
             .next()
             .is_some_and(|item| item.kind() != K::LambdaExpr || !lambdas::has_block_body(item));
-    // For arguments, around the group and the `)`, so that a `)` after a line break is at +4
-    // too.
-    let arguments_indentation =
-        (shape == Delimited::Arguments).then(|| Indentation::start(f, IndentKind::Continuation));
-    let outer = if alternative {
-        f.start_group_with_alternative()
-    } else {
-        f.start_group()
+    let broken = match shape {
+        Shape::Annotation { broken } => broken,
+        Shape::Initializer { .. } => trailing_comma,
+        _ => false,
     };
-    // The items, from the first, whose comments on lines of their own come before the group.
-    let body = |f: &mut Formatter<'t>| {
-        if shape == Delimited::Initializer && trailing_comma {
+    let one_per_line = matches!(shape, Shape::Annotation { .. });
+    let mut items_group = None;
+    // The items, from the first, whose comments on lines of their own come before their group,
+    // then the comments before the closing delimiter.
+    let body = |f: &mut Formatter<'t>, outer: u32| {
+        if broken {
             f.hard_line();
         } else {
             f.soft_line();
         }
         let mut items = items.peekable();
-        if let Some(&first) = items.peek() {
+        if let Some(&first) = items.peek()
+            && shape != (Shape::Initializer { values: true })
+        {
             f.comments_before(first_token(first).id());
         }
         let list = |f: &mut Formatter<'t>| {
@@ -173,14 +224,14 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
                 match element {
                     NodeOrToken::Token(comma) if comma.kind() == K::Comma => {
                         f.token(comma);
-                        if let Some(next) = next_item(comma) {
+                        if let Some(next) = next_item(comma, close) {
                             if comment_on_line_after(comma) {
                                 f.comments_before(next.id());
                             }
                             if pairs && index % 2 == 1 {
-                                pair = Some(Indentation::start(f, IndentKind::Continuation));
+                                pair = Some(indentation(f, IndentKind::Continuation));
                                 f.line();
-                            } else if pairs {
+                            } else if pairs || broken && one_per_line {
                                 f.hard_line();
                             } else if fill {
                                 f.fill_break(false);
@@ -189,7 +240,7 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
                             }
                         }
                     }
-                    NodeOrToken::Node(item) if shape == Delimited::Hug => {
+                    NodeOrToken::Node(item) if shape == Shape::Hug => {
                         if alternative {
                             f.alternative_mark(outer);
                         }
@@ -211,57 +262,93 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
             }
         };
         match shape {
-            Delimited::Hug => list(f),
+            Shape::Hug | Shape::Annotation { .. } => list(f),
             _ if fill => f.fill(list),
-            _ => {
-                f.group(list);
-            }
+            _ => items_group = Some(f.group(list)),
         }
         f.comments_before(close.id());
     };
     match shape {
-        Delimited::Hug => Indentation::if_broken(f, outer, body),
-        Delimited::Arguments => body(f),
-        Delimited::Initializer => {
-            let indentation = Indentation::start(f, IndentKind::Block);
-            body(f);
-            indentation.end(f);
+        Shape::Arguments | Shape::Annotation { .. } => {
+            // Around the group and the `)`, so that a `)` after a line break is at +4 too.
+            let indent = indentation(f, IndentKind::Continuation);
+            let outer = f.start_group();
+            body(f, outer);
+            f.token(close);
+            f.end();
+            indent.end(f);
+        }
+        Shape::Hug => {
+            let outer = if alternative {
+                f.start_group_with_alternative()
+            } else {
+                f.start_group()
+            };
+            Indentation::if_broken(f, outer, |f| body(f, outer));
+            f.token(close);
+            f.end();
+        }
+        Shape::Initializer { .. } => {
+            let outer = f.start_group();
+            let indent = indentation(f, IndentKind::Block);
+            body(f, outer);
+            indent.end(f);
+            if trailing_comma {
+                f.hard_line();
+            } else {
+                f.soft_line();
+            }
+            f.token(close);
+            f.end();
+        }
+        Shape::Parameters => {
+            let indent = indentation(f, IndentKind::Continuation);
+            let outer = f.start_group();
+            body(f, outer);
+            f.end();
+            // After the group, so that a line comment before it doesn't break the list.
+            f.token(close);
+            indent.end(f);
+        }
+        Shape::Angle { own_group } => {
+            let outer = own_group.then(|| f.start_group());
+            let indent = indentation(f, IndentKind::Continuation);
+            body(f, outer.unwrap_or(0));
+            indent.end(f);
+            if outer.is_some() {
+                f.end();
+            }
+            // After the groups, so that a line comment after it doesn't break the list.
+            f.token(close);
         }
     }
-    if shape == Delimited::Initializer {
-        if trailing_comma {
-            f.hard_line();
-        } else {
-            f.soft_line();
-        }
-    }
-    // In the group, so that a line comment before it breaks the group, and one after it,
-    // whose line break comes after the group ends, doesn't.
-    f.token(close);
-    f.end();
-    if let Some(indentation) = arguments_indentation {
-        indentation.end(f);
-    }
+    items_group
 }
 
-/// A record pattern, `Point(int x, int y)`: its type, then its parts as arguments.
-pub fn record_pattern<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
-    delimited(f, node, Delimited::Arguments);
+/// Emits `items`, a list's items and the commas between them, without delimiters, with a `Line`
+/// after each comma. A comment on a comma's line stays after it, as in [`delimited`].
+pub(crate) fn separated<'t>(f: &mut Formatter<'t>, items: &[NodeOrToken<'t>]) {
+    for (i, &part) in items.iter().enumerate() {
+        emit(f, part);
+        if let NodeOrToken::Token(comma) = part
+            && comma.kind() == K::Comma
+            && let Some(&next) = items.get(i + 1)
+        {
+            if comment_on_line_after(comma) {
+                f.comments_before(first_token(next).id());
+            }
+            f.line();
+        }
+    }
 }
 
 fn is_open(token: SyntaxToken<'_>) -> bool {
-    matches!(token.kind(), K::LParen | K::LBrace)
+    matches!(token.kind(), K::LParen | K::LBrace | K::Lt)
 }
 
-fn is_close(token: SyntaxToken<'_>) -> bool {
-    matches!(token.kind(), K::RParen | K::RBrace)
-}
-
-/// The first token of the item after `comma`, if there is one before the closing delimiter.
-fn next_item(comma: SyntaxToken<'_>) -> Option<SyntaxToken<'_>> {
-    comma
-        .next_non_trivia()
-        .filter(|t| !matches!(t.kind(), K::RParen | K::RBrace))
+/// The first token of the item after `comma`, if there is one before `close`.
+fn next_item<'t>(comma: SyntaxToken<'t>, close: SyntaxToken<'t>) -> Option<SyntaxToken<'t>> {
+    comma.next_non_trivia().filter(|t| t.id() != close.id())
 }
 
 /// Whether a comment follows `token` on its line, after any that trail it, other than one
@@ -335,7 +422,7 @@ fn comment_on_line_before(token: SyntaxToken<'_>) -> bool {
 /// tells: its tokens' widths and the spaces between them. The scan stops once past the limit,
 /// so it costs at most a few tokens, however large the node. A comment or a token with a line
 /// break makes the node too wide.
-pub(crate) fn fits_in(node: SyntaxNode<'_>, limit: u32) -> bool {
+fn fits_in(node: SyntaxNode<'_>, limit: u32) -> bool {
     let mut total = 0;
     let mut previous: Option<SyntaxToken<'_>> = None;
     for token in node.tokens() {
@@ -365,10 +452,15 @@ pub(crate) fn fits_in(node: SyntaxNode<'_>, limit: u32) -> bool {
 /// Whether there is a space between two tokens printed flat: as in the first rule, except inside
 /// an array initializer's braces.
 fn flat_space(previous: SyntaxToken<'_>, next: SyntaxToken<'_>) -> bool {
-    if previous.kind() == K::LBrace && previous.parent().kind() == K::ArrayInitializer
-        || next.kind() == K::RBrace && next.parent().kind() == K::ArrayInitializer
+    let braces = |token: SyntaxToken<'_>| {
+        matches!(
+            token.parent().kind(),
+            K::ArrayInitializer | K::ElementValueArray
+        )
+    };
+    if previous.kind() == K::LBrace && braces(previous) || next.kind() == K::RBrace && braces(next)
     {
         return false;
     }
-    super::super::space_between(previous, next)
+    super::space_between(previous, next)
 }

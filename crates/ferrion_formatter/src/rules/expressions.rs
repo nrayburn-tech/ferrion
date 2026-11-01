@@ -9,11 +9,11 @@
 mod arrays;
 mod calls;
 pub(crate) mod lambdas;
-pub(crate) mod lists;
 mod operators;
 
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
+use super::lists::{Shape, delimited};
 use super::{children as elements, emit, first_token, generic, last_token};
 use crate::document::IndentKind;
 use crate::format::Formatter;
@@ -37,7 +37,9 @@ pub fn format<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         K::ArrayCreationExpr => arrays::creation(f, node),
         K::DimExpr => arrays::dim_expr(f, node),
         K::ArrayInitializer => arrays::initializer(f, node),
-        K::RecordPattern => lists::record_pattern(f, node),
+        K::RecordPattern => {
+            delimited(f, node, Shape::Arguments);
+        }
         _ => generic(f, node),
     }
 }
@@ -63,22 +65,40 @@ const MAX_INDENTS: u32 = 100;
 /// An indent started by an expression rule, or none past [`MAX_INDENTS`]. [`Indentation::end`]
 /// ends it and gives its place back.
 #[must_use]
-struct Indentation {
+pub(crate) struct Indentation {
     started: bool,
+    capped: bool,
 }
 
 impl Indentation {
     /// Starts an indent of `kind`.
-    fn start(f: &mut Formatter<'_>, kind: IndentKind) -> Indentation {
+    pub(crate) fn start(f: &mut Formatter<'_>, kind: IndentKind) -> Indentation {
         let started = f.take_capped_indent(MAX_INDENTS);
         if started {
             f.start_indent(kind);
         }
-        Indentation { started }
+        Indentation {
+            started,
+            capped: true,
+        }
+    }
+
+    /// Starts an indent of `kind` that doesn't count toward the cap, for a rule shared with
+    /// other areas, such as a list of parameters.
+    pub(crate) fn uncapped(f: &mut Formatter<'_>, kind: IndentKind) -> Indentation {
+        f.start_indent(kind);
+        Indentation {
+            started: true,
+            capped: false,
+        }
     }
 
     /// Runs `body` indented by +4 if `group` breaks.
-    fn if_broken<'t>(f: &mut Formatter<'t>, group: u32, body: impl FnOnce(&mut Formatter<'t>)) {
+    pub(crate) fn if_broken<'t>(
+        f: &mut Formatter<'t>,
+        group: u32,
+        body: impl FnOnce(&mut Formatter<'t>),
+    ) {
         if f.take_capped_indent(MAX_INDENTS) {
             f.indent_if_broken(group, body);
             f.give_back_capped_indent();
@@ -87,10 +107,12 @@ impl Indentation {
         }
     }
 
-    fn end(self, f: &mut Formatter<'_>) {
+    pub(crate) fn end(self, f: &mut Formatter<'_>) {
         if self.started {
             f.end();
-            f.give_back_capped_indent();
+            if self.capped {
+                f.give_back_capped_indent();
+            }
         }
     }
 }

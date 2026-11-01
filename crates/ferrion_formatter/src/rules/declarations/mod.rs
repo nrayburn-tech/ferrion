@@ -15,10 +15,10 @@ mod unit;
 
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
 
+use super::lists::{Shape, delimited};
 use super::{children, emit, first_token, last_token};
-use crate::document::{IndentKind, LINE_WIDTH, width};
+use crate::document::{LINE_WIDTH, width};
 use crate::format::Formatter;
-use crate::rules::comments::leads_on_code_line;
 
 pub fn format<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     match node.kind() {
@@ -48,7 +48,7 @@ pub fn format<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         K::MethodDecl | K::ConstructorDecl => members::method(f, node),
         K::CompactConstructorDecl | K::Initializer => members::spaced(f, node),
         K::FormalParameters | K::RecordHeader => {
-            delimited_list(f, node, ListLayout::Parameters);
+            delimited(f, node, Shape::Parameters);
         }
         K::FormalParameter | K::ReceiverParameter | K::RecordComponent => {
             members::parameter(f, node)
@@ -61,106 +61,6 @@ pub fn format<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
 /// The children of `node` that aren't trivia, in order.
 fn parts(node: SyntaxNode<'_>) -> Vec<NodeOrToken<'_>> {
     children(node).collect()
-}
-
-/// How a delimited, comma-separated list breaks when it doesn't fit on the line.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum ListLayout {
-    /// All on the next line at +4, or, if they don't fit there either, one per line: a method's
-    /// parameters and a record's components.
-    Parameters,
-    /// One per line at +4: an annotation's arguments.
-    OnePerLine,
-    /// One per line at +4, even if they fit on the line.
-    Broken,
-}
-
-/// The rule for a list between delimiters, such as `(a, b)`: the opening delimiter, the items
-/// with `, ` between them, and the closing delimiter, all on one line if they fit, otherwise
-/// broken by `layout`. An empty list stays together, with its dangling comments inside and a
-/// space before the closing delimiter after a block comment, as GJF prints `(/* none */ )`.
-///
-/// A block comment on a separator's line that leads the next item stays on that line when the
-/// list breaks (docs/design/formatter.md, "Comments").
-///
-/// Returns the group of the items, which breaks when they go one per line, for
-/// [`ListLayout::Parameters`].
-pub(crate) fn delimited_list<'t>(
-    f: &mut Formatter<'t>,
-    node: SyntaxNode<'t>,
-    layout: ListLayout,
-) -> Option<u32> {
-    f.comments_before(node.first_token().id());
-    let parts = parts(node);
-    let [open, items @ .., close] = parts.as_slice() else {
-        parts.into_iter().for_each(|part| emit(f, part));
-        return None;
-    };
-    if items.is_empty() {
-        emit(f, *open);
-        dangling(f, first_token(*close));
-        emit(f, *close);
-        return None;
-    }
-    let mut items_group = None;
-    f.group(|f| {
-        emit(f, *open);
-        f.indent(IndentKind::Continuation, |f| {
-            let hard = layout == ListLayout::Broken;
-            if hard {
-                f.hard_line();
-            } else {
-                f.soft_line();
-            }
-            let items = |f: &mut Formatter<'t>| separated(f, items, hard);
-            match layout {
-                ListLayout::Parameters => items_group = Some(f.group(items)),
-                ListLayout::OnePerLine | ListLayout::Broken => items(f),
-            }
-        });
-    });
-    // After the group, so that a line comment after it doesn't break the list.
-    emit(f, *close);
-    items_group
-}
-
-/// Emits `items`, a list's items and the commas between them, with a `Line` after each comma, or
-/// a line break if `hard`. A block comment that leads the next item on the comma's line stays
-/// after the comma.
-fn separated<'t>(f: &mut Formatter<'t>, items: &[NodeOrToken<'t>], hard: bool) {
-    let mut after_comma = false;
-    for &part in items {
-        if part.kind() == K::Comma {
-            emit(f, part);
-            after_comma = true;
-            continue;
-        }
-        if after_comma {
-            let first = first_token(part);
-            if !f.in_region() && leads_on_code_line(first) {
-                f.comments_before(first.id());
-            }
-            if hard {
-                f.hard_line();
-            } else {
-                f.line();
-            }
-        }
-        emit(f, part);
-        after_comma = false;
-    }
-}
-
-/// Places the comments before `close`, the closing delimiter of an empty list, with a space after
-/// the last of them if it's a block comment.
-fn dangling<'t>(f: &mut Formatter<'t>, close: SyntaxToken<'t>) {
-    let Some(previous) = close.prev_token() else {
-        return;
-    };
-    if matches!(previous.kind(), K::BlockComment | K::DocComment) && !f.in_region() {
-        f.comments_before(close.id());
-        f.space();
-    }
 }
 
 /// Whether `node`, printed flat with a space where [`super::space_between`] puts one, fits in
