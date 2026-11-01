@@ -221,11 +221,19 @@ pub fn labeled_stmt<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
 }
 
 /// `assert condition : message;`, breaking before the `:` at +4 first, and then inside the
-/// condition and the message, from +4.
+/// condition and the message, from +4. Without a message, the condition's own breaks are from
+/// the statement, as GJF gives them.
 pub fn assert_stmt<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
+    let message = node
+        .children_with_tokens()
+        .any(|element| element.kind() == K::Colon);
     let mut elements = elements(node).peekable();
     while let Some(element) = elements.next() {
         match element.kind() {
+            K::AssertKw if !message => {
+                emit(f, element);
+                f.space();
+            }
             K::AssertKw => {
                 emit(f, element);
                 f.space();
