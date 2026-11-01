@@ -113,8 +113,7 @@ pub fn resolve(checkout: &Path, dirs: &Dirs, jars: &mut Jars) -> Result<Vec<Modu
                         version,
                         file,
                     } => {
-                        let name = file.file_name().unwrap().to_string_lossy();
-                        let path = format!("{}/{module}/{version}/{name}", group.replace('.', "/"));
+                        let path = repository_path(&group, &module, &version, &file);
                         jars.add(path, &file)?
                     }
                     GradleEntry::File { file } => match classify(checkout, &module_dirs, &file) {
@@ -145,6 +144,71 @@ pub fn resolve(checkout: &Path, dirs: &Dirs, jars: &mut Jars) -> Result<Vec<Modu
         });
     }
     Ok(modules)
+}
+
+/// A jar's path in a Maven repository. Gradle caches a jar under the name its module's Gradle
+/// metadata gives it, which can differ from the file in the repository: Kotlin Multiplatform
+/// modules call `clikt-core-jvm-5.0.3.jar` `clikt-jvm.jar`, and Guava's `-android` versions point
+/// to the `-jre` version's jar. The metadata's URL for the file, relative to the module version's
+/// directory in the repository, gives the path. Gradle caches the metadata in a sibling of the
+/// jar's directory.
+fn repository_path(group: &str, module: &str, version: &str, file: &Path) -> String {
+    let name = file.file_name().unwrap().to_string_lossy().into_owned();
+    let url = file
+        .parent()
+        .and_then(Path::parent)
+        .and_then(|dir| cached_metadata(dir, &format!("{module}-{version}.module")))
+        .and_then(|metadata| metadata_url(&metadata, &name))
+        .unwrap_or(name);
+    resolve_url(group, module, version, &url)
+}
+
+fn cached_metadata(dir: &Path, name: &str) -> Option<String> {
+    std::fs::read_dir(dir)
+        .ok()?
+        .filter_map(Result::ok)
+        .find_map(|entry| std::fs::read_to_string(entry.path().join(name)).ok())
+}
+
+/// The URL that a Gradle module metadata file gives for the file named `name`.
+fn metadata_url(metadata: &str, name: &str) -> Option<String> {
+    #[derive(Deserialize)]
+    struct Metadata {
+        #[serde(default)]
+        variants: Vec<Variant>,
+    }
+    #[derive(Deserialize)]
+    struct Variant {
+        #[serde(default)]
+        files: Vec<VariantFile>,
+    }
+    #[derive(Deserialize)]
+    struct VariantFile {
+        name: String,
+        url: String,
+    }
+    let metadata: Metadata = serde_json::from_str(metadata).ok()?;
+    metadata
+        .variants
+        .into_iter()
+        .flat_map(|variant| variant.files)
+        .find(|file| file.name == name)
+        .map(|file| file.url)
+}
+
+/// The repository path of `url`, relative to the directory of `version` of `group:module`.
+fn resolve_url(group: &str, module: &str, version: &str, url: &str) -> String {
+    let mut parts: Vec<&str> = group.split('.').chain([module, version]).collect();
+    for part in url.split('/') {
+        match part {
+            ".." => {
+                parts.pop();
+            }
+            "" | "." => {}
+            part => parts.push(part),
+        }
+    }
+    parts.join("/")
 }
 
 /// Classifies a classpath file that isn't from a Maven repository. Returns `None` for files that
@@ -200,4 +264,52 @@ fn within(checkout: &Path, path: &Path) -> Result<String> {
             checkout.display()
         )
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const METADATA: &str = r#"{
+      "formatVersion": "1.1",
+      "variants": [
+        {"name": "androidApiElements",
+         "files": [{"name": "guava-33.4.3-android.jar", "url": "guava-33.4.3-android.jar"}]},
+        {"name": "jreApiElements",
+         "files": [{"name": "guava-33.4.3-jre.jar", "url": "../33.4.3-jre/guava-33.4.3-jre.jar"}]},
+        {"name": "platform", "dependencies": []}
+      ]
+    }"#;
+
+    #[test]
+    fn metadata_urls() {
+        assert_eq!(
+            metadata_url(METADATA, "guava-33.4.3-jre.jar").as_deref(),
+            Some("../33.4.3-jre/guava-33.4.3-jre.jar")
+        );
+        assert_eq!(metadata_url(METADATA, "other.jar"), None);
+        assert_eq!(metadata_url("not json", "guava-33.4.3-jre.jar"), None);
+    }
+
+    #[test]
+    fn resolved_urls() {
+        assert_eq!(
+            resolve_url(
+                "com.github.ajalt.clikt",
+                "clikt-core-jvm",
+                "5.0.3",
+                "clikt-core-jvm-5.0.3.jar"
+            ),
+            "com/github/ajalt/clikt/clikt-core-jvm/5.0.3/clikt-core-jvm-5.0.3.jar"
+        );
+        assert_eq!(
+            resolve_url(
+                "com.google.guava",
+                "guava",
+                "33.4.3-android",
+                "../33.4.3-jre/guava-33.4.3-jre.jar"
+            ),
+            "com/google/guava/guava/33.4.3-jre/guava-33.4.3-jre.jar"
+        );
+    }
 }
