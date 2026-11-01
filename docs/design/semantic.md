@@ -244,3 +244,17 @@ The user reviewed this design and accepted every recommendation:
 7. **Excluding code with javac errors:** whole files, for B2.
 
 The work order stands: W1, W2, and W3 in parallel, with a review stop after W2 before W4.
+
+### The engine review
+
+After W2, the user reviewed the engine and summaries as built, accepted them, and settled the
+questions W2 raised:
+
+1. **Trees shrink their arrays to fit** when built, so the tree cache's budget counts what they
+   hold.
+2. **Names are interned and the "as written" type parts made smaller** at the start of W4, before
+   the project symbols are keyed by them: summaries took 51 MB for lucene's 50 MB of source.
+3. **Lombok** is recognized from imports and `lombok.`-qualified names until W4 resolves
+   annotations, then by the resolved annotation.
+4. **A record's `equals`, `hashCode`, and `toString`** are listed with its implicit members
+   (JLS 8.10.3).
