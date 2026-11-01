@@ -122,10 +122,7 @@ under `FERRION_CORPUS_DIR`). The oracle comparison and the semantic benchmark us
   theirs. The newest GA JDK serves every release the corpus uses, and the oracle runs with it.
   With neither, the model leaves `jdk` out and its reader's `--jdk` or `JAVA_HOME` applies.
 - **What is left out** is printed: entries the lock marks unavailable, and dependencies on source
-  sets the lock doesn't have. lucene's lock names `lucene/spatial-test-fixtures/testFixtures` for
-  two test source sets, because the Gradle model script reads a dependency on a project whose name
-  ends in `-test-fixtures` as one on its test fixtures; the dependency is really that project's
-  `main`, and needs the script fixed and the lock regenerated.
+  sets the lock doesn't have. None of the current locks has either.
 
 ## Classpath construction
 

@@ -2406,7 +2406,7 @@
             },
             {
               "module": "lucene/spatial-test-fixtures",
-              "sourceSet": "testFixtures"
+              "sourceSet": "main"
             },
             {
               "jar": "org/locationtech/jts/jts-core/1.17.0/jts-core-1.17.0.jar"
@@ -2528,7 +2528,7 @@
             },
             {
               "module": "lucene/spatial-test-fixtures",
-              "sourceSet": "testFixtures"
+              "sourceSet": "main"
             },
             {
               "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"

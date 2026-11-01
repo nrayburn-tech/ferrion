@@ -45,9 +45,6 @@ pub struct LeftOut {
     /// Entries the lock marks unavailable.
     pub unavailable: usize,
     /// References to source sets the lock doesn't have, as `(source set, missing source set)`.
-    /// The Gradle model script takes a dependency on a project whose name ends in
-    /// `-test-fixtures` for one on its test fixtures, so lucene's lock names
-    /// `lucene/spatial-test-fixtures/testFixtures`, which is that project's `main`.
     pub missing_source_sets: Vec<(String, String)>,
 }
 
@@ -174,8 +171,12 @@ mod tests {
     /// fetched (`target/corpus`, or `FERRION_CORPUS_DIR`).
     fn checked_out(jdk: Option<&Path>) -> Vec<(Project, ferrion_project::Project)> {
         let dirs = Dirs::new().unwrap();
-        let scratch =
-            std::env::temp_dir().join(format!("ferrion-corpus-model-{}", std::process::id()));
+        // Per test as well as per process, since tests run in parallel.
+        let scratch = std::env::temp_dir().join(format!(
+            "ferrion-corpus-model-{}-{}",
+            std::process::id(),
+            if jdk.is_some() { "types" } else { "sources" }
+        ));
         std::fs::create_dir_all(&scratch).unwrap();
         let mut loaded = Vec::new();
         for project in Project::load_all(&dirs.projects_file()).unwrap() {
