@@ -2,7 +2,8 @@
 # Format comparison" in docs/design/formatter.md). `format-check` downloads the jar into the
 # corpus's jar cache (target/corpus/jars, or under FERRION_CORPUS_DIR) on first use, checks it
 # against `sha256`, and never commits it. The jar is Apache-2.0. Moving the pin means updating
-# gjf-diff.toml, and reviewing what changed.
+# gjf-diff.toml and the expected GJF outputs in differences/ (`cargo format-check differences
+# --bless`), and reviewing what changed.
 
 version = "2.0.0"
 repository = "https://repo.maven.apache.org/maven2"

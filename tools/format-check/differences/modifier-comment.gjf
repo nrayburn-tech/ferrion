@@ -1,0 +1,3 @@
+class ModifierComment {
+  public /* c */ static final int b = 1;
+}
