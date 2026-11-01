@@ -496,6 +496,8 @@ Departures found so far:
 | a text block | re-indented, `"""` on its own line | content copied; `"""` on its own line, as in GJF | SCOPE.md |
 | `final /* c */ public static int b;` | `public /* c */ static final int b;` | unchanged | SCOPE.md and comments design: comments never move across code |
 | code between `@formatter:off` and `on` | formatted | copied | SCOPE.md |
+| a `//` comment past the limit | wrapped onto a new `//` line | unchanged | SCOPE.md |
+| more than 100 nested expression indents | +4 each | no further indent | output size ([Deep nesting](#deep-nesting)) |
 
 Observed, considered as departures, and matched (decided in review):
 
