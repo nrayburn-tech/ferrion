@@ -364,10 +364,10 @@ explains every difference the check allows.
 
 ### Benchmarks
 
-`tools/bench` measures the lexer, the parser, the formatter, and class file reading, as
-[docs/design/benchmarks.md](docs/design/benchmarks.md) describes. With jedis checked out and its
-jars fetched, and `JAVA_HOME` set to a JDK, run every benchmark, or those whose names contain a
-filter, and save the results:
+`tools/bench` measures the lexer, the parser, the formatter, class file reading, and the semantic
+engine, as [docs/design/benchmarks.md](docs/design/benchmarks.md) describes. With jedis checked out
+and its jars fetched, and `JAVA_HOME` set to a JDK, run every benchmark, or those whose names
+contain a filter, and save the results:
 
 ```bash
 cargo benchmark run --out before.json
