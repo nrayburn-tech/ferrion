@@ -570,3 +570,35 @@ once and heavy jobs going through the shared slot lock.
   output is unstable, changes meaning, or goes against SCOPE.md.
 - **Benchmark regressions are flagged by instruction counts,** with the callgrind-based check in
   [Benchmarks](#benchmarks), rather than by wall-clock time.
+
+## Choices made while building the core
+
+The core (work order step 1) settled some details the design left open:
+
+- **Whitespace around comments** comes from each comment's own line breaks in the input, at most
+  one blank line: none before or after a comment becomes a space if the input had whitespace
+  there, and nothing if it didn't (`/*a*/b` stays together); one becomes a line break, and more a
+  blank line. A line comment always ends its line. These merge with the rules' whitespace, the
+  larger winning, so formatting the output asks for the same breaks again. A rule that keeps blank
+  lines (`line_break_before`) looks at the gap right after the previous code; the gaps between
+  comments are the comments'.
+- **Comments are placed in source order** by the token helper: before a token, every comment the
+  input has before it; after it, the comments that trail it or a node it ends. Dangling comments
+  come out before the closing delimiter, and a rule can place them earlier, inside an indent, with
+  `comments_before`.
+- **A space between text that would run together.** The printer puts a space between two pieces
+  of text written side by side when they weren't adjacent in the input and could lex differently
+  together (`-` `-`, `int` `x`, `/` `/*`), so a rule that leaves one out can't change the program.
+- **Fill separators** are their own element, `FillBreak`, which records the next item's width.
+- **A disable region that runs to the end of the file** ends the output as written, with no line
+  ending added, so the file is left exactly as it was from the `off` comment on.
+- **Doc comments** get the same re-indenting as other block comments in A1: stars aligned when
+  every later line starts with `*`, otherwise the shape kept.
+- **Markers** are found in comments of every kind, doc comments included.
+- **`format_tree` skips a tree with a syntax error** (`Skipped` with no diagnostics), and `verify`
+  accepts an input with errors only if the output is the input.
+- **`verify` reads the output as UTF-8,** with `SourceText::from_utf8`: `SourceText::decode` takes
+  a file with a quarter or more NUL bytes in its first kilobyte for UTF-16, and the output can
+  cross that share when the input didn't (found by the fuzz target). Equivalence also compares
+  each node's subtree size and each token's node, not only the kinds in order. A `Violation` has
+  the property, a message, and the byte offset in the output where it first fails.
