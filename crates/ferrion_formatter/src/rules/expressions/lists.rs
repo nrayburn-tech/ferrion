@@ -70,6 +70,14 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
     f.token(open);
     if items == 0 {
         let close = node.last_token();
+        // `{,}`: a comma without items.
+        for element in elements {
+            if let NodeOrToken::Token(comma) = element
+                && comma.kind() == K::Comma
+            {
+                f.token(comma);
+            }
+        }
         if !has_comments_before(close) {
             f.token(close);
         } else if shape == Delimited::Initializer {
