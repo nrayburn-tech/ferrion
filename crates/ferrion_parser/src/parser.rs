@@ -71,6 +71,8 @@ pub(crate) struct Parser<'t> {
     /// The token that starts the statement expression being parsed, if any: see
     /// [`Parser::at_statement_expr_start`].
     statement_expr_start: Option<usize>,
+    /// The spans of the lexer's errors, in order of their starts.
+    lexical_errors: &'t [Span],
 }
 
 impl<'t> Parser<'t> {
@@ -108,7 +110,15 @@ impl<'t> Parser<'t> {
             too_deep_reported: false,
             recovering: false,
             statement_expr_start: None,
+            lexical_errors: &[],
         }
+    }
+
+    /// The spans of the lexer's errors, in order of their starts, so that the parser reports
+    /// nothing more at a token the lexer reported (see [`Parser::error`]).
+    pub fn with_lexical_errors(mut self, spans: &'t [Span]) -> Parser<'t> {
+        self.lexical_errors = spans;
+        self
     }
 
     /// The events and the diagnostics, in the order they were reported.
@@ -292,13 +302,48 @@ impl<'t> Parser<'t> {
 
     /// Reports `kind`, unless an error was reported since a token was last consumed normally, and
     /// marks the innermost open node as containing an error either way.
+    ///
+    /// Nothing is reported either at a token the lexer reported an error in, or after characters
+    /// it couldn't make a token of: that is the mistake, and it was reported already. javac's
+    /// parser reports nothing at such a token, and its scanner has reported the error by the time
+    /// the parser looks at it, so javac's first error is the lexical one.
     pub fn error(&mut self, kind: ParseDiagnosticKind, span: Span, anchor: u32) {
         self.events.push(Event::Error);
         if !self.recovering {
-            self.diagnostics
-                .push(ParseDiagnostic::error(kind, span, anchor));
+            if !self.at_lexical_error() {
+                self.diagnostics
+                    .push(ParseDiagnostic::error(kind, span, anchor));
+            }
             self.recovering = true;
         }
+    }
+
+    /// Whether a lexical error is in the current token, or between it and the previous one, which
+    /// is where skipped characters and the second dot of `..` are.
+    fn at_lexical_error(&self) -> bool {
+        if self.lexical_errors.is_empty() {
+            return false;
+        }
+        let (previous_start, previous_end) = match self.pos.checked_sub(1) {
+            Some(previous) => {
+                let span = self.tokens[self.significant[previous].raw as usize].span;
+                (span.start, span.end)
+            }
+            None => (0, 0),
+        };
+        let end = if self.at_eof() {
+            u32::MAX
+        } else {
+            self.nth_span(0).end
+        };
+        // Errors in the previous token are about it, except one that goes on past it (`..`).
+        let first = self
+            .lexical_errors
+            .partition_point(|error| error.start < previous_start);
+        self.lexical_errors[first..]
+            .iter()
+            .take_while(|error| error.start < end)
+            .any(|error| error.start >= previous_end || error.end > previous_end)
     }
 
     /// Reports that `what` is missing, after the previous token.

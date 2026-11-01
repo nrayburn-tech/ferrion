@@ -47,11 +47,28 @@ pub struct Parse {
 pub fn parse(text: Arc<str>, options: ParseOptions) -> Parse {
     let release = options.release.clamp(OLDEST_RELEASE, LATEST_RELEASE);
     let lexed = ferrion_lexer::lex(&text);
-    let mut p = parser::Parser::new(&text, &lexed.tokens, release);
+    let lex_errors: Vec<_> = lexed.errors.iter().map(|e| e.span).collect();
+    // The lexical errors that stop the parser's errors at their tokens (see `Parser::error`).
+    // Not a digit out of place in a binary or octal literal (the one malformed number the lexer
+    // reports on a single digit), which javac's parser reports, not its scanner; nor an
+    // unterminated comment, which isn't a token: javac's parser goes on to the end of the file.
+    let scanner_errors: Vec<_> = lexed
+        .errors
+        .iter()
+        .filter(|e| match e.kind {
+            ferrion_lexer::LexErrorKind::MalformedNumber => {
+                !(e.span.len() == 1 && text.as_bytes()[e.span.start as usize].is_ascii_digit())
+            }
+            ferrion_lexer::LexErrorKind::UnterminatedComment => false,
+            _ => true,
+        })
+        .map(|e| e.span)
+        .collect();
+    let mut p =
+        parser::Parser::new(&text, &lexed.tokens, release).with_lexical_errors(&scanner_errors);
     grammar::compilation_unit(&mut p);
     let (events, mut diagnostics) = p.finish();
     diagnostics.extend(lexed.errors.iter().map(ParseDiagnostic::lexical));
-    let lex_errors: Vec<_> = lexed.errors.iter().map(|e| e.span).collect();
     let tree =
         builder::Builder::new(text.clone(), lexed.tokens, &lex_errors, release).build(events);
     diagnostics.extend(version::check(&tree));

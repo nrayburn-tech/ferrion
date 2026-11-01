@@ -1,0 +1,141 @@
+CompilationUnit 0..229 [error]
+  ClassDecl 0..228 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..19 "LexicalErrors"
+    Whitespace 19..20 " "
+    ClassBody 20..228 [error]
+      LBrace 20..21 "{"
+      LineTerminator 21..22 "\n"
+      Whitespace 22..26 "    "
+      FieldDecl 26..32 [error]
+        PrimitiveType 26..32
+          DoubleKw 26..32 "double"
+      Whitespace 32..33 " "
+      ErrorToken 33..34 "#"
+      Error 34..40 [error]
+        StringLiteral 34..40 "\"half\""
+      Semi 40..41 ";"
+      LineTerminator 41..42 "\n"
+      Whitespace 42..46 "    "
+      FieldDecl 46..67 [error]
+        PrimitiveType 46..53
+          BooleanKw 46..53 "boolean"
+        Whitespace 53..54 " "
+        ErrorToken 54..66 "\\ud83d\\udc0d"
+        Semi 66..67 ";"
+      LineTerminator 67..68 "\n"
+      Whitespace 68..72 "    "
+      FieldDecl 72..94 [error]
+        ClassType 72..87 [error]
+          ClassType 72..82 [error]
+            ClassType 72..81
+              ClassType 72..76
+                Identifier 72..76 "java"
+              Dot 76..77 "."
+              Identifier 77..81 "util"
+            Dot 81..82 "."
+          Dot 82..83 "."
+          Identifier 83..87 "List"
+        Whitespace 87..88 " "
+        VariableDeclarator 88..93
+          Identifier 88..93 "names"
+        Semi 93..94 ";"
+      LineTerminator 94..95 "\n"
+      Whitespace 95..99 "    "
+      MethodDecl 99..125 [error]
+        VoidType 99..103
+          VoidKw 99..103 "void"
+        Whitespace 103..104 " "
+        Identifier 104..107 "run"
+        FormalParameters 107..122 [error]
+          LParen 107..108 "("
+          FormalParameter 108..121 [error]
+            ClassType 108..121 [error]
+              ClassType 108..115 [error]
+                ClassType 108..114
+                  Identifier 108..114 "String"
+                Dot 114..115 "."
+              Dot 115..116 "."
+              Whitespace 116..117 " "
+              Identifier 117..121 "args"
+          RParen 121..122 ")"
+        Whitespace 122..123 " "
+        Block 123..125
+          LBrace 123..124 "{"
+          RBrace 124..125 "}"
+      LineTerminator 125..126 "\n"
+      Whitespace 126..130 "    "
+      FieldDecl 130..139 [error]
+        PrimitiveType 130..133
+          IntKw 130..133 "int"
+        Whitespace 133..134 " "
+        VariableDeclarator 134..139
+          Identifier 134..135 "x"
+          Whitespace 135..136 " "
+          Eq 136..137 "="
+          Whitespace 137..138 " "
+          LiteralExpr 138..139
+            IntLiteral 138..139 "1"
+      Whitespace 139..140 " "
+      Error 140..142 [error]
+        IntLiteral 140..142 "0x"
+      Semi 142..143 ";"
+      LineTerminator 143..144 "\n"
+      Whitespace 144..148 "    "
+      FieldDecl 148..157 [error]
+        PrimitiveType 148..151
+          IntKw 148..151 "int"
+        Whitespace 151..152 " "
+        VariableDeclarator 152..157
+          Identifier 152..153 "y"
+          Whitespace 153..154 " "
+          Eq 154..155 "="
+          Whitespace 155..156 " "
+          LiteralExpr 156..157
+            IntLiteral 156..157 "1"
+      Whitespace 157..158 " "
+      Error 158..162 [error]
+        IntLiteral 158..162 "0b12"
+      Semi 162..163 ";"
+      LineTerminator 163..164 "\n"
+      Whitespace 164..168 "    "
+      FieldDecl 168..192 [error]
+        PrimitiveType 168..172
+          CharKw 168..172 "char"
+        Whitespace 172..173 " "
+        VariableDeclarator 173..191 [error]
+          Identifier 173..174 "c"
+          Whitespace 174..175 " "
+          Eq 175..176 "="
+          Whitespace 176..177 " "
+          LiteralExpr 177..191 [error]
+            CharLiteral 177..191 "'\\ud83c\\udf4e'"
+        Semi 191..192 ";"
+      LineTerminator 192..193 "\n"
+      Whitespace 193..197 "    "
+      FieldDecl 197..226
+        ClassType 197..203
+          Identifier 197..203 "String"
+        Whitespace 203..204 " "
+        VariableDeclarator 204..225
+          Identifier 204..205 "t"
+          Whitespace 205..206 " "
+          Eq 206..207 "="
+          Whitespace 207..208 " "
+          LiteralExpr 208..225
+            StringLiteral 208..225 "\"\\u005C\\\\u005C\\]\""
+        Semi 225..226 ";"
+      LineTerminator 226..227 "\n"
+      RBrace 227..228 "}"
+  LineTerminator 228..229 "\n"
+  Eof 229..229 ""
+error 33..34 @33 Lexical(IllegalCharacter): illegal character
+error 54..66 @54 Lexical(IllegalCharacter): illegal character
+error 81..83 @81 Lexical(DoubleDot): `..` isn't an operator: write `.` or `...`
+error 114..116 @114 Lexical(DoubleDot): `..` isn't an operator: write `.` or `...`
+error 121..121 @121 Expected(Identifier): name expected
+error 140..142 @140 Lexical(MalformedNumber): malformed number
+error 157..157 @157 Expected(Token(Semi)): ';' expected
+error 161..162 @161 Lexical(MalformedNumber): malformed number
+error 177..191 @177 Lexical(SupplementaryCharLiteral): a character outside the Basic Multilingual Plane doesn't fit in a character literal

@@ -232,6 +232,7 @@ fn lexical_errors_have_javac_codes_and_positions() {
             19,
         ),
         ("class A { int # x; }", "illegal.char", 14),
+        ("class A { int #x; }", "illegal.char", 14),
         ("class A { java.io..File f; }", "illegal.dot", 18),
         ("class A { void m(Object.. o) {} }", "illegal.dot", 24),
         (
@@ -244,6 +245,7 @@ fn lexical_errors_have_javac_codes_and_positions() {
             "illegal.esc.char",
             28,
         ),
+        ("class A { int x = 1 0x; }", "invalid.hex.number", 20),
         (
             "class A { double b = 1.2\\u0663; }",
             "illegal.nonascii.digit",
