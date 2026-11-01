@@ -1,0 +1,13 @@
+# The gate of `cargo benchmark compare` (docs/design/benchmarks.md): the most a metric may grow
+# from the base to the head, as a percentage. Growing by more fails the comparison; shrinking by
+# more is reported as an improvement. Metrics not listed are reported but never fail it.
+#
+# Only metrics that are nearly the same from run to run are listed: callgrind's instruction count
+# and the heap counts. Wall, user, and system time and peak RSS move by more than these thresholds
+# on shared CI runners from one run to the next, so they're shown for a reviewer to judge.
+
+[thresholds]
+instructions = 2.0
+allocations = 2.0
+heap_allocated_bytes = 2.0
+heap_peak_bytes = 5.0
