@@ -1,0 +1,11 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  ERROR compiler.err.expected 12..18 @18 ['('] '(' expected
+tree at 27:
+  COMPILATION_UNIT 0..30 @0 "class A {\n  void a;\n  int b;\n}"
+    CLASS 0..30 @0 "class A {\n  void a;\n  int b;\n}"
+      MODIFIERS -1..-1 @-1
+      ERRONEOUS 12..18 @18 "void a"
+      VARIABLE 22..28 @26 "int b;"
+        MODIFIERS -1..-1 @-1
+        PRIMITIVE_TYPE 22..25 @22 "int"
