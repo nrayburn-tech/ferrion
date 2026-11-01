@@ -1,0 +1,184 @@
+CompilationUnit 0..314 [error]
+  ClassDecl 0..313 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..16 "YieldCalls"
+    Whitespace 16..17 " "
+    ClassBody 17..313 [error]
+      LBrace 17..18 "{"
+      LineTerminator 18..19 "\n"
+      Whitespace 19..23 "    "
+      MethodDecl 23..311 [error]
+        ClassType 23..29
+          Identifier 23..29 "Object"
+        Whitespace 29..30 " "
+        Identifier 30..31 "m"
+        FormalParameters 31..38
+          LParen 31..32 "("
+          FormalParameter 32..37
+            PrimitiveType 32..35
+              IntKw 32..35 "int"
+            Whitespace 35..36 " "
+            Identifier 36..37 "x"
+          RParen 37..38 ")"
+        Whitespace 38..39 " "
+        Block 39..311 [error]
+          LBrace 39..40 "{"
+          LineTerminator 40..41 "\n"
+          Whitespace 41..49 "        "
+          ExprStmt 49..61
+            MethodCallExpr 49..60
+              Identifier 49..54 "yield"
+              Arguments 54..60
+                LParen 54..55 "("
+                LiteralExpr 55..56
+                  IntLiteral 55..56 "7"
+                Comma 56..57 ","
+                Whitespace 57..58 " "
+                LiteralExpr 58..59
+                  IntLiteral 58..59 "8"
+                RParen 59..60 ")"
+            Semi 60..61 ";"
+          LineTerminator 61..62 "\n"
+          Whitespace 62..70 "        "
+          ExprStmt 70..78
+            MethodCallExpr 70..77
+              Identifier 70..75 "yield"
+              Arguments 75..77
+                LParen 75..76 "("
+                RParen 76..77 ")"
+            Semi 77..78 ";"
+          LineTerminator 78..79 "\n"
+          Whitespace 79..87 "        "
+          YieldStmt 87..98 [error]
+            YieldKw 87..92 "yield"
+            ParenExpr 92..98 [error]
+              LParen 92..93 "("
+              BinaryExpr 93..98
+                NameExpr 93..94
+                  Identifier 93..94 "a"
+                Whitespace 94..95 " "
+                Lt 95..96 "<"
+                Whitespace 96..97 " "
+                NameExpr 97..98
+                  Identifier 97..98 "b"
+          Error 98..99 [error]
+            Comma 98..99 ","
+          Whitespace 99..100 " "
+          ExprStmt 100..101 [error]
+            NameExpr 100..101
+              Identifier 100..101 "c"
+          Error 101..102 [error]
+            RParen 101..102 ")"
+          EmptyStmt 102..103
+            Semi 102..103 ";"
+          LineTerminator 103..104 "\n"
+          Whitespace 104..112 "        "
+          YieldStmt 112..127
+            YieldKw 112..117 "yield"
+            ParenExpr 117..126
+              LParen 117..118 "("
+              MethodCallExpr 118..125
+                Identifier 118..119 "f"
+                Arguments 119..125
+                  LParen 119..120 "("
+                  NameExpr 120..121
+                    Identifier 120..121 "a"
+                  Comma 121..122 ","
+                  Whitespace 122..123 " "
+                  NameExpr 123..124
+                    Identifier 123..124 "b"
+                  RParen 124..125 ")"
+              RParen 125..126 ")"
+            Semi 126..127 ";"
+          LineTerminator 127..128 "\n"
+          Whitespace 128..136 "        "
+          ReturnStmt 136..305
+            ReturnKw 136..142 "return"
+            Whitespace 142..143 " "
+            SwitchExpr 143..304
+              SwitchKw 143..149 "switch"
+              Whitespace 149..150 " "
+              LParen 150..151 "("
+              NameExpr 151..152
+                Identifier 151..152 "x"
+              RParen 152..153 ")"
+              Whitespace 153..154 " "
+              SwitchBlock 154..304
+                LBrace 154..155 "{"
+                LineTerminator 155..156 "\n"
+                Whitespace 156..168 "            "
+                SwitchRule 168..228
+                  SwitchLabel 168..174
+                    CaseKw 168..172 "case"
+                    Whitespace 172..173 " "
+                    LiteralExpr 173..174
+                      IntLiteral 173..174 "1"
+                  Whitespace 174..175 " "
+                  Arrow 175..177 "->"
+                  Whitespace 177..178 " "
+                  Block 178..228
+                    LBrace 178..179 "{"
+                    LineTerminator 179..180 "\n"
+                    Whitespace 180..196 "                "
+                    YieldStmt 196..214
+                      YieldKw 196..201 "yield"
+                      Whitespace 201..202 " "
+                      LambdaExpr 202..213
+                        LambdaParameters 202..208
+                          LParen 202..203 "("
+                          LambdaParameter 203..204
+                            Identifier 203..204 "a"
+                          Comma 204..205 ","
+                          Whitespace 205..206 " "
+                          LambdaParameter 206..207
+                            Identifier 206..207 "b"
+                          RParen 207..208 ")"
+                        Whitespace 208..209 " "
+                        Arrow 209..211 "->"
+                        Whitespace 211..212 " "
+                        NameExpr 212..213
+                          Identifier 212..213 "a"
+                      Semi 213..214 ";"
+                    LineTerminator 214..215 "\n"
+                    Whitespace 215..227 "            "
+                    RBrace 227..228 "}"
+                LineTerminator 228..229 "\n"
+                Whitespace 229..241 "            "
+                SwitchRule 241..294
+                  SwitchLabel 241..248
+                    DefaultKw 241..248 "default"
+                  Whitespace 248..249 " "
+                  Arrow 249..251 "->"
+                  Whitespace 251..252 " "
+                  Block 252..294
+                    LBrace 252..253 "{"
+                    LineTerminator 253..254 "\n"
+                    Whitespace 254..270 "                "
+                    YieldStmt 270..280
+                      YieldKw 270..275 "yield"
+                      Whitespace 275..276 " "
+                      ParenExpr 276..279
+                        LParen 276..277 "("
+                        LiteralExpr 277..278
+                          IntLiteral 277..278 "1"
+                        RParen 278..279 ")"
+                      Semi 279..280 ";"
+                    LineTerminator 280..281 "\n"
+                    Whitespace 281..293 "            "
+                    RBrace 293..294 "}"
+                LineTerminator 294..295 "\n"
+                Whitespace 295..303 "        "
+                RBrace 303..304 "}"
+            Semi 304..305 ";"
+          LineTerminator 305..306 "\n"
+          Whitespace 306..310 "    "
+          RBrace 310..311 "}"
+      LineTerminator 311..312 "\n"
+      RBrace 312..313 "}"
+  LineTerminator 313..314 "\n"
+  Eof 314..314 ""
+error 49..54 @49 YieldCall { release: 27 }: a method named 'yield' must be called with a qualifier from Java 14
+error 70..75 @70 YieldCall { release: 27 }: a method named 'yield' must be called with a qualifier from Java 14
+error 98..98 @98 Expected(Token(RParen)): ')' expected
+error 100..101 @100 NotAStatement: this expression can't be used as a statement

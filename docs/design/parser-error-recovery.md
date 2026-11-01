@@ -212,6 +212,7 @@ javac 27:
 | `int assert;`, `void enum() {}`, `Object this;` | `assert.as.identifier`, `enum.as.identifier`, `this.as.identifier` | the keyword |
 | `(A a.this) -> {}` | `this.as.identifier` | `this` |
 | `void[] a;`, `void m(void[] a)` | `expected` (`<identifier> expected`) | end of `void` |
+| `yield(1, 2);`, `yield();` as statements | `invalid.yield` | `yield` |
 | a `;` before an import | `extraneous.semicolon` (a warning before 21) | the first `;` of a run |
 | a feature too new for the release | `feature.not.supported.in.source(.plural)` | the feature's anchor (see [language versions](parser-language-versions.md#the-feature-table)) |
 | `class var {}`, `<var>` | `restricted.type.not.allowed` (a warning before the release) | the name |

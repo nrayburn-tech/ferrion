@@ -616,8 +616,9 @@ fn synchronized_stmt(p: &mut Parser<'_>) {
 }
 
 /// Whether a `yield` statement starts here: from release 14, `yield` followed by a token that
-/// can start an expression, or by `;`. `yield = 1`, `yield.f()`, `yield++;`, `yield: ...`, and
-/// `yield<T> x` keep reading `yield` as a name, as javac's do. At 13 and below, `yield` is
+/// can start an expression, or by `;`. `yield = 1`, `yield.f()`, `yield++;`, `yield: ...`,
+/// `yield<T> x`, and `yield(1, 2)` ([`yield_call_ahead`]) keep reading `yield` as a name, as
+/// javac's do. At 13 and below, `yield` is
 /// always a name (docs/design/parser-language-versions.md).
 fn at_yield_stmt(p: &Parser<'_>) -> bool {
     if p.release() < 14 || !p.at(YieldKw) {
@@ -626,10 +627,49 @@ fn at_yield_stmt(p: &Parser<'_>) -> bool {
     match p.nth(1) {
         // `yield++;` increments a variable named `yield`; `yield ++x;` yields.
         PlusPlus | MinusMinus => p.nth(2) != Semi,
-        Semi | Plus | Minus | Bang | Tilde | LParen | At | ThisKw | SuperKw | NewKw | SwitchKw
-        | VoidKw => true,
+        LParen => !yield_call_ahead(p),
+        Semi | Plus | Minus | Bang | Tilde | At | ThisKw | SuperKw | NewKw | SwitchKw | VoidKw => {
+            true
+        }
         _ => p.nth_at_set(1, IDENT) || p.nth_at_set(1, LITERAL) || p.nth_at_set(1, PRIMITIVE),
     }
+}
+
+/// At `yield (`: whether javac reads a call to a method named `yield`, which the version check
+/// reports, rather than a `yield` statement with a parenthesized value or a lambda. It does when
+/// the parentheses are empty or hold a `,` at their top level, and no `->` follows them:
+/// `yield(1, 2);`, but not `yield (a, b) -> a;`. A `<` before the `,` (anywhere after the `(`,
+/// until a `>` that isn't part of `>>` or `>>>`) makes it type arguments, so `yield(a < b, c);`
+/// is a statement and `yield(a < b > c, d);` a call. Scans to the closing `)`, or the end of the
+/// file, but no more than `YIELD_SCAN_BUDGET` tokens, so that lambdas nested in the parentheses,
+/// each with a `yield (` of its own, can't make parsing quadratic.
+fn yield_call_ahead(p: &Parser<'_>) -> bool {
+    const YIELD_SCAN_BUDGET: usize = 4096;
+    let mut depth = 0usize;
+    let mut type_arguments = false;
+    let mut call = p.nth(2) == RParen;
+    for n in 1..YIELD_SCAN_BUDGET {
+        match p.nth(n) {
+            LParen => depth += 1,
+            RParen => {
+                depth -= 1;
+                if depth == 0 {
+                    return call && p.nth(n + 1) != Arrow;
+                }
+            }
+            Comma if depth == 1 && !type_arguments => call = true,
+            Lt => type_arguments = true,
+            // A lone `>`, not one of the `>` tokens that make up `>>`, `>>>`, or `>>=`.
+            Gt if !(p.nth_is_adjacent(n) && p.nth(n - 1) == Gt)
+                && !(p.nth_is_adjacent(n + 1) && matches!(p.nth(n + 1), Gt | GtEq)) =>
+            {
+                type_arguments = false;
+            }
+            Eof => return call,
+            _ => {}
+        }
+    }
+    call
 }
 
 fn yield_stmt(p: &mut Parser<'_>) {
