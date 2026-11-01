@@ -132,8 +132,9 @@ pub(crate) fn delimited_list<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, la
                 ListLayout::OnePerLine | ListLayout::Broken => items(f),
             }
         });
-        emit(f, *close);
     });
+    // After the group, so that a line comment after it doesn't break the list.
+    emit(f, *close);
 }
 
 /// Emits `items`, a list's items and the commas between them, with a `Line` after each comma, or
@@ -196,10 +197,11 @@ fn dangling<'t>(f: &mut Formatter<'t>, close: SyntaxToken<'t>) {
 
 /// Whether `node`, printed flat with a space where [`super::space_between`] puts one, fits in
 /// `budget` columns together with the comments after it on its last line. It looks at no more
-/// than `budget` columns of tokens, so it costs a constant, however large the node. A line
-/// comment, copied text with a line break, or a body that isn't empty makes it not fit, since
-/// they force a break.
-pub(crate) fn fits_flat(node: SyntaxNode<'_>, budget: u32) -> bool {
+/// than `budget` columns of tokens, so it costs a constant, however large the node. Copied text
+/// with a line break, or a body that isn't empty, makes it not fit, since they force a break, and
+/// so does a comment that ends its line inside the node unless `comments` is false, when it
+/// counts for nothing.
+pub(crate) fn fits_flat(node: SyntaxNode<'_>, budget: u32, comments: bool) -> bool {
     let last = node.last_token().id();
     let mut used: u32 = 0;
     let mut previous: Option<SyntaxToken<'_>> = None;
@@ -215,8 +217,9 @@ pub(crate) fn fits_flat(node: SyntaxNode<'_>, budget: u32) -> bool {
                 used += 1 + width(t.text().trim_end());
                 return used <= budget;
             }
-            K::LineComment | K::DocLineComment => return false,
-            K::BlockComment | K::DocComment => {
+            K::LineComment | K::DocLineComment | K::DocComment if !comments => {}
+            K::LineComment | K::DocLineComment | K::DocComment => return false,
+            K::BlockComment => {
                 if t.text().contains(['\n', '\r']) {
                     return past_end && used < budget;
                 }
@@ -268,10 +271,10 @@ fn estimated_indent(node: SyntaxNode<'_>) -> u32 {
 }
 
 /// Whether a declaration starting at `node` fits on its line, as far as [`estimated_indent`]
-/// and [`fits_flat`] can tell before printing.
-fn fits_on_line(node: SyntaxNode<'_>) -> bool {
+/// and [`fits_flat`] can tell before printing, with `comments` as `fits_flat` takes it.
+fn fits_on_line(node: SyntaxNode<'_>, comments: bool) -> bool {
     let indent = estimated_indent(node);
-    indent < LINE_WIDTH && fits_flat(node, LINE_WIDTH - indent)
+    indent < LINE_WIDTH && fits_flat(node, LINE_WIDTH - indent, comments)
 }
 
 /// Whether a doc comment is among the comments before `token`, back to the code before them.

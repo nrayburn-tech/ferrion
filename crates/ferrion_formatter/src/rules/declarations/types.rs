@@ -259,8 +259,9 @@ pub(super) fn spaced_member(member: NodeOrToken<'_>) -> bool {
                 || field.first_child().is_some_and(|modifiers| {
                     modifiers.kind() == K::Modifiers
                         && match annotations::field_layout(modifiers) {
-                            Layout::OwnLines => true,
-                            Layout::LineAfter => !fits_on_line(field),
+                            Layout::OwnLines | Layout::BeforeType => true,
+                            // A line comment that breaks the field doesn't make GJF space it (observed).
+                            Layout::LineAfter => !fits_on_line(field, false),
                             _ => false,
                         }
                 })
