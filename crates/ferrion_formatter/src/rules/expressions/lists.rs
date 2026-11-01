@@ -43,6 +43,13 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
     let mut narrow = true;
     let mut trailing_comma = false;
     let mut opened = false;
+    // Whether the input has the items in rows of two, `Map.of(` then `"a", A,` then `"b", B)`:
+    // the first item starts a line, and each row starts with an item that starts a line at or
+    // left of the first item's column. The second item of a row may be on a line of its own if
+    // it is indented further, as a pair that doesn't fit on its line is printed.
+    let mut pairs = true;
+    let mut base = None;
+    let mut row = 0;
     for element in elements(node) {
         match element {
             NodeOrToken::Token(token) if is_open(token) => opened = true,
@@ -50,11 +57,33 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
                 items += 1;
                 narrow = narrow && fits_in(child, FILL_WIDTH);
                 trailing_comma = false;
+                let column = line_start_column(child.first_token());
+                let starts_row = match (base, column) {
+                    (None, Some(column)) => {
+                        base = Some(column);
+                        true
+                    }
+                    (None, None) => {
+                        pairs = false;
+                        true
+                    }
+                    (Some(base), Some(column)) => column <= base,
+                    (Some(_), None) => false,
+                };
+                if starts_row {
+                    pairs = pairs && (row == 0 || row == 2);
+                    row = 1;
+                } else {
+                    row += 1;
+                }
             }
             NodeOrToken::Token(token) if token.kind() == K::Comma => trailing_comma = true,
             _ => {}
         }
     }
+    // GJF keeps such pairs, one on each line, each breaking before its second item if it
+    // doesn't fit (observed).
+    let pairs = pairs && row == 2 && items >= 4 && !trailing_comma && shape != Delimited::Hug;
     let mut elements = elements(node).peekable();
     // Whatever comes before the opening delimiter.
     while let Some(&element) = elements.peek() {
@@ -99,7 +128,7 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
         }
         return;
     }
-    let fill = narrow && items > 1 && shape != Delimited::Hug;
+    let fill = narrow && items > 1 && shape != Delimited::Hug && !pairs;
     let close = node.last_token();
     debug_assert!(
         is_close(close),
@@ -132,6 +161,9 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
             f.comments_before(first_token(first).id());
         }
         let list = |f: &mut Formatter<'t>| {
+            // How many items so far, and the indentation of the second item of a pair.
+            let mut index = 0;
+            let mut pair = None;
             for element in items {
                 match element {
                     NodeOrToken::Token(comma) if comma.kind() == K::Comma => {
@@ -140,7 +172,12 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
                             if comment_on_line_after(comma) {
                                 f.comments_before(next.id());
                             }
-                            if fill {
+                            if pairs && index % 2 == 1 {
+                                pair = Some(Indentation::start(f, IndentKind::Continuation, false));
+                                f.line();
+                            } else if pairs {
+                                f.hard_line();
+                            } else if fill {
                                 f.fill_break(false);
                             } else {
                                 f.line();
@@ -152,6 +189,17 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
                             f.alternative_mark(outer);
                         }
                         f.hug_in_group(|f| f.node(item));
+                    }
+                    NodeOrToken::Node(item) if pairs => {
+                        if index % 2 == 0 {
+                            f.start_group();
+                        }
+                        f.node(item);
+                        if let Some(indentation) = pair.take() {
+                            indentation.end(f);
+                            f.end();
+                        }
+                        index += 1;
                     }
                     _ => emit(f, element),
                 }
@@ -241,6 +289,25 @@ fn names_parameter(comment: &str) -> bool {
                     .chars()
                     .all(|c| c.is_alphanumeric() || c == '_' || c == '$')
         })
+}
+
+/// The column `token` starts at in the input, if only whitespace and comments come before it on
+/// its line.
+fn line_start_column(token: SyntaxToken<'_>) -> Option<u32> {
+    let mut column = 0;
+    let mut previous = token.prev_token();
+    while let Some(t) = previous {
+        match t.kind() {
+            K::LineTerminator => return Some(column),
+            K::Whitespace => column += width(t.text()),
+            kind if is_comment(kind) && !t.text().contains(['\n', '\r']) => {
+                column += width(t.text())
+            }
+            _ => return None,
+        }
+        previous = t.prev_token();
+    }
+    Some(column)
 }
 
 /// Whether there is a comment between `token` and the token before it.

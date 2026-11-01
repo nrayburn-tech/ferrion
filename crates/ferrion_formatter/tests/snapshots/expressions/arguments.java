@@ -1,5 +1,5 @@
 // Arguments: all on the call's line, otherwise all on the next line at +4, otherwise one per
-// line; filled when every argument is at most 9 wide.
+// line; filled when every argument is at most 9 wide, and in pairs when the input has them so.
 class Arguments {
   void m() {
     foo();
@@ -32,6 +32,17 @@ class Arguments {
     remap(key, valueAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA, /* hints= */ null, /* computeIfAbsent= */ true);
     foo(a, b).bar(c) // trailing the call
         .baz();
+    x = Map.of(
+        "magenta", HIGHLIGHT_MAGENTA,
+        "teal", HIGHLIGHT_TEAL,
+        "amber", HIGHLIGHT_AMBER,
+        "red", HIGHLIGHT_RED);
+    x = Map.of(
+        "a", A,
+        "b", B);
+    x = Map.of(
+        "magentaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", HIGHLIGHT_MAGENTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,
+        "teal", HIGHLIGHT_TEAL);
     foo("""
         text
         """);
