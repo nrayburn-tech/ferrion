@@ -3,7 +3,8 @@ name: Oracle
 # The full javac comparison: every corpus file at each primary release (the LTS releases and the
 # latest), and javac's own tests at the releases they're compiled at. Pull requests compare each
 # corpus file at its own release only (see ci.yml). The parser's own checks run here on javac's
-# tests too, and on a larger mutation sample.
+# tests too, and on a larger mutation sample. The formatter's checks run on the whole corpus and
+# javac's tests, and its diff against Google Java Format on every corpus project.
 # The class file comparison runs on every JDK of the matrix and on every corpus project's jars;
 # pull requests check one JDK's own release and one project's jars.
 
@@ -81,6 +82,37 @@ jobs:
       # Ten times the pull requests' sample, with another seed, against the same thresholds.
       - name: Check error recovery on more mutated corpus files
         run: cargo parser-check mutate --seed 2 --sample 20000
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+
+  formatter:
+    name: formatter checks on the whole corpus and javac's tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      # Google Java Format runs on the JDK pinned in tools/format-check/gjf.toml.
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "27"
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: Check out the corpus and javac's tests
+        run: |
+          cargo corpus checkout
+          cargo corpus jdk-tests
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Check the formatter's safety properties on every corpus file
+        run: cargo format-check verify
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Check the formatter's safety properties on javac's tests
+        run: cargo format-check verify jdk-tests
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Check the diff against Google Java Format on every corpus project
+        run: cargo format-check gjf --check
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
 
