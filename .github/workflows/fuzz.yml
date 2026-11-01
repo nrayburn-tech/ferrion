@@ -26,7 +26,7 @@ env:
   FUZZ_SECONDS: ${{ inputs.seconds || 1800 }}
 
 jobs:
-  fuzz:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
@@ -37,24 +37,62 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: fuzz
-      - run: cargo install cargo-fuzz --version 0.13.2 --locked
       - name: Check the fuzz crate
         run: |
           cargo fmt --manifest-path fuzz/Cargo.toml --check
           cargo clippy --manifest-path fuzz/Cargo.toml --all-targets --locked -- -D warnings
-      - name: Build the fuzz targets
+
+  # Each shard takes every fourth target and runs its targets side by side, one per runner core.
+  # Adding a shard to the matrix spreads the targets over it.
+  fuzz:
+    name: fuzz (shard ${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [ 0, 1, 2, 3 ]
+    steps:
+      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      - run: rustup toolchain install
+      - name: Install the nightly toolchain pinned in fuzz/rust-toolchain.toml
         working-directory: fuzz
-        run: cargo fuzz build --sanitizer none --debug-assertions
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: fuzz
+          # Every shard builds the same thing, so one copy of the cache is enough.
+          save-if: ${{ matrix.shard == 0 }}
+      - run: cargo install cargo-fuzz --version 0.13.2 --locked
+      - name: Pick this shard's targets
+        working-directory: fuzz
+        env:
+          SHARD: ${{ matrix.shard }}
+          SHARDS: ${{ strategy.job-total }}
+        run: |
+          targets=$(cargo fuzz list | awk -v shard="$SHARD" -v shards="$SHARDS" '(NR - 1) % shards == shard' | xargs)
+          echo "Targets: ${targets:-none}"
+          echo "TARGETS=$targets" >> "$GITHUB_ENV"
+      - name: Build the fuzz targets
+        if: env.TARGETS != ''
+        working-directory: fuzz
+        run: |
+          for target in $TARGETS; do
+            cargo fuzz build --sanitizer none --debug-assertions "$target"
+          done
       # The corpus that earlier scheduled runs built up.
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - if: env.TARGETS != ''
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: fuzz/corpus
           key: fuzz-corpus-${{ github.run_id }}
           restore-keys: fuzz-corpus-
-      - name: Run each fuzz target for ${{ env.FUZZ_SECONDS }} seconds
+      - name: Run this shard's fuzz targets for ${{ env.FUZZ_SECONDS }} seconds
+        if: env.TARGETS != ''
         working-directory: fuzz
         run: |
-          for target in $(cargo fuzz list); do
+          pids=()
+          mkdir -p logs
+          for target in $TARGETS; do
             mkdir -p "corpus/$target" "seeds/$target"
             case "$target" in
               javadoc | markdown) dict=doc_comments.dict ;;
@@ -64,24 +102,80 @@ jobs:
             esac
             cargo fuzz run --sanitizer none --debug-assertions "$target" \
               "corpus/$target" "seeds/$target" -- \
-              -dict="$dict" -max_total_time="$FUZZ_SECONDS" -timeout=10
+              -dict="$dict" -max_total_time="$FUZZ_SECONDS" -timeout=10 \
+              > "logs/$target.log" 2>&1 &
+            pids+=($!)
           done
+          status=0
+          i=0
+          for target in $TARGETS; do
+            pid=${pids[i]}
+            i=$((i + 1))
+            if wait "$pid"; then
+              result=passed
+            else
+              result=failed
+              status=1
+            fi
+            echo "::group::$target $result"
+            cat "logs/$target.log"
+            echo "::endgroup::"
+            if [ "$result" = failed ]; then
+              echo "::error title=Fuzz target $target failed::See the $target log group above."
+            fi
+          done
+          exit "$status"
       - name: Upload crashing inputs
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: fuzz-artifacts
+          name: fuzz-artifacts-${{ matrix.shard }}
           path: fuzz/artifacts
           if-no-files-found: ignore
-      - name: Minimize the corpus
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+      # The corpus-save job below merges every shard's corpus into the cache.
+      - name: Minimize this shard's corpus
+        if: always() && env.TARGETS != '' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
         working-directory: fuzz
         run: |
-          for target in $(cargo fuzz list); do
+          mkdir shard-corpus
+          for target in $TARGETS; do
             cargo fuzz cmin --sanitizer none --debug-assertions "$target" "corpus/$target"
+            mv "corpus/$target" shard-corpus/
           done
-      - if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - if: always() && env.TARGETS != '' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuzz-corpus-${{ matrix.shard }}
+          path: fuzz/shard-corpus
+          retention-days: 1
+          if-no-files-found: ignore
+
+  corpus-save:
+    needs: fuzz
+    if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    steps:
+      # Starting from the previous corpus keeps the targets of any shard that uploaded nothing.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: fuzz/corpus
+          key: fuzz-corpus-${{ github.run_id }}
+          restore-keys: fuzz-corpus-
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: fuzz-corpus-*
+          path: shard-corpus
+          merge-multiple: true
+      - name: Replace each fuzzed target's corpus with its minimized one
+        run: |
+          mkdir -p fuzz/corpus
+          for dir in shard-corpus/*/; do
+            [ -d "$dir" ] || continue
+            target=$(basename "$dir")
+            rm -rf "fuzz/corpus/$target"
+            mv "$dir" "fuzz/corpus/$target"
+          done
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: fuzz/corpus
           key: fuzz-corpus-${{ github.run_id }}
