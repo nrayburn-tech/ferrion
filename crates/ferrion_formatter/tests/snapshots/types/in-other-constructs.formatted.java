@@ -8,7 +8,8 @@ class InOtherConstructs extends SomeVeryLongBaseClassName<
       SomeVeryLongTypeNameNumberOneAAAAAAAAAAAAAAAAAA,
       SomeVeryLongTypeNameNumberOneBBBBBBBBBBBBB> b;
   com.example.some.very.lng.pkg.name.that.goes.on.and.on.forever.and.ever.and.ever.and.ever
-          .SomeTypeName<SomeVeryLongTypeArgumentOne, SomeVeryLongTypeArgumentTwo> c;
+          .SomeTypeName<
+      SomeVeryLongTypeArgumentOne, SomeVeryLongTypeArgumentTwo> c;
 
   public static <
       KeyTypeParameterName extends Comparable<KeyTypeParameterName>,

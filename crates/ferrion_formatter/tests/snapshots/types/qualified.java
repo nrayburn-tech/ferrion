@@ -11,6 +11,10 @@ class Arguments<T extends Comparable<T> & com.example.some.very.lng.pkg.name.tha
 
 class ArgumentsBreak<T extends Comparable<T> & com.example.some.very.lng.pkg.name.that.goes.on.and.on.forever.and.ever.and.ever.Some<SomeVeryLongTypeArgumentNameNumberOne, B>> {}
 
+class BothBreak<T extends Comparable<T> & com.example.some.very.lng.pkg.name.that.goes.on.and.on.forever.and.ever.and.ever.and.Some<SomeVeryLongTypeArgumentNameNumberOne, B>> {}
+
+class Inner<T extends Comparable<T> & com.example.Outer<SomeArgumentTypeNameNumberOne>.Inner<SomeArgumentTypeNameNumberTwo>> {}
+
 class Lowercase<T extends Comparable<T> & abcde.example.some.very.lng.pkg.name.that.goes.on.and.on.forever.and.ever.and.ever.lowercase> {}
 
 class ShortFirstName<T extends Comparable<T> & abc.example.some.very.lng.pkg.name.that.goes.on.and.on.forever.and.ever.and.ever.lowercase> {}

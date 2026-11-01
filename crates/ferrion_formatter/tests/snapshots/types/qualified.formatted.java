@@ -31,6 +31,19 @@ class ArgumentsBreak<
             & com.example.some.very.lng.pkg.name.that.goes.on.and.on.forever.and.ever.and.ever.Some<
                 SomeVeryLongTypeArgumentNameNumberOne, B>> {}
 
+class BothBreak<
+    T extends
+        Comparable<T>
+            & com.example.some.very.lng.pkg.name.that.goes.on.and.on.forever.and.ever.and.ever.and
+                    .Some<
+                SomeVeryLongTypeArgumentNameNumberOne, B>> {}
+
+class Inner<
+    T extends
+        Comparable<T>
+            & com.example.Outer<SomeArgumentTypeNameNumberOne>.Inner<
+                SomeArgumentTypeNameNumberTwo>> {}
+
 class Lowercase<
     T extends
         Comparable<T>
