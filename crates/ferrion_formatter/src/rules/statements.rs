@@ -11,11 +11,12 @@ mod local;
 mod switch;
 mod try_stmt;
 
-use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
+use ferrion_syntax::{SyntaxKind as K, SyntaxNode, SyntaxToken};
 
-use super::generic;
+use super::{children as elements, emit, generic};
 use crate::document::IndentKind;
 use crate::format::Formatter;
+use crate::rules::comments::{self, leads_on_code_line};
 
 pub fn format<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     match node.kind() {
@@ -52,33 +53,6 @@ pub fn format<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     }
 }
 
-/// The children of `node` that aren't trivia, in order.
-fn elements<'t>(node: SyntaxNode<'t>) -> impl Iterator<Item = NodeOrToken<'t>> {
-    node.children_with_tokens()
-        .filter(|element| !matches!(element, NodeOrToken::Token(token) if token.is_trivia()))
-}
-
-/// Emits a child: a token with [`Formatter::token`], a node with its rule.
-fn emit<'t>(f: &mut Formatter<'t>, element: NodeOrToken<'t>) {
-    match element {
-        NodeOrToken::Token(token) => f.token(token),
-        NodeOrToken::Node(node) => f.node(node),
-    }
-}
-
-/// Whether a line comment follows `token` on its line, with only spaces between.
-fn line_comment_after(token: SyntaxToken<'_>) -> bool {
-    let mut next = token.next_token();
-    while let Some(t) = next {
-        match t.kind() {
-            K::Whitespace => next = t.next_token(),
-            K::LineComment | K::DocLineComment => return true,
-            _ => return false,
-        }
-    }
-    false
-}
-
 /// A line break before `next`, which starts a line: a statement, or a rule or group of a switch.
 /// With `keep_blank`, a blank line there in the input is kept.
 ///
@@ -86,7 +60,7 @@ fn line_comment_after(token: SyntaxToken<'_>) -> bool {
 /// line, as GJF does (`a(); /* why */` then `b();`), except after a `{`, where it goes on a line of
 /// its own before `next`.
 fn line_break<'t>(f: &mut Formatter<'t>, next: SyntaxToken<'t>, keep_blank: bool) {
-    let comment = block_comment_after_code(next);
+    let comment = leads_on_code_line(next);
     let after_brace = comment
         && next
             .prev_non_trivia()
@@ -105,24 +79,6 @@ fn line_break<'t>(f: &mut Formatter<'t>, next: SyntaxToken<'t>, keep_blank: bool
     }
 }
 
-/// Whether the first comment before `next` is a block comment on the line of the code before
-/// it.
-fn block_comment_after_code(next: SyntaxToken<'_>) -> bool {
-    let Some(code) = next.prev_non_trivia() else {
-        return false;
-    };
-    let mut token = code.next_token();
-    while let Some(t) = token
-        && t.id() < next.id()
-    {
-        match t.kind() {
-            K::Whitespace => token = t.next_token(),
-            kind => return kind == K::BlockComment,
-        }
-    }
-    false
-}
-
 /// The body of an `if`, `else`, loop, or `do`, after `before`, the token ahead of it.
 ///
 /// A block follows after a space, and an empty statement goes on the next line at +2. Any
@@ -139,9 +95,9 @@ fn body<'t>(f: &mut Formatter<'t>, body: SyntaxNode<'t>, before: SyntaxToken<'t>
             line_break(f, body.first_token(), false);
             f.node(body);
         }),
-        _ if line_comment_after(before) => f.node(body),
+        _ if comments::line_comment_after(before) => f.node(body),
         _ => {
-            if block_comment_after_code(body.first_token()) {
+            if leads_on_code_line(body.first_token()) {
                 f.comments_before(body.first_token().id());
             }
             f.group(|f| {

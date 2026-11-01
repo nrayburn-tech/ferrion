@@ -1,11 +1,12 @@
 //! Blocks: every `{ … }` of statements, whether it is a statement, a body of a statement, or the
 //! body of a method, constructor, initializer, or lambda.
 
-use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
+use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
 use super::{elements, line_break};
 use crate::document::IndentKind;
 use crate::format::Formatter;
+use crate::rules::comments::{self, has_comments_before};
 
 /// A block: its statements on their own lines at +2, and the `}` on a line of its own.
 ///
@@ -31,7 +32,7 @@ pub fn block<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                     f.hard_line();
                 } else if has_comments_before(token) {
                     f.indent(IndentKind::Block, |f| {
-                        if !lbrace.is_some_and(super::line_comment_after) {
+                        if !lbrace.is_some_and(comments::line_comment_after) {
                             f.hard_line();
                         }
                         f.comments_before(token.id());
@@ -55,20 +56,6 @@ pub fn block<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             }
         }
     }
-}
-
-/// Whether there is a comment between `token` and the token before it that isn't trivia.
-fn has_comments_before(token: SyntaxToken<'_>) -> bool {
-    let mut previous = token.prev_token();
-    while let Some(t) = previous
-        && t.is_trivia()
-    {
-        if ferrion_syntax::comments::is_comment(t.kind()) {
-            return true;
-        }
-        previous = t.prev_token();
-    }
-    false
 }
 
 /// How a block's ends print, by what it belongs to, as observed in GJF.

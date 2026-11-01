@@ -6,6 +6,7 @@ use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
 use super::{Indentation, elements, emit, first_token, lambdas};
 use crate::document::{IndentKind, width};
 use crate::format::Formatter;
+use crate::rules::comments::has_comments_before;
 
 /// GJF fills a list whose items are all at most this wide: as many on a line as fit. Otherwise a
 /// list that doesn't fit on a line puts each item on its own (observed: up to 9 fills, from 10
@@ -324,20 +325,6 @@ fn comment_on_line_before(token: SyntaxToken<'_>) -> bool {
             K::LineTerminator => return false,
             kind if is_comment(kind) => return true,
             _ => {}
-        }
-        previous = t.prev_token();
-    }
-    false
-}
-
-/// Whether there is a comment between `token` and the token before it.
-fn has_comments_before(token: SyntaxToken<'_>) -> bool {
-    let mut previous = token.prev_token();
-    while let Some(t) = previous
-        && t.is_trivia()
-    {
-        if is_comment(t.kind()) {
-            return true;
         }
         previous = t.prev_token();
     }

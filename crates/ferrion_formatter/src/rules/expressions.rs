@@ -12,9 +12,9 @@ pub(crate) mod lambdas;
 pub(crate) mod lists;
 mod operators;
 
-use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
+use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
-use super::generic;
+use super::{children as elements, emit, first_token, generic, last_token};
 use crate::document::IndentKind;
 use crate::format::Formatter;
 
@@ -39,34 +39,6 @@ pub fn format<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         K::ArrayInitializer => arrays::initializer(f, node),
         K::RecordPattern => lists::record_pattern(f, node),
         _ => generic(f, node),
-    }
-}
-
-/// The children of `node` that aren't trivia, in order.
-fn elements<'t>(node: SyntaxNode<'t>) -> impl Iterator<Item = NodeOrToken<'t>> {
-    node.children_with_tokens()
-        .filter(|e| !matches!(e, NodeOrToken::Token(t) if t.is_trivia()))
-}
-
-/// Emits a child of a node: a token through the token helper, a node through its rule.
-fn emit<'t>(f: &mut Formatter<'t>, element: NodeOrToken<'t>) {
-    match element {
-        NodeOrToken::Token(token) => f.token(token),
-        NodeOrToken::Node(node) => f.node(node),
-    }
-}
-
-fn first_token(element: NodeOrToken<'_>) -> SyntaxToken<'_> {
-    match element {
-        NodeOrToken::Token(token) => token,
-        NodeOrToken::Node(node) => node.first_token(),
-    }
-}
-
-fn last_token(element: NodeOrToken<'_>) -> SyntaxToken<'_> {
-    match element {
-        NodeOrToken::Token(token) => token,
-        NodeOrToken::Node(node) => node.last_token(),
     }
 }
 

@@ -1,11 +1,12 @@
 //! `switch` statements and expressions: the block, its rules (`case … ->`) and groups
 //! (`case …:` and statements), their labels, and guards.
 
-use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
+use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
 use super::{elements, emit, line_break};
 use crate::document::IndentKind;
 use crate::format::Formatter;
+use crate::rules::last_token;
 
 /// `switch (selector) { … }`.
 pub fn switch<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
@@ -158,13 +159,6 @@ pub fn switch_label<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             }
         }
     });
-}
-
-fn last_token(element: NodeOrToken<'_>) -> SyntaxToken<'_> {
-    match element {
-        NodeOrToken::Token(token) => token,
-        NodeOrToken::Node(node) => node.last_token(),
-    }
 }
 
 /// A guard, `when` and its condition.

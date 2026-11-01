@@ -6,6 +6,7 @@ use super::annotations::{own_lines, with_type_use};
 use super::{emit, first_token, parts, types};
 use crate::document::IndentKind;
 use crate::format::Formatter;
+use crate::rules::comments::has_comments_before;
 use crate::rules::space_between;
 
 /// The rule for a compilation unit: a blank line after the package declaration and after the
@@ -130,20 +131,6 @@ fn is_directive(kind: K) -> bool {
             | K::UsesDirective
             | K::ProvidesDirective
     )
-}
-
-/// Whether the trivia before `token` holds a comment.
-fn has_comments_before(token: ferrion_syntax::SyntaxToken<'_>) -> bool {
-    let mut previous = token.prev_token();
-    while let Some(t) = previous
-        && t.is_trivia()
-    {
-        if ferrion_syntax::comments::is_comment(t.kind()) {
-            return true;
-        }
-        previous = t.prev_token();
-    }
-    false
 }
 
 /// The rule for a module directive: its tokens on one line, except that the modules after `to`
