@@ -43,6 +43,271 @@ annotations, enums, records, and `module-info.java`.
 ## Statements
 
 Blocks, control flow, switch statements and expressions, `try`, labels, and local declarations.
+Each statement starts a line of its own. How an expression inside a statement breaks is the
+expression's (see [Expressions](#expressions)); this section says where a statement breaks around
+its expressions.
+
+### Blocks
+
+A block's statements go on their own lines at +2, and the `}` on a line of its own. Blank lines
+between statements are kept, at most one, and a blank line before the `}` is removed.
+
+```java
+void m() {
+
+  int a = 1;
+
+  int b = 2;
+}
+```
+
+What happens to a blank line after the `{`, and to an empty block, depends on what the block
+belongs to, as GJF does:
+
+| Block of | Blank line after `{` | Empty block |
+| --- | --- | --- |
+| a method or constructor | kept | `{}` |
+| `while`, `do`, `for`, enhanced `for` | kept | `{}` |
+| an `if` without `else` | kept | `{}` |
+| an `if` with `else`, or an `else if` | kept | `{` and `}` on two lines |
+| `try` without `catch` or `finally` | kept | `{}` |
+| `try` with `catch` or `finally`, `catch`, `finally` | kept | `{` and `}` on two lines |
+| a lambda, a switch rule | removed | `{}` |
+| `synchronized`, an initializer, a label, a block on its own | removed | `{` and `}` on two lines |
+
+```java
+while (a) {}
+if (a) {
+} else {
+}
+{
+}
+```
+
+An empty block with comments prints them on their own lines inside it, except a line comment on
+the `{`'s line, which stays there:
+
+```java
+while (a) {
+  /* nothing yet */
+}
+while (b) { // nothing yet
+}
+```
+
+### Bodies of `if`, `else`, and loops
+
+A block follows its header after a space. Any other statement follows after a space if it fits,
+and otherwise starts the next line at +2. An empty statement, `;`, always goes on the next line at
++2.
+
+```java
+if (a) b();
+for (String s : list)
+  someMethodWithAVeryLongName(someArgumentWithALongName, anotherArgumentWithALongName);
+while (a)
+  ;
+```
+
+A body that holds a block of its own, such as a `synchronized` statement or an `if` with an `else`,
+starts the next line. A comment after the body stays on its line without breaking it
+(`if (a) b(); // why`). A line comment after the header ends the line, and the body then starts
+the next line at the header's indentation, not +2, as GJF does:
+
+```java
+if (a) // why
+b();
+```
+
+### `if` and `else`
+
+`else` follows the `}` of a block after a space, and starts a line of its own after any other
+statement. `else if` stays together, so a chain lines up.
+
+```java
+if (a) {
+  b();
+} else if (c) d();
+else {
+  e();
+}
+```
+
+The condition is laid out by its expression, from the `(`, with no break of its own after the `(`.
+The same holds for the conditions of `while` and `do` and a `switch`'s selector.
+
+### Loops
+
+`do` puts its `while` after a space when the body is a block, and on the next line otherwise
+(`do b();` then `while (a);`).
+
+A `for` header that doesn't fit breaks after each `;`, all together, with the condition and the
+update at +4. A missing part leaves its `;` and a space (`for (; ; )`). Initializations that don't
+fit go one to a line at +4 from the condition, as declarators do. Updates go as many to a line as
+fit, continuing at +4 from the first.
+
+```java
+for (index = 0,
+        otherIndex = 0,
+        yetAnotherIndexWithALongName = 0,
+        oneMoreIndexWithAVeryLongName = 0;
+    index < someCollectionWithALongName.size();
+    index++, otherIndex++, yetAnotherIndexWithALongName++, oneMoreIndex++, anotherIndex++,
+        theLastIndex++) {
+  b();
+}
+```
+
+An enhanced `for` header that doesn't fit breaks after the `:`, at +4.
+
+```java
+for (Map.Entry<String, SomeVeryLongTypeName> entryWithALongName :
+    someMapWithALongName.entrySet()) {
+  b();
+}
+```
+
+### Labels, `break`, `continue`, `return`, `throw`, `yield`
+
+A label goes on a line of its own, and its statement on the next line at the same indentation,
+even a block.
+
+```java
+outer:
+for (; ; ) {
+  break outer;
+}
+```
+
+`return`, `throw`, and `yield` are followed by their expression after a space, and break only
+inside it.
+
+### `assert`
+
+When `assert condition : message;` doesn't fit, it breaks before the `:` first, at +4, and then
+inside the condition and the message, from +4.
+
+```java
+assert someCondition
+    : "a message that is too long to fit on the line with the condition and the keyword";
+```
+
+### `synchronized`
+
+When the lock doesn't fit, it starts the next line at +4 after the `(`.
+
+### Local variable declarations
+
+Modifiers, the type, and the declarators follow each other after spaces. A single annotation
+without arguments stays on the line (`@Nullable String s = f();`). With two or more annotations,
+or one with arguments, the annotations before any keyword modifier go on lines of their own.
+
+```java
+@Nullable String s = f();
+@SuppressWarnings("unchecked")
+List<String> list = (List<String>) object;
+```
+
+Several declarators that don't fit go one to a line at +4, after their commas. When the type and
+the first declarator up to its first possible break (its `=`, or the `;`) don't fit, the line
+breaks after the type, at +4; with several declarators, when the type and the whole first
+declarator don't fit. That break isn't made in `for` and `try` headers.
+
+```java
+int someVariable,
+    anotherVariableWithAVeryLongNameThatTakesUpMostOfTheLineAndMore,
+    yetAnotherVariable;
+final SomeVeryLongTypeName<WithTypeArguments, AndMoreTypeArguments>
+    someVeryLongVariableNameXYZW;
+```
+
+Local classes, records, enums, and interfaces are statements like any other.
+
+### `try`, `catch`, `finally`
+
+`catch` and `finally` follow the `}` before them after a space. One resource stays on the `try`'s
+line; two or more go one to a line at +4, after their `;`, even when they would fit. A `;` after
+the last resource is kept, followed by a space.
+
+```java
+try (InputStream in = open();
+    OutputStream out = create(); ) {
+  copy(in, out);
+} catch (IOException | RuntimeException e) {
+  log(e);
+} finally {
+  close();
+}
+```
+
+A `catch` parameter is its modifiers, type, and name after spaces; how `A | B` breaks is the type's.
+
+### `switch`
+
+A switch block's rules or groups go on their own lines at +2. Blank lines between them are kept,
+at most one, and blank lines after the `{` and before the `}` are removed. An empty switch block
+prints as `{` and `}` on two lines. Switch expressions are laid out as switch statements.
+
+**Groups** (`case …:`): each label goes on a line of its own, and the statements follow at +4 from
+the `switch`, on their own lines, with blank lines between them kept and none after the last label.
+A block in a group is a statement like any other, so it starts a line.
+
+```java
+switch (a) {
+  case 1:
+  case 2:
+    f();
+    break;
+  default:
+    {
+      g();
+    }
+}
+```
+
+A label in a group that doesn't fit breaks after each comma, and a guard always starts a line,
+both at the label's own indentation, as GJF does:
+
+```java
+case SOME_CONSTANT_WITH_A_LONG_NAME,
+SOME_OTHER_CONSTANT_WITH_A_LONG_NAME,
+YET_ANOTHER_CONSTANT:
+  f();
+case Integer i
+when i > 0:
+  g();
+```
+
+**Rules** (`case … ->`): a block follows the `->` after a space. An expression or a `throw` follows
+after a space if the rule fits, and otherwise starts the next line at +4. That break comes first;
+a label that still doesn't fit then breaks after each comma and before its guard, at +4.
+
+```java
+case 1 -> f();
+case 2 ->
+    someObject.someMethodName(argumentNumberOne, argumentNumberTwo, argumentNumberThree);
+case SOME_CONSTANT_WITH_A_LONG_NAME,
+    SOME_OTHER_CONSTANT_WITH_A_LONG_NAME,
+    YET_ANOTHER_CONSTANT_WITH_A_LONG_NAME ->
+    g();
+case 3 -> {
+  h();
+}
+```
+
+### Comments in statements
+
+Comments follow the general rules. In a switch block, a comment above a label goes at the
+label's indentation, and a comment after the last rule or statement, before the `}`, goes at +4
+from the `switch`, where the statements of a group go, as GJF does.
+
+```java
+switch (a) {
+  // before the first case
+  case 1 -> f();
+    // after the last rule
+}
+```
 
 ## Expressions
 
