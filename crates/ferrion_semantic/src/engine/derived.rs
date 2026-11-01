@@ -34,7 +34,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::{BuildHasher, Hash, RandomState};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{Arc, OnceLock, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use super::{Cancelled, Snapshot, TableStats};
 use crate::symbols::TypeKey;
@@ -89,8 +89,37 @@ struct Active {
 
 struct Frame {
     dep: Dep,
-    /// The entries of the cycles found through this one, itself included; empty if none.
-    cycle: Vec<Dep>,
+    /// The cycles found through this entry; empty if none.
+    cycles: Vec<Arc<Cycle>>,
+}
+
+/// One cycle found: its entries, shared by every entry in it, so that a cycle of n entries costs
+/// O(n) to record, not O(n^2).
+pub(crate) struct Cycle {
+    deps: Box<[Dep]>,
+    /// The source types whose supertypes are in it, sorted, made once.
+    source_types: OnceLock<Arc<[TypeKey]>>,
+}
+
+impl Cycle {
+    /// The source types whose supertypes entries are in the cycle, sorted.
+    pub(crate) fn source_types(&self) -> Arc<[TypeKey]> {
+        self.source_types
+            .get_or_init(|| {
+                let mut keys: Vec<TypeKey> = self
+                    .deps
+                    .iter()
+                    .filter_map(|d| match d {
+                        Dep::Supertypes(key) => Some(*key),
+                        _ => None,
+                    })
+                    .collect();
+                keys.sort();
+                keys.dedup();
+                Arc::from(keys)
+            })
+            .clone()
+    }
 }
 
 /// Pushes `dep` on this thread's stack, or marks the cycle and returns `None` if it is on it
@@ -99,16 +128,15 @@ struct Frame {
 fn enter(dep: &Dep) -> Option<Entered> {
     ACTIVE.with_borrow_mut(|active| {
         if let Some(&position) = active.positions.get(dep) {
-            let members: Vec<Dep> = active.stack[position..]
-                .iter()
-                .map(|f| f.dep.clone())
-                .collect();
+            let cycle = Arc::new(Cycle {
+                deps: active.stack[position..]
+                    .iter()
+                    .map(|f| f.dep.clone())
+                    .collect(),
+                source_types: OnceLock::new(),
+            });
             for frame in &mut active.stack[position..] {
-                for member in &members {
-                    if !frame.cycle.contains(member) {
-                        frame.cycle.push(member.clone());
-                    }
-                }
+                frame.cycles.push(cycle.clone());
             }
             return None;
         }
@@ -116,7 +144,7 @@ fn enter(dep: &Dep) -> Option<Entered> {
         active.positions.insert(dep.clone(), position);
         active.stack.push(Frame {
             dep: dep.clone(),
-            cycle: Vec::new(),
+            cycles: Vec::new(),
         });
         Some(Entered { position })
     })
@@ -131,16 +159,16 @@ struct Entered {
 impl Entered {
     /// The entries of the cycles that requests made since the entry was pushed (or since
     /// [`Entered::reset`]) found through it; empty if none.
-    fn cycle(&self) -> Vec<Dep> {
-        ACTIVE.with_borrow(|active| active.stack[self.position].cycle.clone())
+    fn cycles(&self) -> Vec<Arc<Cycle>> {
+        ACTIVE.with_borrow(|active| active.stack[self.position].cycles.clone())
     }
 
     fn cyclic(&self) -> bool {
-        ACTIVE.with_borrow(|active| !active.stack[self.position].cycle.is_empty())
+        ACTIVE.with_borrow(|active| !active.stack[self.position].cycles.is_empty())
     }
 
     fn reset(&self) {
-        ACTIVE.with_borrow_mut(|active| active.stack[self.position].cycle.clear());
+        ACTIVE.with_borrow_mut(|active| active.stack[self.position].cycles.clear());
     }
 }
 
@@ -194,10 +222,10 @@ impl<'s> Reads<'s> {
         self.frame.is_some_and(Entered::cyclic)
     }
 
-    /// The entries of the cycles found through this computation: whose values every entry in
-    /// the cycle gives, so that it is the same whichever was asked for first.
-    pub(crate) fn cycle(&self) -> Vec<Dep> {
-        self.frame.map(Entered::cycle).unwrap_or_default()
+    /// The cycles found through this computation: whose values every entry in the cycle gives,
+    /// so that it is the same whichever was asked for first.
+    pub(crate) fn cycles(&self) -> Vec<Arc<Cycle>> {
+        self.frame.map(Entered::cycles).unwrap_or_default()
     }
 
     /// For loops in a computation: `Err(Cancelled)` once the revision has moved.

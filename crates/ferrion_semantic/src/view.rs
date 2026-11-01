@@ -482,12 +482,6 @@ impl Reads<'_> {
                 binary,
             }));
         }
-        let source_sets: Vec<SourceSetId> = std::iter::once(set)
-            .chain(config.classpath.iter().filter_map(|e| match e {
-                SetEntry::SourceSet(d) => Some(*d),
-                SetEntry::Classes(_) => None,
-            }))
-            .collect();
         if let Some(key) = self.find_binary_in_sources(set, package, simple)? {
             return Ok(Some(key));
         }
@@ -505,7 +499,6 @@ impl Reads<'_> {
                 }
             }
         }
-        drop(source_sets);
         Ok(None)
     }
 

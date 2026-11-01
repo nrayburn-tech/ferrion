@@ -138,13 +138,12 @@ fn long_chains_of_supertypes() {
         resolve_everything(&engine);
     });
 
-    // A cycle as long as the chain.
+    // A long cycle, each of whose types records the others, so its cost is the square of its
+    // length.
+    const CYCLE: usize = 2_000;
     let mut cycle = String::from("package p;\n");
-    for i in 0..N / 10 {
-        cycle.push_str(&format!(
-            "class D{i} extends D{} {{}}\n",
-            (i + 1) % (N / 10)
-        ));
+    for i in 0..CYCLE {
+        cycle.push_str(&format!("class D{i} extends D{} {{}}\n", (i + 1) % CYCLE));
     }
     on_small_stack("a long cycle", move || {
         let engine = engine(vec![("p/D.java".to_owned(), cycle)]);
@@ -154,7 +153,7 @@ fn long_chains_of_supertypes() {
         let key = snapshot.type_key(file, 0).unwrap();
         assert_eq!(
             snapshot.supertypes(key).unwrap().unwrap().cycle.len(),
-            N / 10
+            CYCLE
         );
     });
 }
