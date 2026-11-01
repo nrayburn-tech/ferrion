@@ -1,0 +1,28 @@
+unit ordinary
+package p
+import single-type java.util.List
+record public Point<T>(@Deprecated int x, int y, List<T> tags) implements Comparable<Point<T>>
+  field static final Point<String> ORIGIN = (…)
+  compact constructor public Point {…}
+  method public int x() {…}
+  method public int compareTo(Point<T> other) {…}
+  implicit accessor y()
+  implicit accessor tags()
+  implicit field x
+  implicit field y
+  implicit field tags
+record Point.Pair(String first, String second)
+  constructor Pair(String first) {…}
+  method public String first() {…}
+  implicit canonical constructor
+  implicit accessor second()
+  implicit field first
+  implicit field second
+record Point.Canonical(int[] values, String... rest)
+  constructor Canonical(int values[], String[] rest) {…}
+  implicit accessor values()
+  implicit accessor rest()
+  implicit field values
+  implicit field rest
+record Point.Empty
+  implicit canonical constructor

@@ -1,0 +1,3 @@
+unit package-info
+package @Deprecated @javax.annotation.ParametersAreNonnullByDefault com.example.shapes
+import single-type javax.annotation.ParametersAreNonnullByDefault

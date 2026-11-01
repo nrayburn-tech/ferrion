@@ -1,0 +1,14 @@
+unit ordinary
+package p
+import on-demand java.lang.annotation
+@interface @Retention(…) @Target(…) public Marker
+  field int LIMIT = (…)
+  method String value() default (…);
+  method int[] numbers() default (…);
+  method Class<?> type();
+enum Marker.Level
+  constant LOW
+  constant HIGH
+  implicit default constructor
+  implicit values()
+  implicit valueOf(String)

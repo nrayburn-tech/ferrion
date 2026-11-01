@@ -1,0 +1,37 @@
+unit ordinary
+package com.example.shapes
+import single-type java.util.List
+import on-demand java.util
+import single-static java.lang.Math.max
+import static-on-demand java.util.Collections
+import module java.base
+class @Deprecated(…) @SuppressWarnings(…) public abstract sealed Shape<T extends Comparable<? super T>, U> extends Base<T> implements Comparable<Shape<T, U>>, java.io.Serializable permits Circle, Square
+  field public static final int SIDES = (…)
+  field public static final int CORNERS
+  field private List<String> names
+  field protected int[] matrix[]
+  field protected int[] plain
+  field transient volatile long counter
+  constructor protected Shape(int sides) throws IllegalArgumentException {…}
+  method public abstract double area();
+  method public <R extends Number & Comparable<R>> List<R> scaled(@Deprecated final R factor, String... labels) throws java.io.IOException, IllegalStateException {…}
+  method int legacy(int x[])[] {…}
+  method native void peek();
+  method synchronized strictfp void sync() {…}
+class static Shape.Nested<V>
+  field int depth
+  implicit default constructor
+interface Shape.Nested.Deeper
+  method void go();
+enum Shape.Color
+  constant RED
+  constant GREEN
+  implicit default constructor
+  implicit values()
+  implicit valueOf(String)
+class final Circle extends Shape<String, Object>
+  constructor Circle() {…}
+  method public double area() {…}
+class non-sealed Square extends Shape<String, Object>
+  method public double area() {…}
+  implicit default constructor
