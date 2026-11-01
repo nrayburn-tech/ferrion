@@ -18,7 +18,8 @@ fn project(files: &[(&str, &str)]) -> ProjectInput {
         source_sets: vec![SourceSetInput {
             name: "main".to_owned(),
             release: 21,
-            dependencies: Vec::new(),
+            classpath: Vec::new(),
+            platform: None,
             files: files
                 .iter()
                 .map(|(path, text)| FileInput::new(*path, *text))
@@ -250,7 +251,8 @@ fn large_project(files: usize) -> ProjectInput {
         source_sets: vec![SourceSetInput {
             name: "main".to_owned(),
             release: 21,
-            dependencies: Vec::new(),
+            classpath: Vec::new(),
+            platform: None,
             files: inputs,
         }],
     }
@@ -338,12 +340,13 @@ fn the_tree_cache_keeps_to_its_budget() {
     assert!(sizes.tree_bytes <= 200 << 10, "{sizes:?}");
     assert!(sizes.trees > 0 && sizes.trees < 50, "{sizes:?}");
     assert_eq!(sizes.summaries, 50);
-    // The last file's tree is kept and shared; the first one's was evicted and is parsed again.
+    // The last phase reads the trees last file first, for their names: the first file's tree
+    // is kept and shared, and the last one's was evicted and is parsed again.
     let files = snapshot.files(MAIN).unwrap();
-    let last = snapshot.tree(files[49]).unwrap();
-    assert!(Arc::ptr_eq(&last, &snapshot.tree(files[49]).unwrap()));
+    let first = snapshot.tree(files[0]).unwrap();
+    assert!(Arc::ptr_eq(&first, &snapshot.tree(files[0]).unwrap()));
     let before = engine.stats().parses;
-    snapshot.tree(files[0]).unwrap();
+    snapshot.tree(files[49]).unwrap();
     assert_eq!(engine.stats().parses, before + 1);
 }
 

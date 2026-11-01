@@ -1,0 +1,74 @@
+// Source sets and the classpath in order (observations 2 and "classfile-dollar-top-level",
+// "private-member-not-inherited", "private-member-not-inherited-outer-import"). The jars' classes
+// are compiled from equivalent sources for javac. javac reports `cannot find symbol` for `p.A.B`
+// in main/q/V.java (`A$B` is a top-level class, not A's member), `X has private access in Outer`
+// in test/t/Private.java, and `cannot find symbol` for `foo.fromMain()` in test/t/T.java, which
+// Ferrion resolves differently by design (observation 4 in semantic-names.md).
+// - main's own `p.Shadowed` wins over first.jar's; first.jar's `p.J` over second.jar's.
+// - test reads main from source in main's view: main's `Foo extends Bar` is main's Bar, though
+//   test declares its own. javac compiles test as one namespace, where `m.Bar` is test's.
+// - A member type is found through InnerClasses: `p.Outer.In`; `p.A$B` is a top-level class.
+// - A private member type isn't inherited, so the import's `p.X` is found instead.
+//- jar first.jar
+//- class class p/J method first ()V
+//- class class p/Shadowed method fromJar ()V
+//- class class p/Outer member In p/Outer$In private-member X p/Outer$X
+//- class class p/Outer$In outer p/Outer In
+//- class class p/Outer$X outer p/Outer X
+//- class class p/A
+//- class class p/A$B member C p/A$B$C
+//- class class p/A$B$C outer p/A$B C
+//- class class p/X
+//- jar second.jar
+//- class class p/J method second ()V
+//- class class p/Only
+//- set main 21 first.jar second.jar
+//- set test 21 main first.jar second.jar
+//- file main p/Shadowed.java
+package p;
+
+public class Shadowed { public void fromSource() {} }
+//- file main q/U.java
+package q;
+
+import p.*;
+
+class U {
+    J j;
+    Shadowed s;
+    Only only;
+    p.Outer.In in;
+    p.A$B ab;
+    p.A$B.C abc;
+    void m() { j.first(); s.fromSource(); }
+}
+//- file main q/V.java
+package q;
+
+class V { p.A.B b; }
+//- file main m/Bar.java
+package m;
+
+public class Bar { public void fromMain() {} }
+//- file main m/Foo.java
+package m;
+
+public class Foo extends Bar {}
+//- file test m/Bar.java
+package m;
+
+public class Bar { public void fromTest() {} }
+//- file test t/T.java
+package t;
+
+import p.X;
+
+class T extends p.Outer {
+    X x;
+    In in;
+    void m(m.Foo foo) { foo.fromMain(); }
+}
+//- file test t/Private.java
+package t;
+
+class Private extends p.Outer { void m() { Object o = (X) null; } X x2; }

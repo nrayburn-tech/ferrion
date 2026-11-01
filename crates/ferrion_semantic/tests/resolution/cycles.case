@@ -1,0 +1,48 @@
+// Supertype cycles ("cycle-through-member", "extends-own-member-qualified",
+// "interface-extends-own-member", "member-in-own-implements-type-args"). javac reports
+// `cyclic inheritance involving B` once for a/A.java and a/B.java (whichever is first on the
+// command line), nothing for a/D.java and a/E.java, which use them, `cyclic inheritance
+// involving O` for b/O.java and `... I` for b/I.java, and compiles b/S.java: a type argument of a
+// supertype is resolved after the hierarchy, so it may name the type's own member. A two-type
+// cycle c/P.java and c/Q.java is `cyclic inheritance involving P`. Every type in a cycle gets
+// error supertypes, and the types below them incomplete hierarchies.
+//- set main 27
+//- file main a/A.java
+package a;
+
+class A extends B.C {}
+//- file main a/B.java
+package a;
+
+class B extends A { class C {} }
+//- file main a/D.java
+package a;
+
+class D extends A {}
+//- file main a/E.java
+package a;
+
+class E { A a; B.C c; }
+//- file main b/O.java
+package b;
+
+class O extends O.B { static class B {} }
+//- file main b/I.java
+package b;
+
+interface I extends I.J { interface J {} }
+//- file main b/S.java
+package b;
+
+class S implements java.util.function.Supplier<S.In> {
+    public In get() { return null; }
+    static class In {}
+}
+//- file main c/P.java
+package c;
+
+class P extends Q {}
+//- file main c/Q.java
+package c;
+
+class Q extends P {}

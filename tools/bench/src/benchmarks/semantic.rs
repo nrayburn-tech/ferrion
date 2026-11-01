@@ -7,10 +7,12 @@ use anyhow::{Context, Result, bail};
 use corpus::Dirs;
 use corpus::lock::{self, ClasspathEntry};
 use corpus::project::Project;
+use ferrion_classfile::{ArchiveCache, ClassPathEntry, Jdk};
 use ferrion_diagnostics::SourceText;
 use ferrion_parser::{ParseOptions, SyntaxKind, parse};
 use ferrion_semantic::{
-    Engine, FileId, FileInput, ProjectInput, Snapshot, SourceSetId, SourceSetInput,
+    ClassPathInput, ClassesInput, Engine, FileId, FileInput, Platform, ProjectInput, Snapshot,
+    SourceSetId, SourceSetInput,
 };
 
 use super::{Benchmark, Inputs, Prepared};
@@ -19,16 +21,19 @@ pub fn benchmarks() -> Vec<Benchmark> {
     vec![
         Benchmark {
             name: "semantic/corpus-cold",
-            description: "a new engine over the corpus projects' source sets: parse and summarize \
-                          every file, then build every package table, on one thread",
+            description: "a new engine over the corpus projects' source sets, with their jars and \
+                          the JDK's platform API: parse and summarize every file, build every \
+                          package table, every type's entry, and every file's names in \
+                          declarations, on one thread",
             setup: corpus_cold,
         },
         Benchmark {
             name: "semantic/edits",
             description: "after a cold run, a statement added to a method body, a method renamed, \
-                          and a top-level class added, in a file of the largest package, each \
-                          followed by every summary and package entry asked for again, and \
-                          undone the same way",
+                          a top-level class added, and a supertype added to a class, in a file \
+                          of the largest package, each followed by every project-wide entry \
+                          asked for again and the file's names in declarations, and undone the \
+                          same way",
             setup: edits,
         },
     ]
@@ -56,9 +61,9 @@ fn edits(inputs: &Inputs) -> Result<Prepared> {
     let path = snapshot.file(target).unwrap().path;
     let projects = Dirs::new()?.corpus.join("projects");
     let path = path.strip_prefix(&projects).unwrap_or(&path).to_path_buf();
-    let edited: Vec<Arc<str>> = [Edit::Body, Edit::Signature, Edit::NewType]
+    let edited: Vec<Arc<str>> = [Edit::Body, Edit::Signature, Edit::NewType, Edit::Supertype]
         .into_iter()
-        .map(|edit| Arc::from(apply(&original, edit).unwrap()))
+        .filter_map(|edit| apply(&original, edit).map(Arc::from))
         .collect();
     drop(snapshot);
     Ok(Prepared {
@@ -68,14 +73,18 @@ fn edits(inputs: &Inputs) -> Result<Prepared> {
             for text in &edited {
                 for text in [text, &original] {
                     engine.set_text(target, text.clone());
-                    ask_everything(&engine.snapshot());
+                    let snapshot = engine.snapshot();
+                    snapshot
+                        .run_symbols(1)
+                        .expect("nothing changes the inputs during a benchmark");
+                    snapshot.decl_names(target).unwrap();
                 }
             }
         }),
     })
 }
 
-/// Every summary, then every package table: the batch's first two phases.
+/// Every summary, package table, type entry, and file's names in declarations: the batch.
 fn ask_everything(snapshot: &Snapshot) {
     snapshot
         .run_batch(1, |_| Ok(()))
@@ -88,8 +97,12 @@ fn project_input(inputs: &Inputs) -> Result<(ProjectInput, String, u64)> {
     let dirs = Dirs::new()?;
     let projects = Project::load_all(&dirs.projects_file())?;
     let mut input = ProjectInput::default();
+    let jdk = super::classfile::jdk_home(inputs)
+        .ok()
+        .and_then(|home| Jdk::open(&home, &ArchiveCache::new()).ok());
+    let cache = ArchiveCache::new();
     for project in corpus::select(&projects, &inputs.projects)? {
-        add_project(&dirs, project, &mut input)?;
+        add_project(&dirs, project, jdk.as_deref(), &cache, &mut input)?;
     }
     let files: usize = input.source_sets.iter().map(|s| s.files.len()).sum();
     let bytes: u64 = input
@@ -101,8 +114,12 @@ fn project_input(inputs: &Inputs) -> Result<(ProjectInput, String, u64)> {
     if files == 0 {
         bail!("the corpus projects have no source files");
     }
+    let platform = match &jdk {
+        Some(jdk) => format!("JDK {}", jdk.feature_version()),
+        None => "no JDK".to_owned(),
+    };
     let description = format!(
-        "{}: {} source sets, {files} files, {:.1} MB",
+        "{}: {} source sets, {files} files, {:.1} MB, {platform}",
         inputs.projects.join(", "),
         input.source_sets.len(),
         bytes as f64 / 1e6
@@ -110,7 +127,15 @@ fn project_input(inputs: &Inputs) -> Result<(ProjectInput, String, u64)> {
     Ok((input, description, bytes))
 }
 
-fn add_project(dirs: &Dirs, project: &Project, input: &mut ProjectInput) -> Result<()> {
+/// Adds `project`'s source sets, each with its classpath in order (the jars fetched, the source
+/// sets it reads from source) and `jdk`'s platform API at its release, when the JDK serves it.
+fn add_project(
+    dirs: &Dirs,
+    project: &Project,
+    jdk: Option<&Jdk>,
+    cache: &ArchiveCache,
+    input: &mut ProjectInput,
+) -> Result<()> {
     let lock =
         lock::read(dirs, project)?.with_context(|| format!("{} has no lock file", project.name))?;
     let checkout = dirs.checkout(project);
@@ -136,22 +161,50 @@ fn add_project(dirs: &Dirs, project: &Project, input: &mut ProjectInput) -> Resu
                     }
                 }
             }
-            let dependencies = set
-                .classpath
-                .iter()
-                .filter_map(|entry| match entry {
-                    ClasspathEntry::SourceSet { module, source_set } => ids
-                        .get(&(module.clone(), source_set.clone()))
-                        .map(|&i| SourceSetId::from_index(i)),
-                    _ => None,
-                })
-                .collect();
-            input.source_sets.push(SourceSetInput {
-                name: format!("{}:{}/{}", project.name, module.path, set.name),
-                release: set.java_release.unwrap_or(lock.jdk),
-                dependencies,
-                files,
-            });
+            let release = set.java_release.unwrap_or(lock.jdk);
+            let mut source_set = SourceSetInput::new(
+                format!("{}:{}/{}", project.name, module.path, set.name),
+                release,
+            );
+            for entry in &set.classpath {
+                let path = match entry {
+                    ClasspathEntry::SourceSet {
+                        module,
+                        source_set: name,
+                    } => {
+                        if let Some(&i) = ids.get(&(module.clone(), name.clone())) {
+                            source_set
+                                .classpath
+                                .push(ClassPathInput::SourceSet(SourceSetId::from_index(i)));
+                        }
+                        continue;
+                    }
+                    ClasspathEntry::Jar { jar } => dirs.jars().join(jar),
+                    ClasspathEntry::ProjectFile { file } => checkout.join(file),
+                    ClasspathEntry::Unavailable { .. } => continue,
+                };
+                let entry = if path.is_dir() {
+                    ClassPathEntry::directory(&path)
+                } else {
+                    match cache.jar(&path, release) {
+                        Ok(jar) => ClassPathEntry::jar(jar),
+                        Err(_) => continue,
+                    }
+                };
+                source_set
+                    .classpath
+                    .push(ClassPathInput::Classes(ClassesInput {
+                        entry,
+                        path,
+                        module: None,
+                    }));
+            }
+            source_set.platform = jdk
+                .filter(|jdk| jdk.feature_version() >= release)
+                .and_then(|jdk| jdk.platform(release).ok())
+                .map(|platform| platform as Arc<dyn Platform>);
+            source_set.files = files;
+            input.source_sets.push(source_set);
         }
     }
     Ok(())
@@ -212,12 +265,30 @@ enum Edit {
     Signature,
     /// A top-level class at the end.
     NewType,
+    /// `implements java.lang.Cloneable` added to the first class without an `implements`
+    /// clause.
+    Supertype,
 }
 
 fn apply(text: &str, edit: Edit) -> Option<String> {
     let tree = parse(Arc::from(text), ParseOptions { release: 27 }).tree;
     let (offset, insert) = match edit {
         Edit::NewType => (text.len(), "\nclass FerrionBenchNew {}\n"),
+        Edit::Supertype => {
+            let class = tree.nodes().find(|n| {
+                n.kind() == SyntaxKind::ClassDecl
+                    && !n
+                        .children()
+                        .any(|c| c.kind() == SyntaxKind::ImplementsClause)
+            })?;
+            let body = class
+                .children()
+                .find(|c| c.kind() == SyntaxKind::ClassBody)?;
+            (
+                body.span().start as usize,
+                " implements java.lang.Cloneable ",
+            )
+        }
         Edit::Body | Edit::Signature => {
             let method = tree.nodes().find(|n| {
                 n.kind() == SyntaxKind::MethodDecl

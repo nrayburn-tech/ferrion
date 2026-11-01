@@ -1,0 +1,95 @@
+== main a/A.java
+a -> package a
+B.C -> type a/B$C source a/B.java
+B -> type a/B source a/B.java
+# type a/A source a/A.java
+  superclass error cycle B.C
+  cyclic
+  incomplete
+  method A()V implicit
+== main a/B.java
+a -> package a
+A -> type a/A source a/A.java
+# type a/B source a/B.java
+  superclass error cycle A
+  cyclic
+  member C: type a/B$C source a/B.java
+  incomplete
+  method B()V implicit
+# type a/B$C source a/B.java
+  superclass type java/lang/Object class platform
+  method C()V implicit
+== main a/D.java
+a -> package a
+A -> type a/A source a/A.java
+# type a/D source a/D.java
+  superclass type a/A source a/A.java
+  incomplete
+  method D()V implicit
+== main a/E.java
+a -> package a
+A -> type a/A source a/A.java
+B.C -> type a/B$C source a/B.java
+B -> type a/B source a/B.java
+# type a/E source a/E.java
+  superclass type java/lang/Object class platform
+  field a La/A;
+  field c La/B$C;
+  method E()V implicit
+== main b/O.java
+b -> package b
+O.B -> type b/O$B source b/O.java
+O -> type b/O source b/O.java
+# type b/O source b/O.java
+  superclass error cycle O.B
+  cyclic
+  member B: type b/O$B source b/O.java
+  incomplete
+  method O()V implicit
+# type b/O$B source b/O.java
+  superclass type java/lang/Object class platform
+  method B()V implicit
+== main b/I.java
+b -> package b
+I.J -> type b/I$J source b/I.java
+I -> type b/I source b/I.java
+# type b/I source b/I.java
+  interface error cycle I.J
+  cyclic
+  member J: type b/I$J source b/I.java
+  incomplete
+# type b/I$J source b/I.java
+== main b/S.java
+b -> package b
+java.util.function.Supplier<S.In> -> type java/util/function/Supplier class platform
+java.util.function -> package java.util.function
+java.util -> package java.util
+java -> package java
+S.In -> type b/S$In source b/S.java
+S -> type b/S source b/S.java
+In -> type b/S$In source b/S.java
+# type b/S source b/S.java
+  superclass type java/lang/Object class platform
+  interface type java/util/function/Supplier class platform
+  member In: type b/S$In source b/S.java
+  method get()Lb/S$In;
+  method S()V implicit
+# type b/S$In source b/S.java
+  superclass type java/lang/Object class platform
+  method In()V implicit
+== main c/P.java
+c -> package c
+Q -> type c/Q source c/Q.java
+# type c/P source c/P.java
+  superclass error cycle Q
+  cyclic
+  incomplete
+  method P()V implicit
+== main c/Q.java
+c -> package c
+P -> type c/P source c/P.java
+# type c/Q source c/Q.java
+  superclass error cycle P
+  cyclic
+  incomplete
+  method Q()V implicit

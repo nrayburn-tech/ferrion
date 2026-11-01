@@ -87,21 +87,21 @@ struct Builder<'t> {
 }
 
 /// A type declaration's parts, whatever its kind.
-struct Header<'t> {
-    kind: TypeKind,
-    modifiers: Option<ast::Modifiers<'t>>,
-    name: Option<SyntaxToken<'t>>,
-    type_parameters: Option<ast::TypeParameters<'t>>,
-    extends: Option<ast::ExtendsClause<'t>>,
-    implements: Option<ast::ImplementsClause<'t>>,
-    permits: Option<ast::PermitsClause<'t>>,
-    components: Option<ast::RecordHeader<'t>>,
-    constants: Option<ast::EnumBody<'t>>,
-    members: Option<AstChildren<'t, ast::Member<'t>>>,
+pub(crate) struct Header<'t> {
+    pub(crate) kind: TypeKind,
+    pub(crate) modifiers: Option<ast::Modifiers<'t>>,
+    pub(crate) name: Option<SyntaxToken<'t>>,
+    pub(crate) type_parameters: Option<ast::TypeParameters<'t>>,
+    pub(crate) extends: Option<ast::ExtendsClause<'t>>,
+    pub(crate) implements: Option<ast::ImplementsClause<'t>>,
+    pub(crate) permits: Option<ast::PermitsClause<'t>>,
+    pub(crate) components: Option<ast::RecordHeader<'t>>,
+    pub(crate) constants: Option<ast::EnumBody<'t>>,
+    pub(crate) members: Option<AstChildren<'t, ast::Member<'t>>>,
 }
 
 impl<'t> Header<'t> {
-    fn of(decl: ast::TypeDecl<'t>) -> Header<'t> {
+    pub(crate) fn of(decl: ast::TypeDecl<'t>) -> Header<'t> {
         let empty = Header {
             kind: TypeKind::Class,
             modifiers: None,

@@ -7,13 +7,13 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+ferrion_classfile.workspace = true
+ferrion_diagnostics.workspace = true
 ferrion_lexer.workspace = true
 ferrion_parser.workspace = true
+ferrion_project.workspace = true
 ferrion_stack.workspace = true
 ferrion_syntax.workspace = true
-
-[dev-dependencies]
-ferrion_diagnostics.workspace = true
 
 [lints]
 workspace = true

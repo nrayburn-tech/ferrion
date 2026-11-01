@@ -1,0 +1,45 @@
+// Type entries: implicit members of enums and records, varargs and C-style dimensions, a
+// compact constructor, an annotation interface's elements, and a type's member types declared
+// and inherited, with package access. javac compiles every file but q/Sub.java, where `Hidden`
+// is `p.Base.Hidden is not public in p.Base; cannot be accessed from outside package`.
+//- set main 27
+//- file main p/E.java
+package p;
+
+enum E { A, B { void x() {} }; static class In {} }
+//- file main p/R.java
+package p;
+
+record R(int x, String... rest) {
+    R {}
+    public boolean equals(Object o) { return false; }
+}
+//- file main p/Dims.java
+package p;
+
+class Dims { int a[], b[][]; String m(int x[])[] { return null; } }
+//- file main p/Q.java
+package p;
+
+@interface Q { int value() default 1; String[] names() default {}; }
+//- file main p/UsesQ.java
+package p;
+
+@Q(value = 2, names = {"a"})
+class UsesQ {}
+//- file main p/Base.java
+package p;
+
+public class Base {
+    public static class Public {}
+    static class Hidden {}
+    private static class Private {}
+}
+//- file main p/Same.java
+package p;
+
+class Same extends Base { Hidden h; }
+//- file main q/Sub.java
+package q;
+
+class Sub extends p.Base { Public p; Hidden h; }

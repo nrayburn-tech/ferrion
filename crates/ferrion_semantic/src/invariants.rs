@@ -14,8 +14,8 @@ use std::sync::Arc;
 
 use crate::packages::{Package, PackageIndex};
 use crate::{
-    Cancelled, Engine, EngineOptions, FileId, FileInput, Fingerprint, ProjectInput, Snapshot,
-    SourceSetId, SourceSetInput,
+    Cancelled, ClassPathInput, Engine, EngineOptions, FileId, FileInput, Fingerprint, ProjectInput,
+    Snapshot, SourceSetId, SourceSetInput,
 };
 
 /// Reads `bytes` as an optional file text, up to a first zero byte, then the choices for
@@ -252,7 +252,12 @@ impl Model {
                 .map(|set| SourceSetInput {
                     name: set.name.to_owned(),
                     release: set.release,
-                    dependencies: set.dependencies.clone(),
+                    classpath: set
+                        .dependencies
+                        .iter()
+                        .map(|&d| ClassPathInput::SourceSet(d))
+                        .collect(),
+                    platform: None,
                     files: set
                         .files
                         .iter()

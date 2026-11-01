@@ -1,0 +1,91 @@
+== main p/E.java
+p -> package p
+# type p/E source p/E.java
+  superclass type java/lang/Enum class platform
+  member In: type p/E$In source p/E.java
+  field A Lp/E;
+  field B Lp/E;
+  method E()V implicit
+  method values()[Lp/E; implicit
+  method valueOf(Ljava/lang/String;)Lp/E; implicit
+# type p/E$In source p/E.java
+  superclass type java/lang/Object class platform
+  method In()V implicit
+== main p/R.java
+p -> package p
+String -> type java/lang/String class platform
+Object -> type java/lang/Object class platform
+# type p/R source p/R.java
+  superclass type java/lang/Record class platform
+  field x I
+  field rest [Ljava/lang/String;
+  method R(I[Ljava/lang/String;)V
+  method equals(Ljava/lang/Object;)Z
+  method x()I implicit
+  method rest()[Ljava/lang/String; implicit
+  method hashCode()I implicit
+  method toString()Ljava/lang/String; implicit
+== main p/Dims.java
+p -> package p
+String -> type java/lang/String class platform
+# type p/Dims source p/Dims.java
+  superclass type java/lang/Object class platform
+  field a [I
+  field b [[I
+  method m([I)[Ljava/lang/String;
+  method Dims()V implicit
+== main p/Q.java
+p -> package p
+String -> type java/lang/String class platform
+# type p/Q source p/Q.java
+  interface type java/lang/annotation/Annotation class platform
+  method value()I
+  method names()[Ljava/lang/String;
+== main p/UsesQ.java
+p -> package p
+Q -> type p/Q source p/Q.java
+value -> method p/Q.value()I
+names -> method p/Q.names()[Ljava/lang/String;
+# type p/UsesQ source p/UsesQ.java
+  superclass type java/lang/Object class platform
+  method UsesQ()V implicit
+== main p/Base.java
+p -> package p
+# type p/Base source p/Base.java
+  superclass type java/lang/Object class platform
+  member Hidden: type p/Base$Hidden source p/Base.java
+  member Private: type p/Base$Private source p/Base.java
+  member Public: type p/Base$Public source p/Base.java
+  method Base()V implicit
+# type p/Base$Public source p/Base.java
+  superclass type java/lang/Object class platform
+  method Public()V implicit
+# type p/Base$Hidden source p/Base.java
+  superclass type java/lang/Object class platform
+  method Hidden()V implicit
+# type p/Base$Private source p/Base.java
+  superclass type java/lang/Object class platform
+  method Private()V implicit
+== main p/Same.java
+p -> package p
+Base -> type p/Base source p/Base.java
+Hidden -> type p/Base$Hidden source p/Base.java
+# type p/Same source p/Same.java
+  superclass type p/Base source p/Base.java
+  member Hidden: type p/Base$Hidden source p/Base.java
+  member Public: type p/Base$Public source p/Base.java
+  field h Lp/Base$Hidden;
+  method Same()V implicit
+== main q/Sub.java
+q -> package q
+p.Base -> type p/Base source p/Base.java
+p -> package p
+Public -> type p/Base$Public source p/Base.java
+Hidden -> error not-found Hidden
+# type q/Sub source q/Sub.java
+  superclass type p/Base source p/Base.java
+  member Public: type p/Base$Public source p/Base.java
+  field p Lp/Base$Public;
+  field h Ljava/lang/Object;
+  method Sub()V implicit
+  error not-found Hidden

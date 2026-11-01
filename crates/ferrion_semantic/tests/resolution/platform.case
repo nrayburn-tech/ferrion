@@ -1,0 +1,24 @@
+// The platform's packages. A source file can't add a type to a package the platform owns:
+// javac reports `package exists in another module: java.base` for java/lang/Foo.java and
+// `cannot find symbol` for its use, and the same for a use of a jar's java/lang/Bar.class
+// ("platform-package-source", "platform-package-jar"). In the unnamed module, an import from a
+// package no module exports to it is an error, single or on demand: `package jdk.internal.misc
+// is not visible` compiled alone ("import-unexported", "import-unexported-on-demand"), `... does
+// not exist` with java/lang/Foo.java beside it. An import from a package that doesn't exist is
+// `package nope does not exist` ("import-nonexistent-package").
+//- jar foo.jar
+//- class class java/lang/Bar
+//- set main 27 foo.jar
+//- file main java/lang/Foo.java
+package java.lang;
+
+public class Foo {}
+//- file main u/U.java
+package u;
+
+import jdk.internal.misc.Unsafe;
+import jdk.internal.misc.*;
+import nope.*;
+import nope.Missing;
+
+class U { java.lang.Foo f; java.lang.Bar b; Unsafe u; Missing m; nope.Other o; }

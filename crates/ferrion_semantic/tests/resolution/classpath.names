@@ -1,0 +1,87 @@
+== main p/Shadowed.java
+p -> package p
+# type p/Shadowed source p/Shadowed.java
+  superclass type java/lang/Object class platform
+  method fromSource()V
+  method Shadowed()V implicit
+== main q/U.java
+q -> package q
+p -> package p
+J -> type p/J class first.jar
+Shadowed -> type p/Shadowed source p/Shadowed.java
+Only -> type p/Only class second.jar
+p.Outer.In -> type p/Outer$In class first.jar
+p.Outer -> type p/Outer class first.jar
+p -> package p
+p.A$B -> type p/A$B class first.jar
+p -> package p
+p.A$B.C -> type p/A$B$C class first.jar
+p.A$B -> type p/A$B class first.jar
+p -> package p
+# type q/U source q/U.java
+  superclass type java/lang/Object class platform
+  field j Lp/J;
+  field s Lp/Shadowed;
+  field only Lp/Only;
+  field in Lp/Outer$In;
+  field ab Lp/A$B;
+  field abc Lp/A$B$C;
+  method m()V
+  method U()V implicit
+== main q/V.java
+q -> package q
+p.A.B -> error not-found p.A.B
+p.A -> type p/A class first.jar
+p -> package p
+# type q/V source q/V.java
+  superclass type java/lang/Object class platform
+  field b Ljava/lang/Object;
+  method V()V implicit
+  error not-found p.A.B
+== main m/Bar.java
+m -> package m
+# type m/Bar source m/Bar.java
+  superclass type java/lang/Object class platform
+  method fromMain()V
+  method Bar()V implicit
+== main m/Foo.java
+m -> package m
+Bar -> type m/Bar source m/Bar.java
+# type m/Foo source m/Foo.java
+  superclass type m/Bar source m/Bar.java
+  method Foo()V implicit
+== test m/Bar.java
+m -> package m
+# type m/Bar source m/Bar.java
+  superclass type java/lang/Object class platform
+  method fromTest()V
+  method Bar()V implicit
+== test t/T.java
+t -> package t
+p.X -> type p/X class first.jar
+p -> package p
+p.Outer -> type p/Outer class first.jar
+p -> package p
+X -> type p/X class first.jar
+In -> type p/Outer$In class first.jar
+m.Foo -> type m/Foo source m/Foo.java
+m -> package m
+# type t/T source t/T.java
+  superclass type p/Outer class first.jar
+  member In: type p/Outer$In class first.jar
+  field x Lp/X;
+  field in Lp/Outer$In;
+  method m(Lm/Foo;)V
+  method T()V implicit
+== test t/Private.java
+t -> package t
+p.Outer -> type p/Outer class first.jar
+p -> package p
+X -> error not-found X
+# type t/Private source t/Private.java
+  superclass type p/Outer class first.jar
+  member In: type p/Outer$In class first.jar
+  field x2 Ljava/lang/Object;
+  method m()V
+  method Private()V implicit
+  error not-found X

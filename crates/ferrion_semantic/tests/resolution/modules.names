@@ -1,0 +1,68 @@
+== main p/List.java
+p -> package p
+# type p/List source p/List.java
+  superclass type java/lang/Object class platform
+  method List()V implicit
+== main p/Same.java
+p -> package p
+java.base -> module java.base
+List -> type p/List source p/List.java
+Map<String, String> -> type java/util/Map class platform
+String -> type java/lang/String class platform
+String -> type java/lang/String class platform
+# type p/Same source p/Same.java
+  superclass type java/lang/Object class platform
+  field l Lp/List;
+  field m Ljava/util/Map;
+  method Same()V implicit
+== main p/WithAwt.java
+p -> package p
+java.base -> module java.base
+java.awt -> package java.awt
+java -> package java
+Component -> type java/awt/Component class platform
+Set<String> -> type java/util/Set class platform
+String -> type java/lang/String class platform
+# type p/WithAwt source p/WithAwt.java
+  superclass type java/lang/Object class platform
+  field c Ljava/awt/Component;
+  field s Ljava/util/Set;
+  method WithAwt()V implicit
+== main q/Two.java
+q -> package q
+java.base -> module java.base
+java.desktop -> module java.desktop
+List -> error ambiguous 2 List
+# type q/Two source q/Two.java
+  superclass type java/lang/Object class platform
+  field l Ljava/lang/Object;
+  method Two()V implicit
+  error ambiguous 2 List
+== main q/Vector.java
+q -> package q
+jdk.incubator.vector -> error not-read jdk.incubator.vector jdk.incubator.vector
+VectorSpecies -> error not-found VectorSpecies
+# type q/Vector source q/Vector.java
+  superclass type java/lang/Object class platform
+  field s Ljava/lang/Object;
+  method Vector()V implicit
+  error not-found VectorSpecies
+== main Main.java
+java.awt -> package java.awt
+java -> package java
+List -> type java/awt/List class platform
+Map<String, String> -> type java/util/Map class platform
+String -> type java/lang/String class platform
+String -> type java/lang/String class platform
+Inner -> type Main$Inner source Main.java
+# type Main source Main.java
+  superclass type java/lang/Object class platform
+  member Inner: type Main$Inner source Main.java
+  field awt Ljava/awt/List;
+  field map Ljava/util/Map;
+  field inner LMain$Inner;
+  method main()V
+  method ()V implicit
+# type Main$Inner source Main.java
+  superclass type java/lang/Object class platform
+  method Inner()V implicit

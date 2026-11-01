@@ -20,6 +20,10 @@ impl Fingerprint {
     /// declares. Never an input's version, and in practice never a value's hash.
     pub(crate) const ABSENT: Fingerprint = Fingerprint(0);
 
+    /// What a request that found a cycle reads as (docs/design/semantic-incremental.md): no
+    /// entry's fingerprint, so an entry that saw a cycle is computed again at the next revision.
+    pub(crate) const CYCLE: Fingerprint = Fingerprint(u64::MAX);
+
     pub fn of<T: Hash + ?Sized>(value: &T) -> Fingerprint {
         let mut hasher = DefaultHasher::new();
         value.hash(&mut hasher);

@@ -226,9 +226,11 @@ version = "0.0.0"
 name = "ferrion_semantic"
 version = "0.0.0"
 dependencies = [
+ "ferrion_classfile",
  "ferrion_diagnostics",
  "ferrion_lexer",
  "ferrion_parser",
+ "ferrion_project",
  "ferrion_stack",
  "ferrion_syntax",
 ]

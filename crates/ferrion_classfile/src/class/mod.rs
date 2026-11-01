@@ -21,7 +21,7 @@ pub use attribute::{
     MethodParameter, ModuleAttribute, ModuleExport, ModuleProvides, ModuleRequires,
     RecordComponent, RecordComponents,
 };
-pub use module::ModuleDescriptor;
+pub use module::{Exports, ModuleDescriptor, Provides, Requires};
 
 use crate::cursor::Cursor;
 use crate::error::{Error, Result};

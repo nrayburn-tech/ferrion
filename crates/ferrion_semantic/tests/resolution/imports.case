@@ -1,0 +1,31 @@
+// Every kind of import, the same package, and java.lang. javac compiles every file.
+//- set main 27
+//- file main p/A.java
+package p;
+
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.function.*;
+import static java.util.Map.Entry;
+import static java.lang.annotation.Retention.*;
+import java.io.Serializable;
+
+@Deprecated
+public class A<T extends Comparable<T>> extends B implements Serializable, Supplier<String> {
+    List<String> names;
+    java.util.Map<String, Entry<String, T>> map;
+    Entry<String, String> entry;
+    B.Inner inner;
+    Inner inherited;
+    @SuppressWarnings({"unchecked"}) Function<T, ? super Integer> f;
+
+    public String get() { return null; }
+
+    <R extends Runnable> R run(R r, T... rest) throws java.io.IOException, RuntimeException { return r; }
+}
+//- file main p/B.java
+package p;
+
+class B {
+    static class Inner {}
+}

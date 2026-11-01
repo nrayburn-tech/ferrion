@@ -1,0 +1,22 @@
+// A named module in sources ("named-module-not-required", "named-module-transitive",
+// "exports-to-named-module"). javac reports `package java.awt is not visible` for the field `l`,
+// and an error for `u`, since java.base exports jdk.internal.misc only to some platform modules:
+// `package jdk.internal.misc does not exist` with this module-info, `... is not visible` in a
+// module that requires nothing. java.sql's `requires transitive` makes java.xml and java.logging
+// readable.
+//- set main 27
+//- file main module-info.java
+module m {
+    requires java.sql;
+    exports p;
+}
+//- file main p/U.java
+package p;
+
+class U {
+    java.sql.Connection c;
+    javax.xml.XMLConstants x;
+    java.util.logging.Logger logger;
+    java.awt.List l;
+    jdk.internal.misc.Unsafe u;
+}

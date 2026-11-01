@@ -1,0 +1,65 @@
+// The order of scopes. javac compiles every file, and each call in a body (which W5 resolves)
+// confirms which type a name in a declaration is.
+// - A member type named like a type parameter wins in the body; in the header, the type
+//   parameter (observations "typevar-and-member-type", "type-param-in-extends").
+// - An inherited member type wins over a single-type import ("inherited-member-vs-single-import").
+// - A single-type import wins over the same package; the same package over an on-demand import.
+// - A member type inherited by the inner class wins over the outer class's own
+//   ("inherited-member-hides-outer-member").
+// - The class's own members aren't in scope in its `extends` clause ("extends-own-member-simple").
+//- set main 27
+//- file main p/Generic.java
+package p;
+
+class Generic<T> extends java.util.ArrayList<T> {
+    static class T { void member() {} }
+    T field;
+    T method(T p) { p.member(); return p; }
+}
+//- file main p/Base.java
+package p;
+
+public class Base {
+    public static class Entry { public void fromBase() {} }
+    public static class X { public void fromBase() {} }
+}
+//- file main q/Sub.java
+package q;
+
+import java.util.Map.Entry;
+
+class Sub extends p.Base {
+    Entry e;
+    void m() { e.fromBase(); }
+}
+//- file main p/List.java
+package p;
+
+public class List { public void mine() {} }
+//- file main p/Imports.java
+package p;
+
+import java.util.List;
+
+class Imports { List<String> l; void m() { l.size(); } }
+//- file main p/OnDemand.java
+package p;
+
+import java.util.*;
+
+class OnDemand { List l; void m() { l.mine(); } }
+//- file main q/Outer.java
+package q;
+
+class Outer {
+    static class X { void fromOuter() {} }
+    static class Inner extends p.Base { X x; void m() { x.fromBase(); } }
+}
+//- file main r/A.java
+package r;
+
+class A extends B { static class B {} }
+//- file main r/B.java
+package r;
+
+class B { void top() {} }

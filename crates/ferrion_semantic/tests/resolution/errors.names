@@ -1,0 +1,44 @@
+== main p/A.java
+p -> package p
+Nope -> error not-found Nope
+Missing -> error not-found Missing
+Nope2 -> error incomplete Nope2
+Missing.Inner -> error no-package Missing Missing.Inner
+Missing -> package Missing
+# type p/A source p/A.java
+  superclass error not-found Missing
+  incomplete
+  field f I
+  field i Ljava/lang/Object;
+  method A()V implicit
+  error not-found Nope
+  error not-found Missing
+  error no-package Missing Missing.Inner
+== main p/B.java
+p -> package p
+A -> type p/A source p/A.java
+Inner -> error incomplete Inner
+# type p/B source p/B.java
+  superclass type p/A source p/A.java
+  incomplete
+  field i Ljava/lang/Object;
+  method B()V implicit
+  error incomplete Inner
+== main p/Syntax.java
+p -> package p
+java.util. x -> error not-found java.util.x
+java.util -> package java.util
+java -> package java
+# type p/Syntax source p/Syntax.java
+  superclass type java/lang/Object class platform
+  method m()V
+  method Syntax()V implicit
+== bare p/C.java
+p -> package p
+String -> error incomplete String
+# type p/C source p/C.java
+  superclass error not-found java.lang.Object
+  incomplete
+  field s Ljava/lang/Object;
+  method C()V implicit
+  error incomplete String

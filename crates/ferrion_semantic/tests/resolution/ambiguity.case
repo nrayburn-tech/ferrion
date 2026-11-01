@@ -1,0 +1,67 @@
+// Ambiguous names. javac reports `reference to List is ambiguous` in p/TwoOnDemand.java and
+// q/U.java ("static-and-type-on-demand"), `reference to X is ambiguous` in s/B.java
+// ("ambiguous-inherited-member"), and `duplicate class: d.D` for d2/D.java (observation 1); the
+// other files compile. Two on-demand imports that would clash are fine while unused, and a member
+// type inherited twice by different paths is one type ("same-member-inherited-twice").
+//- set main 27
+//- file main p/TwoOnDemand.java
+package p;
+
+import java.util.*;
+import java.awt.*;
+
+class TwoOnDemand { List l; }
+//- file main p/Unused.java
+package p;
+
+import java.util.*;
+import java.awt.*;
+
+class Unused { Map<String, String> m; }
+//- file main p/Holder.java
+package p;
+
+public class Holder { public static class List {} }
+//- file main q/U.java
+package q;
+
+import static p.Holder.*;
+import java.util.*;
+
+class U { List l; }
+//- file main s/I.java
+package s;
+
+interface I { class X {} }
+//- file main s/J.java
+package s;
+
+interface J { class X {} }
+//- file main s/K.java
+package s;
+
+interface K extends I {}
+//- file main s/A.java
+package s;
+
+class A implements I, J {}
+//- file main s/B.java
+package s;
+
+class B implements I, J { X x; }
+//- file main s/C.java
+package s;
+
+class C implements I, K { X x; }
+//- file main d1/D.java
+package d;
+
+public class D { public void one() {} }
+//- file main d2/D.java
+package d;
+
+public class D { public void two() {} }
+//- file main d/UsesD.java
+package d;
+
+class UsesD { D d; }

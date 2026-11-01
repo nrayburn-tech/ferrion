@@ -12,8 +12,13 @@
 //! 1. inputs: each file's text, path, and whether it is generated, and each source set's
 //!    release, dependencies, and files, with a version each;
 //! 2. summaries, one per file, from its tree;
-//! 3. project symbols: so far each source set's package index and package entries
-//!    ([`crate::packages`]); W4 adds views and type entries.
+//! 3. project symbols: each source set's package index and package entries
+//!    ([`crate::packages`]) and module ([`crate::view`]), and each type's supertypes, member
+//!    types, and entry ([`crate::symbols`]);
+//! 4. each file's names in declarations ([`crate::decl_names`]).
+//!
+//! Class sources (platforms and classpath entries) are fixed when the engine is made, and what is
+//! read from them is cached without dependencies ([`crate::classes`]).
 //!
 //! Trees aren't a layer: they are parsed from inputs and kept in a cache with a byte budget.
 
@@ -32,8 +37,13 @@ use ferrion_syntax::SyntaxTree;
 
 use self::derived::{Dep, DerivedTable, Memo, Reads, read, write};
 use self::trees::TreeCache;
+use crate::classes::{Cache, ClassSource, ClassSources};
+use crate::decl_names::FileNames;
+use crate::input::ClassPathInput;
 use crate::packages::{Package, PackageIndex, TopLevel};
 use crate::summary::{Summary, summarize};
+use crate::symbols::{ClassSourceId, MemberTypes, Supertypes, TypeEntry, TypeKey};
+use crate::view::{ModuleView, PlatformModules, SetConfig, SetEntry};
 use crate::{FileId, FileInput, Fingerprint, Interner, Name, ProjectInput, SourceSetId};
 
 /// The number of input changes so far. Every change makes a new revision, before which no
@@ -83,7 +93,16 @@ pub(crate) struct Shared {
     pub(crate) summaries: DerivedTable<FileId, FileSummary>,
     pub(crate) package_indexes: DerivedTable<SourceSetId, PackageIndex>,
     pub(crate) packages: DerivedTable<(SourceSetId, Name), Package>,
+    pub(crate) module_views: DerivedTable<SourceSetId, ModuleView>,
+    pub(crate) supertypes: DerivedTable<TypeKey, Supertypes>,
+    pub(crate) member_types: DerivedTable<(SourceSetId, TypeKey), MemberTypes>,
+    pub(crate) type_entries: DerivedTable<TypeKey, TypeEntry>,
+    pub(crate) file_names: DerivedTable<FileId, FileNames>,
     pub(crate) names: Arc<Interner>,
+    /// Each source set's classpath and platform, by its index.
+    pub(crate) configs: Box<[SetConfig]>,
+    pub(crate) classes: ClassSources,
+    pub(crate) platform_modules: Cache<ClassSourceId, Arc<PlatformModules>>,
 }
 
 struct Inputs {
@@ -136,6 +155,11 @@ pub struct Stats {
     pub summaries: TableStats,
     pub package_indexes: TableStats,
     pub packages: TableStats,
+    pub module_views: TableStats,
+    pub supertypes: TableStats,
+    pub member_types: TableStats,
+    pub type_entries: TableStats,
+    pub file_names: TableStats,
 }
 
 /// What one table's entries did.
@@ -159,6 +183,11 @@ impl std::ops::Sub for Stats {
             summaries: self.summaries - earlier.summaries,
             package_indexes: self.package_indexes - earlier.package_indexes,
             packages: self.packages - earlier.packages,
+            module_views: self.module_views - earlier.module_views,
+            supertypes: self.supertypes - earlier.supertypes,
+            member_types: self.member_types - earlier.member_types,
+            type_entries: self.type_entries - earlier.type_entries,
+            file_names: self.file_names - earlier.file_names,
         }
     }
 }
@@ -184,6 +213,12 @@ pub struct Sizes {
     pub summaries: usize,
     pub package_indexes: usize,
     pub packages: usize,
+    pub supertypes: usize,
+    pub member_types: usize,
+    pub type_entries: usize,
+    pub file_names: usize,
+    pub class_entries: usize,
+    pub names: usize,
 }
 
 impl Engine {
@@ -199,14 +234,35 @@ impl Engine {
             sets: Vec::with_capacity(count),
             files: Vec::new(),
         };
+        let mut sources = Vec::new();
+        let mut configs = Vec::with_capacity(count);
         for (index, set) in input.source_sets.into_iter().enumerate() {
-            for dependency in &set.dependencies {
+            let dependencies: Vec<SourceSetId> = set.dependencies().collect();
+            for dependency in &dependencies {
                 assert!(
                     dependency.index() < count,
                     "source set {} depends on {dependency:?}, which isn't one",
                     set.name
                 );
             }
+            let classpath: Vec<SetEntry> = set
+                .classpath
+                .into_iter()
+                .map(|entry| match entry {
+                    ClassPathInput::SourceSet(id) => SetEntry::SourceSet(id),
+                    ClassPathInput::Classes(classes) => SetEntry::Classes(ClassSources::add(
+                        &mut sources,
+                        ClassSource::Entry(classes),
+                    )),
+                })
+                .collect();
+            let platform = set
+                .platform
+                .map(|p| ClassSources::add(&mut sources, ClassSource::Platform(p)));
+            configs.push(SetConfig {
+                classpath: Arc::from(classpath),
+                platform,
+            });
             let id = SourceSetId::from_index(index);
             let mut files = Vec::with_capacity(set.files.len());
             for file in set.files {
@@ -216,7 +272,7 @@ impl Engine {
             inputs.sets.push(SetState {
                 name: Arc::from(set.name),
                 release: set.release,
-                dependencies: Arc::from(set.dependencies),
+                dependencies: Arc::from(dependencies),
                 files: Arc::from(files),
                 files_version: revision,
             });
@@ -230,7 +286,15 @@ impl Engine {
                 summaries: DerivedTable::new(),
                 package_indexes: DerivedTable::new(),
                 packages: DerivedTable::new(),
+                module_views: DerivedTable::new(),
+                supertypes: DerivedTable::tracked(|key| Dep::Supertypes(*key)),
+                member_types: DerivedTable::tracked(|(view, key)| Dep::MemberTypes(*view, *key)),
+                type_entries: DerivedTable::new(),
+                file_names: DerivedTable::new(),
                 names: Arc::new(Interner::new()),
+                configs: configs.into_boxed_slice(),
+                classes: ClassSources::with_sources(sources),
+                platform_modules: Cache::new(),
             }),
         }
     }
@@ -325,6 +389,11 @@ impl Engine {
             summaries: self.shared.summaries.stats(),
             package_indexes: self.shared.package_indexes.stats(),
             packages: self.shared.packages.stats(),
+            module_views: self.shared.module_views.stats(),
+            supertypes: self.shared.supertypes.stats(),
+            member_types: self.shared.member_types.stats(),
+            type_entries: self.shared.type_entries.stats(),
+            file_names: self.shared.file_names.stats(),
         }
     }
 
@@ -340,6 +409,12 @@ impl Engine {
             summaries: self.shared.summaries.len(),
             package_indexes: self.shared.package_indexes.len(),
             packages: self.shared.packages.len(),
+            supertypes: self.shared.supertypes.len(),
+            member_types: self.shared.member_types.len(),
+            type_entries: self.shared.type_entries.len(),
+            file_names: self.shared.file_names.len(),
+            class_entries: self.shared.classes.entries_read(),
+            names: self.shared.names.len(),
         }
     }
 }
@@ -459,6 +534,11 @@ impl Snapshot {
         })
     }
 
+    /// Whether `file` is one of this snapshot's files.
+    pub fn file_exists(&self, file: FileId) -> Result<bool, Cancelled> {
+        self.inputs(|i| i.file(file).is_some())
+    }
+
     /// Panics if `file` isn't one of this snapshot's files.
     pub fn text(&self, file: FileId) -> Result<Arc<str>, Cancelled> {
         self.inputs(|i| i.file(file).unwrap_or_else(|| missing(file)).text.clone())
@@ -547,6 +627,22 @@ impl Snapshot {
                 .package_files(*name)
                 .map_or(Fingerprint::ABSENT, |p| p.fingerprint),
             Dep::Package(set, name) => self.package_memo(*set, *name)?.fingerprint,
+            Dep::PackageType(set, package, name) => self
+                .package_memo(*set, *package)?
+                .value
+                .get(*name)
+                .map_or(Fingerprint::ABSENT, |t| Fingerprint::of(&t.declarations)),
+            Dep::ModuleFiles(set) => {
+                Fingerprint::of(self.package_index_memo(*set)?.value.module_files())
+            }
+            Dep::ModuleView(set) => self.module_view_memo(*set)?.fingerprint,
+            Dep::Supertypes(key) => self
+                .supertypes_memo(*key)?
+                .map_or(Fingerprint::CYCLE, |m| m.fingerprint),
+            Dep::MemberTypes(view, key) => self
+                .member_types_memo(*view, *key)?
+                .map_or(Fingerprint::CYCLE, |m| m.fingerprint),
+            Dep::TypeEntry(key) => self.type_entry_memo(*key)?.fingerprint,
         })
     }
 }
@@ -571,7 +667,6 @@ impl Reads<'_> {
     }
 
     /// A file's summary. Records the whole summary.
-    #[allow(dead_code, reason = "for type entries, which W4 adds")]
     pub(crate) fn summary(&mut self, file: FileId) -> Result<Arc<Summary>, Cancelled> {
         let memo = self
             .snapshot
