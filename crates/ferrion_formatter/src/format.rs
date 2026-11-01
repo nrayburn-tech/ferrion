@@ -204,6 +204,15 @@ impl<'t> Formatter<'t> {
         }
     }
 
+    /// Removes a blank line just emitted, as the line break after a trailing comment with a blank
+    /// line after it in the input: for a rule that allows no blank line where the comment is,
+    /// such as before a body's `}`.
+    pub fn no_blank_line(&mut self) {
+        if self.in_region.is_none() {
+            self.doc.demote_blank_line();
+        }
+    }
+
     /// A line break before `token`, and a blank line if the input has one there (see
     /// [`Formatter::blank_line_before`]).
     pub fn line_break_before(&mut self, token: SyntaxToken<'t>) {

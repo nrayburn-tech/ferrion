@@ -228,6 +228,14 @@ impl DocumentBuilder {
         self.elements.push(Element::BlankLine);
     }
 
+    /// Turns the last element into a line break if it's a blank line. Both force their groups to
+    /// break, so no width changes.
+    pub fn demote_blank_line(&mut self) {
+        if let Some(last @ Element::BlankLine) = self.elements.last_mut() {
+            *last = Element::HardLine;
+        }
+    }
+
     pub fn verbatim(&mut self, verbatim: Verbatim) {
         self.position += u64::from(verbatim.first_width);
         if verbatim.breaks {
