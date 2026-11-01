@@ -1,0 +1,440 @@
+//! The state of one formatting run, and the helpers every rule emits through
+//! (docs/design/formatter.md, "Building the document").
+//!
+//! Rules emit tokens with [`Formatter::token`] and whitespace with the methods named after the
+//! document's elements. The token helper is what keeps the safety properties by construction:
+//!
+//! - **Comments:** before a token, it places every comment the input has before it, and after
+//!   the token, the comments that trail it. Comments are visited in source order, each once, so
+//!   none is lost, doubled, or moved across code. The whitespace around each comes from the
+//!   comment's own line breaks in the input, merged with what the rules ask for (see
+//!   [`Formatter::comment`]).
+//! - **Order:** debug builds assert that tokens are emitted in source order, each once, and that
+//!   no token other than trivia is skipped. Modifier reordering is the one exception, through
+//!   [`Formatter::reordered_run`].
+//! - **Disable regions:** at a region's `off` comment it emits the region's text as written, and
+//!   until the region's `on` comment, tokens, comments, and whitespace emit nothing.
+
+use ferrion_syntax::comments::{Comment, CommentMap, Element as CommentElement, Placement};
+use ferrion_syntax::{SyntaxKind, SyntaxNode, SyntaxToken, SyntaxTree, TokenId};
+
+use crate::document::{Document, DocumentBuilder, IndentKind, Verbatim, VerbatimKind, width};
+use crate::printer::{Lines, trim_end};
+use crate::regions::{self, Region};
+use crate::rules;
+
+/// What a rule builds the document with.
+pub struct Formatter<'t> {
+    tree: &'t SyntaxTree,
+    comments: CommentMap,
+    regions: Vec<Region>,
+    next_region: usize,
+    doc: DocumentBuilder,
+    /// The next comment to place, by its index in `comments.comments()`.
+    next_comment: usize,
+    /// The last token emitted, or skipped in a region.
+    last_token: Option<TokenId>,
+    /// The region being copied, if any.
+    in_region: Option<Region>,
+}
+
+impl<'t> Formatter<'t> {
+    pub fn new(tree: &'t SyntaxTree) -> Formatter<'t> {
+        let comments = CommentMap::new(tree);
+        let regions = regions::find(tree, &comments);
+        Formatter {
+            tree,
+            comments,
+            regions,
+            next_region: 0,
+            doc: DocumentBuilder::new(),
+            next_comment: 0,
+            last_token: None,
+            in_region: None,
+        }
+    }
+
+    /// Builds the document for the whole tree.
+    pub fn format_root(mut self) -> Document {
+        self.node(self.tree.root());
+        debug_assert_eq!(
+            self.next_comment,
+            self.comments.comments().len(),
+            "a comment wasn't placed"
+        );
+        debug_assert_eq!(
+            self.last_token.map(|t| self.tree.token(t).kind()),
+            Some(SyntaxKind::Eof),
+            "the rules stopped before the end of the file"
+        );
+        self.doc.finish()
+    }
+
+    #[allow(dead_code, reason = "for the construct rules still to come")]
+    pub fn tree(&self) -> &'t SyntaxTree {
+        self.tree
+    }
+
+    #[allow(dead_code, reason = "for the construct rules still to come")]
+    pub fn comments(&self) -> &CommentMap {
+        &self.comments
+    }
+
+    /// Formats `node` with its kind's rule.
+    pub fn node(&mut self, node: SyntaxNode<'t>) {
+        rules::node(self, node);
+    }
+
+    /// Emits `token`, the next token of the input that isn't trivia, with the comments before it
+    /// and the comments trailing it.
+    pub fn token(&mut self, token: SyntaxToken<'t>) {
+        let id = token.id();
+        self.check_next(id, id);
+        self.comments_before(id);
+        if self.in_region.is_none() {
+            self.text(token);
+        }
+        self.last_token = Some(id);
+        self.trailing_comments(id);
+    }
+
+    /// Emits a run of adjacent keyword modifiers, from `first` to `last` in the input with only
+    /// whitespace and line breaks between them, in the order of `units`: each unit is one modifier's tokens
+    /// (`non-sealed` is three), with a space between units. Only modifier reordering emits out
+    /// of order, and only outside disable regions.
+    pub fn reordered_run(&mut self, first: TokenId, last: TokenId, units: &[&[SyntaxToken<'t>]]) {
+        self.check_next(first, last);
+        debug_assert!(
+            (first.index()..=last.index())
+                .map(|i| self.tree.token(TokenId::from_index(i)))
+                .all(|t| matches!(
+                    t.kind(),
+                    SyntaxKind::Whitespace | SyntaxKind::LineTerminator
+                ) || units.iter().any(|unit| unit.contains(&t))),
+            "a run holds something other than its modifiers and whitespace"
+        );
+        self.comments_before(first);
+        debug_assert!(self.in_region.is_none(), "a run reordered in a region");
+        for (i, unit) in units.iter().enumerate() {
+            if i > 0 {
+                self.space();
+            }
+            for &token in *unit {
+                self.text(token);
+            }
+        }
+        self.last_token = Some(last);
+        self.trailing_comments(last);
+    }
+
+    /// Places the comments before `token` that haven't been placed, without emitting the token:
+    /// for a rule that wants them inside an indent, such as dangling comments before a `}`.
+    pub fn comments_before(&mut self, token: TokenId) {
+        while let Some(&comment) = self.comments.comments().get(self.next_comment)
+            && comment.token < token
+        {
+            self.next_comment += 1;
+            self.comment(comment);
+        }
+    }
+
+    /// Whether the formatter is inside a disable region, copying instead of laying out.
+    pub fn in_region(&self) -> bool {
+        self.in_region.is_some()
+    }
+
+    /// Whether any comment in `node` is a formatter marker.
+    pub fn has_marker(&self, node: SyntaxNode<'t>) -> bool {
+        node.tokens()
+            .any(|t| ferrion_syntax::comments::is_comment(t.kind()) && regions::is_marker(t))
+    }
+
+    pub fn space(&mut self) {
+        if self.in_region.is_none() {
+            self.doc.space();
+        }
+    }
+
+    #[allow(dead_code, reason = "for the construct rules still to come")]
+    pub fn line(&mut self) {
+        if self.in_region.is_none() {
+            self.doc.line();
+        }
+    }
+
+    #[allow(dead_code, reason = "for the construct rules still to come")]
+    pub fn soft_line(&mut self) {
+        if self.in_region.is_none() {
+            self.doc.soft_line();
+        }
+    }
+
+    pub fn hard_line(&mut self) {
+        if self.in_region.is_none() {
+            self.doc.hard_line();
+        }
+    }
+
+    pub fn blank_line(&mut self) {
+        if self.in_region.is_none() {
+            self.doc.blank_line();
+        }
+    }
+
+    /// A line break before `token`, and a blank line if the input has one there (see
+    /// [`Formatter::blank_line_before`]).
+    pub fn line_break_before(&mut self, token: SyntaxToken<'t>) {
+        if self.blank_line_before(token) {
+            self.blank_line();
+        } else {
+            self.hard_line();
+        }
+    }
+
+    /// Whether the input has a blank line right after the code before `token`: between the
+    /// previous token that isn't trivia and the first comment, or `token` if there's none. Blank
+    /// lines between comments, and between the last comment and `token`, are each comment's own
+    /// (see [`Formatter::comment`]), so a blank line is kept where it was.
+    pub fn blank_line_before(&self, token: SyntaxToken<'t>) -> bool {
+        let start = token.prev_non_trivia().map_or(0, |t| t.id().index() + 1);
+        let mut breaks = 0;
+        for index in start..token.id().index() {
+            match self.tree.token(TokenId::from_index(index)).kind() {
+                SyntaxKind::Whitespace => {}
+                SyntaxKind::LineTerminator => breaks += 1,
+                _ => break,
+            }
+        }
+        breaks >= 2
+    }
+
+    /// Runs `f` in a group and returns the group, for [`Formatter::indent_if_broken`].
+    #[allow(dead_code, reason = "for the construct rules still to come")]
+    pub fn group(&mut self, f: impl FnOnce(&mut Self)) -> u32 {
+        let group = self.doc.start_group();
+        f(self);
+        self.doc.end();
+        group
+    }
+
+    /// Starts a group that the caller ends with [`Formatter::end`]; for an `IndentIfBroken` that
+    /// names the group it's in.
+    #[allow(dead_code, reason = "for the construct rules still to come")]
+    pub fn start_group(&mut self) -> u32 {
+        self.doc.start_group()
+    }
+
+    /// Ends the innermost container started with a `start_` method.
+    pub fn end(&mut self) {
+        self.doc.end();
+    }
+
+    #[allow(dead_code, reason = "for the construct rules still to come")]
+    pub fn indent(&mut self, kind: IndentKind, f: impl FnOnce(&mut Self)) {
+        self.doc.start_indent(kind);
+        f(self);
+        self.doc.end();
+    }
+
+    pub fn start_indent(&mut self, kind: IndentKind) {
+        self.doc.start_indent(kind);
+    }
+
+    #[allow(dead_code, reason = "for the construct rules still to come")]
+    pub fn indent_if_broken(&mut self, group: u32, f: impl FnOnce(&mut Self)) {
+        self.doc.start_indent_if_broken(group);
+        f(self);
+        self.doc.end();
+    }
+
+    #[allow(dead_code, reason = "for the construct rules still to come")]
+    pub fn fill(&mut self, f: impl FnOnce(&mut Self)) {
+        self.doc.start_fill();
+        f(self);
+        self.doc.end();
+    }
+
+    /// A separator between two items of the fill `f` is building.
+    #[allow(dead_code, reason = "for the construct rules still to come")]
+    pub fn fill_break(&mut self, soft: bool) {
+        if self.in_region.is_none() {
+            self.doc.fill_break(soft);
+        }
+    }
+
+    #[allow(dead_code, reason = "for the construct rules still to come")]
+    pub fn hug(&mut self, f: impl FnOnce(&mut Self)) {
+        self.doc.start_hug();
+        f(self);
+        self.doc.end();
+    }
+
+    /// Asserts, in debug builds, that the tokens from `first` to `last` come next: after the last
+    /// token emitted, with only trivia skipped between.
+    fn check_next(&self, first: TokenId, last: TokenId) {
+        if cfg!(debug_assertions) {
+            let start = self.last_token.map_or(0, |t| t.index() + 1);
+            assert!(
+                first.index() >= start && last >= first,
+                "{first:?} emitted out of order or twice, after {:?}",
+                self.last_token
+            );
+            if let Some(skipped) = (start..first.index())
+                .map(|i| self.tree.token(TokenId::from_index(i)))
+                .find(|t| !t.is_trivia())
+            {
+                panic!("{skipped:?} was skipped");
+            }
+        }
+    }
+
+    /// Places the comments after `token` that trail it, or trail a node it ends.
+    fn trailing_comments(&mut self, token: TokenId) {
+        while let Some(&comment) = self.comments.comments().get(self.next_comment)
+            && comment.placement == Placement::Trailing
+            && self.ends_at(comment.element, token)
+        {
+            self.next_comment += 1;
+            self.comment(comment);
+        }
+    }
+
+    fn ends_at(&self, element: CommentElement, token: TokenId) -> bool {
+        match element {
+            CommentElement::Token(id) => id == token,
+            CommentElement::Node(id) => self.tree.node(id).last_token().id() == token,
+        }
+    }
+
+    /// Places a comment (docs/design/formatter.md, "Comments"). The comments around one gap
+    /// between tokens are placed in order, and the line breaks around each come from the input,
+    /// at most one blank line: none before it becomes a space if the input had one there, one a
+    /// line break, and more a blank line, and the same after it, where a line comment always
+    /// ends its line. They merge with the rules' whitespace, the larger winning, so formatting
+    /// the output again asks for the same breaks.
+    fn comment(&mut self, comment: Comment) {
+        let token = self.tree.token(comment.token);
+        if let Some(region) = self.in_region {
+            if region.end == Some(comment.token) {
+                self.in_region = None;
+                self.after_comment(comment, token);
+            }
+            return;
+        }
+        self.before_comment(comment, token);
+        if let Some(&region) = self.regions.get(self.next_region)
+            && region.start == comment.token
+        {
+            self.next_region += 1;
+            self.start_region(region);
+            return;
+        }
+        self.text(token);
+        self.after_comment(comment, token);
+    }
+
+    fn before_comment(&mut self, comment: Comment, token: SyntaxToken<'t>) {
+        match comment.line_breaks_before {
+            0 => {
+                if token
+                    .prev_token()
+                    .is_some_and(|t| t.kind() == SyntaxKind::Whitespace)
+                {
+                    self.space();
+                }
+            }
+            1 => self.hard_line(),
+            _ => self.blank_line(),
+        }
+    }
+
+    fn after_comment(&mut self, comment: Comment, token: SyntaxToken<'t>) {
+        let line_comment = matches!(
+            token.kind(),
+            SyntaxKind::LineComment | SyntaxKind::DocLineComment
+        );
+        match comment.line_breaks_after {
+            0 if line_comment => self.hard_line(),
+            0 => {
+                if token
+                    .next_token()
+                    .is_some_and(|t| t.kind() == SyntaxKind::Whitespace)
+                {
+                    self.space();
+                }
+            }
+            1 => self.hard_line(),
+            _ => self.blank_line(),
+        }
+    }
+
+    /// Emits a region's text as written, from its `off` comment to the end of its `on` comment
+    /// or of the file, and copies until the `on` comment is reached.
+    fn start_region(&mut self, region: Region) {
+        let text = self.tree.text();
+        let start = self.tree.token(region.start).span().start;
+        let end = region
+            .end
+            .map_or(text.len() as u32, |e| self.tree.token(e).span().end);
+        self.doc.verbatim(copied(
+            text,
+            start,
+            end,
+            VerbatimKind::Copy {
+                to_end: region.end.is_none(),
+            },
+        ));
+        self.in_region = Some(region);
+    }
+
+    /// Emits a token's text: a text block or a block comment that spans lines as copied text,
+    /// and a line comment without its trailing whitespace.
+    fn text(&mut self, token: SyntaxToken<'t>) {
+        let text = token.text();
+        match token.kind() {
+            SyntaxKind::TextBlock => {
+                let span = token.span();
+                self.doc.verbatim(copied(
+                    self.tree.text(),
+                    span.start,
+                    span.end,
+                    VerbatimKind::Copy { to_end: false },
+                ));
+            }
+            SyntaxKind::BlockComment | SyntaxKind::DocComment if text.contains(['\n', '\r']) => {
+                let span = token.span();
+                self.doc.verbatim(copied(
+                    self.tree.text(),
+                    span.start,
+                    span.end,
+                    VerbatimKind::Comment,
+                ));
+            }
+            SyntaxKind::LineComment | SyntaxKind::DocLineComment => {
+                let trimmed = trim_end(text);
+                self.doc
+                    .token(token.id(), trimmed.len() as u32, width(trimmed));
+            }
+            _ if text.is_empty() => {}
+            _ => self.doc.token(token.id(), text.len() as u32, width(text)),
+        }
+    }
+}
+
+/// Copied text from `start` to `end` in `text`.
+fn copied(text: &str, start: u32, end: u32, kind: VerbatimKind) -> Verbatim {
+    let copied = &text[start as usize..end as usize];
+    let mut lines = Lines::new(copied);
+    let first = lines.next().unwrap_or_default();
+    let first = match kind {
+        VerbatimKind::Comment => trim_end(first),
+        VerbatimKind::Copy { .. } => first,
+    };
+    Verbatim {
+        start,
+        end,
+        kind,
+        first_width: width(first),
+        breaks: lines.next().is_some(),
+    }
+}
