@@ -43,6 +43,15 @@ Characters the lexer can't make a token of (its `Error` tokens, already reported
 the parser and placed like trivia, in the innermost node around them. javac's scanner skips them
 the same way, so `import a.#b;` gets one error, for the `#`, and its import is still `a.b`.
 
+A lexical error is the mistake at its token, so the parser reports nothing more while its current
+token holds one, or comes after characters the lexer skipped: `int #x;` gets the illegal character,
+not `<identifier> expected` after `int`. The lexer's `..` error covers both dots, so neither is
+reported again. javac does the same: its parser reports nothing at a token its scanner made an
+`ERROR` of, and its scanner reports a token's error before its parser looks at the token. Two
+lexical errors don't count: a digit out of place in a binary or octal literal, which javac's parser
+reports, after anything wrong before the literal (`int x = 1 0b12;` gets `';' expected`), and an
+unterminated comment, which isn't a token.
+
 ### Missing pieces
 
 - A missing token (`;`, `)`, a name) is reported, not invented. Its node ends at the last token it
