@@ -5,13 +5,14 @@ use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 use super::elements;
 use crate::document::IndentKind;
 use crate::format::Formatter;
+use crate::rules::declarations::local_variable;
 use crate::rules::variables::single_declarator;
 
 /// A local variable declaration: modifiers, the type, the declarators, and the `;` of a
 /// statement. What is inside a declarator, such as the break after its `=`, is the declarator's.
 ///
-/// - **Modifiers:** their rule puts the annotations on lines of their own or keeps them on the
-///   line (docs/style.md, "Annotations on declarations"); a space follows them.
+/// - **Modifiers:** [`local_variable`] puts the annotations on lines of their own or keeps them on
+///   the line (docs/style.md, "Annotations on declarations").
 /// - **One declarator,** in a statement: `Type name` breaks before the name at +4 when it doesn't
 ///   fit with the rest of its line, up to the `=` or the `;`, as a field's does.
 /// - **Several declarators** go one to a line at +4, after their commas, when they don't fit. In
@@ -22,19 +23,11 @@ use crate::rules::variables::single_declarator;
 pub fn local_var_decl<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     let statement = node.last_token().kind() == K::Semi;
     let elements: Vec<_> = elements(node).collect();
-    let mut rest = elements.as_slice();
-    if let [NodeOrToken::Node(modifiers), tail @ ..] = rest
-        && modifiers.kind() == K::Modifiers
-    {
-        f.node(*modifiers);
-        f.space();
-        rest = tail;
-    }
-    let (declaration, semi) = match rest {
-        [declaration @ .., semi] if semi.kind() == K::Semi => (declaration, Some(*semi)),
-        _ => (rest, None),
+    let (rest, semi) = match elements.as_slice() {
+        [rest @ .., semi] if semi.kind() == K::Semi => (rest, Some(*semi)),
+        rest => (rest, None),
     };
-    match declaration {
+    let declaration = |f: &mut Formatter<'t>, declaration: &[NodeOrToken<'t>]| match declaration {
         [ty, NodeOrToken::Node(declarator)]
             if statement && declarator.kind() == K::VariableDeclarator =>
         {
@@ -45,7 +38,14 @@ pub fn local_var_decl<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             declarators_after_type(f, declarators, statement);
         }
         [] => {}
+    };
+    match rest {
+        [NodeOrToken::Node(modifiers), declarators @ ..] if modifiers.kind() == K::Modifiers => {
+            local_variable(f, *modifiers, |f| declaration(f, declarators));
+        }
+        _ => declaration(f, rest),
     }
+    // After the group the modifiers may start, so that a line comment after it doesn't break it.
     if let Some(semi) = semi {
         super::emit(f, semi);
     }
