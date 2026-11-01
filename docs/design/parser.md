@@ -45,7 +45,9 @@ the workspace and can change freely:
   the diagnostics, and later the version check. It re-exports `ferrion_syntax` for convenience.
 
 The formatter, the linter, the rules, and semantic analysis read trees and never parse, so they
-depend on `ferrion_syntax` alone. Changing how a construct is parsed then rebuilds only
+depend on `ferrion_syntax` alone. The one exception is the formatter's `format` and `verify`, which
+parse around its tree-based core; `verify` has to parse the output
+([formatter design](formatter.md#the-crate)). Changing how a construct is parsed then rebuilds only
 `ferrion_parser` and what calls `parse`, and the generated code in `ferrion_syntax` rebuilds only
 when `java.grammar` changes. The builder makes a tree through one constructor,
 `SyntaxTree::new`, which takes the finished arrays and checks them in debug builds; the tree's
