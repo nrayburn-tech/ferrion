@@ -25,10 +25,6 @@ const EXPECTED: &str = ".formatted.java";
 /// `.java`, with the reason.
 const NOT_GJF: &[(&str, &str)] = &[
     (
-        "core/comments",
-        "the first rule's output, until the construct rules land",
-    ),
-    (
         "core/copied-text",
         "a text block's content isn't re-indented (docs/style.md)",
     ),
@@ -39,7 +35,8 @@ const NOT_GJF: &[(&str, &str)] = &[
     ("core/regions", "disable regions are copied (docs/style.md)"),
     (
         "types/in-other-constructs",
-        "waits for the declarations, statements, and expressions rules",
+        "a type broken inside a declaration, cast, or catch lands 4 columns short of GJF: an \
+         indent counts from the first text after a line break, not from the break",
     ),
 ];
 
