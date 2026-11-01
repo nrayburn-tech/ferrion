@@ -90,7 +90,9 @@ pub fn verify(input: &SourceText, output: &[u8], options: &FormatOptions) -> Res
             ))
         };
     }
-    let output_source = SourceText::decode(output).map_err(|reason| {
+    // Read as UTF-8, which the formatter writes: the output can have more NUL bytes in its first
+    // kilobyte than the input, which `decode` would take for UTF-16.
+    let output_source = SourceText::from_utf8(output).map_err(|reason| {
         violation(
             Property::NoNewErrors,
             None,
