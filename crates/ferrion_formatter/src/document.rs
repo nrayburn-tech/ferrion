@@ -83,6 +83,8 @@ pub enum Element {
     FillBreak { soft: bool, next: u32 },
     /// Its contents. Forced breaks in them don't force the groups around the hug to break, and
     /// the groups in them are decided by fitting even when the group around the hug is flat.
+    /// A hug started with [`DocumentBuilder::start_hug_in_group`] spares only the innermost
+    /// group around it; the printer treats both kinds alike.
     Hug,
     /// Ends the innermost container.
     End,
@@ -131,6 +133,15 @@ pub fn width(text: &str) -> u32 {
     }
 }
 
+/// Which groups a hug keeps from being forced by the forced breaks in it.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum HugKind {
+    /// Every group around it.
+    All,
+    /// Only the innermost group or fill around it.
+    InGroup,
+}
+
 /// A container open while building.
 #[derive(Debug)]
 struct Open {
@@ -141,7 +152,9 @@ struct Open {
     stop: Option<u64>,
     /// Whether a forced break outside any hug in it was seen.
     forced: bool,
-    hug: bool,
+    hug: Option<HugKind>,
+    /// Whether it is a group or a fill.
+    group: bool,
     /// For a fill, its last separator so far and the flat position after it.
     fill_break: Option<(u32, u64)>,
 }
@@ -218,12 +231,12 @@ impl DocumentBuilder {
                 forced: false,
                 stopped: false,
             },
-            false,
+            None,
         )
     }
 
     pub fn start_indent(&mut self, kind: IndentKind) {
-        self.start(Element::Indent(kind), false);
+        self.start(Element::Indent(kind), None);
     }
 
     #[allow(dead_code, reason = "for the construct rules still to come")]
@@ -232,7 +245,7 @@ impl DocumentBuilder {
             matches!(self.elements[group as usize], Element::Group { .. }),
             "IndentIfBroken names element {group}, which isn't a group"
         );
-        self.start(Element::IndentIfBroken { group }, false);
+        self.start(Element::IndentIfBroken { group }, None);
     }
 
     #[allow(dead_code, reason = "for the construct rules still to come")]
@@ -244,7 +257,7 @@ impl DocumentBuilder {
                 forced: false,
                 stopped: false,
             },
-            false,
+            None,
         );
     }
 
@@ -269,10 +282,17 @@ impl DocumentBuilder {
 
     #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn start_hug(&mut self) {
-        self.start(Element::Hug, true);
+        self.start(Element::Hug, Some(HugKind::All));
     }
 
-    fn start(&mut self, element: Element, hug: bool) -> u32 {
+    /// Starts a hug whose forced breaks don't force the innermost group or fill around it, but
+    /// do force the groups around that one. GJF hugs a lambda's block to the call's line this
+    /// way: the call's arguments stay flat, but `x = foo(a -> {` still breaks after the `=`.
+    pub fn start_hug_in_group(&mut self) {
+        self.start(Element::Hug, Some(HugKind::InGroup));
+    }
+
+    fn start(&mut self, element: Element, hug: Option<HugKind>) -> u32 {
         let index = self.elements.len() as u32;
         self.open.push(Open {
             index,
@@ -280,6 +300,7 @@ impl DocumentBuilder {
             stop: None,
             forced: false,
             hug,
+            group: matches!(element, Element::Group { .. } | Element::Fill { .. }),
             fill_break: None,
         });
         self.elements.push(element);
@@ -319,10 +340,26 @@ impl DocumentBuilder {
     }
 
     /// Marks the open containers at a forced break: those inside the innermost hug as forced, and
-    /// all of them as measured only up to here.
+    /// those outside the group around a hug started with [`DocumentBuilder::start_hug_in_group`],
+    /// and all of them as measured only up to here. The marking stops at a container already
+    /// marked, since the ones around it were marked with it, and the group a hug spares is
+    /// skipped each time, so a break costs at most the containers between the hug and it.
     fn force_break(&mut self) {
+        let mut sparing = false;
         for open in self.open.iter_mut().rev() {
-            if open.hug || open.forced {
+            if sparing {
+                sparing = !open.group;
+                continue;
+            }
+            match open.hug {
+                Some(HugKind::All) => break,
+                Some(HugKind::InGroup) => {
+                    sparing = true;
+                    continue;
+                }
+                None => {}
+            }
+            if open.forced {
                 break;
             }
             open.forced = true;
