@@ -158,6 +158,9 @@ don't: [`declarations.java`](../../tools/oracle-check/parser-cases/declarations.
 declarations, members without bodies, enum constants, annotation elements),
 [`types-and-annotations.java`](../../tools/oracle-check/parser-cases/types-and-annotations.java)
 (type annotations, C-style and annotated dimensions, variable arity parameters, array creation),
+[`annotated-names.java`](../../tools/oracle-check/parser-cases/annotated-names.java) (annotated
+segments in `throws` and at the start of a statement expression, annotated method reference
+qualifiers and casts),
 [`expressions-in-fields.java`](../../tools/oracle-check/parser-cases/expressions-in-fields.java)
 (every operator, calls, creation, lambdas, method references),
 [`folded-strings.java`](../../tools/oracle-check/parser-cases/folded-strings.java),

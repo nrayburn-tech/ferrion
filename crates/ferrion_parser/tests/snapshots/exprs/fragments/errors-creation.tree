@@ -66,22 +66,27 @@ CompilationUnit 0..178 [error]
           Identifier 63..64 "A"
   Semi 64..65 ";"
   LineTerminator 65..66 "\n"
-  NewExpr 66..73 [error]
-    NewKw 66..69 "new"
-    Whitespace 69..70 " "
-    ClassType 70..73 [error]
-      Identifier 70..71 "X"
-      TypeArguments 71..73 [error]
-        Lt 71..72 "<"
-        ClassType 72..73
-          Identifier 72..73 "A"
-  Whitespace 73..74 " "
-  Error 74..79 [error]
-    At 74..75 "@"
-    Identifier 75..76 "B"
+  BinaryExpr 66..79 [error]
+    Error 66..76 [error]
+      NewExpr 66..73 [error]
+        NewKw 66..69 "new"
+        Whitespace 69..70 " "
+        ClassType 70..73 [error]
+          Identifier 70..71 "X"
+          TypeArguments 71..73 [error]
+            Lt 71..72 "<"
+            ClassType 72..73
+              Identifier 72..73 "A"
+      Whitespace 73..74 " "
+      Annotation 74..76
+        At 74..75 "@"
+        Name 75..76
+          Identifier 75..76 "B"
     Gt 76..77 ">"
-    LParen 77..78 "("
-    RParen 78..79 ")"
+    LambdaExpr 77..79 [error]
+      LambdaParameters 77..79
+        LParen 77..78 "("
+        RParen 78..79 ")"
   Semi 79..80 ";"
   LineTerminator 80..81 "\n"
   ArrayCreationExpr 81..90 [error]
@@ -198,6 +203,7 @@ error 30..39 @39 ArrayDimensionMissing: an array creation needs a dimension or a
 error 41..53 @52 ArrayDimensionsAndInitializer: an array creation can't have both dimensions and an initializer
 error 64..64 @64 Expected(OneOf([Gt, Comma])): '>' or ',' expected
 error 74..75 @74 TypeExpected(At): expected a type, found '@'
+error 79..79 @79 Expected(Token(Arrow)): '->' expected
 error 90..90 @90 Expected(Token(RBracket)): ']' expected
 error 102..102 @102 Expected(Token(RBracket)): ']' expected
 error 111..111 @111 Expected(Identifier): name expected

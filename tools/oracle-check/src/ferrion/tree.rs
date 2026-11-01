@@ -1272,12 +1272,23 @@ impl<'t> Rows<'t> {
         }
     }
 
-    /// `target.name`: a `MEMBER_SELECT` preferred at the `.`.
+    /// `target.name`: a `MEMBER_SELECT` preferred at the `.`. An annotated name
+    /// (`java.util.@A Arrays`) makes it an annotated type, as for a `ClassType` segment.
     fn selected(&mut self, e: SyntaxNode<'t>, target: SyntaxNode<'t>) {
+        let annotations: Vec<SyntaxNode> = children(e, K::Annotation).collect();
+        if let Some(first) = annotations.first() {
+            self.node("ANNOTATED_TYPE", start(e), end(e), start(*first));
+            for annotation in &annotations {
+                self.annotation(*annotation, "TYPE_ANNOTATION");
+            }
+        }
         let dot = token(e, K::Dot).map_or(end(target), |t| t.span().start);
         self.node("MEMBER_SELECT", start(e), end(e), dot);
         self.expr(target);
         self.close();
+        if !annotations.is_empty() {
+            self.close();
+        }
     }
 
     /// A method call, or `this(...)` or `super(...)`: a `METHOD_INVOCATION` preferred at the

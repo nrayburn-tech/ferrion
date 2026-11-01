@@ -68,6 +68,9 @@ pub(crate) struct Parser<'t> {
     /// Whether an error was reported since a token was last consumed normally. While it is, no
     /// more errors are reported, so each mistake gets one diagnostic.
     recovering: bool,
+    /// The token that starts the statement expression being parsed, if any: see
+    /// [`Parser::at_statement_expr_start`].
+    statement_expr_start: Option<usize>,
 }
 
 impl<'t> Parser<'t> {
@@ -104,6 +107,7 @@ impl<'t> Parser<'t> {
             no_lambda_depth: None,
             too_deep_reported: false,
             recovering: false,
+            statement_expr_start: None,
         }
     }
 
@@ -198,7 +202,7 @@ impl<'t> Parser<'t> {
     }
 
     /// The end of the last token consumed, where "expected" errors are anchored.
-    fn previous_end(&self) -> u32 {
+    pub fn previous_end(&self) -> u32 {
         match self.pos.checked_sub(1) {
             Some(previous) => {
                 self.tokens[self.significant[previous].raw as usize]
@@ -477,6 +481,24 @@ impl<'t> Parser<'t> {
     /// Whether a lambda can start here: false directly inside [`Parser::without_lambdas`].
     pub fn lambdas_allowed(&self) -> bool {
         self.no_lambda_depth != Some(self.depth)
+    }
+
+    /// Marks the current token as the start of a statement expression (an expression statement,
+    /// or a `for` header's), where javac reads a leading name as a type or an expression, so its
+    /// segments can be annotated: `java.util.@A Arrays.stream(a);`.
+    pub fn mark_statement_expr_start(&mut self) {
+        self.statement_expr_start = Some(self.pos);
+    }
+
+    /// Whether the current token is the one [`Parser::mark_statement_expr_start`] marked last.
+    pub fn at_statement_expr_start(&self) -> bool {
+        self.statement_expr_start == Some(self.pos)
+    }
+
+    /// How many diagnostics have been reported so far, so that a construct checked after it is
+    /// parsed can tell whether an error inside it was already reported.
+    pub fn diagnostic_count(&self) -> usize {
+        self.diagnostics.len()
     }
 
     fn skip_too_deep(&mut self) {

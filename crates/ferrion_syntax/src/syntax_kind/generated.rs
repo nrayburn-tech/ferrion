@@ -403,6 +403,10 @@ pub enum SyntaxKind {
     ParenExpr,
     /// `Foo.class`, `int[].class`, `void.class`.
     ClassLiteralExpr,
+    /// `a.b`. At the start of a statement expression, javac reads a leading qualified name as a type
+    /// or an expression, so a segment can be annotated: `java.util.@A Arrays` in
+    /// `java.util.@A Arrays.stream(a);`. javac's tree makes the name up to the annotated segment an
+    /// annotated type.
     FieldAccessExpr,
     ArrayAccessExpr,
     /// `m()`, `a.m()`, `a.<T>m()`, `super.m()` (decision 10).

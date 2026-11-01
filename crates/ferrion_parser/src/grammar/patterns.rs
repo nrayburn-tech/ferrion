@@ -1,6 +1,8 @@
 //! Patterns (`java.grammar`: "Patterns", decision 12), and the lookahead that tells a pattern
 //! from a constant in a case label.
 
+use ferrion_diagnostics::Span;
+
 use crate::SyntaxKind::*;
 use crate::diagnostic::{Expected, ParseDiagnosticKind};
 use crate::grammar::{IDENT, decls, types};
@@ -18,6 +20,7 @@ pub(crate) fn pattern(p: &mut Parser<'_>) -> Option<CompletedMarker> {
             p.bump();
             return Some(m.complete(p, UnnamedPattern));
         }
+        let annotation = record_pattern_annotation(p);
         let modifiers = decls::modifiers(p).is_some();
         if types::type_(p).is_none() {
             if !modifiers {
@@ -34,6 +37,13 @@ pub(crate) fn pattern(p: &mut Parser<'_>) -> Option<CompletedMarker> {
             return Some(m.complete(p, TypePattern));
         }
         if p.at(LParen) {
+            if let Some(span) = annotation {
+                p.error(
+                    ParseDiagnosticKind::RecordPatternAnnotations,
+                    span,
+                    span.start,
+                );
+            }
             record_components(p);
             return Some(m.complete(p, RecordPattern));
         }
@@ -44,6 +54,39 @@ pub(crate) fn pattern(p: &mut Parser<'_>) -> Option<CompletedMarker> {
         }
         Some(m.complete(p, TypePattern))
     })
+}
+
+/// If a record pattern starts here, the span of the first annotations before its type or on it
+/// (`@A R(var x)`, `a.@A R(var x)`), outside its type arguments: javac rejects them while
+/// parsing.
+fn record_pattern_annotation(p: &Parser<'_>) -> Option<Span> {
+    let mut n = 0;
+    loop {
+        let next = types::annotations_end(p, n);
+        if p.nth(next) == FinalKw {
+            n = next + 1;
+        } else {
+            n = next;
+            break;
+        }
+    }
+    let end = types::scan_type(p, n)?;
+    if p.nth(end) != LParen {
+        return None;
+    }
+    let mut depth = 0usize;
+    for i in 0..end {
+        match p.nth(i) {
+            Lt => depth += 1,
+            Gt => depth = depth.saturating_sub(1),
+            At if depth == 0 => {
+                let last = types::annotations_end(p, i).max(i + 1) - 1;
+                return Some(Span::new(p.nth_span(i).start, p.nth_span(last).end));
+            }
+            _ => {}
+        }
+    }
+    None
 }
 
 /// A record pattern's `(...)`: nested patterns, each `_` an `UnnamedPattern`.

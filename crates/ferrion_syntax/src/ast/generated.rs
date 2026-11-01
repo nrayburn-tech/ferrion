@@ -2974,8 +2974,13 @@ impl<'t> ClassLiteralExpr<'t> {
     }
 }
 
+/// `a.b`. At the start of a statement expression, javac reads a leading qualified name as a type
+/// or an expression, so a segment can be annotated: `java.util.@A Arrays` in
+/// `java.util.@A Arrays.stream(a);`. javac's tree makes the name up to the annotated segment an
+/// annotated type.
+///
 /// ```text
-/// FieldAccessExpr = target:Expr '.' name:Ident
+/// FieldAccessExpr = target:Expr '.' annotations:Annotation* name:Ident
 /// ```
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct FieldAccessExpr<'t>(SyntaxNode<'t>);
@@ -2997,6 +3002,10 @@ impl<'t> AstNode<'t> for FieldAccessExpr<'t> {
 impl<'t> FieldAccessExpr<'t> {
     pub fn target(self) -> Option<Expr<'t>> {
         support::child(self.0, None, None)
+    }
+
+    pub fn annotations(self) -> AstChildren<'t, Annotation<'t>> {
+        support::children(self.0, None, None)
     }
 
     pub fn name(self) -> Option<SyntaxToken<'t>> {

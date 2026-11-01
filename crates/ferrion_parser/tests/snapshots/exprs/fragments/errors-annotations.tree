@@ -1,0 +1,221 @@
+CompilationUnit 0..160 [error]
+  Error 0..4 [error]
+    Annotation 0..2
+      At 0..1 "@"
+      Name 1..2
+        Identifier 1..2 "A"
+    Whitespace 2..3 " "
+    NameExpr 3..4
+      Identifier 3..4 "x"
+  Semi 4..5 ";"
+  LineTerminator 5..6 "\n"
+  Error 6..12 [error]
+    Annotation 6..8
+      At 6..7 "@"
+      Name 7..8
+        Identifier 7..8 "A"
+    Whitespace 8..9 " "
+    FieldAccessExpr 9..12
+      NameExpr 9..10
+        Identifier 9..10 "a"
+      Dot 10..11 "."
+      Identifier 11..12 "b"
+  Semi 12..13 ";"
+  LineTerminator 13..14 "\n"
+  Error 14..20 [error]
+    Annotation 14..16
+      At 14..15 "@"
+      Name 15..16
+        Identifier 15..16 "A"
+    Whitespace 16..17 " "
+    MethodCallExpr 17..20
+      Identifier 17..18 "f"
+      Arguments 18..20
+        LParen 18..19 "("
+        RParen 19..20 ")"
+  Semi 20..21 ";"
+  LineTerminator 21..22 "\n"
+  Error 22..28 [error]
+    Annotation 22..28
+      At 22..23 "@"
+      Name 23..24
+        Identifier 23..24 "A"
+      Whitespace 24..25 " "
+      AnnotationArguments 25..28
+        LParen 25..26 "("
+        NameExpr 26..27
+          Identifier 26..27 "x"
+        RParen 27..28 ")"
+  Semi 28..29 ";"
+  LineTerminator 29..30 "\n"
+  Error 30..32 [error]
+    Annotation 30..32
+      At 30..31 "@"
+      Name 31..32
+        Identifier 31..32 "A"
+  Semi 32..33 ";"
+  LineTerminator 33..34 "\n"
+  Error 34..46 [error]
+    Annotation 34..36
+      At 34..35 "@"
+      Name 35..36
+        Identifier 35..36 "A"
+    Whitespace 36..37 " "
+    ClassLiteralExpr 37..46
+      PrimitiveType 37..40
+        IntKw 37..40 "int"
+      Dot 40..41 "."
+      ClassKw 41..46 "class"
+  Semi 46..47 ";"
+  LineTerminator 47..48 "\n"
+  BinaryExpr 48..67 [error]
+    Error 48..63 [error]
+      Annotation 48..50
+        At 48..49 "@"
+        Name 49..50
+          Identifier 49..50 "A"
+      Whitespace 50..51 " "
+      ClassLiteralExpr 51..63
+        NameExpr 51..57
+          Identifier 51..57 "Object"
+        Dot 57..58 "."
+        ClassKw 58..63 "class"
+    Whitespace 63..64 " "
+    Plus 64..65 "+"
+    Whitespace 65..66 " "
+    LiteralExpr 66..67
+      IntLiteral 66..67 "1"
+  Semi 67..68 ";"
+  LineTerminator 68..69 "\n"
+  Error 69..91 [error]
+    Annotation 69..71
+      At 69..70 "@"
+      Name 70..71
+        Identifier 70..71 "A"
+    Whitespace 71..72 " "
+    MethodCallExpr 72..91
+      ClassLiteralExpr 72..81
+        PrimitiveType 72..75
+          IntKw 72..75 "int"
+        Dot 75..76 "."
+        ClassKw 76..81 "class"
+      Dot 81..82 "."
+      Identifier 82..89 "getName"
+      Arguments 89..91
+        LParen 89..90 "("
+        RParen 90..91 ")"
+  Semi 91..92 ";"
+  LineTerminator 92..93 "\n"
+  ClassLiteralExpr 93..108 [error]
+    ArrayType 93..102
+      PrimitiveType 93..96
+        IntKw 93..96 "int"
+      Whitespace 96..97 " "
+      Dim 97..102
+        Annotation 97..99
+          At 97..98 "@"
+          Name 98..99
+            Identifier 98..99 "A"
+        Whitespace 99..100 " "
+        LBracket 100..101 "["
+        RBracket 101..102 "]"
+    Dot 102..103 "."
+    ClassKw 103..108 "class"
+  Semi 108..109 ";"
+  LineTerminator 109..110 "\n"
+  Error 110..116 [error]
+    Annotation 110..112
+      At 110..111 "@"
+      Name 111..112
+        Identifier 111..112 "A"
+    Whitespace 112..113 " "
+    PrimitiveType 113..116
+      IntKw 113..116 "int"
+  Semi 116..117 ";"
+  LineTerminator 117..118 "\n"
+  CastExpr 118..124 [error]
+    LParen 118..119 "("
+    ClassType 119..121 [error]
+      Annotation 119..121
+        At 119..120 "@"
+        Name 120..121
+          Identifier 120..121 "A"
+    RParen 121..122 ")"
+    Whitespace 122..123 " "
+    NameExpr 123..124
+      Identifier 123..124 "x"
+  Semi 124..125 ";"
+  LineTerminator 125..126 "\n"
+  ParenExpr 126..134 [error]
+    LParen 126..127 "("
+    Error 127..133 [error]
+      Annotation 127..129
+        At 127..128 "@"
+        Name 128..129
+          Identifier 128..129 "A"
+      Whitespace 129..130 " "
+      FieldAccessExpr 130..133
+        NameExpr 130..131
+          Identifier 130..131 "a"
+        Dot 131..132 "."
+        Identifier 132..133 "b"
+    RParen 133..134 ")"
+  Semi 134..135 ";"
+  LineTerminator 135..136 "\n"
+  ArrayAccessExpr 136..144 [error]
+    Error 136..140 [error]
+      NameExpr 136..137
+        Identifier 136..137 "x"
+      Whitespace 137..138 " "
+      Annotation 138..140
+        At 138..139 "@"
+        Name 139..140
+          Identifier 139..140 "A"
+    Whitespace 140..141 " "
+    LBracket 141..142 "["
+    LiteralExpr 142..143
+      IntLiteral 142..143 "1"
+    RBracket 143..144 "]"
+  Semi 144..145 ";"
+  LineTerminator 145..146 "\n"
+  Error 146..150 [error]
+    NameExpr 146..147
+      Identifier 146..147 "x"
+    Whitespace 147..148 " "
+    Annotation 148..150
+      At 148..149 "@"
+      Name 149..150
+        Identifier 149..150 "A"
+  Semi 150..151 ";"
+  LineTerminator 151..152 "\n"
+  Error 152..156 [error]
+    FieldAccessExpr 152..154 [error]
+      NameExpr 152..153
+        Identifier 152..153 "a"
+      Dot 153..154 "."
+    Annotation 154..156
+      At 154..155 "@"
+      Name 155..156
+        Identifier 155..156 "A"
+  Whitespace 156..157 " "
+  Error 157..158 [error]
+    Identifier 157..158 "b"
+  Semi 158..159 ";"
+  LineTerminator 159..160 "\n"
+  Eof 160..160 ""
+error 0..4 @0 AnnotatedExpression: annotations in an expression can only annotate a method reference's type
+error 6..12 @12 AnnotatedExpression: annotations in an expression can only annotate a method reference's type
+error 14..20 @14 AnnotatedExpression: annotations in an expression can only annotate a method reference's type
+error 22..28 @28 AnnotatedExpression: annotations in an expression can only annotate a method reference's type
+error 30..32 @32 AnnotatedExpression: annotations in an expression can only annotate a method reference's type
+error 34..46 @46 AnnotatedClassLiteral: a class literal's type can't be annotated
+error 48..63 @64 AnnotatedClassLiteral: a class literal's type can't be annotated
+error 69..91 @69 AnnotatedExpression: annotations in an expression can only annotate a method reference's type
+error 93..108 @108 AnnotatedClassLiteral: a class literal's type can't be annotated
+error 116..117 @116 ClassLiteralExpected: a type in an expression must be followed by '.class' or '::'
+error 121..122 @121 TypeExpected(RParen): expected a type, found ')'
+error 127..133 @133 AnnotatedExpression: annotations in an expression can only annotate a method reference's type
+error 138..140 @138 UnexpectedToken(At): unexpected '@'
+error 148..150 @148 UnexpectedToken(At): unexpected '@'
+error 154..154 @154 Expected(Identifier): name expected
+error 156..156 @156 Expected(Token(Semi)): ';' expected

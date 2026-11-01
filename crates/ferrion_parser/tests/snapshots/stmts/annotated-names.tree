@@ -1,0 +1,246 @@
+CompilationUnit 0..339
+  ClassDecl 0..338
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..20 "AnnotatedNames"
+    Whitespace 20..21 " "
+    ClassBody 21..338
+      LBrace 21..22 "{"
+      LineTerminator 22..23 "\n"
+      Whitespace 23..27 "    "
+      MethodDecl 27..336
+        VoidType 27..31
+          VoidKw 27..31 "void"
+        Whitespace 31..32 " "
+        Identifier 32..33 "m"
+        FormalParameters 33..45
+          LParen 33..34 "("
+          FormalParameter 34..44
+            ArrayType 34..42
+              ClassType 34..40
+                Identifier 34..40 "String"
+              Dim 40..42
+                LBracket 40..41 "["
+                RBracket 41..42 "]"
+            Whitespace 42..43 " "
+            Identifier 43..44 "a"
+          RParen 44..45 ")"
+        Whitespace 45..46 " "
+        ThrowsClause 46..98
+          ThrowsKw 46..52 "throws"
+          Whitespace 52..53 " "
+          ClassType 53..75
+            ClassType 53..60
+              ClassType 53..57
+                Identifier 53..57 "java"
+              Dot 57..58 "."
+              Identifier 58..60 "io"
+            Dot 60..61 "."
+            Annotation 61..63
+              At 61..62 "@"
+              Name 62..63
+                Identifier 62..63 "A"
+            Whitespace 63..64 " "
+            Identifier 64..75 "IOException"
+          Comma 75..76 ","
+          Whitespace 76..77 " "
+          ClassType 77..98
+            ClassType 77..89
+              ClassType 77..84
+                Annotation 77..79
+                  At 77..78 "@"
+                  Name 78..79
+                    Identifier 78..79 "B"
+                Whitespace 79..80 " "
+                Identifier 80..84 "java"
+              Dot 84..85 "."
+              Identifier 85..89 "lang"
+            Dot 89..90 "."
+            Annotation 90..92
+              At 90..91 "@"
+              Name 91..92
+                Identifier 91..92 "C"
+            Whitespace 92..93 " "
+            Identifier 93..98 "Error"
+        Whitespace 98..99 " "
+        Block 99..336
+          LBrace 99..100 "{"
+          LineTerminator 100..101 "\n"
+          Whitespace 101..109 "        "
+          ExprStmt 109..147
+            MethodCallExpr 109..146
+              MethodCallExpr 109..138
+                FieldAccessExpr 109..128
+                  FieldAccessExpr 109..118
+                    NameExpr 109..113
+                      Identifier 109..113 "java"
+                    Dot 113..114 "."
+                    Identifier 114..118 "util"
+                  Dot 118..119 "."
+                  Annotation 119..121
+                    At 119..120 "@"
+                    Name 120..121
+                      Identifier 120..121 "A"
+                  Whitespace 121..122 " "
+                  Identifier 122..128 "Arrays"
+                Dot 128..129 "."
+                Identifier 129..135 "stream"
+                Arguments 135..138
+                  LParen 135..136 "("
+                  NameExpr 136..137
+                    Identifier 136..137 "a"
+                  RParen 137..138 ")"
+              Dot 138..139 "."
+              Identifier 139..144 "count"
+              Arguments 144..146
+                LParen 144..145 "("
+                RParen 145..146 ")"
+            Semi 146..147 ";"
+          LineTerminator 147..148 "\n"
+          Whitespace 148..156 "        "
+          ExprStmt 156..169
+            AssignExpr 156..168
+              FieldAccessExpr 156..164
+                FieldAccessExpr 156..162
+                  NameExpr 156..157
+                    Identifier 156..157 "a"
+                  Dot 157..158 "."
+                  Annotation 158..160
+                    At 158..159 "@"
+                    Name 159..160
+                      Identifier 159..160 "A"
+                  Whitespace 160..161 " "
+                  Identifier 161..162 "b"
+                Dot 162..163 "."
+                Identifier 163..164 "c"
+              Whitespace 164..165 " "
+              Eq 165..166 "="
+              Whitespace 166..167 " "
+              LiteralExpr 167..168
+                IntLiteral 167..168 "1"
+            Semi 168..169 ";"
+          LineTerminator 169..170 "\n"
+          Whitespace 170..178 "        "
+          ExprStmt 178..197
+            MethodCallExpr 178..196
+              FieldAccessExpr 178..189
+                FieldAccessExpr 178..184
+                  NameExpr 178..179
+                    Identifier 178..179 "a"
+                  Dot 179..180 "."
+                  Annotation 180..182
+                    At 180..181 "@"
+                    Name 181..182
+                      Identifier 181..182 "A"
+                  Whitespace 182..183 " "
+                  Identifier 183..184 "b"
+                Dot 184..185 "."
+                Annotation 185..187
+                  At 185..186 "@"
+                  Name 186..187
+                    Identifier 186..187 "B"
+                Whitespace 187..188 " "
+                Identifier 188..189 "c"
+              Dot 189..190 "."
+              TypeArguments 190..193
+                Lt 190..191 "<"
+                ClassType 191..192
+                  Identifier 191..192 "T"
+                Gt 192..193 ">"
+              Identifier 193..194 "d"
+              Arguments 194..196
+                LParen 194..195 "("
+                RParen 195..196 ")"
+            Semi 196..197 ";"
+          LineTerminator 197..198 "\n"
+          Whitespace 198..206 "        "
+          ExprStmt 206..218
+            PostfixExpr 206..217
+              ArrayAccessExpr 206..215
+                FieldAccessExpr 206..212
+                  NameExpr 206..207
+                    Identifier 206..207 "a"
+                  Dot 207..208 "."
+                  Annotation 208..210
+                    At 208..209 "@"
+                    Name 209..210
+                      Identifier 209..210 "A"
+                  Whitespace 210..211 " "
+                  Identifier 211..212 "b"
+                LBracket 212..213 "["
+                LiteralExpr 213..214
+                  IntLiteral 213..214 "0"
+                RBracket 214..215 "]"
+              PlusPlus 215..217 "++"
+            Semi 217..218 ";"
+          LineTerminator 218..219 "\n"
+          Whitespace 219..227 "        "
+          ForStmt 227..295
+            ForKw 227..230 "for"
+            Whitespace 230..231 " "
+            LParen 231..232 "("
+            ForInit 232..261
+              MethodCallExpr 232..261
+                FieldAccessExpr 232..251
+                  FieldAccessExpr 232..241
+                    NameExpr 232..236
+                      Identifier 232..236 "java"
+                    Dot 236..237 "."
+                    Identifier 237..241 "util"
+                  Dot 241..242 "."
+                  Annotation 242..244
+                    At 242..243 "@"
+                    Name 243..244
+                      Identifier 243..244 "A"
+                  Whitespace 244..245 " "
+                  Identifier 245..251 "Arrays"
+                Dot 251..252 "."
+                Identifier 252..258 "stream"
+                Arguments 258..261
+                  LParen 258..259 "("
+                  NameExpr 259..260
+                    Identifier 259..260 "a"
+                  RParen 260..261 ")"
+            Semi 261..262 ";"
+            Semi 262..263 ";"
+            RParen 263..264 ")"
+            Whitespace 264..265 " "
+            Block 265..295
+              LBrace 265..266 "{"
+              LineTerminator 266..267 "\n"
+              Whitespace 267..279 "            "
+              BreakStmt 279..285
+                BreakKw 279..284 "break"
+                Semi 284..285 ";"
+              LineTerminator 285..286 "\n"
+              Whitespace 286..294 "        "
+              RBrace 294..295 "}"
+          LineTerminator 295..296 "\n"
+          Whitespace 296..304 "        "
+          LocalVarDecl 304..330
+            ClassType 304..310
+              Identifier 304..310 "Object"
+            Whitespace 310..311 " "
+            VariableDeclarator 311..329
+              Identifier 311..312 "o"
+              Whitespace 312..313 " "
+              Eq 313..314 "="
+              Whitespace 314..315 " "
+              MethodRefExpr 315..329
+                ClassType 315..324
+                  Annotation 315..317
+                    At 315..316 "@"
+                    Name 316..317
+                      Identifier 316..317 "A"
+                  Whitespace 317..318 " "
+                  Identifier 318..324 "Object"
+                ColonColon 324..326 "::"
+                NewKw 326..329 "new"
+            Semi 329..330 ";"
+          LineTerminator 330..331 "\n"
+          Whitespace 331..335 "    "
+          RBrace 335..336 "}"
+      LineTerminator 336..337 "\n"
+      RBrace 337..338 "}"
+  LineTerminator 338..339 "\n"
+  Eof 339..339 ""
