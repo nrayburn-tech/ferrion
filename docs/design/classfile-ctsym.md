@@ -43,8 +43,11 @@ Ferrion reports `Unsupported` for a release above 35 until a JDK shows it.
 
 In the second layout even releases 7 and 8, which have no modules, put each class under a module
 directory (`8/java.base/java/lang/Object.sig`, `8/jdk.httpserver/com/sun/net/httpserver/...`).
-JDK 12 to 16 weren't observed, so where the layout changed is unknown. Ferrion tells the layouts
-apart from the entries themselves: directories ending in `-modules` mean the first layout.
+JDK 12 to 16 weren't observed, so where the layout changed is unknown, and they aren't in the
+matrix, which is the LTS releases plus the latest (decision 5 in
+[review](classfile.md#decisions-made-in-review)). Ferrion tells the layouts apart from the
+entries themselves: directories ending in `-modules` mean the first layout. The same holds for
+JDK 22 to 24 and whether `ct.sym` holds their own release.
 
 In the first layout, a class's module for release 9 or 10 comes from the module descriptors: the
 module that exports the class's package. A class in a package no descriptor exports belongs to no
@@ -81,6 +84,16 @@ whatever release it describes: 55 in JDK 11, 61 in 17, 65 in 21, 71 in 27. What 
   `RuntimeInvisibleAnnotations`, `RuntimeVisibleParameterAnnotations`,
   `RuntimeVisibleTypeAnnotations`, and in descriptors `Module`, `ModuleTarget`, `ModuleResolution`,
   and `ModuleMainClass`. No `ModulePackages`, `SourceFile`, or `Code`.
+- **Flags the class file version doesn't define:** the `.sig` files for releases 8 to 16 keep
+  `ACC_STRICT` on `strictfp` methods (`java/lang/StrictMath`), though their class file version, the
+  JDK's own (61 and later), no longer defines it (JVMS 4.6). Ferrion keeps the flags as stored;
+  javap 27 reports them as errors (see [in oracle-check](classfile.md#in-oracle-check)).
+- **A malformed attribute:** in JDK 21's `ct.sym`, `jdk.httpserver`'s descriptor for releases 18
+  to 20 (`IJK/jdk.httpserver/module-info.sig`) has a `ModuleMainClass` whose index points at a
+  `CONSTANT_Utf8` rather than a `CONSTANT_Class`. javac accepts it, and `--release 18` sees
+  `com.sun.net.httpserver`; Ferrion's module descriptor leaves the attribute out and keeps the
+  module. Found by the visibility check, which saw javac's packages that Ferrion's first version
+  lost with the whole descriptor.
 - **Marker annotations:** annotations whose type names contain `+`, which no Java type can be
   named. Counting only the first annotation of each attribute, so these are lower bounds: invisible
   `jdk/Profile+Annotation` (on 4,412 classes), `jdk/internal/PreviewFeature+Annotation` (598
@@ -137,6 +150,11 @@ Visibility, observed by compiling small files:
   adds an incubating warning. Its descriptor in those releases has `ModuleResolution` with value
   0x0009; release 27's has no `ModuleResolution`, and `--release 27` sees the package without
   `--add-modules` (see [module visibility](classfile.md#module-visibility)).
+- **Releases 9 and 10 keep their own root modules:** with `--release 9` and `--release 10`, javac
+  27 (and javac 11 to 25) doesn't see the `java.*` modules that `java.se` doesn't require, such as
+  `java.xml.bind`, `java.corba`, and `java.smartcardio`, which `--release 11` and later do see.
+  Found by the visibility check on every JDK 11 and later; Ferrion applies the rule by release
+  number (see [module visibility](classfile.md#module-visibility)).
 
 ## How Ferrion reads it
 
@@ -145,7 +163,9 @@ Visibility, observed by compiling small files:
 2. For a release, find the directories containing its letter, and decide the source: if the
    release has `.sig` files, `ct.sym` serves it; if it has only `system-modules`, the image serves
    it, filtered to the listed modules; if it has neither, the JDK can't serve the release, which is
-   a usage error for `ferrion_project` to report.
+   a usage error (`ErrorKind::Usage`) that `ferrion_project` reports. A JDK without `ct.sym` (a
+   `jlink` runtime without `jdk.compiler`) serves only its own release, from every module of its
+   image.
 3. Build the release's index: for each `.sig` entry of the release, its module (from the directory,
    or from the descriptors' exports in the first layout), package, and simple name.
 4. Read module descriptors from the release's `module-info.sig` files, and compute visibility as in

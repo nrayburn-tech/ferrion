@@ -41,8 +41,13 @@ After `parse`, the structure is known to be sound, so iterating members and attr
 decoding a constant pool reference, a piece of text, or an attribute's contents can, and returns
 `Result`. A class whose `Signature` is malformed still has readable members.
 
-Bytes after the last attribute are reported as `Malformed` (JVMS 4.8 allows none) after the rest of
-the class has been indexed, so the caller can still use it.
+Bytes after the last attribute are reported as `Malformed` (JVMS 4.8 allows none) by
+`ClassFile::trailing_bytes`, after the rest of the class has been indexed, so the caller can still
+use it.
+
+Access flags are kept as stored, including bits the class file's version doesn't define, such as
+`ACC_STRICT` on methods of version 61 and later (in `ct.sym`'s `.sig` files) and `ACC_PRIVATE` on
+a class (in JDK 11's image); B2 and B3 decide what they mean.
 
 ## What is read
 
@@ -72,6 +77,10 @@ include `c0 80` (see the [jimage log](classfile-jimage.md#observation-log), O10)
   strings. When the bytes are valid UTF-8, which they are for nearly every name, they are borrowed
   as they are; otherwise they are converted (`c0 80` to NUL, surrogate pairs to one character). A
   lone surrogate can't be in a Rust string, so a name containing one is `Unsupported`.
+  Overlong forms (`e0 80 80` for NUL) are read as the character they spell, as javap reads them:
+  class files in the corpus have them (Xerces' `Token`). The image reader, whose lookups compare
+  names' bytes, leaves out a resource whose name isn't in the one form JVMS 4.4.7 gives (found by
+  fuzzing).
 - **String constants** (`ConstantValue` of a `String` field, string annotation values) can hold
   any UTF-16 sequence, lone surrogates included, and B3's constant folding needs them exactly. They
   are exposed as a `JavaStr`, the modified UTF-8 bytes with conversion to UTF-16 and to a lossy
@@ -138,9 +147,21 @@ stack. Decoding is lazy: an annotation attribute yields annotations one at a tim
 decoded when asked for.
 
 The parameter annotation attributes number parameters their own way (4.7.18 notes that the count
-may differ from the descriptor's). How javac's class files align them with the descriptor and with
-`MethodParameters` for inner class constructors and enum constructors is compared with `javap` on
-test classes in the implementation round, and recorded there.
+may differ from the descriptor's). Observed on test classes compiled by javac 27
+(`tools/oracle-check/classfile-cases/`, with `-parameters`):
+
+- an inner class constructor `Inner(@RA int a)` has the descriptor `(LFeatures;I)V`, a
+  `MethodParameters` of two entries (`this$0` final and mandated, then `a`), and a
+  `RuntimeVisibleParameterAnnotations` of one parameter, whose annotation is `a`'s: the attribute
+  counts only the parameters written in the source;
+- an enum constructor `E()` has the descriptor `(Ljava/lang/String;I)V`, a `Signature` of `()V`,
+  and a `MethodParameters` of two synthetic entries (`$enum$name`, `$enum$ordinal`);
+- a record's canonical constructor has a parameter annotations attribute with one entry per
+  component, as many as the descriptor's parameters.
+
+The model exposes each attribute as stored; aligning them with the descriptor is B3's, with these
+observations. javap prints the attribute's own numbering (`parameter 0:`), and the comparison
+matches it.
 
 ### Type annotations (4.7.20)
 
