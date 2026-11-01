@@ -4,7 +4,7 @@
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
 
 use super::annotations::{self, After, Layout};
-use super::{doc_comment_before, emit, first_token, fits_on_line, parts};
+use super::{doc_comment_before, emit, first_token, fits_on_line, parts, take};
 use crate::document::IndentKind;
 use crate::format::Formatter;
 use crate::rules::comments::{block_comment_after, has_comments_before, leads_on_code_line};
@@ -98,18 +98,6 @@ pub(super) fn type_decl<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     for &part in rest {
         f.space();
         emit(f, part);
-    }
-}
-
-/// Takes the first of `rest` if its kind passes `kind`.
-fn take<'t>(rest: &mut &[NodeOrToken<'t>], kind: impl Fn(K) -> bool) -> Option<NodeOrToken<'t>> {
-    match rest {
-        [first, tail @ ..] if kind(first.kind()) => {
-            let first = *first;
-            *rest = tail;
-            Some(first)
-        }
-        _ => None,
     }
 }
 
