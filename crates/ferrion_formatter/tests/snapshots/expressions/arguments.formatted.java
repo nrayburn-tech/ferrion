@@ -90,6 +90,11 @@ class Arguments {
         valueAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,
         /* hints= */ null,
         /* computeIfAbsent= */ true);
+    foo(
+        /* caption= */ null,
+        /* owner= */ null,
+        /* retainOriginalIds= */ false,
+        /* compressedSnapshot= */ false);
     foo(a, b)
         .bar(c) // trailing the call
         .baz();

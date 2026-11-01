@@ -55,9 +55,10 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
             NodeOrToken::Token(token) if is_open(token) => opened = true,
             NodeOrToken::Node(child) if opened => {
                 items += 1;
-                // A comment before an item counts toward its width, as GJF measures it.
+                // A comment before an item on its line counts toward its width, as GJF
+                // measures it.
                 narrow = narrow
-                    && !has_comments_before(child.first_token())
+                    && !comment_on_line_before(child.first_token())
                     && fits_in(child, FILL_WIDTH);
                 trailing_comma = false;
                 let column = line_start_column(child.first_token());
@@ -311,6 +312,22 @@ fn line_start_column(token: SyntaxToken<'_>) -> Option<u32> {
         previous = t.prev_token();
     }
     Some(column)
+}
+
+/// Whether a comment comes before `token` on its line, after the token before it.
+fn comment_on_line_before(token: SyntaxToken<'_>) -> bool {
+    let mut previous = token.prev_token();
+    while let Some(t) = previous
+        && t.is_trivia()
+    {
+        match t.kind() {
+            K::LineTerminator => return false,
+            kind if is_comment(kind) => return true,
+            _ => {}
+        }
+        previous = t.prev_token();
+    }
+    false
 }
 
 /// Whether there is a comment between `token` and the token before it.
