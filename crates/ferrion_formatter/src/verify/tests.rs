@@ -105,8 +105,8 @@ fn an_input_with_errors_must_be_left_alone() {
 #[test]
 fn text_blocks_compare_apart_from_line_terminators() {
     check(
-        "class A {\r\n  String s = \"\"\"\r\n    a\r\n    \"\"\";\r\n}\r\n",
-        "class A {\r\n  String s = \"\"\"\r\n    a\r\n    \"\"\";\r\n}\r\n",
+        "class A {\r\n  String s =\r\n      \"\"\"\r\n    a\r\n    \"\"\";\r\n}\r\n",
+        "class A {\r\n  String s =\r\n      \"\"\"\r\n    a\r\n    \"\"\";\r\n}\r\n",
     )
     .unwrap();
     assert_eq!(

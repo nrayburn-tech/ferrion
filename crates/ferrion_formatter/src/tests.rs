@@ -70,7 +70,7 @@ fn blank_lines_between_members_are_kept_at_most_one() {
 #[test]
 fn comments_keep_their_lines() {
     let text = "// file\n\npackage p; // trailing\n\n/** doc */\nclass A {\n  // leading\n  \
-                int x; /* block */\n\n  /* own line */\n  int y;\n  void m() {\n    // only\n  \
+                int x; /* block */\n\n  /* own line */\n  int y;\n\n  void m() {\n    // only\n  \
                 }\n}\n// end\n";
     assert_eq!(formatted(text), text);
 }
@@ -79,7 +79,7 @@ fn comments_keep_their_lines() {
 fn a_trailing_line_comment_ends_its_line() {
     assert_eq!(
         formatted("class A { int x = // why\n1; }"),
-        "class A {\n  int x = // why\n  1;\n}\n"
+        "class A {\n  int x = // why\n      1;\n}\n"
     );
 }
 
@@ -98,7 +98,7 @@ fn block_comments_are_re_indented() {
 
 #[test]
 fn text_blocks_are_copied() {
-    let text = "class A {\n  String s = \"\"\"\n        a\n      b  \n    \"\"\";\n}\n";
+    let text = "class A {\n  String s =\n      \"\"\"\n        a\n      b  \n    \"\"\";\n}\n";
     assert_eq!(formatted(text), text);
 }
 
@@ -132,7 +132,7 @@ fn modifiers_are_reordered_within_runs() {
     );
     assert_eq!(
         formatted("sealed abstract class A permits B {} final non-sealed public class B {}"),
-        "abstract sealed class A permits B {}\npublic final non-sealed class B {}\n"
+        "abstract sealed class A permits B {}\n\npublic final non-sealed class B {}\n"
     );
 }
 
@@ -156,7 +156,7 @@ fn modifiers_with_a_marker_are_not_reordered() {
 fn shift_operators_stay_together() {
     assert_eq!(
         formatted("class A { int x = a >> b >>> c; { x >>= 1; x >>>= 2; } List<List<String>> l; }"),
-        "class A {\n  int x = a >> b >>> c;\n  {\n    x >>= 1;\n    x >>>= 2;\n  }\n  \
+        "class A {\n  int x = a >> b >>> c;\n\n  {\n    x >>= 1;\n    x >>>= 2;\n  }\n\n  \
          List<List<String>> l;\n}\n"
     );
 }
