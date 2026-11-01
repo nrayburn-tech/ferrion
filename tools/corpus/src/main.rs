@@ -1,10 +1,11 @@
 //! Fetches the corpus of open-source Java projects used in tests (see the library's docs).
 
+use std::path::PathBuf;
 use std::process::ExitCode;
 
 use anyhow::{Result, bail};
 use corpus::project::Project;
-use corpus::{Dirs, fetch, jdk_tests, lock, select};
+use corpus::{Dirs, fetch, jdk_tests, lock, model, select};
 
 const USAGE: &str = "\
 usage: corpus <command> [<project>...]
@@ -14,6 +15,9 @@ commands:
   fetch     check out projects and download their dependency jars (all projects by default)
   checkout  check out projects without downloading jars (all projects by default)
   lock      run each project's build to regenerate its lock file (needs JAVA_HOME and network access)
+  project-model [--jdk <path>]
+            write each fetched project's project model to target/corpus/models/<project>.json
+            (all projects by default), with the JDK (default: JAVA_HOME) for every source set
   jdk-tests [list]
             check out OpenJDK's javac tests at the tag in jdk-tests.toml (test directories only);
             `list` prints each input with the releases it's compiled at";
@@ -34,8 +38,13 @@ fn run() -> Result<()> {
         eprintln!("{USAGE}");
         std::process::exit(2);
     };
-    let names: Vec<String> = args.collect();
+    let mut names: Vec<String> = args.collect();
     let dirs = Dirs::new()?;
+    let jdk = if command == "project-model" {
+        model_jdk(&mut names)?
+    } else {
+        None
+    };
     if command == "jdk-tests" {
         return run_jdk_tests(&dirs, &names);
     }
@@ -69,12 +78,40 @@ fn run() -> Result<()> {
                 lock::lock(project, &dirs)?;
             }
         }
+        "project-model" => {
+            for project in selected {
+                model::write(&dirs, project, jdk.as_deref())?;
+            }
+        }
         _ => {
             eprintln!("{USAGE}");
             std::process::exit(2);
         }
     }
     Ok(())
+}
+
+/// Takes `--jdk <path>` out of `args`, falling back to `JAVA_HOME`, made absolute. Without
+/// either, the model leaves the JDK out, and its readers use their own `--jdk` or `JAVA_HOME`.
+fn model_jdk(args: &mut Vec<String>) -> Result<Option<PathBuf>> {
+    let jdk = match args.iter().position(|arg| arg == "--jdk") {
+        Some(at) => {
+            if at + 1 >= args.len() {
+                bail!("--jdk needs a path");
+            }
+            let jdk = args.remove(at + 1);
+            args.remove(at);
+            Some(PathBuf::from(jdk))
+        }
+        None => std::env::var_os("JAVA_HOME").map(PathBuf::from),
+    };
+    match jdk {
+        Some(jdk) => Ok(Some(std::env::current_dir()?.join(jdk))),
+        None => {
+            eprintln!("note: no --jdk or JAVA_HOME, so the models give no JDK");
+            Ok(None)
+        }
+    }
 }
 
 fn run_jdk_tests(dirs: &Dirs, args: &[String]) -> Result<()> {

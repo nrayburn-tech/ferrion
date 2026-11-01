@@ -10,11 +10,15 @@ publish.workspace = true
 [dependencies]
 anyhow.workspace = true
 ferrion_java_version.workspace = true
+ferrion_project.workspace = true
 roxmltree.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
 toml.workspace = true
+
+[dev-dependencies]
+ferrion_classfile.workspace = true
 
 [lints]
 workspace = true

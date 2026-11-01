@@ -18,6 +18,7 @@ ferrion_formatter = { path = "crates/ferrion_formatter" }
 ferrion_java_version = { path = "crates/ferrion_java_version" }
 ferrion_lexer = { path = "crates/ferrion_lexer" }
 ferrion_parser = { path = "crates/ferrion_parser" }
+ferrion_project = { path = "crates/ferrion_project" }
 ferrion_stack = { path = "crates/ferrion_stack" }
 ferrion_syntax = { path = "crates/ferrion_syntax" }
 

@@ -40,7 +40,11 @@ Without `--project-model`, there is one source set:
 - **Classpath syntax:** entries separated by the platform's path separator (`:`, or `;` on
   Windows), as javac takes them. In a classpath file, line breaks also separate entries and blank
   lines are ignored, so both `mvn dependency:build-classpath -Dmdep.outputFile=...` output and one
-  entry per line work. Giving both `--classpath` and `--classpath-file` is a usage error.
+  entry per line work. Empty entries (`a.jar::b.jar`) are left out. Relative entries, in a flag or
+  in the file, are against the working directory, as they would be on javac's command line.
+  Giving both `--classpath` and `--classpath-file` is a usage error.
+- **Every file is in the one source set,** wherever it is: its id is `default`, its root the
+  working directory, and the CLI decides which files the run covers.
 - **Unset and empty** differ: no classpath flag means the type inputs are missing; `--classpath ""`
   means the code has no dependencies beyond the platform.
 
@@ -80,7 +84,11 @@ Paths are absolute, or relative to the model file's directory.
 }
 ```
 
-- **`id`** is any unique string; the Maven plugin uses `<module path>/<main|test>`.
+- **`id`** is any unique, non-empty string; the Maven plugin uses `<module path>/<main|test>`.
+- **`generatedSourceRoots`, `classpath`, and `modulePath`** may be left out, for none. A model
+  always gives a classpath, so in a model the type inputs are missing only without a JDK.
+- **`--classpath`, `--classpath-file`, and `--module-path`** can't be combined with a model, which
+  gives each source set's; `--jdk` and `--java-version` can, as fallbacks.
 - **Dependencies on source sets** are classpath entries, so their order relative to jars is kept,
   as javac's first-match rule needs. Integrations write a `sourceSet` entry where the build has
   that source set's output directory (`target/classes`), since Ferrion reads it from source.
@@ -92,10 +100,32 @@ Paths are absolute, or relative to the model file's directory.
   merged; it is formatted with the release of the first source set listing it. A file under no
   source set is formatted with `--java-version`, and is a usage error without it.
 
+### Corpus models
+
 The corpus lock's shape (modules, source sets, classpath entries pointing at source sets or jars)
-is the same idea, so `corpus project-model <project>` writes a model for a fetched corpus project,
-with the jars' paths in `target/corpus` and the JDK from the matrix. The oracle comparison and the
-semantic benchmark use it.
+is the same idea, so `cargo corpus project-model [--jdk <path>] [<project>...]` writes a model for
+each fetched corpus project (all of them by default) to `target/corpus/models/<project>.json` (or
+under `FERRION_CORPUS_DIR`). The oracle comparison and the semantic benchmark use it, through
+`corpus::model` or the file.
+
+- **Ids** are `<module path>/<source set>`, or just `<source set>` for the root module (`main`
+  in jedis, `lucene/core/main` in lucene).
+- **Paths** are absolute: source roots in the checkout, jars under `target/corpus/jars`, and files
+  committed to the project in the checkout.
+- **Generated sources:** each source set lists `target/corpus/generated/<project>/<id>` as its
+  generated-source root, where the oracle writes what the build's annotation processors generate
+  (decision 3 in [review](semantic.md#decisions-made-in-review)). Until the oracle has run, these
+  don't exist, which is a warning.
+- **The release** is the lock's, or the lock's JDK when the build sets none, as the parser checks
+  use.
+- **The JDK** is `--jdk`, else `JAVA_HOME`, for every source set, as the other corpus tools find
+  theirs. The newest GA JDK serves every release the corpus uses, and the oracle runs with it.
+  With neither, the model leaves `jdk` out and its reader's `--jdk` or `JAVA_HOME` applies.
+- **What is left out** is printed: entries the lock marks unavailable, and dependencies on source
+  sets the lock doesn't have. lucene's lock names `lucene/spatial-test-fixtures/testFixtures` for
+  two test source sets, because the Gradle model script reads a dependency on a project whose name
+  ends in `-test-fixtures` as one on its test fixtures; the dependency is really that project's
+  `main`, and needs the script fixed and the lock regenerated.
 
 ## Classpath construction
 
@@ -104,20 +134,36 @@ at its release:
 
 - **Jars** are opened through the shared `ArchiveCache`, resolved for the release when
   multi-release.
-- **`Class-Path` manifest attributes** are expanded, as javac does (observed in B1): each listed
-  path, relative to the jar's directory, is inserted right after the jar, recursively, skipping
-  entries already on the classpath and ones that don't exist (with a warning naming the jar whose
-  manifest listed it).
+- **`Class-Path` manifest attributes** are expanded, as javac does (observed in B1, and the
+  details [below](#observations)): each listed path, relative to the jar's directory, is inserted
+  right after the jar, recursively and depth first (`a.jar` listing `b.jar c.jar`, and `b.jar`
+  listing `d.jar`, gives `a b d c`). An entry already on the classpath is skipped where it repeats,
+  so a jar a manifest lists keeps the manifest's place even when the classpath names it later.
+  Entries are URLs: `%` escapes are decoded and `file:` URLs read, while other schemes are skipped
+  with a warning. One that doesn't exist is skipped with a warning naming the jar whose manifest
+  listed it, and a manifest that can't be parsed is a warning, its `Class-Path` ignored. A stack
+  of what is left, and the repeat check, keep chains and cycles from recursing.
 - **Directories** of class files are read as they are; one that doesn't exist is a warning, since
-  it may be build output not produced yet (SCOPE.md).
+  it may be build output not produced yet (SCOPE.md), and is kept as an entry, so the language
+  server sees it once it is built. A missing entry is told apart from a missing jar by its
+  extension (`.jar` or `.zip`, ignoring case).
 - **Source sets** become views over their summaries (see
-  [names](semantic-names.md#source-set-views)).
-- **Other files** (a `.pom` a build lists, as one corpus project does) are skipped with a warning,
-  since they aren't zip files.
+  [names](semantic-names.md#source-set-views)). They keep their place among the other entries, and
+  the `ClassPath` holds only the compiled ones.
+- **Other files** are opened as zips whatever their name, as javac does. One named `.jar` or `.zip`
+  that can't be read is a usage error, as in javac; any other (a `.pom` a build lists, as two
+  corpus projects do) is skipped with a warning.
 - **The module path** is read as more classpath entries, after the classpath (SCOPE.md: leniently),
-  with each jar's module name recorded.
+  with each module's name recorded. An entry is a jar, an exploded module (a directory with
+  `module-info.class`), or a directory of them, read in name order. A module's name is its
+  `module-info.class`'s, else its manifest's `Automatic-Module-Name`, else the name derived from
+  the file name as `ModuleFinder`'s documentation describes it (checked against
+  `jar --describe-module`). Manifests' `Class-Path` aren't followed there, which javac doesn't do
+  either.
 - **The JDK** is opened with `Jdk::open` and asked for `platform(release)`; B1's usage errors (a
-  JDK 9 or 10, a release the JDK can't serve) are passed through with the JDK's origin added.
+  JDK 9 or 10, a release the JDK can't serve) are passed through with the JDK's origin added. A JDK
+  older than the release gets its own message, with help. Each JDK is opened once per run, and a
+  problem that many source sets share (one JDK, one missing jar) is reported once.
 
 ## Validation
 
@@ -125,14 +171,21 @@ at its release:
 | --- | --- |
 | No release for a file being formatted or linted | Usage error |
 | Release outside the supported range | Usage error |
+| `--classpath` with `--classpath-file`, or either or `--module-path` with `--project-model`; an unreadable classpath file | Usage error |
 | JDK path isn't a JDK, is older than the release, or can't serve it | Usage error, when types are needed |
-| A classpath or module path jar doesn't exist | Usage error, when types are needed |
+| A classpath or module path jar doesn't exist, or isn't a zip | Usage error, when types are needed |
 | A classpath directory doesn't exist | Warning |
+| A classpath file that isn't a jar or a directory, and isn't named `.jar` or `.zip` | Warning, and skipped |
 | Type inputs missing and an enabled rule needs them | Usage error |
 | Project model: unreadable, malformed, unknown field, newer format version | Usage error |
-| Project model: duplicate `id`, unknown `sourceSet` reference, a cycle of source set dependencies | Usage error |
-| Project model: a source root that doesn't exist | Warning |
-| A manifest `Class-Path` entry that doesn't exist | Warning |
+| Project model: empty or duplicate `id`, unknown `sourceSet` reference, an entry with both or neither of `path` and `sourceSet`, a cycle of source set dependencies | Usage error |
+| Project model: a source root or generated-source root that doesn't exist | Warning |
+| A manifest `Class-Path` entry that doesn't exist, or isn't a local file; a manifest that can't be parsed | Warning |
+| A module path entry's `module-info.class` that can't be read | Warning, and the module has no name |
+
+`Project::load` reports the rows about flags and the model; `TypeInputs::open` the rest, since
+only it opens anything. "No release for a file" is `Project::load`'s error without a model, and
+`Project::no_release(file)` for a file under no source set of one.
 
 Usage errors exit with status 2 and stop the run before any file is changed. Each message names
 the value, its origin, and what to do:
@@ -145,17 +198,22 @@ error: release 17 can't be served by the JDK at `/usr/lib/jvm/java-8` (JDK 8)
   help: pass --jdk with JDK 17 or later
 error: source sets `core/main` and `core/test` depend on each other
   from: project model `target/ferrion-model.json`
+warning: classpath entry `/home/me/lib/b.jar` doesn't exist
+  from: Class-Path in the manifest of `/home/me/lib/a.jar`
 ```
 
-The wording is checked with the rest of the CLI's messages in A3 and C1.
+Values are shown made absolute; origins as they were given. The wording is checked with the rest
+of the CLI's messages in A3 and C1.
 
 ## The crate
+
+As implemented:
 
 ```rust
 /// Flag values as the CLI parsed them. `None` is "not given".
 pub struct InputFlags {
     pub java_version: Option<u32>,
-    pub classpath: Option<String>,
+    pub classpath: Option<String>, // `Some("")` is an empty classpath
     pub classpath_file: Option<PathBuf>,
     pub module_path: Option<String>,
     pub jdk: Option<PathBuf>,
@@ -164,7 +222,7 @@ pub struct InputFlags {
 
 /// What loading reads from the process, passed in.
 pub struct Environment {
-    pub working_dir: PathBuf,
+    pub working_dir: PathBuf, // absolute; relative flag values are against it
     pub java_home: Option<PathBuf>,
 }
 
@@ -172,28 +230,75 @@ pub struct Environment {
 pub enum Origin {
     Flag(&'static str),
     ClassPathFile { path: PathBuf, line: u32 },
-    ProjectModel { path: PathBuf, source_set: String },
+    ProjectModel { path: PathBuf, source_set: String }, // "" for the model as a whole
     Manifest { jar: PathBuf },
     JavaHome,
 }
 
+/// A value with where it came from.
+pub struct Given<T> { pub value: T, pub origin: Origin }
+
 pub struct Project; // the source sets
 impl Project {
+    /// Usage errors are returned with any warnings; on success, warnings are kept.
     pub fn load(flags: &InputFlags, env: &Environment) -> Result<Project, Vec<InputError>>;
     pub fn source_sets(&self) -> &[SourceSet];
-    /// The source sets whose roots hold `file`, in model order.
+    pub fn source_set(&self, id: SourceSetId) -> &SourceSet;
+    pub fn is_from_model(&self) -> bool;
+    pub fn warnings(&self) -> &[InputError];
+    /// The source sets whose roots (generated ones included) hold `file`, in model order.
     pub fn source_sets_of(&self, file: &Path) -> Vec<SourceSetId>;
+    /// Under a generated-source root: analyzed, never formatted or linted.
+    pub fn is_generated(&self, file: &Path) -> bool;
     /// The release to format `file` with, and where it came from.
     pub fn release_of(&self, file: &Path) -> Option<(u32, Origin)>;
+    /// The usage error for a file `release_of` has no release for.
+    pub fn no_release(&self, file: &Path) -> InputError;
 }
 
-pub struct SourceSet; // id, roots, generated roots, release, classpath and JDK as given
-pub struct TypeInputs; // per source set: the opened ClassPath and PlatformApi
+/// A source set's position in the model (0 for the one source set of flags).
+pub struct SourceSetId; // index()
 
+/// A source set as given; paths are absolute.
+pub struct SourceSet {
+    pub id: SourceSetId,
+    pub name: String, // the model's `id`
+    pub roots: Vec<PathBuf>,
+    pub generated_roots: Vec<PathBuf>,
+    pub release: Given<u32>,
+    pub jdk: Option<Given<PathBuf>>,
+    pub classpath: Option<Vec<ClassPathItem>>, // `None`: not given, so type inputs are missing
+    pub module_path: Vec<Given<PathBuf>>,
+}
+
+pub enum ClassPathItem { Path(Given<PathBuf>), SourceSet(Given<SourceSetId>) }
+
+pub struct TypeInputs;
 impl TypeInputs {
     /// Opens the JDKs and classpaths. Errors are usage errors; warnings are returned with them.
     pub fn open(project: &Project, cache: &ArchiveCache)
         -> Result<(TypeInputs, Vec<InputError>), Vec<InputError>>;
+    pub fn source_set(&self, id: SourceSetId) -> &SourceSetTypes;
+    pub fn source_sets(&self) -> &[SourceSetTypes];
+}
+
+pub struct SourceSetTypes {
+    pub jdk: Arc<Jdk>,
+    pub platform: Arc<PlatformApi>,
+    /// The classpath, manifests expanded, then the module path; source sets in their places.
+    pub entries: Vec<TypeEntry>,
+    /// The compiled entries of `entries`, in order.
+    pub class_path: ClassPath,
+}
+
+pub enum TypeEntry { SourceSet(Given<SourceSetId>), Classes(ClassesEntry) }
+
+pub struct ClassesEntry {
+    pub entry: ClassPathEntry,
+    pub path: PathBuf,
+    pub origin: Origin,
+    pub on_module_path: bool,
+    pub module: Option<String>, // a module path entry's module name
 }
 
 pub struct InputError {
@@ -202,9 +307,42 @@ pub struct InputError {
     pub origin: Origin,
     pub help: Option<String>,
 }
+
+/// The JSON format, with serde, for integrations that write it (the corpus tool does).
+pub mod model; // ProjectModel, ModelSourceSet, ModelEntry, FORMAT_VERSION
 ```
 
-It depends on `ferrion_classfile`, `ferrion_java_version`, `serde`, and `serde_json`.
+It depends on `ferrion_classfile`, `ferrion_java_version`, `serde`, and `serde_json`. B1's jar
+manifest gained `Automatic-Module-Name`, for module names.
+
+## Observations
+
+Observed with javac and the jar tool of Temurin 27.0.1, on jars written for this document (`jar
+cfm a.jar manifest -C classes .`), each with a class `lib.X` whose one method tells the jars
+apart. Compiling a file that calls one of the methods with `javac -cp a.jar` shows which jar's
+`lib.X` came first.
+
+- **Order:** `a.jar` listing `b.jar c.jar`, and `b.jar` listing `d.jar`: `d.jar`'s `lib.X` is
+  found, not `c.jar`'s, so `b`'s list is inserted right after `b`, before the rest of `a`'s.
+- **Repeats:** `-cp a2.jar:d.jar:c.jar`, where `a2.jar` lists `c.jar`: `c.jar`'s class is found,
+  so the manifest's place wins over the later one on the command line.
+- **Cycles:** `e.jar` listing `f.jar`, and `f.jar` listing `e.jar`, compiles.
+- **Missing entries** are ignored; `-Xlint:path` warns `bad path element ... no such file or
+  directory`. A missing jar named on the command line is ignored too, which Ferrion makes a usage
+  error (SCOPE.md).
+- **Paths:** `sub/c.jar` is against the jar's directory, `sp%20ace/c.jar` finds `sp ace/c.jar`,
+  and `file:/abs/c.jar` and plain absolute paths work. A directory works with or without a
+  trailing `/`.
+- **Files that aren't zips:** `-cp x.pom:c.jar` with `x.pom` an XML file compiles, while a file
+  named `bad.jar`, `bad.zip`, or `bad.JAR` that isn't a zip is `error: error reading bad.jar; zip
+  END header not found`, on the command line or listed in a manifest. A zip named `zipped.pom` is
+  read as an archive.
+- **Module path:** a `Class-Path` of a jar on the module path isn't followed (with
+  `--add-modules ALL-MODULE-PATH`, `package lib does not exist`); a directory of jars works.
+- **Automatic module names** (`jar --describe-module`): `guava-33.4.0-jre.jar` is `guava`,
+  `commons-lang3-3.17.0.jar` `commons.lang3`, `foo_bar--baz.jar` `foo.bar.baz`, `.x.y..jar`
+  `x.y`, `foo-bar-1.0-SNAPSHOT.jar` `foo.bar`; `lib-1a.jar` (`lib.1a`), `1lib-2.0.jar`, and
+  `Foo.Bar.JAR` have none. `Automatic-Module-Name` wins over the file name.
 
 ## Tests
 
@@ -213,6 +351,10 @@ It depends on `ferrion_classfile`, `ferrion_java_version`, `serde`, and `serde_j
 - **Classpath files** in both formats, with Windows separators tested through a parameter rather
   than the platform.
 - **Manifest `Class-Path`:** relative entries, chains, cycles, and missing entries, with jars
-  written by `ferrion_classfile::testing`.
-- **Corpus:** `corpus project-model` for every corpus project loads without errors, and every
-  source file of the lock is in exactly the source sets the lock lists.
+  written by `ferrion_classfile::testing`; the observations above, as tests.
+- **Corpus:** `corpus project-model` for every checked-out corpus project loads without errors
+  (warnings only for generated-source roots), and every source file of the lock is in exactly the
+  source sets the lock lists. It runs in `cargo test --package corpus` where the corpus is fetched,
+  and skips projects that aren't. An ignored test opens every project's type inputs with the JDK
+  at `JAVA_HOME`: `cargo test --package corpus -- --ignored type_inputs`. With Temurin 27 they all
+  open, with warnings only for manifest entries that don't exist and the two `.pom` files.
