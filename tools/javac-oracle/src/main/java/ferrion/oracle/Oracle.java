@@ -211,7 +211,7 @@ final class Oracle {
     }
   }
 
-  private static void writeDiagnostic(Json json, Diagnostic<?> diagnostic) {
+  static void writeDiagnostic(Json json, Diagnostic<?> diagnostic) {
     json.beginObject()
         .name("kind")
         .value(diagnostic.getKind().name())
