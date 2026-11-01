@@ -416,16 +416,15 @@ The decisions:
   compressed sources), a few microseconds; B2 keeps what it needs as symbols. An in-memory cache of
   inflated bytes can be added if profiling shows repeated reads.
 
-Targets, checked by a benchmark on the JDK 27 image and `ct.sym` (the roadmap starts benchmarks in
-CI at A1; B1 adds these): opening the platform API for a release in under 15 ms, finding and
-parsing a class in under 10 µs on average (uncompressed) and under 50 µs (compressed), and under
-20 MB resident for a platform API and its indexes. The language server's memory grows with the
+Targets, checked by the benchmarks in `tools/bench` (docs/design/benchmarks.md) on the JDK 27
+image and `ct.sym`: opening the platform API for a release in under 15 ms, finding and parsing a
+class in under 10 µs on average (uncompressed) and under 50 µs (compressed), and under 20 MB
+resident for a platform API and its indexes. The language server's memory grows with the
 number of distinct JDKs and jars in use, not with the number of projects.
 
 Measured with the implementation (release build, same machine, warm file cache, Ferrion alone,
-without the oracle's JVMs). The repository has no benchmark harness yet, so these come from a
-throwaway program that calls the crate's API; adding them to CI waits for the benchmarks the
-roadmap plans.
+without the oracle's JVMs). These came from a throwaway program that called the crate's API, before
+`tools/bench` existed; `cargo benchmark run classfile` measures operations like them now.
 
 | Operation | Input | Time | Peak memory |
 | --- | --- | --- | --- |

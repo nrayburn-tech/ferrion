@@ -66,6 +66,57 @@ jobs:
         with:
           manifest-path: fuzz/Cargo.toml
 
+  # Performance regressions (docs/design/benchmarks.md): the pull request's base and head run the
+  # same benchmarks on the same inputs in this job, and instruction and heap counts may grow by no
+  # more than tools/bench/thresholds.toml allows. Times and peak RSS go in the job summary for a
+  # reviewer to judge.
+  bench:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "27"
+      - run: sudo apt-get install --yes --no-install-recommends valgrind
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      # Its sources and its jars, where the benchmarks read them.
+      - name: Fetch a corpus project
+        run: cargo corpus fetch jedis
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Run the benchmarks on the head
+        run: cargo benchmark run --callgrind --no-skip --time 2 --out "$RUNNER_TEMP/head.json"
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Check out the base
+        run: |
+          git fetch --no-tags --depth=1 origin "${{ github.event.pull_request.base.sha }}"
+          git worktree add "$RUNNER_TEMP/base" FETCH_HEAD
+      # In the same target directory, so only what changed is rebuilt.
+      - name: Run the benchmarks on the base
+        run: |
+          cd "$RUNNER_TEMP/base"
+          if [ ! -d tools/bench ]; then
+            echo "The base has no benchmarks."
+            exit 0
+          fi
+          cargo benchmark run --callgrind --time 2 --out "$RUNNER_TEMP/base.json"
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/target
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Compare the base and head
+        shell: bash
+        run: |
+          if [ ! -f "$RUNNER_TEMP/base.json" ]; then
+            echo "The base has no benchmarks to compare with." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          cargo benchmark compare --markdown "$RUNNER_TEMP/base.json" "$RUNNER_TEMP/head.json" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+
   fuzz:
     uses: ./.github/workflows/fuzz.yml
     with:

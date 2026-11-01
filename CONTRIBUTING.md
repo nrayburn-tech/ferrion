@@ -307,6 +307,32 @@ in `target/oracle/javap`. The weekly oracle workflow runs it on every JDK in the
 pull requests check the latest JDK's own release and one project's jars. The design document
 explains every difference the check allows.
 
+### Benchmarks
+
+`tools/bench` measures the lexer, the parser, and class file reading, as
+[docs/design/benchmarks.md](docs/design/benchmarks.md) describes. With jedis checked out and its
+jars fetched, and `JAVA_HOME` set to a JDK, run every benchmark, or those whose names contain a
+filter, and save the results:
+
+```bash
+cargo benchmark run --out before.json
+```
+
+```bash
+cargo benchmark run parser --out after.json
+```
+
+Each reports wall time, user and system time, peak RSS, and heap use. On Linux with valgrind,
+`--callgrind` also counts instructions. Compare two runs; a metric that grows past its threshold in
+`tools/bench/thresholds.toml` fails the comparison:
+
+```bash
+cargo benchmark compare before.json after.json
+```
+
+Pull requests run this on their base and head in CI, and show the comparison in the job summary. A
+new component adds its benchmarks to `tools/bench/src/benchmarks/`.
+
 ### Tests
 
 - Every bug fix comes with a regression test.
