@@ -55,7 +55,10 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
             NodeOrToken::Token(token) if is_open(token) => opened = true,
             NodeOrToken::Node(child) if opened => {
                 items += 1;
-                narrow = narrow && fits_in(child, FILL_WIDTH);
+                // A comment before an item counts toward its width, as GJF measures it.
+                narrow = narrow
+                    && !has_comments_before(child.first_token())
+                    && fits_in(child, FILL_WIDTH);
                 trailing_comma = false;
                 let column = line_start_column(child.first_token());
                 let starts_row = match (base, column) {
@@ -291,18 +294,18 @@ fn names_parameter(comment: &str) -> bool {
         })
 }
 
-/// The column `token` starts at in the input, if only whitespace and comments come before it on
-/// its line.
+/// The column `token`'s line starts at in the input, its indentation, if only whitespace and
+/// comments come before `token` on the line.
 fn line_start_column(token: SyntaxToken<'_>) -> Option<u32> {
+    // The width of the whitespace since the last comment, which is the indentation once the
+    // line's start is reached.
     let mut column = 0;
     let mut previous = token.prev_token();
     while let Some(t) = previous {
         match t.kind() {
             K::LineTerminator => return Some(column),
             K::Whitespace => column += width(t.text()),
-            kind if is_comment(kind) && !t.text().contains(['\n', '\r']) => {
-                column += width(t.text())
-            }
+            kind if is_comment(kind) && !t.text().contains(['\n', '\r']) => column = 0,
             _ => return None,
         }
         previous = t.prev_token();
