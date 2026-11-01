@@ -128,7 +128,9 @@ pub fn for_stmt<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
 }
 
 /// A `for` header's initialization or update: a local declaration, or expressions separated by
-/// commas, as many on a line as fit, continuing at +4.
+/// commas. Expressions in the initialization go one to a line at +4 when they don't fit, like
+/// declarators. Those in the update go as many to a line as fit, continuing at +4 from the
+/// first.
 pub fn for_list<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     if node
         .first_child()
@@ -137,23 +139,34 @@ pub fn for_list<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         for element in elements(node) {
             emit(f, element);
         }
-        return;
+    } else if node.kind() == K::ForInit {
+        f.indent(IndentKind::Continuation, |f| {
+            f.group(|f| {
+                for element in elements(node) {
+                    emit(f, element);
+                    if element.kind() == K::Comma {
+                        f.line();
+                    }
+                }
+            });
+        });
+    } else {
+        // The first item continues the header's line, and the others are indented from it.
+        f.fill(|f| {
+            let mut first = true;
+            for element in elements(node) {
+                if first || element.kind() == K::Comma {
+                    emit(f, element);
+                } else {
+                    f.indent(IndentKind::Continuation, |f| emit(f, element));
+                }
+                if element.kind() == K::Comma {
+                    f.fill_break(false);
+                }
+                first = false;
+            }
+        });
     }
-    // The first item continues the header's line, and the others are indented from it.
-    f.fill(|f| {
-        let mut first = true;
-        for element in elements(node) {
-            if first || element.kind() == K::Comma {
-                emit(f, element);
-            } else {
-                f.indent(IndentKind::Continuation, |f| emit(f, element));
-            }
-            if element.kind() == K::Comma {
-                f.fill_break(false);
-            }
-            first = false;
-        }
-    });
 }
 
 /// `for (variable : expression) …`, breaking after the `:` at +4 when the header doesn't fit.
