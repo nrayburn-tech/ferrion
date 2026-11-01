@@ -15,7 +15,8 @@
 use ferrion_diagnostics::SourceText;
 use ferrion_parser::ParseDiagnostic;
 
-/// Whether [`format`] is the stand-in that returns its input.
+/// Whether [`format`] is the stand-in that returns its input. While it is, `format-check
+/// differences` reports Ferrion's side of each case as pending instead of checking it.
 pub const STAND_IN: bool = true;
 
 pub struct FormatOptions {

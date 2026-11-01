@@ -4,7 +4,8 @@
 //! `format-check verify` formats every file at the releases it's meant for, checks the four safety
 //! properties on each, and reports throughput and peak memory (see [`verify`]). `format-check gjf`
 //! compares Ferrion's output with GJF's fixed point for the same input, per project, against the
-//! numbers committed in `gjf-diff.toml` (see [`compare`]).
+//! numbers committed in `gjf-diff.toml` (see [`compare`]). `format-check differences` checks the
+//! departures from GJF in `differences/` (see [`differences`]).
 //!
 //! The formatter is reached through one seam, [`formatter`], which stands in for
 //! `ferrion_formatter` until that crate lands. The corpus is found as `tools/corpus` finds it, and
@@ -12,6 +13,7 @@
 
 mod compare;
 mod diff;
+mod differences;
 mod formatter;
 mod gjf;
 mod verify;
@@ -36,6 +38,9 @@ checks:
   gjf          compare Ferrion's output with Google Java Format's fixed point for the same input:
                files compared, files identical, and lines that differ, per project, with the
                largest differences and a sample of hunks
+  differences  check the departures from GJF in tools/format-check/differences: that GJF and
+               Ferrion still give each case's expected outputs (takes only --bless, --jobs, and
+               --batch)
 
 options:
   --check        gjf: fail if a project's differing lines are above the number in
@@ -44,16 +49,17 @@ options:
   --tracking <f> gjf: the tracking file (default: tools/format-check/gjf-diff.toml)
   --largest <N>  gjf: list the N files with the most differing lines (default: 10)
   --hunks <N>    gjf: show the first hunk of N differing files, spread over them (default: 5)
-  --jobs <N>     gjf: the processors GJF's JVM may use (default: the number of CPUs)
-  --batch <N>    gjf: files per JVM start (default: 1000)
+  --jobs <N>     gjf, differences: the processors GJF's JVM may use (default: the number of CPUs)
+  --batch <N>    gjf, differences: files per JVM start (default: 1000)
+  --bless        differences: write GJF's outputs that changed instead of failing
   --limit <N>    show the first N failures, rejected files, and unsettled files (default: 10)
   --verbose      verify: print each file before formatting it, to find one that aborts
 
 Targets default to every corpus project. `jdk-tests` names OpenJDK's javac tests, each formatted
 at the releases its jtreg header compiles it at (gjf: at the newest of them), and
 `jdk-deep-nesting` only its deep-nesting stress tests; fetch them with `cargo corpus jdk-tests`.
-Projects must be checked out (`cargo corpus checkout`). gjf needs JAVA_HOME to be the JDK
-tools/format-check/gjf.toml names, and downloads the GJF jar it pins on first use.";
+Projects must be checked out (`cargo corpus checkout`). gjf and differences need JAVA_HOME to be
+the JDK tools/format-check/gjf.toml names, and download the GJF jar it pins on first use.";
 
 /// The stack size of the thread that formats, as in the deep-nesting tests.
 const STACK_SIZE: usize = 256 * 1024;
@@ -66,6 +72,7 @@ pub struct Options {
     pub hunks: usize,
     pub jobs: usize,
     pub batch: usize,
+    pub bless: bool,
     pub limit: usize,
     pub verbose: bool,
 }
@@ -99,6 +106,7 @@ fn run() -> Result<bool> {
         hunks: 5,
         jobs: std::thread::available_parallelism().map_or(1, |n| n.get()),
         batch: 1000,
+        bless: false,
         limit: 10,
         verbose: false,
     };
@@ -113,6 +121,7 @@ fn run() -> Result<bool> {
             "--hunks" => options.hunks = value("--hunks")?.parse().context("--hunks")?,
             "--jobs" => options.jobs = value("--jobs")?.parse().context("--jobs")?,
             "--batch" => options.batch = value("--batch")?.parse().context("--batch")?,
+            "--bless" => options.bless = true,
             "--limit" => options.limit = value("--limit")?.parse().context("--limit")?,
             "--verbose" => options.verbose = true,
             "--help" | "-h" => {
@@ -127,6 +136,12 @@ fn run() -> Result<bool> {
         bail!("--check and --update can't be combined");
     }
 
+    if check == "differences" {
+        if !names.is_empty() {
+            bail!("differences takes no targets");
+        }
+        return differences::run(&options);
+    }
     if check != "verify" && check != "gjf" {
         eprintln!("{USAGE}");
         std::process::exit(2);

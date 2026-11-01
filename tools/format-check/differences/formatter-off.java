@@ -1,0 +1,8 @@
+class FormatterOff {
+  // @formatter:off
+  int   y   =  2;
+  int[] z = { 1,
+              2 };
+  // @formatter:on
+  int w = 3;
+}
