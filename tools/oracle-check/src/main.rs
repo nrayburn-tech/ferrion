@@ -4,9 +4,10 @@
 //! `oracle tokens` checks the lexer: its tokens and comments must match javac's after the
 //! normalization in docs/design/lexer-oracle-normalization.md, and must reproduce every file byte
 //! for byte. `oracle syntax` and `oracle tree` are the parser's checks (see [`syntax`] and
-//! [`ferrion`]). Later phases add their own checks (see [`Check`]). `oracle differences` checks the known differences the corpus
-//! doesn't exercise (see [`differences`]), and `oracle parser-cases` the snapshots of javac's
-//! parser output (see [`parser_cases`]).
+//! [`ferrion`]). Later phases add their own checks (see [`Check`]); `oracle names` compares name
+//! resolution source set by source set (see [`names`]). `oracle differences` checks the known
+//! differences the corpus doesn't exercise (see [`differences`]), and `oracle parser-cases` the
+//! snapshots of javac's parser output (see [`parser_cases`]).
 //!
 //! Besides the corpus projects, the checks can run on OpenJDK's javac tests, named `jdk-tests`
 //! (or `jdk-deep-nesting` for its deep-nesting stress tests only), once `cargo corpus jdk-tests`
@@ -23,6 +24,7 @@ mod differences;
 mod ferrion;
 mod inventory;
 mod known;
+mod names;
 mod oracle;
 mod parser_cases;
 mod report;
@@ -63,6 +65,8 @@ checks:
   classfile-cases
                 check the class files compiled from tools/oracle-check/classfile-cases and
                 javap's output for them against their snapshots (takes only --bless)
+  names         compare name resolution with javac's, source set by source set (its own
+                options: `names --help`)
 
 options:
   --release <N>        compare every file at release N (repeatable); by default, each file is
@@ -94,7 +98,7 @@ struct Options {
     projects: Vec<String>,
     files: Vec<PathBuf>,
     bless: bool,
-    /// The arguments of `classfile`, which has its own options.
+    /// The arguments of `classfile` and `names`, which have their own options.
     classfile: Vec<String>,
 }
 
@@ -134,7 +138,10 @@ fn usage(message: &str) -> ! {
 fn parse_args(args: impl Iterator<Item = String>) -> Options {
     let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let mut args = args.peekable();
-    if args.peek().is_some_and(|a| a == "classfile") {
+    if args
+        .peek()
+        .is_some_and(|a| a == "classfile" || a == "names")
+    {
         let check = args.next().unwrap_or_default();
         return Options {
             check,
@@ -236,6 +243,17 @@ fn run() -> Result<bool> {
                 return Ok(true);
             }
             classfile::run(classfile::parse_args(options.classfile.into_iter(), usage))
+        }
+        "names" => {
+            let usage = |message: &str| -> ! {
+                eprintln!("oracle names: {message}\n\n{}", names::USAGE);
+                std::process::exit(2);
+            };
+            if options.classfile.iter().any(|a| a == "-h" || a == "--help") {
+                println!("{}", names::USAGE);
+                return Ok(true);
+            }
+            names::run(names::parse_args(options.classfile.into_iter(), usage))
         }
         "tokens" => run_check(&tokens::Tokens, &options),
         "syntax" => run_check(&syntax::Syntax(ferrion::Ferrion), &options),

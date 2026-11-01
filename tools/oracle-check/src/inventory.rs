@@ -159,7 +159,7 @@ fn read(
 }
 
 /// The `.java` files under `dir`, sorted. Symbolic links aren't followed.
-fn java_files(dir: &Path) -> Result<Vec<PathBuf>> {
+pub(crate) fn java_files(dir: &Path) -> Result<Vec<PathBuf>> {
     let mut files = Vec::new();
     let mut pending = vec![dir.to_path_buf()];
     while let Some(dir) = pending.pop() {

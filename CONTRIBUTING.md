@@ -257,6 +257,24 @@ cargo oracle parser-cases
 It fails if javac's output no longer matches a snapshot; `--bless` rewrites them, and the document
 is updated to match.
 
+Name resolution is compared source set by source set. `javac-oracle names` compiles one source set
+with javac's API, running the annotation processors on its classpath, and writes each file's errors
+and what each name resolves to; `cargo oracle names` runs it on every source set of the projects'
+models (fetch the projects with their jars first, `cargo corpus fetch`), writes generated sources
+to `target/corpus/generated`, caches javac's output in `target/oracle/names` by a hash of each
+source set's inputs, and compares the names in B2's part with Ferrion's:
+
+```bash
+cargo oracle names jedis
+```
+
+`--jobs` (default 2) and `--heap` (default 4g) bound the JVMs, and `--source-set <id>` runs only
+some source sets. Files with javac errors and Lombok-annotated types are left out and counted by
+cause. Known differences go in `tools/oracle-check/differences/names-known.txt`, each under a
+category with its explanation;
+[docs/design/semantic-oracle-normalization.md](docs/design/semantic-oracle-normalization.md)
+records javac's side. The weekly oracle workflow runs every project; pull requests run jedis.
+
 ### Parser checks
 
 `tools/parser-check` checks the parser on the corpus without javac. With the projects checked out,
