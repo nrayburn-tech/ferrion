@@ -301,7 +301,8 @@ node except where noted. Running the oracle on small inputs showed what the mapp
   their `;`. The compilation unit starts at its first token, after leading comments.
 - **Missing positions:** empty modifiers are `-1..-1`, but a generic method's empty modifiers are an
   empty range before `<` (`<T> void g()`). Nodes javac synthesizes have no end: a compact
-  constructor's parameters, an enum constant's implicit `new`. These are dropped before comparing.
+  constructor's parameters, an enum constant's implicit `new`. The comparison makes the same nodes
+  from Ferrion's tree and compares them like any other (parser-oracle-normalization.md).
 - **Declarations javac splits:** `int[] f, g[];` is two `VARIABLE`s, each with the shared
   modifiers and type. The first ends after the `,`, the second starts at the shared modifiers, and
   the second's type spans `int[] f, g[]`. `for (int i = 0, j = 0; ...)` is the same. Ferrion keeps
