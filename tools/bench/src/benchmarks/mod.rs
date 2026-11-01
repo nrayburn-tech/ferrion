@@ -6,6 +6,7 @@
 //! one on another input (the comparison warns that the inputs differ).
 
 mod classfile;
+mod formatter;
 mod lexer;
 mod parser;
 
@@ -50,6 +51,7 @@ pub fn all() -> Vec<Benchmark> {
     let mut all = Vec::new();
     all.extend(lexer::benchmarks());
     all.extend(parser::benchmarks());
+    all.extend(formatter::benchmarks());
     all.extend(classfile::benchmarks());
     all
 }

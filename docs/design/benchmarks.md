@@ -26,6 +26,7 @@ components add their benchmarks to the same harness.
 | --- | --- |
 | `lexer/corpus` | lex every source file of the corpus projects |
 | `parser/corpus` | lex and parse every source file at its source set's release, dropping each tree before the next |
+| `formatter/corpus` | format every source file that parses without errors, at its source set's release, from trees parsed in setup |
 | `classfile/jdk-open` | open a JDK: its image's index and its `ct.sym`'s central directory |
 | `classfile/platform-image` | open the platform API for the JDK's own release, from its image |
 | `classfile/platform-ctsym` | open the platform API for an older release (21 by default) from `ct.sym` |
