@@ -109,17 +109,12 @@ jobs:
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
-      # Off until the comparison passes on javac's tests: it waits for the parser's remaining
-      # first-error differences (docs/design/parser-oracle-normalization.md).
       - name: Compare syntax errors with javac on javac's tests
-        if: false
         run: cargo oracle syntax jdk-tests --json syntax-report.json
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
-      # Off until the parser's errors on files javac accepts are fixed (the same document).
       - name: Compare trees with javac on javac's tests
-        if: false
         run: cargo oracle tree jdk-tests --json tree-report.json
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus

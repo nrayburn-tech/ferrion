@@ -654,6 +654,16 @@ is left among the 59 except javac's reading of `yield(a, b);` as an invalid call
 where the grammar reads a `yield` statement (2); the rest are the parser's own (49) and the lexer's,
 such as numbers out of range (8).
 
+With those fixed, every comparison passes, and the Oracle workflow runs `syntax jdk-tests` and
+`tree jdk-tests` along with `tokens jdk-tests`:
+
+| Run | Matched | Mismatched | Skipped |
+| --- | --- | --- | --- |
+| `syntax jdk-tests` | 5,699 | 0 | 3, as for tokens |
+| `tree jdk-tests` | 5,473 | 0 | 229 javac rejects |
+| `syntax` (the corpus, now 15,724 files) | 15,724 | 0 | 0 |
+| `tree` (the corpus) | 15,722 | 0 | 2 javac rejects |
+
 javac's output is cached as for tokens, keyed by the oracle jar, JDK, and sections, so `syntax` and
 `tree` have caches of their own.
 
