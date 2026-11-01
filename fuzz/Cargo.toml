@@ -11,6 +11,7 @@ cargo-fuzz = true
 [dependencies]
 ferrion_classfile.workspace = true
 ferrion_doc_comments.workspace = true
+ferrion_formatter.workspace = true
 ferrion_lexer.workspace = true
 ferrion_parser.workspace = true
 libfuzzer-sys.workspace = true
@@ -22,6 +23,7 @@ libfuzzer-sys.workspace = true
 [workspace.dependencies]
 ferrion_classfile = { path = "../crates/ferrion_classfile" }
 ferrion_doc_comments = { path = "../crates/ferrion_doc_comments" }
+ferrion_formatter = { path = "../crates/ferrion_formatter" }
 ferrion_lexer = { path = "../crates/ferrion_lexer" }
 ferrion_parser = { path = "../crates/ferrion_parser" }
 
@@ -61,6 +63,13 @@ bench = false
 [[bin]]
 name = "parse"
 path = "fuzz_targets/parse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "format"
+path = "fuzz_targets/format.rs"
 test = false
 doc = false
 bench = false
