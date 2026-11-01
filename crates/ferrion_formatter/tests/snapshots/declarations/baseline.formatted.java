@@ -7,9 +7,7 @@ import java.util.*;
 @SuppressWarnings({
   "unchecked", "rawtypes"
 }) public class A<T extends Comparable<T>> extends B implements C, D {
-  private static final int X = 1, Y[] = {
-    2
-  };
+  private static final int X = 1, Y[] = {2};
 
   public A(int a, String... rest) throws E {
     super(a);

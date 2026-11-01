@@ -32,7 +32,8 @@ class InOtherConstructs extends SomeVeryLongBaseClassName<
     Object x = new HashMap<
         SomeVeryLongTypeNameNumberOneXXXXXXXXXXXXXX, SomeVeryLongTypeNameNumberTwoXXXXXXXXX>();
     Object o = (SomeVeryLongInterfaceNameNumberOne & SomeVeryLongInterfaceNameNumberTwo
-        & ThirdInterfaceName & java.io.Serializable) x;
+        & ThirdInterfaceName & java.io.Serializable)
+        x;
     try {
       x();
     } catch (A
