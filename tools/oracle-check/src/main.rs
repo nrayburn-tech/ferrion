@@ -35,7 +35,7 @@ use std::process::ExitCode;
 use anyhow::{Context, Result, bail};
 use corpus::Dirs;
 use corpus::project::Project;
-use ferrion_java_version::{LATEST_RELEASE, OLDEST_RELEASE, SUPPORTED_RELEASES};
+use ferrion_java_version::{LATEST_RELEASE, OLDEST_RELEASE, PRIMARY_RELEASES, SUPPORTED_RELEASES};
 
 use crate::cache::Cache;
 use crate::check::Check;
@@ -61,6 +61,8 @@ checks:
 options:
   --release <N>        compare every file at release N (repeatable); by default, each file is
                        compared at its source set's release
+  --primary-releases   compare every file at each primary release: the LTS releases and the
+                       latest
   --all-releases       compare every file at every supported release
   --jobs <N>           run up to N JVMs and comparison threads at once (default: the number of CPUs)
   --limit <N>          show the first N failures (default: 10)
@@ -127,7 +129,8 @@ fn parse_args(args: impl Iterator<Item = String>) -> Options {
         bless: false,
     };
     let mut releases = Vec::new();
-    let mut all_releases = false;
+    // Set by --primary-releases or --all-releases.
+    let mut release_set: Option<Vec<u32>> = None;
     while let Some(arg) = args.next() {
         let mut value = |name: &str| {
             args.next()
@@ -148,7 +151,16 @@ fn parse_args(args: impl Iterator<Item = String>) -> Options {
                 }
                 releases.push(release);
             }
-            "--all-releases" => all_releases = true,
+            "--primary-releases" | "--all-releases" => {
+                if release_set.is_some() {
+                    usage("--primary-releases and --all-releases can't be combined");
+                }
+                release_set = Some(if arg == "--all-releases" {
+                    SUPPORTED_RELEASES.collect()
+                } else {
+                    PRIMARY_RELEASES.to_vec()
+                });
+            }
             "--jobs" => options.jobs = number("--jobs").max(1),
             "--limit" => options.limit = number("--limit"),
             "--json" => options.json = Some(PathBuf::from(value("--json"))),
@@ -163,11 +175,13 @@ fn parse_args(args: impl Iterator<Item = String>) -> Options {
             _ => options.projects.push(arg),
         }
     }
-    options.releases = match (all_releases, releases.is_empty()) {
-        (true, true) => Releases::These(SUPPORTED_RELEASES.collect()),
-        (true, false) => usage("--release and --all-releases can't be combined"),
-        (false, true) => Releases::Own,
-        (false, false) => {
+    options.releases = match (release_set, releases.is_empty()) {
+        (Some(set), true) => Releases::These(set),
+        (Some(_), false) => {
+            usage("--release can't be combined with --primary-releases or --all-releases")
+        }
+        (None, true) => Releases::Own,
+        (None, false) => {
             releases.sort_unstable();
             releases.dedup();
             Releases::These(releases)
@@ -299,5 +313,8 @@ mod tests {
         assert_eq!(all.last(), Some(&LATEST_RELEASE));
         assert_eq!(all.len(), (LATEST_RELEASE - OLDEST_RELEASE + 1) as usize);
         assert_eq!(options.json, Some(PathBuf::from("out.json")));
+
+        let options = parse("tokens --primary-releases");
+        assert_eq!(options.releases, Releases::These(PRIMARY_RELEASES.to_vec()));
     }
 }
