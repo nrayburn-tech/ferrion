@@ -96,16 +96,11 @@ struct Indentation {
 }
 
 impl Indentation {
-    /// Starts an indent of `kind`, hanging when `hanging` (see
-    /// [`crate::document::Element::Hanging`]).
-    fn start(f: &mut Formatter<'_>, kind: IndentKind, hanging: bool) -> Indentation {
+    /// Starts an indent of `kind`.
+    fn start(f: &mut Formatter<'_>, kind: IndentKind) -> Indentation {
         let started = f.take_capped_indent(MAX_INDENTS);
         if started {
-            if hanging {
-                f.start_hanging(kind);
-            } else {
-                f.start_indent(kind);
-            }
+            f.start_indent(kind);
         }
         Indentation { started }
     }

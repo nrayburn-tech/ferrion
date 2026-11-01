@@ -24,7 +24,7 @@ pub fn lambda<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                     f.space();
                     f.node(body);
                 } else {
-                    let indentation = Indentation::start(f, IndentKind::Continuation, false);
+                    let indentation = Indentation::start(f, IndentKind::Continuation);
                     f.line();
                     f.node(body);
                     indentation.end(f);

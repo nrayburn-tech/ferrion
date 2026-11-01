@@ -153,18 +153,18 @@ pub fn for_list<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     } else {
         // The first item continues the header's line, and the others are indented from it.
         f.fill(|f| {
-            let mut first = true;
-            for element in elements(node) {
-                if first || element.kind() == K::Comma {
-                    emit(f, element);
-                } else {
-                    f.indent(IndentKind::Continuation, |f| emit(f, element));
-                }
-                if element.kind() == K::Comma {
-                    f.fill_break(false);
-                }
-                first = false;
+            let mut elements = elements(node);
+            if let Some(first) = elements.next() {
+                emit(f, first);
             }
+            f.indent(IndentKind::Continuation, |f| {
+                for element in elements {
+                    emit(f, element);
+                    if element.kind() == K::Comma {
+                        f.fill_break(false);
+                    }
+                }
+            });
         });
     }
 }

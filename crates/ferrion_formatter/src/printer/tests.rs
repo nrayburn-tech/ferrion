@@ -118,8 +118,8 @@ fn outer_groups_break_first() {
     let output = print_lf(&text, |b, emit| {
         b.start_group();
         emit(b, 0);
-        b.line();
         b.start_indent(IndentKind::Continuation);
+        b.line();
         b.start_group();
         for i in 1..4 {
             if i > 1 {
@@ -208,7 +208,18 @@ fn nothing_is_written_before_the_first_text() {
 }
 
 #[test]
-fn indentation_is_taken_where_the_text_starts() {
+fn a_line_starts_at_the_indentation_of_its_line_break() {
+    let output = print_lf("{ x }", |b, emit| {
+        emit(b, 0);
+        b.start_indent(IndentKind::Block);
+        b.hard_line();
+        emit(b, 1);
+        b.end();
+        b.hard_line();
+        emit(b, 2);
+    });
+    assert_eq!(output, "{\n  x\n}\n");
+    // A line break inside the indent indents the text after its end.
     let output = print_lf("{ x }", |b, emit| {
         emit(b, 0);
         b.start_indent(IndentKind::Block);
@@ -218,7 +229,23 @@ fn indentation_is_taken_where_the_text_starts() {
         b.end();
         emit(b, 2);
     });
-    assert_eq!(output, "{\n  x\n}\n");
+    assert_eq!(output, "{\n  x\n  }\n");
+}
+
+#[test]
+fn merged_line_breaks_start_the_line_at_the_last_ones_indentation() {
+    let output = print_lf("a b c", |b, emit| {
+        emit(b, 0);
+        b.hard_line();
+        b.start_indent(IndentKind::Block);
+        b.hard_line();
+        emit(b, 1);
+        b.hard_line();
+        b.end();
+        b.hard_line();
+        emit(b, 2);
+    });
+    assert_eq!(output, "a\n  b\nc\n");
 }
 
 #[test]
@@ -318,6 +345,29 @@ fn a_fill_breaks_only_before_an_item_that_doesnt_fit() {
 }
 
 #[test]
+fn a_fills_separators_can_be_in_an_indent_in_it() {
+    // The first item where it is, the rest at +4 from the first line break on.
+    let items: Vec<String> = (0..12)
+        .map(|i| format!("i{i:02}{}", "x".repeat(10)))
+        .collect();
+    let text = items.join(" ");
+    let output = print_lf(&text, |b, emit| {
+        b.start_fill();
+        emit(b, 0);
+        b.start_indent(IndentKind::Continuation);
+        for i in 1..items.len() {
+            b.fill_break(false);
+            emit(b, i);
+        }
+        b.end();
+        b.end();
+    });
+    let first = items[..7].join(" ");
+    let second = items[7..].join(" ");
+    assert_eq!(output, format!("{first}\n    {second}\n"));
+}
+
+#[test]
 fn a_starred_comment_is_aligned_one_column_after_its_slash() {
     let output = print_lf("x /**\n        * a\n   *   b  \n         */", |b, emit| {
         b.start_indent(IndentKind::Block);
@@ -400,15 +450,15 @@ fn tokens_that_would_run_together_get_a_space() {
 }
 
 #[test]
-fn a_hanging_indent_keeps_a_break_from_before_it_out() {
-    // `x =`, a break, then `a` at +4 and `+ b` at +8: the hanging indent starts after the break.
+fn an_indent_started_after_a_line_break_doesnt_indent_its_line() {
+    // `x =`, a break, then `a` at +4 and `+ b` at +8: the inner indent starts after the break.
     let output = print_lf("x = a + b", |b, emit| {
         emit(b, 0);
         b.space();
         emit(b, 1);
         b.start_indent(IndentKind::Continuation);
         b.hard_line();
-        b.start_hanging(IndentKind::Continuation);
+        b.start_indent(IndentKind::Continuation);
         emit(b, 2);
         b.hard_line();
         emit(b, 3);

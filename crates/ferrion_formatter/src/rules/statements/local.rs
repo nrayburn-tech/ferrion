@@ -76,7 +76,9 @@ fn declarators_after_type<'t>(
             if broken {
                 f.indent(IndentKind::Continuation, emit_rest);
             } else {
-                let after_type = f.group(|f| f.line());
+                let after_type = f.start_group();
+                f.indent_if_broken(after_type, |f| f.line());
+                f.end();
                 f.indent_if_broken(after_type, emit_rest);
             }
         } else {
