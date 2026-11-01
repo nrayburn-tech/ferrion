@@ -12,8 +12,6 @@ pub(crate) mod lambdas;
 pub(crate) mod lists;
 mod operators;
 
-use std::cell::Cell;
-
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
 
 use super::generic;
@@ -87,16 +85,11 @@ fn spaced<'t>(f: &mut Formatter<'t>, previous: Option<NodeOrToken<'t>>, element:
 /// further. GJF indents each `?:` in an else branch, each cast, and each assignment +4 from the
 /// one around it, and the parser takes chains of them at any length, so without a limit the
 /// output would grow with the square of the input: 40 GB for an 800 KB chain of `?:`. Past 100
-/// indents a line starts beyond column 400 anyway (docs/style.md, "Expressions", proposed).
+/// indents a line starts beyond column 400 anyway (docs/style.md, "Expressions").
 const MAX_INDENTS: u32 = 100;
 
-thread_local! {
-    /// The expression rules' indents open on this thread.
-    static INDENTS: Cell<u32> = const { Cell::new(0) };
-}
-
 /// An indent started by an expression rule, or none past [`MAX_INDENTS`]. [`Indentation::end`]
-/// ends it, and dropping it, even when unwinding, gives its place back.
+/// ends it and gives its place back.
 #[must_use]
 struct Indentation {
     started: bool,
@@ -106,7 +99,7 @@ impl Indentation {
     /// Starts an indent of `kind`, hanging when `hanging` (see
     /// [`crate::document::Element::Hanging`]).
     fn start(f: &mut Formatter<'_>, kind: IndentKind, hanging: bool) -> Indentation {
-        let started = Indentation::take();
+        let started = f.take_capped_indent(MAX_INDENTS);
         if started {
             if hanging {
                 f.start_hanging(kind);
@@ -119,11 +112,9 @@ impl Indentation {
 
     /// Runs `body` indented by +4 if `group` breaks.
     fn if_broken<'t>(f: &mut Formatter<'t>, group: u32, body: impl FnOnce(&mut Formatter<'t>)) {
-        let indentation = Indentation {
-            started: Indentation::take(),
-        };
-        if indentation.started {
+        if f.take_capped_indent(MAX_INDENTS) {
             f.indent_if_broken(group, body);
+            f.give_back_capped_indent();
         } else {
             body(f);
         }
@@ -132,25 +123,7 @@ impl Indentation {
     fn end(self, f: &mut Formatter<'_>) {
         if self.started {
             f.end();
-        }
-    }
-
-    /// Takes a place for an indent, if there is one left.
-    fn take() -> bool {
-        INDENTS.with(|open| {
-            let free = open.get() < MAX_INDENTS;
-            if free {
-                open.set(open.get() + 1);
-            }
-            free
-        })
-    }
-}
-
-impl Drop for Indentation {
-    fn drop(&mut self) {
-        if self.started {
-            INDENTS.with(|open| open.set(open.get() - 1));
+            f.give_back_capped_indent();
         }
     }
 }
