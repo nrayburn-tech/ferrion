@@ -152,6 +152,9 @@ fn syntax_code(kind: Kind, release: u32) -> &'static str {
         Kind::InstanceInitializerInRecord => "instance.initializer.not.allowed.in.records",
         Kind::ImplicitClassPackage => "implicit.class.should.not.have.package.declaration",
         Kind::RecordPatternAnnotations => "record.patterns.annotations.not.allowed",
+        Kind::IntTooLarge => "int.number.too.large",
+        Kind::FloatTooLarge => "fp.number.too.large",
+        Kind::FloatTooSmall => "fp.number.too.small",
         // Never compared (`JavacPhase::Never`).
         Kind::NestingTooDeep => "nesting.too.deep",
         // The version check's kinds, by its own mapping. Only errors get here.
