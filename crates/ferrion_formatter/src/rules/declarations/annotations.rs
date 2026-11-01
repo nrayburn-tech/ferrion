@@ -188,6 +188,7 @@ pub(super) fn modifiers<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, layout:
             {
                 f.comments_before(next.id());
             }
+            f.no_blank_line();
             f.hard_line();
         }
     }
