@@ -7,9 +7,8 @@
 //! numbers committed in `gjf-diff.toml` (see [`compare`]). `format-check differences` checks the
 //! departures from GJF in `differences/` (see [`differences`]).
 //!
-//! The formatter is reached through one seam, [`formatter`], which stands in for
-//! `ferrion_formatter` until that crate lands. The corpus is found as `tools/corpus` finds it, and
-//! the GJF jar is cached with the corpus's jars (see [`gjf`]).
+//! The corpus is found as `tools/corpus` finds it, and the GJF jar is cached with the corpus's jars
+//! (see [`gjf`]).
 
 mod compare;
 mod diff;
@@ -25,7 +24,6 @@ use corpus::Dirs;
 use corpus::project::Project;
 use corpus::sources;
 use ferrion_diagnostics::SourceText;
-
 use ferrion_formatter::{FormatOptions, Formatted};
 
 const USAGE: &str = "\
