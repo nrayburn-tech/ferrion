@@ -69,11 +69,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "ferrion_formatter"
+version = "0.0.0"
+dependencies = [
+ "ferrion_diagnostics",
+ "ferrion_java_version",
+ "ferrion_parser",
+ "ferrion_stack",
+ "ferrion_syntax",
+]
+
+[[package]]
 name = "ferrion_fuzz"
 version = "0.0.0"
 dependencies = [
  "ferrion_classfile",
  "ferrion_doc_comments",
+ "ferrion_formatter",
  "ferrion_lexer",
  "ferrion_parser",
  "libfuzzer-sys",

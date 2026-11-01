@@ -93,15 +93,20 @@ jobs:
           pids=()
           mkdir -p logs
           for target in $TARGETS; do
-            mkdir -p "corpus/$target" "seeds/$target"
             case "$target" in
               javadoc | markdown) dict=doc_comments.dict ;;
               classfile | signature | zip | jar | jimage | jimage_structured | ctsym)
                 dict=classfile.dict ;;
               *) dict=java.dict ;;
             esac
+            # The formatter's target reads source files, as the parser's does, from its seeds.
+            case "$target" in
+              format) seeds=seeds/parse ;;
+              *) seeds="seeds/$target" ;;
+            esac
+            mkdir -p "corpus/$target" "$seeds"
             cargo fuzz run --sanitizer none --debug-assertions "$target" \
-              "corpus/$target" "seeds/$target" -- \
+              "corpus/$target" "$seeds" -- \
               -dict="$dict" -max_total_time="$FUZZ_SECONDS" -timeout=10 \
               > "logs/$target.log" 2>&1 &
             pids+=($!)
