@@ -599,6 +599,19 @@ doesn't. Category: javac error recovery, unless noted.
 | [`syntax-parenthesized-comparison-before-name.java`](../../tools/oracle-check/differences/syntax-parenthesized-comparison-before-name.java) | `(a < b) c` | `expected2` | `expected`, one token later |
 | [`syntax-lambda-parameter-annotated-after-type.java`](../../tools/oracle-check/differences/syntax-lambda-parameter-annotated-after-type.java) | `(int @A x) -> 1` | `expected` | `illegal.start.of.type` |
 | [`syntax-var-and-inferred-lambda-parameters.java`](../../tools/oracle-check/differences/syntax-var-and-inferred-lambda-parameters.java) | `(var a, b) -> a` at 10 | `feature.not.supported.in.source.plural` at `a`: `var` lambda parameters need 11 | `invalid.lambda.parameter.declaration` at the `(`, which javac reports from 11 and at 8 and 9 |
+| [`syntax-annotated-method-name.java`](../../tools/oracle-check/differences/syntax-annotated-method-name.java) | `a.@B b();` as a statement | none | `expected` at the `@` |
+| [`syntax-annotated-var-array-class-literal.java`](../../tools/oracle-check/differences/syntax-annotated-var-array-class-literal.java) | `var @B [] .class` | `no.annotations.on.dot.class` after `.class` | `restricted.type.not.allowed.here` at `var`, from the version check; its second error is javac's first |
+| [`syntax-package-and-stray-top-level-token.java`](../../tools/oracle-check/differences/syntax-package-and-stray-top-level-token.java) | `)` after a class, in a file with a package declaration, at 27 | `expected4`, as at 16 to 24 | `class.method.or.field.expected`, javac's code from 25 in a file without one; the codes match at 17 |
+| [`syntax-yield-call-with-missing-argument.java`](../../tools/oracle-check/differences/syntax-yield-call-with-missing-argument.java) | `yield(1,);` | `illegal.start.of.expr` at the `)`, then `invalid.yield` | the same two errors, in position order |
+| [`syntax-enum-as-expression.java`](../../tools/oracle-check/differences/syntax-enum-as-expression.java) | `x = enum;` | `enum.as.identifier` | `illegal.start.of.expr` |
+| [`syntax-enum-after-dot.java`](../../tools/oracle-check/differences/syntax-enum-after-dot.java) | `x = a.enum;` | `enum.as.identifier` | `expected` |
+| [`syntax-assert-as-expression.java`](../../tools/oracle-check/differences/syntax-assert-as-expression.java) | `x = assert;` | `assert.as.identifier` | `illegal.start.of.expr` |
+| [`syntax-break-enum.java`](../../tools/oracle-check/differences/syntax-break-enum.java) | `break enum;` | `enum.as.identifier` at `enum` | `expected` after `break` |
+| [`syntax-enum-as-class-name.java`](../../tools/oracle-check/differences/syntax-enum-as-class-name.java) | `class enum {}` | `enum.as.identifier` at `enum` | `expected` after `class` |
+| [`syntax-enum-as-type-parameter.java`](../../tools/oracle-check/differences/syntax-enum-as-type-parameter.java) | `class A<enum> {}` | `enum.as.identifier` | `expected` |
+| [`syntax-lambda-parameter-qualified-name.java`](../../tools/oracle-check/differences/syntax-lambda-parameter-qualified-name.java) | `(B a.b) -> {}` | none | `expected3` at the `.` |
+| [`syntax-cast-to-void.java`](../../tools/oracle-check/differences/syntax-cast-to-void.java) | `(void) x` | none | `illegal.start.of.expr` at `void` |
+| [`syntax-array-type-at-end-of-file.java`](../../tools/oracle-check/differences/syntax-array-type-at-end-of-file.java) | `int[]` as the last statement, at the end of the file | `not.stmt` at the `[` | `not.stmt` at `int` |
 
 The token check's two known differences in javac's tests are listed in `known-files.txt`:
 `diags/examples/IllegalUnicodeEscape.java` shows

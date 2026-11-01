@@ -1,0 +1,6 @@
+# javac's parse errors, then Ferrion's in javac's terms, at each release. Regenerate with `cargo oracle differences --bless`.
+at 27:
+javac   error compiler.err.not.stmt at 24
+javac   error compiler.err.premature.eof at 26
+ferrion error compiler.err.not.stmt at 21
+first errors: differ
