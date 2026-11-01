@@ -2,6 +2,8 @@
 //!
 //! NUL is `c0 80`, and characters outside the Basic Multilingual Plane are two three-byte
 //! surrogates. A raw zero byte, a byte from `f0` to `ff`, and a sequence cut short are malformed.
+//! Overlong forms (`e0 80 80` for NUL) are read as the character they spell, as javap reads
+//! them: class files in the corpus have them (Xerces' `Token`).
 
 use std::borrow::Cow;
 use std::fmt;

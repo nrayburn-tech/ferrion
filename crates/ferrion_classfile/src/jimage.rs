@@ -210,9 +210,16 @@ impl Image {
         name: &'b str,
     ) -> impl Iterator<Item = ImageResource<'a>> + use<'a, 'b> {
         let (package, simple) = name.rsplit_once('/').unwrap_or(("", name));
+        // The image stores modified UTF-8, which differs from UTF-8 only for NUL and characters
+        // outside the Basic Multilingual Plane.
+        let simple: std::borrow::Cow<'b, [u8]> = if simple.bytes().any(|b| b == 0 || b >= 0xf0) {
+            crate::text::encode(simple).into()
+        } else {
+            simple.as_bytes().into()
+        };
         self.package(package).filter(move |resource| {
             resource.is_class()
-                && self.bytes_at(resource.resource().location.base) == Some(simple.as_bytes())
+                && self.bytes_at(resource.resource().location.base) == Some(&simple[..])
         })
     }
 
@@ -240,6 +247,18 @@ impl Image {
 
     fn text(&self, offset: u32) -> Result<String> {
         Ok(Name::new(self.string(offset)?).to_str()?.into_owned())
+    }
+
+    /// The text of the string at `offset`, which must be in modified UTF-8's one form for it.
+    fn canonical_text(&self, offset: u32) -> Result<String> {
+        let text = self.text(offset)?;
+        if crate::text::encode(&text) != self.string(offset)? {
+            return Err(Error::new(
+                ErrorKind::Malformed,
+                "a name isn't in modified UTF-8's one form",
+            ));
+        }
+        Ok(text)
     }
 
     fn read(&self, resource: ImageResource<'_>) -> Result<Vec<u8>> {
@@ -544,14 +563,21 @@ fn read_index(source: Source) -> Result<Image> {
             }
         };
         let names = (|| -> Result<Option<(String, String)>> {
-            let module = image.text(location.module)?;
+            let module = image.canonical_text(location.module)?;
             if module.is_empty() || module == "modules" || module == "packages" {
                 return Ok(None);
             }
-            // The other names are decoded on use, so a resource whose name can't be is left out.
-            image.text(location.base)?;
-            image.text(location.extension)?;
-            Ok(Some((module, image.text(location.parent)?)))
+            // Lookups compare names' bytes, so a resource is left out when a name can't be
+            // decoded, isn't in its one form (an overlong `c1 81` reads as `A` but doesn't match
+            // it), or, for the file name, has a `/`, which no lookup by path reaches.
+            if image.canonical_text(location.base)?.contains('/') {
+                return Err(Error::new(
+                    ErrorKind::Malformed,
+                    "a resource's base name contains `/`",
+                ));
+            }
+            image.canonical_text(location.extension)?;
+            Ok(Some((module, image.canonical_text(location.parent)?)))
         })();
         let (module, package) = match names {
             Ok(Some(names)) => names,
