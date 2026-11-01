@@ -108,9 +108,7 @@ pub(super) fn class_type_rest(
 ) -> Option<CompletedMarker> {
     if p.at_set(IDENT) {
         p.bump();
-        if p.at(Lt) {
-            type_arguments_with(p, diamond);
-        }
+        type_arguments_of_segment(p, diamond);
     } else if m.consumed(p) {
         type_expected(p);
     } else {
@@ -126,9 +124,7 @@ pub(super) fn class_type_rest(
         annotations(p);
         if p.at_set(IDENT) {
             p.bump();
-            if p.at(Lt) {
-                type_arguments_with(p, diamond);
-            }
+            type_arguments_of_segment(p, diamond);
         } else if p.at(Lt) {
             type_expected(p);
         } else {
@@ -140,6 +136,19 @@ pub(super) fn class_type_rest(
         }
     }
     Some(segment)
+}
+
+/// A class type segment's type arguments, if any. A diamond (allowed with `diamond`) must be on
+/// the last segment: javac reports a `.` after it as an illegal start of a type.
+fn type_arguments_of_segment(p: &mut Parser<'_>, diamond: bool) {
+    if !p.at(Lt) {
+        return;
+    }
+    let is_diamond = p.nth(1) == Gt;
+    type_arguments_with(p, diamond);
+    if diamond && is_diamond && p.at(Dot) {
+        type_expected(p);
+    }
 }
 
 fn complete_or_abandon(

@@ -202,6 +202,12 @@ pub enum ParseDiagnosticKind {
     /// reads as the name and reports. Anchor: the keyword, as for javac's `assert.as.identifier`,
     /// `enum.as.identifier`, and `this.as.identifier`.
     KeywordAsName(SyntaxKind),
+    /// `<>` on an array creation's element type: `new A<>[1]`. Anchor: the `<`, as for javac's
+    /// `cannot.create.array.with.diamond`.
+    ArrayCreationWithDiamond,
+    /// Type arguments after `new` in an array creation: `new <T> A[1]`. Anchor: the first type
+    /// argument, as for javac's `cannot.create.array.with.type.arguments`.
+    ArrayCreationWithTypeArguments,
     /// A language feature the release doesn't have (the version check). Anchor: the feature's,
     /// documented on [`Feature`]. javac's code and phase are in the feature's row: usually
     /// `feature.not.supported.in.source.plural`, with the feature's name and the release.
@@ -349,6 +355,8 @@ impl ParseDiagnosticKind {
             | ParseDiagnosticKind::FloatTooLarge
             | ParseDiagnosticKind::FloatTooSmall
             | ParseDiagnosticKind::KeywordAsName(_)
+            | ParseDiagnosticKind::ArrayCreationWithDiamond
+            | ParseDiagnosticKind::ArrayCreationWithTypeArguments
             | ParseDiagnosticKind::RestrictedTypeName { .. }
             | ParseDiagnosticKind::RestrictedType { .. }
             | ParseDiagnosticKind::VarArray
@@ -448,7 +456,9 @@ impl ParseDiagnosticKind {
             ParseDiagnosticKind::IntTooLarge
             | ParseDiagnosticKind::FloatTooLarge
             | ParseDiagnosticKind::FloatTooSmall
-            | ParseDiagnosticKind::KeywordAsName(_) => false,
+            | ParseDiagnosticKind::KeywordAsName(_)
+            | ParseDiagnosticKind::ArrayCreationWithDiamond
+            | ParseDiagnosticKind::ArrayCreationWithTypeArguments => false,
         }
     }
 }
@@ -603,6 +613,12 @@ impl ParseDiagnostic {
             }
             ParseDiagnosticKind::KeywordAsName(kind) => {
                 format!("{} is a keyword and can't be a name", describe(kind))
+            }
+            ParseDiagnosticKind::ArrayCreationWithDiamond => {
+                "an array creation can't infer type arguments with '<>'".to_owned()
+            }
+            ParseDiagnosticKind::ArrayCreationWithTypeArguments => {
+                "an array creation can't have type arguments after 'new'".to_owned()
             }
             ParseDiagnosticKind::FeatureNotInRelease { feature, release } => {
                 feature.message(release)

@@ -211,7 +211,12 @@ javac 27:
 | `1e999`, `1e-999`, `1e39f` | `fp.number.too.large`, `fp.number.too.small` | the literal |
 | `int assert;`, `void enum() {}`, `Object this;` | `assert.as.identifier`, `enum.as.identifier`, `this.as.identifier` | the keyword |
 | `(A a.this) -> {}` | `this.as.identifier` | `this` |
+| `new A<>[1]`, `new <T> A[1]` | `cannot.create.array.with.diamond`, `.type.arguments` | the `<`; the first type argument |
+| `new A<>.B()` | `illegal.start.of.type` | the `.` |
+| `x.new A.B()` | `expected` (`'(' expected`) | start of the `.` |
+| `this.class`, `a().class` | `expected` (`<identifier> expected`) | end of the `.` |
 | `void[] a;`, `void m(void[] a)` | `expected` (`<identifier> expected`) | end of `void` |
+| `a.<T>b;`, `a.<T>b.c()`, `a.<T>b[0];` | `illegal.start.of.expr` | the `;`; `c`; the `;` after `]` |
 | `yield(1, 2);`, `yield();` as statements | `invalid.yield` | `yield` |
 | a `;` before an import | `extraneous.semicolon` (a warning before 21) | the first `;` of a run |
 | a feature too new for the release | `feature.not.supported.in.source(.plural)` | the feature's anchor (see [language versions](parser-language-versions.md#the-feature-table)) |

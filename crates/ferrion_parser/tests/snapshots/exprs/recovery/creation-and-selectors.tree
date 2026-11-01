@@ -1,0 +1,328 @@
+CompilationUnit 0..382 [error]
+  ClassDecl 0..381 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..14 "Creation"
+    Whitespace 14..15 " "
+    ClassBody 15..381 [error]
+      LBrace 15..16 "{"
+      LineTerminator 16..17 "\n"
+      Whitespace 17..21 "    "
+      FieldDecl 21..46 [error]
+        ClassType 21..27
+          Identifier 21..27 "Object"
+        Whitespace 27..28 " "
+        VariableDeclarator 28..45 [error]
+          Identifier 28..29 "a"
+          Whitespace 29..30 " "
+          Eq 30..31 "="
+          Whitespace 31..32 " "
+          ArrayCreationExpr 32..45 [error]
+            NewKw 32..35 "new"
+            Whitespace 35..36 " "
+            ClassType 36..42
+              Identifier 36..40 "List"
+              TypeArguments 40..42
+                Lt 40..41 "<"
+                Gt 41..42 ">"
+            DimExpr 42..45
+              LBracket 42..43 "["
+              LiteralExpr 43..44
+                IntLiteral 43..44 "2"
+              RBracket 44..45 "]"
+        Semi 45..46 ";"
+      LineTerminator 46..47 "\n"
+      Whitespace 47..51 "    "
+      FieldDecl 51..85 [error]
+        ClassType 51..57
+          Identifier 51..57 "Object"
+        Whitespace 57..58 " "
+        VariableDeclarator 58..84 [error]
+          Identifier 58..59 "b"
+          Whitespace 59..60 " "
+          Eq 60..61 "="
+          Whitespace 61..62 " "
+          ArrayCreationExpr 62..84 [error]
+            NewKw 62..65 "new"
+            Whitespace 65..66 " "
+            TypeArguments 66..74
+              Lt 66..67 "<"
+              ClassType 67..73
+                Identifier 67..73 "String"
+              Gt 73..74 ">"
+            Whitespace 74..75 " "
+            ClassType 75..81
+              Identifier 75..81 "Thread"
+            DimExpr 81..84
+              LBracket 81..82 "["
+              LiteralExpr 82..83
+                IntLiteral 82..83 "4"
+              RBracket 83..84 "]"
+        Semi 84..85 ";"
+      LineTerminator 85..86 "\n"
+      Whitespace 86..90 "    "
+      FieldDecl 90..117 [error]
+        ClassType 90..96
+          Identifier 90..96 "Object"
+        Whitespace 96..97 " "
+        VariableDeclarator 97..116 [error]
+          Identifier 97..98 "c"
+          Whitespace 98..99 " "
+          Eq 99..100 "="
+          Whitespace 100..101 " "
+          ArrayCreationExpr 101..116 [error]
+            NewKw 101..104 "new"
+            Whitespace 104..105 " "
+            ClassType 105..110
+              ClassType 105..106
+                Identifier 105..106 "A"
+              Dot 106..107 "."
+              Identifier 107..108 "B"
+              TypeArguments 108..110
+                Lt 108..109 "<"
+                Gt 109..110 ">"
+            DimExpr 110..113
+              LBracket 110..111 "["
+              LiteralExpr 111..112
+                IntLiteral 111..112 "1"
+              RBracket 112..113 "]"
+            DimExpr 113..116
+              LBracket 113..114 "["
+              LiteralExpr 114..115
+                IntLiteral 114..115 "1"
+              RBracket 115..116 "]"
+        Semi 116..117 ";"
+      LineTerminator 117..118 "\n"
+      Whitespace 118..122 "    "
+      FieldDecl 122..145 [error]
+        ClassType 122..128
+          Identifier 122..128 "Object"
+        Whitespace 128..129 " "
+        VariableDeclarator 129..144 [error]
+          Identifier 129..130 "d"
+          Whitespace 130..131 " "
+          Eq 131..132 "="
+          Whitespace 132..133 " "
+          NewExpr 133..144 [error]
+            NewKw 133..136 "new"
+            Whitespace 136..137 " "
+            ClassType 137..142 [error]
+              ClassType 137..140 [error]
+                Identifier 137..138 "A"
+                TypeArguments 138..140
+                  Lt 138..139 "<"
+                  Gt 139..140 ">"
+              Dot 140..141 "."
+              Identifier 141..142 "B"
+            Arguments 142..144
+              LParen 142..143 "("
+              RParen 143..144 ")"
+        Semi 144..145 ";"
+      LineTerminator 145..146 "\n"
+      Whitespace 146..150 "    "
+      FieldDecl 150..184 [error]
+        ClassType 150..156
+          Identifier 150..156 "Object"
+        Whitespace 156..157 " "
+        VariableDeclarator 157..183 [error]
+          Identifier 157..158 "e"
+          Whitespace 158..159 " "
+          Eq 159..160 "="
+          Whitespace 160..161 " "
+          MethodCallExpr 161..183 [error]
+            NewExpr 161..176 [error]
+              NameExpr 161..166
+                Identifier 161..166 "outer"
+              Dot 166..167 "."
+              NewKw 167..170 "new"
+              Whitespace 170..171 " "
+              ClassType 171..176
+                Identifier 171..176 "Inner"
+            Dot 176..177 "."
+            Identifier 177..181 "Deep"
+            Arguments 181..183
+              LParen 181..182 "("
+              RParen 182..183 ")"
+        Semi 183..184 ";"
+      LineTerminator 184..185 "\n"
+      Whitespace 185..189 "    "
+      FieldDecl 189..211 [error]
+        ClassType 189..195
+          Identifier 189..195 "Object"
+        Whitespace 195..196 " "
+        VariableDeclarator 196..210 [error]
+          Identifier 196..197 "f"
+          Whitespace 197..198 " "
+          Eq 198..199 "="
+          Whitespace 199..200 " "
+          ClassLiteralExpr 200..210 [error]
+            ThisExpr 200..204
+              ThisKw 200..204 "this"
+            Dot 204..205 "."
+            ClassKw 205..210 "class"
+        Semi 210..211 ";"
+      LineTerminator 211..212 "\n"
+      Whitespace 212..216 "    "
+      FieldDecl 216..237 [error]
+        ClassType 216..222
+          Identifier 216..222 "Object"
+        Whitespace 222..223 " "
+        VariableDeclarator 223..236 [error]
+          Identifier 223..224 "g"
+          Whitespace 224..225 " "
+          Eq 225..226 "="
+          Whitespace 226..227 " "
+          ClassLiteralExpr 227..236 [error]
+            MethodCallExpr 227..230
+              Identifier 227..228 "a"
+              Arguments 228..230
+                LParen 228..229 "("
+                RParen 229..230 ")"
+            Dot 230..231 "."
+            ClassKw 231..236 "class"
+        Semi 236..237 ";"
+      LineTerminator 237..238 "\n"
+      Whitespace 238..242 "    "
+      FieldDecl 242..263
+        ClassType 242..248
+          Identifier 242..248 "Object"
+        Whitespace 248..249 " "
+        VariableDeclarator 249..262
+          Identifier 249..250 "h"
+          Whitespace 250..251 " "
+          Eq 251..252 "="
+          Whitespace 252..253 " "
+          ClassLiteralExpr 253..262
+            FieldAccessExpr 253..256
+              NameExpr 253..254
+                Identifier 253..254 "a"
+              Dot 254..255 "."
+              Identifier 255..256 "b"
+            Dot 256..257 "."
+            ClassKw 257..262 "class"
+        Semi 262..263 ";"
+      LineTerminator 263..264 "\n"
+      Whitespace 264..268 "    "
+      FieldDecl 268..297 [error]
+        ClassType 268..274
+          Identifier 268..274 "Object"
+        Whitespace 274..275 " "
+        VariableDeclarator 275..296 [error]
+          Identifier 275..276 "i"
+          Whitespace 276..277 " "
+          Eq 277..278 "="
+          Whitespace 278..279 " "
+          MethodCallExpr 279..296 [error]
+            MethodCallExpr 279..285 [error]
+              NameExpr 279..280
+                Identifier 279..280 "C"
+              Dot 280..281 "."
+              TypeArguments 281..284
+                Lt 281..282 "<"
+                ClassType 282..283
+                  Identifier 282..283 "T"
+                Gt 283..284 ">"
+              Identifier 284..285 "e"
+            Dot 285..286 "."
+            Identifier 286..294 "iterator"
+            Arguments 294..296
+              LParen 294..295 "("
+              RParen 295..296 ")"
+        Semi 296..297 ";"
+      LineTerminator 297..298 "\n"
+      Whitespace 298..302 "    "
+      FieldDecl 302..323 [error]
+        ClassType 302..308
+          Identifier 302..308 "Object"
+        Whitespace 308..309 " "
+        VariableDeclarator 309..322 [error]
+          Identifier 309..310 "j"
+          Whitespace 310..311 " "
+          Eq 311..312 "="
+          Whitespace 312..313 " "
+          ArrayAccessExpr 313..322 [error]
+            FieldAccessExpr 313..319
+              NameExpr 313..314
+                Identifier 313..314 "C"
+              Dot 314..315 "."
+              TypeArguments 315..318
+                Lt 315..316 "<"
+                ClassType 316..317
+                  Identifier 316..317 "T"
+                Gt 317..318 ">"
+              Identifier 318..319 "e"
+            LBracket 319..320 "["
+            LiteralExpr 320..321
+              IntLiteral 320..321 "0"
+            RBracket 321..322 "]"
+        Semi 322..323 ";"
+      LineTerminator 323..324 "\n"
+      Whitespace 324..328 "    "
+      FieldDecl 328..353
+        ClassType 328..334
+          Identifier 328..334 "Object"
+        Whitespace 334..335 " "
+        VariableDeclarator 335..352
+          Identifier 335..336 "k"
+          Whitespace 336..337 " "
+          Eq 337..338 "="
+          Whitespace 338..339 " "
+          MethodCallExpr 339..352
+            FieldAccessExpr 339..345
+              NameExpr 339..340
+                Identifier 339..340 "C"
+              Dot 340..341 "."
+              TypeArguments 341..344
+                Lt 341..342 "<"
+                ClassType 342..343
+                  Identifier 342..343 "T"
+                Gt 343..344 ">"
+              Identifier 344..345 "e"
+            Dot 345..346 "."
+            TypeArguments 346..349
+              Lt 346..347 "<"
+              ClassType 347..348
+                Identifier 347..348 "U"
+              Gt 348..349 ">"
+            Identifier 349..350 "f"
+            Arguments 350..352
+              LParen 350..351 "("
+              RParen 351..352 ")"
+        Semi 352..353 ";"
+      LineTerminator 353..354 "\n"
+      Whitespace 354..358 "    "
+      FieldDecl 358..374 [error]
+        ClassType 358..364
+          Identifier 358..364 "Object"
+        Whitespace 364..365 " "
+        VariableDeclarator 365..374 [error]
+          Identifier 365..366 "l"
+          Whitespace 366..367 " "
+          Eq 367..368 "="
+          Whitespace 368..369 " "
+          MethodCallExpr 369..374 [error]
+            NameExpr 369..370
+              Identifier 369..370 "C"
+            Dot 370..371 "."
+            TypeArguments 371..374
+              Lt 371..372 "<"
+              ClassType 372..373
+                Identifier 372..373 "T"
+              Gt 373..374 ">"
+      Error 374..378 [error]
+        ThisKw 374..378 "this"
+      Semi 378..379 ";"
+      LineTerminator 379..380 "\n"
+      RBrace 380..381 "}"
+  LineTerminator 381..382 "\n"
+  Eof 382..382 ""
+error 40..41 @40 ArrayCreationWithDiamond: an array creation can't infer type arguments with '<>'
+error 67..73 @67 ArrayCreationWithTypeArguments: an array creation can't have type arguments after 'new'
+error 108..109 @108 ArrayCreationWithDiamond: an array creation can't infer type arguments with '<>'
+error 140..141 @140 TypeExpected(Dot): expected a type, found '.'
+error 176..176 @176 Expected(Token(LParen)): '(' expected
+error 205..205 @205 Expected(Identifier): name expected
+error 231..231 @231 Expected(Identifier): name expected
+error 286..294 @286 ExpressionExpected(Identifier): expected an expression, found name
+error 322..323 @322 ExpressionExpected(Semi): expected an expression, found ';'
+error 374..378 @374 ExpressionExpected(ThisKw): expected an expression, found 'this'

@@ -158,6 +158,8 @@ fn syntax_code(kind: Kind, release: u32) -> &'static str {
         Kind::KeywordAsName(SyntaxKind::AssertKw) => "assert.as.identifier",
         Kind::KeywordAsName(SyntaxKind::EnumKw) => "enum.as.identifier",
         Kind::KeywordAsName(_) => "this.as.identifier",
+        Kind::ArrayCreationWithDiamond => "cannot.create.array.with.diamond",
+        Kind::ArrayCreationWithTypeArguments => "cannot.create.array.with.type.arguments",
         // Never compared (`JavacPhase::Never`).
         Kind::NestingTooDeep => "nesting.too.deep",
         // The version check's kinds, by its own mapping. Only errors get here.
