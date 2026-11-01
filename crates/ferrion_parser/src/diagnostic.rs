@@ -127,8 +127,9 @@ pub enum ParseDiagnosticKind {
     /// `[]` after a variable arity parameter's name. Anchor: the `[`, as for javac's
     /// `varargs.and.old.array.syntax`.
     VarargsWithDims,
-    /// A receiver parameter (`A this`) that isn't the first parameter, or in a record header.
-    /// Anchor: `this`, as for javac's `this.as.identifier`.
+    /// A receiver parameter (`A this`) that isn't the first parameter, or in a record header, or
+    /// a lambda parameter named like one (`(A a.this) ->`). Anchor: `this`, as for javac's
+    /// `this.as.identifier`.
     MisplacedReceiver,
     /// `[]` after a receiver parameter's `this`. Anchor: the `[`, as for javac's
     /// `array.and.receiver`.
@@ -197,6 +198,10 @@ pub enum ParseDiagnosticKind {
     /// A floating-point literal that isn't zero but rounds to zero in its type. Anchor: the
     /// literal, as for javac's `fp.number.too.small`.
     FloatTooSmall,
+    /// `assert`, `enum`, or `this` where a declaration's name goes (`int enum;`), which javac
+    /// reads as the name and reports. Anchor: the keyword, as for javac's `assert.as.identifier`,
+    /// `enum.as.identifier`, and `this.as.identifier`.
+    KeywordAsName(SyntaxKind),
     /// A language feature the release doesn't have (the version check). Anchor: the feature's,
     /// documented on [`Feature`]. javac's code and phase are in the feature's row: usually
     /// `feature.not.supported.in.source.plural`, with the feature's name and the release.
@@ -343,6 +348,7 @@ impl ParseDiagnosticKind {
             | ParseDiagnosticKind::IntTooLarge
             | ParseDiagnosticKind::FloatTooLarge
             | ParseDiagnosticKind::FloatTooSmall
+            | ParseDiagnosticKind::KeywordAsName(_)
             | ParseDiagnosticKind::RestrictedTypeName { .. }
             | ParseDiagnosticKind::RestrictedType { .. }
             | ParseDiagnosticKind::VarArray
@@ -441,7 +447,8 @@ impl ParseDiagnosticKind {
             | ParseDiagnosticKind::RecordPatternAnnotations => false,
             ParseDiagnosticKind::IntTooLarge
             | ParseDiagnosticKind::FloatTooLarge
-            | ParseDiagnosticKind::FloatTooSmall => false,
+            | ParseDiagnosticKind::FloatTooSmall
+            | ParseDiagnosticKind::KeywordAsName(_) => false,
         }
     }
 }
@@ -593,6 +600,9 @@ impl ParseDiagnostic {
             }
             ParseDiagnosticKind::FloatTooSmall => {
                 "this number is too small for its type: it would be zero".to_owned()
+            }
+            ParseDiagnosticKind::KeywordAsName(kind) => {
+                format!("{} is a keyword and can't be a name", describe(kind))
             }
             ParseDiagnosticKind::FeatureNotInRelease { feature, release } => {
                 feature.message(release)

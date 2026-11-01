@@ -209,6 +209,9 @@ javac 27:
 | `o instanceof @A R(var x)` | `record.patterns.annotations.not.allowed` | the first `@` |
 | `int i = 2147483648;`, `-2147483649`, `0x1_0000_0000` | `int.number.too.large` | the literal (`-2147483648` is fine) |
 | `1e999`, `1e-999`, `1e39f` | `fp.number.too.large`, `fp.number.too.small` | the literal |
+| `int assert;`, `void enum() {}`, `Object this;` | `assert.as.identifier`, `enum.as.identifier`, `this.as.identifier` | the keyword |
+| `(A a.this) -> {}` | `this.as.identifier` | `this` |
+| `void[] a;`, `void m(void[] a)` | `expected` (`<identifier> expected`) | end of `void` |
 | a `;` before an import | `extraneous.semicolon` (a warning before 21) | the first `;` of a run |
 | a feature too new for the release | `feature.not.supported.in.source(.plural)` | the feature's anchor (see [language versions](parser-language-versions.md#the-feature-table)) |
 | `class var {}`, `<var>` | `restricted.type.not.allowed` (a warning before the release) | the name |
