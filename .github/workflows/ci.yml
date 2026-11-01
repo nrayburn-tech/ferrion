@@ -173,6 +173,15 @@ jobs:
             "$(printf ')%.0s' $(seq 10000))" > "$deep"
           java -jar tools/javac-oracle/target/javac-oracle.jar --release 27 --sections tree "$deep" \
             | jq --exit-status '(.crash | not) and ([.tree[][3]] | max) > 10000'
+      # A platform type's key, a local's, and the source set's summary line.
+      - name: Check the javac oracle's names
+        run: >-
+          java -jar tools/javac-oracle/target/javac-oracle.jar names --release 17
+          tools/javac-oracle/src/test/resources/Sample.java
+          | jq --exit-status --slurp '.[0].diagnostics == []
+          and (.[0].names | any(.[4] == "type java/lang/IllegalArgumentException platform"))
+          and (.[0].names | any(.[2] == "expression" and (.[4] | startswith("local "))))
+          and (.[1].sourceSet | has("millis"))'
       - run: rustup toolchain install
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - name: Fetch a corpus project
@@ -225,5 +234,11 @@ jobs:
       # covers every release of every JDK in the matrix.
       - name: Compare class file reading with javap, jrt, java.util.zip, and javac
         run: cargo oracle classfile --jdk "$JAVA_HOME" --release 27 jedis
+        env:
+          FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
+      # The fetched project's two source sets compile in about 15 seconds; the weekly oracle
+      # workflow runs every project.
+      - name: Compare name resolution with javac
+        run: cargo oracle names jedis
         env:
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle

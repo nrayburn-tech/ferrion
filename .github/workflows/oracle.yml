@@ -7,6 +7,8 @@ name: Oracle
 # javac's tests, and its diff against Google Java Format on every corpus project.
 # The class file comparison runs on every JDK of the matrix and on every corpus project's jars;
 # pull requests check one JDK's own release and one project's jars.
+# The name resolution comparison compiles every source set of every corpus project; pull
+# requests run one small project.
 
 on:
   schedule:
@@ -248,4 +250,39 @@ jobs:
         with:
           name: classfile-report
           path: classfile-*.json
+          if-no-files-found: ignore
+
+  names:
+    name: name resolution on every corpus project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "27"
+          cache: maven
+      - name: Build the javac oracle
+        working-directory: tools/javac-oracle
+        run: mvn --batch-mode --no-transfer-progress package
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      # The projects, their jars, and the generated sources are kept out of target/, so the Rust
+      # cache doesn't save them.
+      - name: Fetch the corpus
+        run: cargo corpus fetch
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      # Every source set of every project, two javac JVMs at a time on the runner's 16 GB.
+      - name: Compare name resolution with javac
+        run: cargo oracle names --jobs 2 --heap 5g --json names-report.json
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+          FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: names-report
+          path: names-report.json
           if-no-files-found: ignore

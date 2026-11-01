@@ -1,0 +1,421 @@
+//! Running `javac-oracle names` on a source set, and caching its output by a hash of its inputs.
+//!
+//! ```text
+//! target/oracle/names/<oracle key>/<input hash>.jsonl    the oracle's output for a source set
+//! ```
+//!
+//! The input hash covers the release, the source set's files (names and contents), its classpath
+//! (each entry's path, size, and modification time; jars in the corpus are named by version, so
+//! that's enough), and every Java file on its source path, which includes the sources its
+//! dependencies' processors generated. Paths are hashed relative to the corpus directory, as the
+//! oracle writes them, so a cache restored under another corpus directory still applies. An entry
+//! is used only if the generated files it lists still exist, since the comparison reads them.
+
+use std::fs::File;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
+
+use anyhow::{Context, Result, bail};
+use serde::de::{self, Deserializer, SeqAccess, Visitor};
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+
+use super::plan::{self, SourceSet};
+use crate::inventory::java_files;
+use crate::oracle::{Diagnostic, hex};
+
+/// Bumped when the oracle's `names` output or the input hash changes meaning.
+const FORMAT: &str = "names-1";
+
+/// One file's output.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize)]
+pub struct FileOutput {
+    /// Relative to the corpus directory.
+    pub file: String,
+    /// 1 for a file an annotation processor wrote.
+    #[serde(default)]
+    pub generated: u8,
+    /// 1 when javac stopped before analyzing the file: after a processor reported an error, it
+    /// doesn't attribute anything, so names have no elements or error ones.
+    #[serde(default)]
+    pub unanalyzed: u8,
+    #[serde(default)]
+    pub diagnostics: Vec<Diagnostic>,
+    /// `[start, end]` of each class that is, or has a member, annotated from `lombok`.
+    #[serde(default)]
+    pub lombok: Vec<(i64, i64)>,
+    #[serde(default)]
+    pub names: Vec<Name>,
+    /// javac threw on the file, even on its own.
+    #[serde(default)]
+    pub crash: Option<String>,
+    /// The oracle left the file out (`module-info.java`).
+    #[serde(default)]
+    pub skipped: Option<String>,
+}
+
+impl FileOutput {
+    pub fn errors(&self) -> impl Iterator<Item = &Diagnostic> {
+        self.diagnostics.iter().filter(|d| d.is_error())
+    }
+}
+
+/// A name javac resolved: `[start, end, context, qualifier, key]`, and for method names the type
+/// searched for the method. See `Names.java` in the oracle.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Name {
+    /// UTF-16 offsets; the end is -1 for trees javac made up (implicit names).
+    pub start: i64,
+    pub end: i64,
+    pub context: String,
+    pub qualifier: String,
+    pub key: String,
+    pub searched: Option<String>,
+}
+
+impl<'de> Deserialize<'de> for Name {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Name, D::Error> {
+        struct NameVisitor;
+        impl<'de> Visitor<'de> for NameVisitor {
+            type Value = Name;
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("[start, end, context, qualifier, key, searched?]")
+            }
+            fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Name, A::Error> {
+                let missing = |i| de::Error::invalid_length(i, &self);
+                Ok(Name {
+                    start: seq.next_element()?.ok_or_else(|| missing(0))?,
+                    end: seq.next_element()?.ok_or_else(|| missing(1))?,
+                    context: seq.next_element()?.ok_or_else(|| missing(2))?,
+                    qualifier: seq.next_element()?.ok_or_else(|| missing(3))?,
+                    key: seq.next_element()?.ok_or_else(|| missing(4))?,
+                    searched: seq.next_element()?,
+                })
+            }
+        }
+        deserializer.deserialize_seq(NameVisitor)
+    }
+}
+
+/// What the oracle reports about the source set as a whole.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct SetOutput {
+    /// The processor classes registered on the processor path.
+    #[serde(default)]
+    pub processors: Vec<String>,
+    /// Errors with no file, or in a file on the source path.
+    #[serde(default)]
+    pub diagnostics: Vec<OtherDiagnostic>,
+    /// javac threw on the whole source set, so files were compiled one at a time.
+    #[serde(default)]
+    pub crash: Option<String>,
+    #[serde(default)]
+    pub millis: u64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum OtherDiagnostic {
+    InFile { file: String, error: Diagnostic },
+    NoFile(Diagnostic),
+}
+
+#[derive(Deserialize)]
+struct Trailer {
+    #[serde(rename = "sourceSet")]
+    source_set: SetOutput,
+}
+
+/// The oracle's output for a source set.
+#[derive(Clone, Debug, Default)]
+pub struct Output {
+    pub files: Vec<FileOutput>,
+    pub set: SetOutput,
+}
+
+impl Output {
+    pub fn parse(text: &str) -> Result<Output> {
+        let mut output = Output::default();
+        let mut trailer = None;
+        for (i, line) in text.lines().enumerate() {
+            if line.starts_with("{\"sourceSet\"") {
+                let parsed: Trailer = serde_json::from_str(line)
+                    .with_context(|| format!("line {}: the source set's summary", i + 1))?;
+                trailer = Some(parsed.source_set);
+            } else {
+                let file: FileOutput = serde_json::from_str(line)
+                    .with_context(|| format!("line {} of the oracle's output", i + 1))?;
+                output.files.push(file);
+            }
+        }
+        output.set =
+            trailer.context("the oracle's output has no summary line; it didn't finish")?;
+        Ok(output)
+    }
+}
+
+/// The JDK and jar that run `names`.
+pub struct NamesOracle {
+    java: PathBuf,
+    jar: PathBuf,
+    heap: String,
+    /// Where processors are found instead of the classpath, if given.
+    processor_path: Vec<PathBuf>,
+    /// Identifies the jar, the JDK, and the processor path.
+    pub key: String,
+    pub jdk: u32,
+}
+
+/// What running a source set gave.
+pub struct Ran {
+    pub output: Result<Output, String>,
+    /// Whether the output came from the cache.
+    pub cached: bool,
+    pub elapsed: Duration,
+}
+
+impl NamesOracle {
+    pub fn new(jar: PathBuf, heap: String, processor_path: Vec<PathBuf>) -> Result<NamesOracle> {
+        let java_home = PathBuf::from(
+            std::env::var_os("JAVA_HOME")
+                .context("JAVA_HOME must point to the JDK to run javac")?,
+        );
+        let jdk = corpus::lock::jdk_version(&java_home)?;
+        if !jar.exists() {
+            bail!(
+                "{} doesn't exist; build it with `mvn --batch-mode --file tools/javac-oracle/pom.xml \
+                 package`",
+                jar.display()
+            );
+        }
+        let mut hash = Sha256::new();
+        hash.update(FORMAT);
+        hash.update(b"\0");
+        hash.update(std::fs::read(&jar).with_context(|| format!("reading {}", jar.display()))?);
+        hash.update(b"\0");
+        hash.update(std::fs::read(java_home.join("release"))?);
+        for entry in &processor_path {
+            hash.update(b"\0");
+            hash.update(entry.as_os_str().as_encoded_bytes());
+        }
+        Ok(NamesOracle {
+            java: java_home
+                .join("bin")
+                .join(if cfg!(windows) { "java.exe" } else { "java" }),
+            jar,
+            heap,
+            processor_path,
+            key: hex(&hash.finalize())[..16].to_owned(),
+            jdk,
+        })
+    }
+
+    /// The oracle's output for `set`, from the cache in `cache` when its inputs haven't changed.
+    /// `corpus` is the corpus directory, which paths in the output are relative to.
+    pub fn run(
+        &self,
+        sets: &[SourceSet],
+        set: &SourceSet,
+        corpus: &Path,
+        cache: &Path,
+        scratch: &Path,
+    ) -> Result<Ran> {
+        let start = Instant::now();
+        let sourcepath = plan::source_path(sets, set);
+        let classpath = plan::class_path(sets, set);
+        let hash = input_hash(set, &classpath, &sourcepath, corpus)?;
+        let cached = cache.join(format!("{hash}.jsonl"));
+        if let Ok(text) = std::fs::read_to_string(&cached)
+            && let Ok(output) = Output::parse(&text)
+            && output
+                .files
+                .iter()
+                .filter(|f| f.generated == 1)
+                .all(|f| corpus.join(&f.file).exists())
+        {
+            return Ok(Ran {
+                output: Ok(output),
+                cached: true,
+                elapsed: start.elapsed(),
+            });
+        }
+
+        // Stale sources from an earlier run would otherwise stay on the source path of the sets
+        // that depend on this one.
+        if set.generated.exists() {
+            std::fs::remove_dir_all(&set.generated)
+                .with_context(|| format!("removing {}", set.generated.display()))?;
+        }
+        std::fs::create_dir_all(scratch)?;
+        let name = format!("{hash}-{}", std::process::id());
+        let list = scratch.join(format!("{name}.list"));
+        let stdout = scratch.join(format!("{name}.out"));
+        let stderr = scratch.join(format!("{name}.err"));
+        let mut text = String::new();
+        for file in &set.files {
+            text.push_str(path_text(file)?);
+            text.push('\n');
+        }
+        std::fs::write(&list, text)?;
+        let mut command = Command::new(&self.java);
+        command
+            .arg(format!("-Xmx{}", self.heap))
+            // javac compiles on one thread; this keeps the JVM's own threads few.
+            .arg("-XX:ActiveProcessorCount=2")
+            .arg("-jar")
+            .arg(&self.jar)
+            .arg("names")
+            .args(["--release", &set.release.to_string()])
+            .arg("--base")
+            .arg(corpus)
+            .arg("--roots")
+            .arg(joined(&set.roots)?)
+            .arg("--classpath")
+            .arg(joined(&classpath)?)
+            .arg("--sourcepath")
+            .arg(joined(&sourcepath)?)
+            .arg("--generated")
+            .arg(&set.generated)
+            .arg(format!("@{}", list.display()));
+        if !self.processor_path.is_empty() {
+            command
+                .arg("--processor-path")
+                .arg(joined(&self.processor_path)?);
+        }
+        let status = command
+            .stdin(Stdio::null())
+            .stdout(File::create(&stdout)?)
+            .stderr(File::create(&stderr)?)
+            .status()
+            .with_context(|| format!("running {}", self.java.display()))?;
+        let text = std::fs::read_to_string(&stdout).unwrap_or_default();
+        let output = match Output::parse(&text) {
+            Ok(output) => {
+                std::fs::create_dir_all(cache)?;
+                let partial = cached.with_extension(format!("partial-{}", std::process::id()));
+                std::fs::write(&partial, &text)?;
+                std::fs::rename(&partial, &cached)?;
+                Ok(output)
+            }
+            Err(error) => {
+                let stderr = std::fs::read_to_string(&stderr).unwrap_or_default();
+                let tail: Vec<&str> = stderr.lines().rev().take(5).collect();
+                let tail: Vec<&str> = tail.into_iter().rev().collect();
+                Err(format!(
+                    "the oracle's JVM exited ({status}): {error:#}: {}",
+                    tail.join(" | ")
+                ))
+            }
+        };
+        for file in [&list, &stdout, &stderr] {
+            std::fs::remove_file(file).ok();
+        }
+        Ok(Ran {
+            output,
+            cached: false,
+            elapsed: start.elapsed(),
+        })
+    }
+}
+
+fn path_text(path: &Path) -> Result<&str> {
+    path.to_str()
+        .with_context(|| format!("{} is not valid UTF-8", path.display()))
+}
+
+fn joined(paths: &[PathBuf]) -> Result<String> {
+    let separator = if cfg!(windows) { ";" } else { ":" };
+    let parts: Vec<&str> = paths.iter().map(|p| path_text(p)).collect::<Result<_>>()?;
+    Ok(parts.join(separator))
+}
+
+fn input_hash(
+    set: &SourceSet,
+    classpath: &[PathBuf],
+    sourcepath: &[PathBuf],
+    corpus: &Path,
+) -> Result<String> {
+    let relative = |path: &Path| {
+        corpus::lock::relative(corpus, path).unwrap_or_else(|| path.display().to_string())
+    };
+    let mut hash = Sha256::new();
+    let mut field = |label: &str, value: &[u8]| {
+        hash.update(label);
+        hash.update(b"\0");
+        hash.update(value);
+        hash.update(b"\0");
+    };
+    field("release", set.release.to_string().as_bytes());
+    field("generated", relative(&set.generated).as_bytes());
+    for root in &set.roots {
+        field("root", relative(root).as_bytes());
+    }
+    for file in &set.files {
+        field("file", relative(file).as_bytes());
+        field(
+            "content",
+            &std::fs::read(file).with_context(|| format!("reading {}", file.display()))?,
+        );
+    }
+    for entry in classpath {
+        field("classpath", relative(entry).as_bytes());
+        // A missing entry is hashed as missing; javac reports it.
+        if let Ok(metadata) = std::fs::metadata(entry) {
+            let modified = metadata
+                .modified()
+                .ok()
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map_or(0, |d| d.as_secs());
+            field("size", metadata.len().to_string().as_bytes());
+            field("modified", modified.to_string().as_bytes());
+        }
+    }
+    for dir in sourcepath {
+        field("sourcepath", relative(dir).as_bytes());
+        for file in java_files(dir)? {
+            field("source", relative(&file).as_bytes());
+            field("content", &std::fs::read(&file)?);
+        }
+    }
+    Ok(hex(&hash.finalize()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn output_parses() {
+        let text = concat!(
+            r#"{"file":"projects/p/src/A.java","diagnostics":[],"lombok":[[0,10]],"names":"#,
+            r#"[[8,9,"package","-","package p"],[20,21,"method","-","method p/A.m()V","type p/A source projects/p/src/A.java"]]}"#,
+            "\n",
+            r#"{"file":"projects/p/src/module-info.java","skipped":"module declaration"}"#,
+            "\n",
+            r#"{"file":"generated/p/main/G.java","generated":1,"diagnostics":[{"kind":"ERROR","code":"compiler.err.cant.resolve","start":1,"position":1,"end":2,"args":[],"message":"cannot find symbol"}],"lombok":[],"names":[]}"#,
+            "\n",
+            r#"{"sourceSet":{"processors":["a.P"],"diagnostics":[{"file":"x/B.java","error":{"kind":"ERROR","code":"c","start":0,"position":0,"end":0,"args":[],"message":"m"}}],"millis":12}}"#,
+            "\n"
+        );
+        let output = Output::parse(text).unwrap();
+        assert_eq!(output.files.len(), 3);
+        let a = &output.files[0];
+        assert_eq!(a.lombok, [(0, 10)]);
+        assert_eq!(a.names[0].key, "package p");
+        assert_eq!(a.names[0].searched, None);
+        assert_eq!(
+            a.names[1].searched.as_deref(),
+            Some("type p/A source projects/p/src/A.java")
+        );
+        assert!(output.files[1].skipped.is_some());
+        assert_eq!(output.files[2].errors().count(), 1);
+        assert_eq!(output.set.processors, ["a.P"]);
+        assert!(matches!(
+            output.set.diagnostics[0],
+            OtherDiagnostic::InFile { .. }
+        ));
+        // Without the summary line, the run didn't finish.
+        assert!(Output::parse(text.lines().next().unwrap()).is_err());
+    }
+}

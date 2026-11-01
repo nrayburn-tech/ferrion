@@ -1,0 +1,13 @@
+# Names whose resolution is a known difference from javac's, for `cargo oracle names`. Read by
+# tools/oracle-check/src/names/compare.rs; see docs/design/semantic-oracle-normalization.md.
+#
+# First the categories, each with its explanation:
+#
+#   category <name>: <explanation>
+#
+# then the names that show them, by the file as reports name it (its project, then its path) and
+# javac's range for the name, in UTF-16 offsets:
+#
+#   <category> <file> <start>-<end>
+#
+# There are none yet: Ferrion's name resolution (B2's W5) doesn't exist, so nothing is compared.
