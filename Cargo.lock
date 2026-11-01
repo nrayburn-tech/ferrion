@@ -241,6 +241,8 @@ dependencies = [
  "ferrion_diagnostics",
  "ferrion_parser",
  "nix",
+ "serde",
+ "toml",
 ]
 
 [[package]]

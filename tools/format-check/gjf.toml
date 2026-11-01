@@ -1,0 +1,52 @@
+# Google Java Format, the reference the formatter's style is compared with (see "Google Java
+# Format comparison" in docs/design/formatter.md). `format-check` downloads the jar into the
+# corpus's jar cache (target/corpus/jars, or under FERRION_CORPUS_DIR) on first use, checks it
+# against `sha256`, and never commits it. The jar is Apache-2.0. Moving the pin means updating
+# gjf-diff.toml, and reviewing what changed.
+
+version = "2.0.0"
+repository = "https://repo.maven.apache.org/maven2"
+# The `all-deps` jar bundles GJF's dependencies, so it runs with `java -jar` alone.
+path = "com/google/googlejavaformat/google-java-format/2.0.0/google-java-format-2.0.0-all-deps.jar"
+sha256 = "c78feb48c549fa7114b7ea11db3b456808f7b371ffe84e6643a44dd2f9588639"
+
+# The JDK feature version GJF runs on, from JAVA_HOME. GJF parses with the JDK it runs on (under
+# JDK 21 it rejects Java 25 syntax such as `import module java.base;`), and 27 is the newest
+# release the corpus targets. CI installs Temurin 27.
+jdk = 27
+
+# The flags of every run.
+#
+# - `--skip-reflowing-long-strings`: Ferrion doesn't split long strings (SCOPE.md).
+# - `--cleanup=false`: 2.0.0's default cleanup removes redundant semicolons, empty annotation
+#   parentheses, and the parentheses around a lambda's single parameter, which Ferrion doesn't.
+# - `--skip-javadoc-formatting`, `--skip-sorting-imports`, `--skip-removing-unused-imports`: A1
+#   doesn't reflow doc comments or touch imports. A2 drops these three.
+#
+# Observed with these flags, running GJF 2.0.0 on Temurin 27 (its source wasn't consulted):
+#
+# - Given many files with `-i`, GJF formats each in place and goes on past a file it rejects. A
+#   rejected file is left as it was, its errors go to stderr as `<path>:<line>:<column>: error:
+#   <message>`, and the exit status is 1. That's how `format-check` tells rejected files apart.
+# - A file that starts with a byte-order mark is rejected (`illegal character: '\ufeff'`), so the
+#   comparison leaves it out like any other rejected file.
+# - Line endings are made uniform: a file with a mix of `\r\n`, `\n`, and `\r` comes out with the
+#   first one it has throughout.
+# - A missing final line ending is added, and blank lines at the end of the file are removed.
+# - Code between `@formatter:off` and `@formatter:on` comments is formatted like any other, so
+#   files with the markers are left out of the comparison.
+# - One pass isn't always a fixed point: 27 of the corpus's files change again on a second pass,
+#   and all of them settle on it. Mostly, a `//` comment on the line after a trailing `//`
+#   comment, aligned under it, stays aligned on the first pass and moves to the code's indentation
+#   on the second; the code before it can then fit on one line, and is joined. A block comment at
+#   the start of a `case` block came out 2 columns too deep on the first pass, too. That's why the
+#   comparison runs GJF until its output settles.
+# - GJF formats a batch on several threads; `format-check --jobs` bounds them with the JVM's
+#   `-XX:ActiveProcessorCount`.
+flags = [
+    "--skip-reflowing-long-strings",
+    "--cleanup=false",
+    "--skip-javadoc-formatting",
+    "--skip-sorting-imports",
+    "--skip-removing-unused-imports",
+]

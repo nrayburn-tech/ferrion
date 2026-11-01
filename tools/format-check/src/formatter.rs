@@ -2,8 +2,9 @@
 //!
 //! TEMPORARY: `ferrion_formatter` isn't written yet, so this module stands in for it with the API
 //! docs/design/formatter.md plans (`format`, `verify`, `FormatOptions`, `Formatted`, `Violation`),
-//! and `format` returns every file unchanged. Once the crate lands, add it to Cargo.toml and
-//! replace this module's body with:
+//! and `format` returns every file unchanged. The GJF comparison then measures how far the corpus
+//! itself is from GJF's style. Once the crate lands, add it to Cargo.toml and replace this module's
+//! body with:
 //!
 //! ```ignore
 //! pub use ferrion_formatter::{FormatOptions, Formatted, Violation, format, verify};

@@ -1,20 +1,31 @@
-//! Checks the formatter on the corpus (see "Testing" in docs/design/formatter.md).
+//! Checks the formatter on the corpus, and compares it with Google Java Format (see "Testing" and
+//! "Google Java Format comparison" in docs/design/formatter.md).
 //!
 //! `format-check verify` formats every file at the releases it's meant for, checks the four safety
-//! properties on each, and reports throughput and peak memory (see [`verify`]).
+//! properties on each, and reports throughput and peak memory (see [`verify`]). `format-check gjf`
+//! compares Ferrion's output with GJF's fixed point for the same input, per project, against the
+//! numbers committed in `gjf-diff.toml` (see [`compare`]).
 //!
 //! The formatter is reached through one seam, [`formatter`], which stands in for
-//! `ferrion_formatter` until that crate lands. The corpus is found as `tools/corpus` finds it.
+//! `ferrion_formatter` until that crate lands. The corpus is found as `tools/corpus` finds it, and
+//! the GJF jar is cached with the corpus's jars (see [`gjf`]).
 
+mod compare;
+mod diff;
 mod formatter;
+mod gjf;
 mod verify;
 
+use std::path::PathBuf;
 use std::process::ExitCode;
 
 use anyhow::{Context, Result, bail};
 use corpus::Dirs;
 use corpus::project::Project;
 use corpus::sources;
+use ferrion_diagnostics::SourceText;
+
+use crate::formatter::{FormatOptions, Formatted};
 
 const USAGE: &str = "\
 usage: format-check <check> [<option>...] [<target>...]
@@ -22,20 +33,39 @@ usage: format-check <check> [<option>...] [<target>...]
 checks:
   verify       format every file at the releases it's meant for, check the four safety
                properties on the output, without a panic, and report throughput and peak memory
+  gjf          compare Ferrion's output with Google Java Format's fixed point for the same input:
+               files compared, files identical, and lines that differ, per project, with the
+               largest differences and a sample of hunks
 
 options:
-  --limit <N>    show the first N failures (default: 10)
+  --check        gjf: fail if a project's differing lines are above the number in
+                 tools/format-check/gjf-diff.toml
+  --update       gjf: write the numbers of the projects compared to gjf-diff.toml
+  --tracking <f> gjf: the tracking file (default: tools/format-check/gjf-diff.toml)
+  --largest <N>  gjf: list the N files with the most differing lines (default: 10)
+  --hunks <N>    gjf: show the first hunk of N differing files, spread over them (default: 5)
+  --jobs <N>     gjf: the processors GJF's JVM may use (default: the number of CPUs)
+  --batch <N>    gjf: files per JVM start (default: 1000)
+  --limit <N>    show the first N failures, rejected files, and unsettled files (default: 10)
   --verbose      verify: print each file before formatting it, to find one that aborts
 
 Targets default to every corpus project. `jdk-tests` names OpenJDK's javac tests, each formatted
-at the releases its jtreg header compiles it at, and `jdk-deep-nesting` only its deep-nesting
-stress tests; fetch them with `cargo corpus jdk-tests`. Projects must be checked out (`cargo
-corpus checkout`).";
+at the releases its jtreg header compiles it at (gjf: at the newest of them), and
+`jdk-deep-nesting` only its deep-nesting stress tests; fetch them with `cargo corpus jdk-tests`.
+Projects must be checked out (`cargo corpus checkout`). gjf needs JAVA_HOME to be the JDK
+tools/format-check/gjf.toml names, and downloads the GJF jar it pins on first use.";
 
 /// The stack size of the thread that formats, as in the deep-nesting tests.
 const STACK_SIZE: usize = 256 * 1024;
 
 pub struct Options {
+    pub check: bool,
+    pub update: bool,
+    pub tracking: PathBuf,
+    pub largest: usize,
+    pub hunks: usize,
+    pub jobs: usize,
+    pub batch: usize,
     pub limit: usize,
     pub verbose: bool,
 }
@@ -62,6 +92,13 @@ fn run() -> Result<bool> {
         return Ok(true);
     }
     let mut options = Options {
+        check: false,
+        update: false,
+        tracking: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("gjf-diff.toml"),
+        largest: 10,
+        hunks: 5,
+        jobs: std::thread::available_parallelism().map_or(1, |n| n.get()),
+        batch: 1000,
         limit: 10,
         verbose: false,
     };
@@ -69,6 +106,13 @@ fn run() -> Result<bool> {
     while let Some(arg) = args.next() {
         let mut value = |name: &str| args.next().with_context(|| format!("{name} needs a value"));
         match arg.as_str() {
+            "--check" => options.check = true,
+            "--update" => options.update = true,
+            "--tracking" => options.tracking = PathBuf::from(value("--tracking")?),
+            "--largest" => options.largest = value("--largest")?.parse().context("--largest")?,
+            "--hunks" => options.hunks = value("--hunks")?.parse().context("--hunks")?,
+            "--jobs" => options.jobs = value("--jobs")?.parse().context("--jobs")?,
+            "--batch" => options.batch = value("--batch")?.parse().context("--batch")?,
             "--limit" => options.limit = value("--limit")?.parse().context("--limit")?,
             "--verbose" => options.verbose = true,
             "--help" | "-h" => {
@@ -79,7 +123,11 @@ fn run() -> Result<bool> {
             _ => names.push(arg),
         }
     }
-    if check != "verify" {
+    if options.check && options.update {
+        bail!("--check and --update can't be combined");
+    }
+
+    if check != "verify" && check != "gjf" {
         eprintln!("{USAGE}");
         std::process::exit(2);
     }
@@ -98,7 +146,20 @@ fn run() -> Result<bool> {
         }
         selected.push((target.name().to_owned(), files));
     }
-    Ok(verify::run(selected, &options))
+    match check.as_str() {
+        "verify" => Ok(verify::run(selected, &options)),
+        _ => compare::run(selected, &options),
+    }
+}
+
+/// Ferrion's output for `source` at `release`: the formatted file, or `None` if the formatter
+/// skipped it.
+fn ferrion_output(source: &SourceText, release: u32) -> Option<Vec<u8>> {
+    match formatter::format(source, &FormatOptions { release }) {
+        Formatted::Unchanged => Some(source.to_bytes()),
+        Formatted::Changed(bytes) => Some(bytes),
+        Formatted::Skipped(_) => None,
+    }
 }
 
 /// Runs `f` on a thread with a [`STACK_SIZE`] stack, and returns its result. A stack overflow
@@ -111,4 +172,13 @@ fn on_small_stack<R: Send + 'static>(f: impl FnOnce() -> R + Send + 'static) -> 
         .expect("spawning the formatting thread")
         .join()
         .expect("the formatting thread panicked outside a check")
+}
+
+/// `part` of `whole` as a percentage, or `n/a` if `whole` is zero.
+fn percent(part: usize, whole: usize) -> String {
+    if whole == 0 {
+        "n/a".to_owned()
+    } else {
+        format!("{:.2}%", 100.0 * part as f64 / whole as f64)
+    }
 }
