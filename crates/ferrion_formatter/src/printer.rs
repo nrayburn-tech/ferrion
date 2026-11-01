@@ -51,6 +51,9 @@ struct Printer<'a> {
     last: Option<Last>,
     /// Whether the last thing written was a region that runs to the end of the file.
     ended_by_region: bool,
+    /// When hanging indents were started with line breaks pending, the stack depth of the first
+    /// of them and the indentation outside it, which the next text starts its line at.
+    hang: Option<(usize, u32)>,
 }
 
 /// Prints `document` and returns the file's bytes: the byte-order mark if there is one, the text
@@ -65,6 +68,7 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
         pending_space: false,
         last: None,
         ended_by_region: false,
+        hang: None,
     };
     if source.bom {
         printer.out.extend_from_slice(UTF8_BOM);
@@ -79,11 +83,16 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
     }];
     for (index, element) in elements.iter().enumerate() {
         let top = *stack.last().expect("the root frame is never popped");
+        // The indentation a line started by the pending line breaks would have.
+        let indent = match printer.hang {
+            Some((depth, indent)) if stack.len() > depth => indent,
+            _ => top.indent,
+        };
         match *element {
             Element::Token { token, len, width } => {
                 let start = source.tree.token(token).span().start as usize;
                 let text = &text[start..start + len as usize];
-                printer.text(text, width, Some(token.index()), top.indent);
+                printer.text(text, width, Some(token.index()), indent);
                 printer.ended_by_region = false;
             }
             Element::Space => {
@@ -109,7 +118,15 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
                 let flat = if top.flat && !top.decide {
                     true
                 } else {
-                    !forced && printer.fits(width, top.indent)
+                    !forced
+                        && (printer.fits(width, indent)
+                            || matches!(
+                                elements.get(index + 1),
+                                Some(&Element::Alternative { head, tail })
+                                    if u64::from(top.indent) + 4 + u64::from(tail)
+                                        > u64::from(LINE_WIDTH)
+                                        && printer.fits(head, indent)
+                            ))
                 };
                 broken[index] = !flat;
                 stack.push(Frame {
@@ -122,13 +139,22 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
                 indent: top.indent + kind.width(),
                 ..top
             }),
+            Element::Hanging(kind) => {
+                if printer.pending_breaks > 0 && printer.hang.is_none() {
+                    printer.hang = Some((stack.len(), top.indent));
+                }
+                stack.push(Frame {
+                    indent: top.indent + kind.width(),
+                    ..top
+                });
+            }
             Element::IndentIfBroken { group } => stack.push(Frame {
                 indent: top.indent + if broken[group as usize] { 4 } else { 0 },
                 ..top
             }),
             Element::FillBreak { soft, next } => {
                 let separator = u32::from(!soft);
-                if top.flat || printer.fits(separator + next, top.indent) {
+                if top.flat || printer.fits(separator + next, indent) {
                     if !soft {
                         printer.space();
                     }
@@ -136,6 +162,7 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
                     printer.line_break(1);
                 }
             }
+            Element::Alternative { .. } => {}
             Element::Hug => stack.push(Frame {
                 decide: true,
                 ..top
@@ -143,17 +170,20 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
             Element::End => {
                 stack.pop();
                 assert!(!stack.is_empty(), "an End without a container");
+                if printer.hang.is_some_and(|(depth, _)| stack.len() <= depth) {
+                    printer.hang = None;
+                }
             }
             Element::Verbatim(verbatim) => {
                 let verbatim = document.verbatims[verbatim as usize];
                 let text = &text[verbatim.start as usize..verbatim.end as usize];
                 match verbatim.kind {
                     VerbatimKind::Copy { to_end } => {
-                        printer.copy(text, verbatim.first_width, top.indent);
+                        printer.copy(text, verbatim.first_width, indent);
                         printer.ended_by_region = to_end;
                     }
                     VerbatimKind::Comment => {
-                        printer.comment(text, top.indent);
+                        printer.comment(text, indent);
                         printer.ended_by_region = false;
                     }
                 }
@@ -190,6 +220,7 @@ impl Printer<'_> {
     fn line_break(&mut self, breaks: u8) {
         self.pending_breaks = self.pending_breaks.max(breaks);
         self.pending_space = false;
+        self.hang = None;
     }
 
     /// Writes what is pending before text starting with `first`: line breaks and indentation, or
@@ -216,6 +247,7 @@ impl Printer<'_> {
         }
         self.pending_breaks = 0;
         self.pending_space = false;
+        self.hang = None;
     }
 
     fn end_text(&mut self, text: &str, token: Option<usize>) {

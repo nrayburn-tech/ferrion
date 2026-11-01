@@ -398,3 +398,63 @@ fn tokens_that_would_run_together_get_a_space() {
     });
     assert_eq!(output, ">>=\n");
 }
+
+#[test]
+fn a_hanging_indent_keeps_a_break_from_before_it_out() {
+    // `x =`, a break, then `a` at +4 and `+ b` at +8: the hanging indent starts after the break.
+    let output = print_lf("x = a + b", |b, emit| {
+        emit(b, 0);
+        b.space();
+        emit(b, 1);
+        b.start_indent(IndentKind::Continuation);
+        b.hard_line();
+        b.start_hanging(IndentKind::Continuation);
+        emit(b, 2);
+        b.hard_line();
+        emit(b, 3);
+        b.space();
+        emit(b, 4);
+        b.end();
+        b.end();
+    });
+    assert_eq!(output, "x =\n    a\n        + b\n");
+}
+
+/// `ffffffff ( x -> body )`, with the arguments' group given the alternative of breaking after `->`.
+fn hugged_lambda(b: &mut DocumentBuilder, emit: &dyn Fn(&mut DocumentBuilder, usize)) {
+    emit(b, 0);
+    emit(b, 1);
+    let group = b.start_group_with_alternative();
+    b.start_indent_if_broken(group);
+    b.soft_line();
+    b.alternative_tail(group);
+    b.start_hug_in_group();
+    b.start_group();
+    emit(b, 2);
+    b.space();
+    emit(b, 3);
+    b.alternative_head(group);
+    b.start_indent(IndentKind::Continuation);
+    b.line();
+    emit(b, 4);
+    b.end();
+    b.end();
+    b.end();
+    emit(b, 5);
+    b.end();
+    b.end();
+}
+
+#[test]
+fn a_hugged_lambda_breaks_after_its_arrow_when_it_doesnt_fit_on_a_line_of_its_own() {
+    let body = "b".repeat(95);
+    let output = print_lf(&format!("ffffffff ( x -> {body} )"), hugged_lambda);
+    assert_eq!(output, format!("ffffffff(x ->\n    {body})\n"));
+}
+
+#[test]
+fn a_hugged_lambda_that_fits_on_a_line_of_its_own_goes_there() {
+    let body = "b".repeat(88);
+    let output = print_lf(&format!("ffffffff ( x -> {body} )"), hugged_lambda);
+    assert_eq!(output, format!("ffffffff(\n    x -> {body})\n"));
+}
