@@ -13,7 +13,9 @@
 //! - **Parameters and record components:** inline; when the parameter doesn't fit, the
 //!   annotations break onto their own lines at +4 as a group, then the rest of the parameter.
 
-use ferrion_syntax::{SyntaxKind as K, SyntaxNode};
+use std::cell::Cell;
+
+use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
 use super::{
     ListLayout, delimited_list, emit, first_token, fits_flat, fits_on_line,
@@ -28,6 +30,9 @@ use crate::modifiers::{self, Item};
 pub(super) enum Layout {
     /// Each leading annotation followed by a line break.
     OwnLines,
+    /// The same, except for type-use annotations right before the type, which stay on its line:
+    /// a method's or a field's.
+    BeforeType,
     /// Leading annotations with a space between them and a `Line` after the last, in the
     /// group of the declaration around them: a field's marker annotations.
     LineAfter,
@@ -64,6 +69,7 @@ pub(super) fn modifiers_node<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         }
         Some(parent) if super::super::is_member(parent.kind()) => match parent.kind() {
             K::FieldDecl => field_layout(node),
+            K::MethodDecl => Layout::BeforeType,
             _ => Layout::OwnLines,
         },
         Some(parent) if parent.kind() == K::EnumConstant => Layout::OwnLines,
@@ -82,7 +88,9 @@ fn local_layout(node: SyntaxNode<'_>, local: SyntaxNode<'_>) -> Layout {
     let leading = leading_annotations(node);
     if leading.is_empty() {
         Layout::Inline
-    } else if leading.len() > 1 || leading.iter().any(|&a| has_arguments(a)) || !fits_on_line(local)
+    } else if leading.len() > 1
+        || leading.iter().any(|&a| has_arguments(a))
+        || !fits_on_line(local, true)
     {
         Layout::OwnLines
     } else {
@@ -97,7 +105,7 @@ pub(super) fn field_layout(node: SyntaxNode<'_>) -> Layout {
     if leading.is_empty() {
         Layout::Inline
     } else if leading.iter().any(|&a| has_arguments(a)) {
-        Layout::OwnLines
+        Layout::BeforeType
     } else {
         Layout::LineAfter
     }
@@ -131,12 +139,19 @@ pub(super) fn modifiers<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, layout:
         .iter()
         .take_while(|item| matches!(item, Item::Annotation(_)))
         .count();
+    // The leading annotations that go on lines of their own.
+    let own_lines = match layout {
+        Layout::BeforeType if leading == items.len() => leading - type_use_suffix(&items),
+        Layout::OwnLines | Layout::BeforeType => leading,
+        _ => 0,
+    };
     let parameter = layout == Layout::Parameter && leading > 0;
     for (i, item) in items.iter().enumerate() {
         if i > 0 {
             match layout {
-                Layout::OwnLines if i <= leading => {}
-                Layout::LineAfter | Layout::Parameter if i <= leading => f.line(),
+                _ if i <= own_lines => {}
+                Layout::LineAfter if i == leading => f.line(),
+                Layout::Parameter if i <= leading => f.line(),
                 _ => f.space(),
             }
         }
@@ -160,7 +175,7 @@ pub(super) fn modifiers<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, layout:
             f.end();
             f.start_indent(IndentKind::Continuation);
         }
-        if layout == Layout::OwnLines && i < leading {
+        if i < own_lines {
             // A block comment after the annotation, on its line, stays there.
             let next = match items.get(i + 1) {
                 Some(Item::Annotation(annotation)) => Some(annotation.first_token()),
@@ -178,13 +193,104 @@ pub(super) fn modifiers<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, layout:
     }
     match layout {
         _ if leading < items.len() => After::Space,
-        Layout::OwnLines => After::Nothing,
+        _ if own_lines == items.len() => After::Nothing,
         Layout::LineAfter | Layout::Parameter => {
             f.line();
             After::Nothing
         }
-        Layout::Inline => After::Space,
+        _ => After::Space,
     }
+}
+
+/// How many of the annotations at the end of `items`, all annotations, are type-use annotations
+/// that GJF keeps on the line of the type after them (see [`is_type_use`]).
+fn type_use_suffix(items: &[Item<'_>]) -> usize {
+    items
+        .iter()
+        .rev()
+        .take_while(|item| matches!(item, Item::Annotation(a) if is_type_use(*a)))
+        .count()
+}
+
+/// The type-use annotations GJF recognizes, by their imports (observed: `@Nullable String m()`
+/// stays on one line when `Nullable` is imported from one of these, and not from other
+/// packages, nor with a wildcard import or a qualified name).
+const TYPE_USE: &[&str] = &[
+    "org.jspecify.annotations.Nullable",
+    "org.jspecify.annotations.NonNull",
+    "org.checkerframework.checker.nullness.qual.Nullable",
+    "org.checkerframework.checker.nullness.qual.NonNull",
+];
+
+thread_local! {
+    /// The simple names of the [`TYPE_USE`] annotations the file being formatted imports: set by
+    /// [`with_type_use`] while the compilation unit's rule formats the file, so that the rules
+    /// below it can look them up without scanning the imports again.
+    static IMPORTED_TYPE_USE: Cell<[bool; TYPE_USE.len()]> = const { Cell::new([false; TYPE_USE.len()]) };
+}
+
+/// Runs `format` with the type-use annotations `unit`, a compilation unit, imports, for
+/// [`is_type_use`] to see.
+pub(super) fn with_type_use<R>(unit: SyntaxNode<'_>, format: impl FnOnce() -> R) -> R {
+    let mut imported = [false; TYPE_USE.len()];
+    for import in unit
+        .children()
+        .take_while(|n| matches!(n.kind(), K::PackageDecl | K::ImportDecl))
+    {
+        if import.kind() != K::ImportDecl {
+            continue;
+        }
+        let parts = parts(import);
+        if let [_, NodeOrToken::Node(name), _] = parts.as_slice()
+            && name.kind() == K::Name
+        {
+            for (i, &qualified) in TYPE_USE.iter().enumerate() {
+                imported[i] |= name_is(*name, qualified);
+            }
+        }
+    }
+    struct Restore([bool; TYPE_USE.len()]);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            IMPORTED_TYPE_USE.set(self.0);
+        }
+    }
+    let _restore = Restore(IMPORTED_TYPE_USE.replace(imported));
+    format()
+}
+
+/// Whether `name`, a `Name` node, is the qualified name `qualified`, comparing its identifiers.
+/// It stops at the first one that differs.
+fn name_is(name: SyntaxNode<'_>, qualified: &str) -> bool {
+    let mut rest = qualified;
+    for token in name.tokens().filter(|t| !t.is_trivia()) {
+        let text = match token.kind() {
+            K::Dot => ".",
+            _ => token.text(),
+        };
+        match rest.strip_prefix(text) {
+            Some(tail) => rest = tail,
+            None => return false,
+        }
+    }
+    rest.is_empty()
+}
+
+/// Whether `annotation` is one of the [`TYPE_USE`] annotations the file imports, without
+/// arguments.
+fn is_type_use(annotation: SyntaxNode<'_>) -> bool {
+    let annotation = parts(annotation);
+    let [_, NodeOrToken::Node(name)] = annotation.as_slice() else {
+        return false;
+    };
+    let name = parts(*name);
+    let [NodeOrToken::Token(identifier)] = name.as_slice() else {
+        return false;
+    };
+    let imported = IMPORTED_TYPE_USE.get();
+    TYPE_USE.iter().zip(imported).any(|(qualified, imported)| {
+        imported && qualified.rsplit('.').next() == Some(identifier.text())
+    })
 }
 
 /// Emits an annotation of a package or a module, which has no `Modifiers` node, on its own line.
@@ -289,7 +395,7 @@ pub(super) fn array<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     }
     let trailing_comma = items.last().is_some_and(|part| part.kind() == K::Comma);
     let fill = items.iter().all(|part| match part.as_node() {
-        Some(value) => fits_flat(value, FILL_WIDTH),
+        Some(value) => fits_flat(value, FILL_WIDTH, true),
         None => part.kind() == K::Comma,
     });
     f.group(|f| {
@@ -308,8 +414,9 @@ pub(super) fn array<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         } else {
             f.soft_line();
         }
-        emit(f, *close);
     });
+    // After the group, so that a line comment after it doesn't break the array.
+    emit(f, *close);
 }
 
 /// Emits `items`, values and the commas between them, in a fill.

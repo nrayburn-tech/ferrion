@@ -32,22 +32,26 @@ pub(super) fn field<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     if space {
         f.space();
     }
-    variables(f, rest, space);
+    let (declaration, end) = match rest {
+        [declaration @ .., semi] if semi.kind() == K::Semi => (declaration, Some(*semi)),
+        _ => (rest, None),
+    };
+    variables(f, declaration, space);
     if group {
         f.end();
     }
+    // After the group, so that a line comment after the field doesn't break it.
+    if let Some(end) = end {
+        emit(f, end);
+    }
 }
 
-/// Emits a variable declaration's type, declarators, and `;`: `parts`, after its modifiers.
-/// `inline` says the type follows other text on its line, so that an indent can start before
-/// it: the printer indents a line by the indent its first text is in.
+/// Emits a variable declaration's type and declarators: `parts`, after its modifiers. `inline`
+/// says the type follows other text on its line, so that an indent can start before it: the
+/// printer indents a line by the indent its first text is in.
 fn variables<'t>(f: &mut Formatter<'t>, parts: &[NodeOrToken<'t>], inline: bool) {
-    let [ty, rest @ ..] = parts else {
+    let [ty, declarators @ ..] = parts else {
         return;
-    };
-    let (declarators, end) = match rest {
-        [declarators @ .., semi] if semi.kind() == K::Semi => (declarators, Some(*semi)),
-        _ => (rest, None),
     };
     match declarators {
         [NodeOrToken::Node(declarator)] if declarator.kind() == K::VariableDeclarator => {
@@ -62,9 +66,6 @@ fn variables<'t>(f: &mut Formatter<'t>, parts: &[NodeOrToken<'t>], inline: bool)
                 })
             });
         }
-    }
-    if let Some(end) = end {
-        emit(f, end);
     }
 }
 
@@ -160,7 +161,7 @@ pub(super) fn method<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     if let [NodeOrToken::Node(modifiers), tail @ ..] = rest
         && modifiers.kind() == K::Modifiers
     {
-        space = annotations::modifiers(f, *modifiers, Layout::OwnLines) == After::Space;
+        space = annotations::modifiers(f, *modifiers, method_layout(node)) == After::Space;
         rest = tail;
     }
     let type_parameters = take(&mut rest, |k| k == K::TypeParameters).map(|type_parameters| {
@@ -219,6 +220,16 @@ pub(super) fn method<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         }
         (Some(group), None) | (None, Some(group)) => f.indent_if_broken(group, tail),
         (None, None) => tail(f),
+    }
+}
+
+/// The layout of a method's or a constructor's modifiers: a constructor has no type for type-use
+/// annotations to stay next to.
+fn method_layout(node: SyntaxNode<'_>) -> Layout {
+    if node.kind() == K::MethodDecl {
+        Layout::BeforeType
+    } else {
+        Layout::OwnLines
     }
 }
 
