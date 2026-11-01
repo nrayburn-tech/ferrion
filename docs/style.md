@@ -327,11 +327,241 @@ switch (a) {
 Operators, assignment, calls and chains, lambdas and method references, `?:`, object creation,
 array initializers, casts, `instanceof`, and patterns.
 
+Most constructs are a group that stays on one line if it fits, and otherwise breaks, with its
+continuation lines at +4. Groups break outermost first: `x = a + b * c` breaks after the `=`, then
+before every `+`, and only then inside `b * c`. A line comment ends its line, which breaks the
+groups around that line break, but not the ones that end at the comment.
+
+### Spacing
+
+One space around binary operators, `?`, `:`, `->`, and assignment operators, and after a cast's
+`)`; none around `.`, `::`, and unary operators, and inside parentheses and brackets. Two unary
+operators that would run together keep a space: `- -a`.
+
+```java
+x = a + b * c / d % e - f << g >> h >>> i;
+x = (int) a + (long) (b) + - -c + ~d;
+```
+
+### Binary operators
+
+A run of operators of one precedence stays on one line, or breaks before every operator, all at
+once, with the operators at +4 from the first operand. A run of higher precedence in an operand is
+a group of its own, with its own +4. String concatenation is the same.
+
+```java
+x =
+    firstOperandValue
+        + secondOperandValue * thirdOperandValue
+        - fourthOperandValue
+        + fifthOperandValue;
+if (firstConditionIsTrueAAAAAAA && secondConditionIsTrueBBBBBBBBB
+    || thirdConditionIsTrueCCCCCCC && fourthDDDD) {}
+```
+
+### `?:`
+
+On one line, or the condition, then `? a` and `: b` on lines of their own at +4. A `?:` in a
+branch is a group of its own, indented +4 from the one around it.
+
+```java
+x =
+    someConditionHolds
+        ? someVeryLongValueWhenTrueAAAAAAAAAAAAAA
+        : someVeryLongValueWhenFalseBBBBBBBBBB;
+```
+
+### Assignment, casts, `instanceof`
+
+An assignment breaks after its operator, a cast after its `)`, and `instanceof` before the
+keyword, each with what follows at +4. A record pattern that doesn't fit after `instanceof` starts
+a line of its own there, and its parts go one per line like arguments.
+
+```java
+this.someVariableNameAAAAAAAAAAAAAAAAAAAAAA =
+    someOtherValueBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB.someMethod(
+        xxxxx, yyyyyyyyyyyyyyyyyyyyy, zzzzzzzzzzzzzzzzzzzz);
+x =
+    (SomeLongTypeName)
+        someOtherValueBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB.someMethod(xxxxx);
+x =
+    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        instanceof Bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb;
+```
+
+### Arguments
+
+All on the call's line; otherwise all on the next line at +4; otherwise one per line. When every
+argument is at most 9 wide, they fill instead: as many on a line as fit. The `)` follows the last
+argument. A text block as an argument breaks the list, so it starts a line of its own at +4.
+
+```java
+foobarbaz(
+    argumentNumberOneAAAAAAAAAAA, argumentNumberTwoBBBBBBBBBBBBB, argumentNumberThreeC, d);
+foo(
+    argumentNumberOneAAAAAAAAAAA,
+    argumentNumberTwoBBBBBBBBBBBBB,
+    argumentNumberThreeCCCCCCC,
+    dd);
+foo(
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+    26, 27, 28);
+```
+
+Comments: a block comment in empty parentheses keeps a space before the `)`, `foo(/* none */ )`.
+A block comment on the line of a comma stays after the comma when the list breaks, except one
+naming a parameter, `/* name= */`, which stays with the argument after it. A comment on a line of
+its own before the first argument doesn't break the arguments onto lines of their own.
+
+```java
+foo(
+    argumentNumberOneAAAAAAAAAAA, /* comment */
+    argumentNumberTwoBBBBBBBBBBBBB,
+    argumentNumberThreeCCCCCCC,
+    dd);
+remap(
+    key,
+    valueAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,
+    /* hints= */ null,
+    /* computeIfAbsent= */ true);
+```
+
+### Method chains
+
+A chain with two or more calls, or one call that isn't last, stays on one line, or breaks before
+each `.` after its prefix, all at once, at +4. The prefix is the root and the first link when the
+root is a name of up to four characters, `this`, or `super`, or a type's name, possibly
+qualified, and the link after it; otherwise it is the root alone. A name is a type's if it starts
+with an uppercase letter and has a lowercase one, so `FOO_BAR` is not. When the chain has a
+`.stream()` or `.parallelStream()` link, the prefix is everything up to it if that fits on the
+line, and otherwise everything up to it breaks before each `.` too.
+
+```java
+builder
+    .append(argumentNumberOneAAAAAAAAAAA)
+    .append(argumentNumberTwoBBBBBBBBBBBBB)
+    .append(cccccc);
+abcd.append(argumentNumberOneAAAAAAAAAAA)
+    .append(argumentNumberTwoBBBBBBBBBBBBB)
+    .append(ccccccccc);
+ImmutableList.<String>builder()
+    .add(argumentNumberOneAAAAAAAAAAA)
+    .add(argumentNumberTwoBBBBBBBBBBBBB)
+    .build();
+someVeryLongName.entrySet().stream()
+    .sorted(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)
+    .forEach(bbbbbbbbbbbbbbbbbbbbbbbbbb);
+```
+
+A chain with one call, last, breaks its arguments first, and its dots fill: each breaks only if
+what follows it up to the next dot doesn't fit. `new Foo().bar(x)`, `"a".concat(x)`, and a
+parenthesized or cast root break like longer chains.
+
+```java
+foo.bar.baz.qux(
+    argumentNumberOneAAAAAAAAAAA, argumentNumberTwoBBBBBBBBBBBBB, argumentNumberThreeCC);
+a.b.c.d.eeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.ffffffffffffffffffffffffffffff
+    .gggggggggggggggggggggggggg.hhhhhhhhhhhhh();
+new Foo()
+    .bar(argumentNumberOneAAAAAAAAAAA, argumentNumberTwoBBBBBBBBBBBBB, argumentNumberThreeCCCC);
+```
+
+In a chain that breaks, the root's and the prefix's arguments are at +8, and a call of a short
+name, up to four characters, at the root keeps its only argument on its line when that argument
+fits on no line of its own:
+
+```java
+when(remoteClient.dispatch(
+        anyString(), eq(TaskStatus.DONE), any(JobRequest.class), eq(String.class)))
+    .thenReturn(cannedResponse);
+```
+
+### Lambdas
+
+A lambda that is a call's only argument is hugged: `foo(x -> {` stays on the call's line if that
+fits, with the block indented from the statement, and otherwise the lambda goes on the next line
+at +4. A lambda with an expression body that doesn't fit on the call's line goes on the next line
+if it fits there, and otherwise stays on the call's line and breaks after its arrow, with the body
+at +4. The calls in a chain's prefix don't hug, and the block's line breaks still break the
+groups around the call, such as an assignment's.
+
+```java
+executor.submit(() -> {
+  doSomething();
+});
+foo(
+    a,
+    b,
+    x -> {
+      doSomething();
+    });
+list.forEach(
+    x -> System.out.println(xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx));
+list.forEach(x ->
+    System.out.println(
+        xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx, yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy));
+x =
+    foo(a -> {
+      run();
+    });
+```
+
+Elsewhere, an expression body is on the arrow's line, or on the next line at +4.
+
+### Method references
+
+On one line, or a line break before the `::` at +4.
+
+### Object creation
+
+`new` and its arguments are formatted as a call's, and an anonymous class body follows the `)`
+after a space, indented from the line the `new` expression starts on.
+
+```java
+new Foo(
+    argumentNumberOneAAAAAAAAAAA, argumentNumberTwoBBBBBBBBBBBBBBBBBBB, argumentNumberThreeC) {
+  void run() {}
+};
+```
+
+### Arrays
+
+An array initializer stays on one line, or puts its elements on lines of their own at +2, with
+the `}` on a line of its own: all on one line if they fit there, filled when every element is at
+most 9 wide, and otherwise one per line. A trailing comma keeps the elements off the braces'
+lines. Dimensions follow the type, `new int[3][]`, and an array access that doesn't fit breaks
+after its `[`, with the index at +4.
+
+```java
+x =
+    new int[] {
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+      26, 27
+    };
+x =
+    new String[] {
+      "aaaaaaaaaaaaaaaaaa",
+      "bbbbbbbbbbbbbbbbbbbbbbbbb",
+      "cccccccccccccccccccccccccc",
+      "ddddddddddddddd"
+    };
+x =
+    new int[] {
+      1, 2,
+    };
+```
+
 ### Departures
 
 - **Text blocks** aren't re-indented: their content and closing delimiter are copied as written
   (SCOPE.md). The opening `"""` is placed as GJF places it, on a line of its own. Case:
   `text-block`.
+- **Deep indentation (proposed):** past 100 nested indents of the expression rules, a line starts
+  at the indentation of the one before it instead of +4 from it. GJF indents each `?:` in an else
+  branch, each cast, and each assignment +4 from the one around it, and the parser takes chains of
+  them at any length, so the output grows with the square of the input: an 800 KB chain of `?:`
+  prints 40 GB. Past 100 indents a line starts beyond column 400, so no code written by hand is
+  affected. Case: `deep-indentation`.
 
 ## Types
 
