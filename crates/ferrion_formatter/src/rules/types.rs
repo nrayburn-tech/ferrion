@@ -58,6 +58,12 @@ fn first_token(element: NodeOrToken<'_>) -> SyntaxToken<'_> {
 /// doesn't put each item on its own line. Comments before the `>` go inside the indent, and the
 /// `>` itself after the groups, so that a line comment trailing it doesn't break the list.
 pub(crate) fn angle_list<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
+    angle_list_in(f, node, true);
+}
+
+/// [`angle_list`], in a group of its own when `own_group`, or else broken after the `<` whenever
+/// the group it's in is broken.
+fn angle_list_in<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, own_group: bool) {
     let close = node.last_token();
     let mut children = children(node)
         .filter(|c| c.as_token().is_none_or(|t| t.id() != close.id()))
@@ -69,21 +75,25 @@ pub(crate) fn angle_list<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         f.token(close);
         return;
     };
-    f.group(|f| {
-        f.indent(IndentKind::Continuation, |f| {
-            f.soft_line();
-            f.comments_before(first_token(first).id());
-            f.group(|f| {
-                for child in children {
-                    emit(f, child);
-                    if child.kind() == K::Comma {
-                        f.line();
-                    }
+    if own_group {
+        f.start_group();
+    }
+    f.indent(IndentKind::Continuation, |f| {
+        f.soft_line();
+        f.comments_before(first_token(first).id());
+        f.group(|f| {
+            for child in children {
+                emit(f, child);
+                if child.kind() == K::Comma {
+                    f.line();
                 }
-            });
-            f.comments_before(close.id());
+            }
         });
+        f.comments_before(close.id());
     });
+    if own_group {
+        f.end();
+    }
     f.token(close);
 }
 
@@ -264,7 +274,8 @@ fn wildcard<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
 ///   name per line if it doesn't fit.
 ///
 /// Breaks before a `.` are at +4, or +8 when the last segment has type arguments, which then
-/// break at +4. The last segment's annotations, name, and type arguments follow its `.`.
+/// break at +4, and break whenever the chain does. The last segment's annotations, name, and
+/// type arguments follow its `.`.
 ///
 /// The qualifiers are formatted here, in a loop, rather than each by its own rule.
 fn class_type<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
@@ -298,6 +309,11 @@ fn class_type<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         }
     };
     let has_arguments = ClassType::cast(last).is_some_and(|c| c.type_arguments().is_some());
+    if has_arguments {
+        // The group the arguments break with; the type's leading comments go before it.
+        f.comments_before(node.first_token().id());
+        f.start_group();
+    }
     // The first segment goes before the indents, which apply from the first line break on.
     segment_after_dot(f, segments[0]);
     f.start_indent(IndentKind::Continuation);
@@ -332,7 +348,17 @@ fn class_type<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     if has_arguments {
         f.end();
     }
-    segment_after_dot(f, last);
+    for child in children(last) {
+        match child {
+            NodeOrToken::Node(node) if node.kind() == K::TypeArguments => {
+                angle_list_in(f, node, false);
+            }
+            _ => segment_child(f, child),
+        }
+    }
+    if has_arguments {
+        f.end();
+    }
 }
 
 /// A class type segment's qualifier, its first child if that is a class type.
@@ -354,14 +380,20 @@ fn dot<'t>(f: &mut Formatter<'t>, segment: SyntaxNode<'t>) {
 /// A segment's annotations, name, and type arguments: everything after its qualifier and `.`.
 fn segment_after_dot<'t>(f: &mut Formatter<'t>, segment: SyntaxNode<'t>) {
     for child in children(segment) {
-        match child {
-            NodeOrToken::Node(node) if node.kind() == K::ClassType => {}
-            NodeOrToken::Token(token) if token.kind() == K::Dot => {}
-            NodeOrToken::Node(node) if node.kind() == K::Annotation => {
-                f.node(node);
-                f.space();
-            }
-            _ => emit(f, child),
+        segment_child(f, child);
+    }
+}
+
+/// A child of a class type segment other than its qualifier and `.`: an annotation, followed by
+/// a space, the name, or the type arguments.
+fn segment_child<'t>(f: &mut Formatter<'t>, child: NodeOrToken<'t>) {
+    match child {
+        NodeOrToken::Node(node) if node.kind() == K::ClassType => {}
+        NodeOrToken::Token(token) if token.kind() == K::Dot => {}
+        NodeOrToken::Node(node) if node.kind() == K::Annotation => {
+            f.node(node);
+            f.space();
         }
+        _ => emit(f, child),
     }
 }
