@@ -16,6 +16,7 @@ use std::sync::Arc;
 
 use ferrion_diagnostics::SourceText;
 use ferrion_parser::{ParseOptions, parse};
+use ferrion_semantic::Interner;
 use ferrion_semantic::summary::{Summary, summarize};
 
 const LATEST_RELEASE: u32 = 27;
@@ -42,8 +43,9 @@ fn snapshots() {
             .map_or(LATEST_RELEASE, |n| n.trim().parse().unwrap());
         let tree = parse(text, ParseOptions { release }).tree;
         let is_package_info = input.file_name().is_some_and(|n| n == "package-info.java");
-        let summary: Summary = summarize(&tree, is_package_info);
-        let actual = summary.debug_dump();
+        let names = Interner::new();
+        let summary: Summary = summarize(&tree, is_package_info, &names);
+        let actual = summary.debug_dump(&names);
         let expected_path = input.with_extension("summary");
         let expected = fs::read_to_string(&expected_path).unwrap_or_default();
         if actual != expected {

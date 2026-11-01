@@ -5,33 +5,36 @@
 //! subtree. Member types are handled from an explicit stack rather than by recursion, so ten
 //! thousand nested classes don't overflow the stack.
 
-use std::collections::HashMap;
-
 use ferrion_syntax::ast::{self, AstChildren, AstNode};
 use ferrion_syntax::{SyntaxKind, SyntaxToken, SyntaxTree};
 
-use super::written::TypeRef;
+use super::written::{TypePart, TypeRef};
 use super::{
     Annotation, Dim, Directive, EnumConstant, Field, ImplicitMember, Import, ImportKind, Method,
     MethodKind, Modifiers, ModuleSummary, PackageDecl, Parameter, QualifiedName, RecordComponent,
     Summary, TypeKind, TypeParameter, TypeSummary, UnitKind,
 };
-use crate::Fingerprint;
+use crate::{Fingerprint, Interner, Name};
 
-/// The summary of `tree`. `is_package_info` says whether the file is a `package-info.java`,
-/// which only its name tells.
+/// The summary of `tree`, its names interned in `names`. `is_package_info` says whether the file
+/// is a `package-info.java`, which only its name tells.
 ///
 /// Any tree gives a summary, whatever errors it has: a missing name is empty, a missing type is
 /// [`TypeRef::missing`], and declarations the parser couldn't place in an `Error` node are left
 /// out.
-pub fn summarize(tree: &SyntaxTree, is_package_info: bool) -> Summary {
+pub fn summarize(tree: &SyntaxTree, is_package_info: bool, names: &Interner) -> Summary {
     let root = ast::CompilationUnit::cast(tree.root()).expect("the root is a compilation unit");
     let package = root.package_decl().map(|p| PackageDecl {
-        name: p.name().map_or_else(QualifiedName::default, qualified),
-        annotations: annotations(p.annotations()),
+        name: p
+            .name()
+            .map_or_else(QualifiedName::default, |n| qualified(n, names)),
+        annotations: annotations(p.annotations(), names),
     });
-    let imports: Vec<Import> = root.import_decls().filter_map(import).collect();
-    let module = root.module_decl().map(module);
+    let imports: Vec<Import> = root
+        .import_decls()
+        .filter_map(|i| import(i, names))
+        .collect();
+    let module = root.module_decl().map(|m| module(m, names));
     let members: Vec<ast::Member<'_>> = root.members().collect();
     let compact = members
         .iter()
@@ -47,7 +50,7 @@ pub fn summarize(tree: &SyntaxTree, is_package_info: bool) -> Summary {
     };
 
     let mut builder = Builder {
-        lombok: LombokImports::new(&imports),
+        names,
         types: Vec::new(),
         pending: Vec::new(),
     };
@@ -55,7 +58,7 @@ pub fn summarize(tree: &SyntaxTree, is_package_info: bool) -> Summary {
         // The compilation unit's members are the implicitly declared class's (JLS 7.3).
         builder
             .types
-            .push(TypeSummary::new(TypeKind::Implicit, Box::default(), None));
+            .push(TypeSummary::new(TypeKind::Implicit, Name::EMPTY, None));
         builder.add_members(0, members.into_iter());
     } else {
         for member in members.into_iter().rev() {
@@ -77,7 +80,7 @@ pub fn summarize(tree: &SyntaxTree, is_package_info: bool) -> Summary {
 }
 
 struct Builder<'t> {
-    lombok: LombokImports,
+    names: &'t Interner,
     types: Vec<TypeSummary>,
     /// Member types still to add, the next last, with their enclosing type's index.
     pending: Vec<(ast::TypeDecl<'t>, Option<u32>)>,
@@ -169,32 +172,29 @@ impl<'t> Header<'t> {
 impl<'t> Builder<'t> {
     /// Adds `decl` as a type, and queues its member types.
     fn add_type(&mut self, decl: ast::TypeDecl<'t>, outer: Option<u32>) {
+        let names = self.names;
         let header = Header::of(decl);
-        let (type_modifiers, type_annotations) = modifiers(header.modifiers);
-        let mut ty = TypeSummary::new(
-            header.kind,
-            header.name.map_or_else(Box::default, name_text),
-            outer,
-        );
+        let (type_modifiers, type_annotations) = modifiers(header.modifiers, names);
+        let mut ty = TypeSummary::new(header.kind, name(header.name, names), outer);
+        let generated = names.intern("Generated");
         ty.generated = type_annotations
             .iter()
-            .any(|a| a.name.last() == "Generated")
+            .any(|a| a.name.last(names) == generated)
             || outer.is_some_and(|o| self.types[o as usize].generated);
-        ty.lombok = type_annotations.iter().any(|a| self.lombok.names(&a.name));
         ty.modifiers = type_modifiers;
         ty.annotations = type_annotations;
-        ty.type_parameters = type_parameters(header.type_parameters);
-        ty.extends = types(header.extends.map(|c| c.types()));
-        ty.implements = types(header.implements.map(|c| c.types()));
-        ty.permits = types(header.permits.map(|c| c.types()));
+        ty.type_parameters = type_parameters(header.type_parameters, names);
+        ty.extends = types(header.extends.map(|c| c.types()), names);
+        ty.implements = types(header.implements.map(|c| c.types()), names);
+        ty.permits = types(header.permits.map(|c| c.types()), names);
         if let Some(components) = header.components {
             ty.record_components = components
                 .components()
                 .map(|c| RecordComponent {
-                    annotations: modifiers(c.modifiers()).1,
-                    ty: TypeRef::from_syntax(c.ty()),
-                    varargs: c.varargs().map(|v| annotations(v.annotations())),
-                    name: c.name().map_or_else(Box::default, name_text),
+                    annotations: modifiers(c.modifiers(), names).1,
+                    ty: TypeRef::from_syntax(c.ty(), names),
+                    varargs: c.varargs().map(|v| annotations(v.annotations(), names)),
+                    name: name(c.name(), names),
                 })
                 .collect();
         }
@@ -202,8 +202,8 @@ impl<'t> Builder<'t> {
             ty.enum_constants = body
                 .constants()
                 .map(|c| EnumConstant {
-                    annotations: modifiers(c.modifiers()).1,
-                    name: c.name().map_or_else(Box::default, name_text),
+                    annotations: modifiers(c.modifiers(), names).1,
+                    name: name(c.name(), names),
                     has_body: c.body().is_some(),
                 })
                 .collect();
@@ -218,32 +218,31 @@ impl<'t> Builder<'t> {
     /// Adds the fields and methods of `members` to the type at `index`, queues its member types
     /// in order, and adds the implicit members it then lacks.
     fn add_members(&mut self, index: usize, members: impl Iterator<Item = ast::Member<'t>>) {
+        let names = self.names;
         let kind = self.types[index].kind;
         let mut member_types = Vec::new();
         for member in members {
             match member {
                 ast::Member::TypeDecl(decl) => member_types.push(decl),
                 ast::Member::FieldDecl(decl) => {
-                    let fields = fields(decl, kind);
-                    let ty = &mut self.types[index];
-                    ty.lombok |= fields
-                        .iter()
-                        .any(|f| f.annotations.iter().any(|a| self.lombok.names(&a.name)));
-                    ty.fields.extend(fields);
+                    let fields = fields(decl, kind, names);
+                    self.types[index].fields.extend(fields);
                 }
-                ast::Member::MethodDecl(decl) => self.types[index].methods.push(method(decl)),
+                ast::Member::MethodDecl(decl) => {
+                    self.types[index].methods.push(method(decl, names))
+                }
                 ast::Member::ConstructorDecl(decl) => {
-                    self.types[index].methods.push(constructor(decl))
+                    self.types[index].methods.push(constructor(decl, names))
                 }
                 ast::Member::CompactConstructorDecl(decl) => {
-                    let (modifiers, annotations) = modifiers(decl.modifiers());
+                    let (modifiers, annotations) = modifiers(decl.modifiers(), names);
                     self.types[index].methods.push(Method {
                         kind: MethodKind::CompactConstructor,
                         modifiers,
                         annotations,
                         type_parameters: Box::default(),
                         result: None,
-                        name: decl.name().map_or_else(Box::default, name_text),
+                        name: name(decl.name(), names),
                         parameters: Box::default(),
                         dims: Box::default(),
                         throws: Box::default(),
@@ -256,7 +255,7 @@ impl<'t> Builder<'t> {
             }
         }
         let ty = &mut self.types[index];
-        ty.implicit = implicit_members(ty);
+        ty.implicit = implicit_members(ty, names);
         let outer = Some(index as u32);
         self.pending
             .extend(member_types.into_iter().rev().map(|decl| (decl, outer)));
@@ -264,7 +263,7 @@ impl<'t> Builder<'t> {
 }
 
 impl TypeSummary {
-    fn new(kind: TypeKind, name: Box<str>, outer: Option<u32>) -> TypeSummary {
+    fn new(kind: TypeKind, name: Name, outer: Option<u32>) -> TypeSummary {
         TypeSummary {
             kind,
             name,
@@ -281,13 +280,12 @@ impl TypeSummary {
             record_components: Vec::new(),
             implicit: Vec::new(),
             generated: false,
-            lombok: false,
         }
     }
 }
 
 /// The members JLS 8.8.9, 8.9, and 8.10.3 declare for `ty` that it doesn't declare itself.
-fn implicit_members(ty: &TypeSummary) -> Vec<ImplicitMember> {
+fn implicit_members(ty: &TypeSummary, names: &Interner) -> Vec<ImplicitMember> {
     let has_constructor = ty.methods.iter().any(|m| m.kind != MethodKind::Method);
     let mut implicit = Vec::new();
     match ty.kind {
@@ -336,15 +334,49 @@ fn implicit_members(ty: &TypeSummary) -> Vec<ImplicitMember> {
             for i in 0..ty.record_components.len() {
                 implicit.push(ImplicitMember::ComponentField(i as u32));
             }
+            // `equals(Object)`, `hashCode()`, and `toString()`, unless declared with those
+            // parameters; a parameter named by any type `Object` counts, since which `Object` is
+            // known only after resolution.
+            let declares = |name: &str, parameter: Option<&str>| {
+                let name = names.intern(name);
+                ty.methods.iter().any(|m| {
+                    m.kind == MethodKind::Method
+                        && m.name == name
+                        && match (parameter, &*m.parameters) {
+                            (None, []) => true,
+                            (Some(simple), [p]) => {
+                                p.dims.is_empty()
+                                    && p.varargs.is_none()
+                                    && matches!(
+                                        p.ty.parts().last(),
+                                        Some(TypePart::Segment { name, arguments })
+                                            if *arguments == TypePart::NO_ARGUMENTS
+                                                && *names.text(*name) == *simple
+                                    )
+                                    && !matches!(p.ty.parts()[0], TypePart::Array { .. })
+                            }
+                            _ => false,
+                        }
+                })
+            };
+            if !declares("equals", Some("Object")) {
+                implicit.push(ImplicitMember::RecordEquals);
+            }
+            if !declares("hashCode", None) {
+                implicit.push(ImplicitMember::RecordHashCode);
+            }
+            if !declares("toString", None) {
+                implicit.push(ImplicitMember::RecordToString);
+            }
         }
         _ => {}
     }
     implicit
 }
 
-fn fields(decl: ast::FieldDecl<'_>, owner: TypeKind) -> Vec<Field> {
-    let (modifiers, annotations) = modifiers(decl.modifiers());
-    let ty = TypeRef::from_syntax(decl.ty());
+fn fields(decl: ast::FieldDecl<'_>, owner: TypeKind, names: &Interner) -> Vec<Field> {
+    let (modifiers, annotations) = modifiers(decl.modifiers(), names);
+    let ty = TypeRef::from_syntax(decl.ty(), names);
     // An interface's fields are implicitly final (JLS 9.3).
     let is_final = modifiers.contains(Modifiers::FINAL)
         || matches!(owner, TypeKind::Interface | TypeKind::Annotation);
@@ -353,8 +385,8 @@ fn fields(decl: ast::FieldDecl<'_>, owner: TypeKind) -> Vec<Field> {
             modifiers,
             annotations: annotations.clone(),
             ty: ty.clone(),
-            name: d.name().map_or_else(Box::default, name_text),
-            dims: d.dims().map(Dim::from_syntax).collect(),
+            name: name(d.name(), names),
+            dims: d.dims().map(|d| Dim::from_syntax(d, names)).collect(),
             constant: d
                 .initializer()
                 .filter(|_| is_final)
@@ -363,23 +395,23 @@ fn fields(decl: ast::FieldDecl<'_>, owner: TypeKind) -> Vec<Field> {
         .collect()
 }
 
-fn method(decl: ast::MethodDecl<'_>) -> Method {
-    let (modifiers, mut annotations) = modifiers(decl.modifiers());
+fn method(decl: ast::MethodDecl<'_>, names: &Interner) -> Method {
+    let (modifiers, mut annotations) = modifiers(decl.modifiers(), names);
     if decl.annotations().next().is_some() {
         let mut all = annotations.into_vec();
-        all.extend(decl.annotations().map(annotation));
+        all.extend(decl.annotations().map(|a| annotation(a, names)));
         annotations = all.into_boxed_slice();
     }
     Method {
         kind: MethodKind::Method,
         modifiers,
         annotations,
-        type_parameters: type_parameters(decl.type_parameters()),
-        result: Some(TypeRef::from_syntax(decl.result())),
-        name: decl.name().map_or_else(Box::default, name_text),
-        parameters: parameters(decl.formal_parameters()),
-        dims: decl.dims().map(Dim::from_syntax).collect(),
-        throws: types(decl.throws_clause().map(|c| c.types())),
+        type_parameters: type_parameters(decl.type_parameters(), names),
+        result: Some(TypeRef::from_syntax(decl.result(), names)),
+        name: name(decl.name(), names),
+        parameters: parameters(decl.formal_parameters(), names),
+        dims: decl.dims().map(|d| Dim::from_syntax(d, names)).collect(),
+        throws: types(decl.throws_clause().map(|c| c.types()), names),
         has_body: decl.body().is_some(),
         default_value: decl
             .default_value()
@@ -387,69 +419,79 @@ fn method(decl: ast::MethodDecl<'_>) -> Method {
     }
 }
 
-fn constructor(decl: ast::ConstructorDecl<'_>) -> Method {
-    let (modifiers, mut annotations) = modifiers(decl.modifiers());
+fn constructor(decl: ast::ConstructorDecl<'_>, names: &Interner) -> Method {
+    let (modifiers, mut annotations) = modifiers(decl.modifiers(), names);
     if decl.annotations().next().is_some() {
         let mut all = annotations.into_vec();
-        all.extend(decl.annotations().map(annotation));
+        all.extend(decl.annotations().map(|a| annotation(a, names)));
         annotations = all.into_boxed_slice();
     }
     Method {
         kind: MethodKind::Constructor,
         modifiers,
         annotations,
-        type_parameters: type_parameters(decl.type_parameters()),
+        type_parameters: type_parameters(decl.type_parameters(), names),
         result: None,
-        name: decl.name().map_or_else(Box::default, name_text),
-        parameters: parameters(decl.formal_parameters()),
+        name: name(decl.name(), names),
+        parameters: parameters(decl.formal_parameters(), names),
         dims: Box::default(),
-        throws: types(decl.throws_clause().map(|c| c.types())),
+        throws: types(decl.throws_clause().map(|c| c.types()), names),
         has_body: decl.body().is_some(),
         default_value: None,
     }
 }
 
-fn parameters(params: Option<ast::FormalParameters<'_>>) -> Box<[Parameter]> {
+fn parameters(params: Option<ast::FormalParameters<'_>>, names: &Interner) -> Box<[Parameter]> {
     let Some(params) = params else {
         return Box::default();
     };
     params
         .parameters()
         .map(|p| {
-            let (modifiers, annotations) = modifiers(p.modifiers());
+            let (modifiers, annotations) = modifiers(p.modifiers(), names);
             Parameter {
                 modifiers,
                 annotations,
-                ty: TypeRef::from_syntax(p.ty()),
-                varargs: p.varargs().map(|v| self::annotations(v.annotations())),
-                name: p.name().map_or_else(Box::default, name_text),
-                dims: p.dims().map(Dim::from_syntax).collect(),
+                ty: TypeRef::from_syntax(p.ty(), names),
+                varargs: p
+                    .varargs()
+                    .map(|v| self::annotations(v.annotations(), names)),
+                name: name(p.name(), names),
+                dims: p.dims().map(|d| Dim::from_syntax(d, names)).collect(),
             }
         })
         .collect()
 }
 
-fn type_parameters(params: Option<ast::TypeParameters<'_>>) -> Box<[TypeParameter]> {
+fn type_parameters(
+    params: Option<ast::TypeParameters<'_>>,
+    names: &Interner,
+) -> Box<[TypeParameter]> {
     let Some(params) = params else {
         return Box::default();
     };
     params
         .parameters()
         .map(|p| TypeParameter {
-            annotations: annotations(p.annotations()),
-            name: p.name().map_or_else(Box::default, name_text),
-            bounds: p.bounds().map(|b| TypeRef::from_syntax(Some(b))).collect(),
+            annotations: annotations(p.annotations(), names),
+            name: name(p.name(), names),
+            bounds: p
+                .bounds()
+                .map(|b| TypeRef::from_syntax(Some(b), names))
+                .collect(),
         })
         .collect()
 }
 
-fn types(types: Option<AstChildren<'_, ast::Type<'_>>>) -> Box<[TypeRef]> {
+fn types(types: Option<AstChildren<'_, ast::Type<'_>>>, names: &Interner) -> Box<[TypeRef]> {
     types.map_or_else(Box::default, |types| {
-        types.map(|t| TypeRef::from_syntax(Some(t))).collect()
+        types
+            .map(|t| TypeRef::from_syntax(Some(t), names))
+            .collect()
     })
 }
 
-fn modifiers(node: Option<ast::Modifiers<'_>>) -> (Modifiers, Box<[Annotation]>) {
+fn modifiers(node: Option<ast::Modifiers<'_>>, names: &Interner) -> (Modifiers, Box<[Annotation]>) {
     let Some(node) = node else {
         return (Modifiers::default(), Box::default());
     };
@@ -474,16 +516,21 @@ fn modifiers(node: Option<ast::Modifiers<'_>>) -> (Modifiers, Box<[Annotation]>)
             _ => continue,
         });
     }
-    (modifiers, annotations(node.annotations()))
+    (modifiers, annotations(node.annotations(), names))
 }
 
-pub(super) fn annotations(nodes: AstChildren<'_, ast::Annotation<'_>>) -> Box<[Annotation]> {
-    nodes.map(annotation).collect()
+pub(super) fn annotations(
+    nodes: AstChildren<'_, ast::Annotation<'_>>,
+    names: &Interner,
+) -> Box<[Annotation]> {
+    nodes.map(|a| annotation(a, names)).collect()
 }
 
-fn annotation(node: ast::Annotation<'_>) -> Annotation {
+fn annotation(node: ast::Annotation<'_>, names: &Interner) -> Annotation {
     Annotation {
-        name: node.name().map_or_else(QualifiedName::default, qualified),
+        name: node
+            .name()
+            .map_or_else(QualifiedName::default, |n| qualified(n, names)),
         arguments: node
             .annotation_arguments()
             .map(|a| Fingerprint::of_tokens(a.syntax())),
@@ -491,15 +538,15 @@ fn annotation(node: ast::Annotation<'_>) -> Annotation {
 }
 
 impl Dim {
-    pub(super) fn from_syntax(dim: ast::Dim<'_>) -> Dim {
+    pub(super) fn from_syntax(dim: ast::Dim<'_>, names: &Interner) -> Dim {
         Dim {
-            annotations: annotations(dim.annotations()),
+            annotations: annotations(dim.annotations(), names),
         }
     }
 }
 
-fn import(node: ast::ImportDecl<'_>) -> Option<Import> {
-    let name = qualified(node.name()?);
+fn import(node: ast::ImportDecl<'_>, names: &Interner) -> Option<Import> {
+    let name = qualified(node.name()?, names);
     let kind = match (
         node.static_kw().is_some(),
         node.module_kw().is_some(),
@@ -514,8 +561,9 @@ fn import(node: ast::ImportDecl<'_>) -> Option<Import> {
     Some(Import { kind, name })
 }
 
-fn module(node: ast::ModuleDecl<'_>) -> ModuleSummary {
-    let name = |n: Option<ast::Name<'_>>| n.map_or_else(QualifiedName::default, qualified);
+fn module(node: ast::ModuleDecl<'_>, names: &Interner) -> ModuleSummary {
+    let name =
+        |n: Option<ast::Name<'_>>| n.map_or_else(QualifiedName::default, |n| qualified(n, names));
     let directives = node
         .directives()
         .map(|d| match d {
@@ -526,23 +574,23 @@ fn module(node: ast::ModuleDecl<'_>) -> ModuleSummary {
             },
             ast::ModuleDirective::ExportsDirective(d) => Directive::Exports {
                 package: name(d.package_name()),
-                to: d.modules().map(qualified).collect(),
+                to: d.modules().map(|n| qualified(n, names)).collect(),
             },
             ast::ModuleDirective::OpensDirective(d) => Directive::Opens {
                 package: name(d.package_name()),
-                to: d.modules().map(qualified).collect(),
+                to: d.modules().map(|n| qualified(n, names)).collect(),
             },
             ast::ModuleDirective::UsesDirective(d) => Directive::Uses {
                 service: name(d.service()),
             },
             ast::ModuleDirective::ProvidesDirective(d) => Directive::Provides {
                 service: name(d.service()),
-                with: d.implementations().map(qualified).collect(),
+                with: d.implementations().map(|n| qualified(n, names)).collect(),
             },
         })
         .collect();
     ModuleSummary {
-        annotations: annotations(node.annotations()),
+        annotations: annotations(node.annotations(), names),
         open: node.open_kw().is_some(),
         name: name(node.name()),
         directives,
@@ -551,7 +599,7 @@ fn module(node: ast::ModuleDecl<'_>) -> ModuleSummary {
 
 /// A name's identifiers and dots, without trivia, with escapes translated. A loop over its
 /// tokens, though the `Name` nodes nest a level per segment.
-fn qualified(name: ast::Name<'_>) -> QualifiedName {
+pub(crate) fn qualified(name: ast::Name<'_>, names: &Interner) -> QualifiedName {
     let tree = name.syntax().tree();
     let mut text = String::new();
     for token in name.syntax().tokens() {
@@ -560,60 +608,17 @@ fn qualified(name: ast::Name<'_>) -> QualifiedName {
             text.push_str(&ferrion_lexer::cooked_text(tree.text(), lexed));
         }
     }
-    QualifiedName::new(text)
+    QualifiedName(names.intern(&text))
 }
 
 /// An identifier's name: its text with escapes translated.
-pub(super) fn name_text(token: SyntaxToken<'_>) -> Box<str> {
+pub(crate) fn name_text(token: SyntaxToken<'_>, names: &Interner) -> Name {
     let tree = token.tree();
     let lexed = tree.lexer_tokens()[token.id().index()];
-    ferrion_lexer::cooked_text(tree.text(), lexed).into()
+    names.intern(&ferrion_lexer::cooked_text(tree.text(), lexed))
 }
 
-/// Recognizes Lombok's annotations without resolving them, from how the file names them: a
-/// name qualified by `lombok.`, or one whose first segment a single-type import brings in from
-/// a `lombok` package (`@Data` with `import lombok.Data;`, `@Builder.Default` with `import
-/// lombok.Builder;`), or, when the file imports a `lombok` package on demand, any name no
-/// single-type import covers except `java.lang`'s annotations. Resolution (B2's views) can
-/// replace this with the annotation's real origin.
-struct LombokImports {
-    /// Each single-type import's simple name, and whether it is from Lombok.
-    single: HashMap<Box<str>, bool>,
-    on_demand: bool,
-}
-
-impl LombokImports {
-    fn new(imports: &[Import]) -> LombokImports {
-        let from_lombok = |name: &str| name == "lombok" || name.starts_with("lombok.");
-        let mut single = HashMap::new();
-        let mut on_demand = false;
-        for import in imports {
-            match import.kind {
-                ImportKind::SingleType => {
-                    single.insert(import.name.last().into(), from_lombok(import.name.as_str()));
-                }
-                ImportKind::OnDemand => on_demand |= from_lombok(import.name.as_str()),
-                _ => {}
-            }
-        }
-        LombokImports { single, on_demand }
-    }
-
-    fn names(&self, name: &QualifiedName) -> bool {
-        const JAVA_LANG: &[&str] = &[
-            "Deprecated",
-            "FunctionalInterface",
-            "Override",
-            "SafeVarargs",
-            "SuppressWarnings",
-        ];
-        if name.as_str().starts_with("lombok.") {
-            return true;
-        }
-        let first = name.segments().next().unwrap_or_default();
-        match self.single.get(first) {
-            Some(&from_lombok) => from_lombok,
-            None => self.on_demand && !name.as_str().contains('.') && !JAVA_LANG.contains(&first),
-        }
-    }
+/// An optional identifier's name, empty when the parser found it missing.
+fn name(token: Option<SyntaxToken<'_>>, names: &Interner) -> Name {
+    token.map_or(Name::EMPTY, |t| name_text(t, names))
 }

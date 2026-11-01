@@ -13,6 +13,7 @@ mod fingerprint;
 mod input;
 #[doc(hidden)]
 pub mod invariants;
+mod names;
 pub mod packages;
 pub mod summary;
 
@@ -22,3 +23,4 @@ pub use engine::{
 };
 pub use fingerprint::Fingerprint;
 pub use input::{FileId, FileInput, ProjectInput, SourceSetId, SourceSetInput};
+pub use names::{Interner, Name};

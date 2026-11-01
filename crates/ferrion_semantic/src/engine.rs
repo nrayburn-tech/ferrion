@@ -34,7 +34,7 @@ use self::derived::{Dep, DerivedTable, Memo, Reads, read, write};
 use self::trees::TreeCache;
 use crate::packages::{Package, PackageIndex, TopLevel};
 use crate::summary::{Summary, summarize};
-use crate::{FileId, FileInput, Fingerprint, ProjectInput, SourceSetId};
+use crate::{FileId, FileInput, Fingerprint, Interner, Name, ProjectInput, SourceSetId};
 
 /// The number of input changes so far. Every change makes a new revision, before which no
 /// snapshot sees it.
@@ -82,7 +82,8 @@ pub(crate) struct Shared {
     parses: AtomicU64,
     pub(crate) summaries: DerivedTable<FileId, FileSummary>,
     pub(crate) package_indexes: DerivedTable<SourceSetId, PackageIndex>,
-    pub(crate) packages: DerivedTable<(SourceSetId, Arc<str>), Package>,
+    pub(crate) packages: DerivedTable<(SourceSetId, Name), Package>,
+    pub(crate) names: Arc<Interner>,
 }
 
 struct Inputs {
@@ -229,12 +230,18 @@ impl Engine {
                 summaries: DerivedTable::new(),
                 package_indexes: DerivedTable::new(),
                 packages: DerivedTable::new(),
+                names: Arc::new(Interner::new()),
             }),
         }
     }
 
     pub fn revision(&self) -> Revision {
         Revision(self.shared.revision.load(Ordering::SeqCst))
+    }
+
+    /// The engine's names: every [`Name`] its results hold is one of these.
+    pub fn names(&self) -> &Arc<Interner> {
+        &self.shared.names
     }
 
     /// A read handle at the current revision.
@@ -395,6 +402,11 @@ impl Snapshot {
         &self.shared
     }
 
+    /// The engine's names: every [`Name`] its results hold is one of these.
+    pub fn names(&self) -> &Arc<Interner> {
+        &self.shared.names
+    }
+
     /// `Err(Cancelled)` once the engine's revision has moved past this snapshot's.
     pub fn check(&self) -> Result<(), Cancelled> {
         if self.shared.revision.load(Ordering::Relaxed) == self.revision.0 {
@@ -499,7 +511,7 @@ impl Snapshot {
         let memo = self.shared.summaries.get(self, &file, |reads| {
             let (tree, path) = reads.tree(file)?;
             let is_package_info = path.file_name().is_some_and(|n| n == "package-info.java");
-            let summary = summarize(&tree, is_package_info);
+            let summary = summarize(&tree, is_package_info, &reads.snapshot.shared.names);
             let top_level = TopLevel::of(&summary);
             Ok(FileSummary {
                 top_level_fingerprint: Fingerprint::of(&top_level),
@@ -532,9 +544,9 @@ impl Snapshot {
             Dep::PackageFiles(set, name) => self
                 .package_index_memo(*set)?
                 .value
-                .package_files(name)
+                .package_files(*name)
                 .map_or(Fingerprint::ABSENT, |p| p.fingerprint),
-            Dep::Package(set, name) => self.package_memo(*set, name)?.fingerprint,
+            Dep::Package(set, name) => self.package_memo(*set, *name)?.fingerprint,
         })
     }
 }

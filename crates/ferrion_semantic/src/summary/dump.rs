@@ -4,14 +4,16 @@ use std::fmt::Write as _;
 
 use super::{
     Annotation, Dim, Directive, ImplicitMember, ImportKind, Method, MethodKind, Modifiers,
-    Parameter, Summary, TypeKind, TypeParameter, TypeRef, UnitKind,
+    Parameter, QualifiedName, Summary, TypeKind, TypeParameter, TypeRef, UnitKind,
 };
+use crate::Interner;
 
 impl Summary {
     /// The summary, a line per declaration: the unit's kind, its package and imports, then each
     /// type by path with its header and members indented below it, then the module. Fingerprints
-    /// are shown as `(…)`, since their values aren't meaningful to read.
-    pub fn debug_dump(&self) -> String {
+    /// are shown as `(…)`, since their values aren't meaningful to read. `names` is the interner
+    /// the summary was made with.
+    pub fn debug_dump(&self, names: &Interner) -> String {
         let mut out = String::new();
         let kind = match self.kind {
             UnitKind::Ordinary => "ordinary",
@@ -19,13 +21,14 @@ impl Summary {
             UnitKind::PackageInfo => "package-info",
             UnitKind::ModuleInfo => "module-info",
         };
+        let text = |name| names.text(name);
         writeln!(out, "unit {kind}").unwrap();
         if let Some(package) = &self.package {
             writeln!(
                 out,
                 "package {}{}",
-                annotations(&package.annotations),
-                package.name
+                annotations(&package.annotations, names),
+                package.name.text(names)
             )
             .unwrap();
         }
@@ -37,7 +40,7 @@ impl Summary {
                 ImportKind::StaticOnDemand => "static-on-demand",
                 ImportKind::Module => "module",
             };
-            writeln!(out, "import {kind} {}", import.name).unwrap();
+            writeln!(out, "import {kind} {}", import.name.text(names)).unwrap();
         }
         for (index, ty) in self.types.iter().enumerate() {
             let kind = match ty.kind {
@@ -50,10 +53,10 @@ impl Summary {
             };
             let head = format!(
                 "{kind} {}{}{}{}",
-                annotations(&ty.annotations),
+                annotations(&ty.annotations, names),
                 modifiers(ty.modifiers),
-                self.path(index),
-                type_parameters(&ty.type_parameters).unwrap_or_default()
+                self.path(index, names),
+                type_parameters(&ty.type_parameters, names).unwrap_or_default()
             );
             // An implicitly declared class has no name to follow its kind.
             out.push_str(head.trim_end());
@@ -64,10 +67,10 @@ impl Summary {
                     .map(|c| {
                         format!(
                             "{}{}{} {}",
-                            annotations(&c.annotations),
-                            c.ty,
-                            varargs(c.varargs.as_deref()),
-                            c.name
+                            annotations(&c.annotations, names),
+                            c.ty.display(names),
+                            varargs(c.varargs.as_deref(), names),
+                            text(c.name)
                         )
                     })
                     .collect();
@@ -79,14 +82,11 @@ impl Summary {
                 ("permits", &ty.permits),
             ] {
                 if !types.is_empty() {
-                    write!(out, " {keyword} {}", list(types)).unwrap();
+                    write!(out, " {keyword} {}", list(types, names)).unwrap();
                 }
             }
             if ty.generated {
                 out.push_str(" [generated]");
-            }
-            if ty.lombok {
-                out.push_str(" [lombok]");
             }
             out.push('\n');
             for constant in &ty.enum_constants {
@@ -94,8 +94,8 @@ impl Summary {
                 writeln!(
                     out,
                     "  constant {}{}{body}",
-                    annotations(&constant.annotations),
-                    constant.name
+                    annotations(&constant.annotations, names),
+                    text(constant.name)
                 )
                 .unwrap();
             }
@@ -108,29 +108,29 @@ impl Summary {
                 writeln!(
                     out,
                     "  field {}{}{} {}{}{constant}",
-                    annotations(&field.annotations),
+                    annotations(&field.annotations, names),
                     modifiers(field.modifiers),
-                    field.ty,
-                    field.name,
-                    dims(&field.dims)
+                    field.ty.display(names),
+                    text(field.name),
+                    dims(&field.dims, names)
                 )
                 .unwrap();
             }
             for method in &ty.methods {
-                writeln!(out, "  {}", self::method(method)).unwrap();
+                writeln!(out, "  {}", self::method(method, names)).unwrap();
             }
             for implicit in &ty.implicit {
+                let component = |i: u32| text(ty.record_components[i as usize].name);
                 let text = match implicit {
                     ImplicitMember::DefaultConstructor => "default constructor".to_owned(),
                     ImplicitMember::EnumValues => "values()".to_owned(),
                     ImplicitMember::EnumValueOf => "valueOf(String)".to_owned(),
                     ImplicitMember::CanonicalConstructor => "canonical constructor".to_owned(),
-                    ImplicitMember::Accessor(i) => {
-                        format!("accessor {}()", ty.record_components[*i as usize].name)
-                    }
-                    ImplicitMember::ComponentField(i) => {
-                        format!("field {}", ty.record_components[*i as usize].name)
-                    }
+                    ImplicitMember::Accessor(i) => format!("accessor {}()", component(*i)),
+                    ImplicitMember::ComponentField(i) => format!("field {}", component(*i)),
+                    ImplicitMember::RecordEquals => "equals(Object)".to_owned(),
+                    ImplicitMember::RecordHashCode => "hashCode()".to_owned(),
+                    ImplicitMember::RecordToString => "toString()".to_owned(),
                 };
                 writeln!(out, "  implicit {text}").unwrap();
             }
@@ -140,43 +140,43 @@ impl Summary {
             writeln!(
                 out,
                 "module {}{open}{}",
-                annotations(&module.annotations),
-                module.name
+                annotations(&module.annotations, names),
+                module.name.text(names)
             )
             .unwrap();
+            let list = |list: &[QualifiedName]| {
+                list.iter()
+                    .map(|n| n.text(names).to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            };
             for directive in &module.directives {
-                let names = |names: &[super::QualifiedName]| {
-                    names
-                        .iter()
-                        .map(|n| n.as_str())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                };
                 let text = match directive {
                     Directive::Requires {
                         transitive,
                         is_static,
                         module,
                     } => format!(
-                        "requires {}{}{module}",
+                        "requires {}{}{}",
                         if *transitive { "transitive " } else { "" },
-                        if *is_static { "static " } else { "" }
+                        if *is_static { "static " } else { "" },
+                        module.text(names)
                     ),
                     Directive::Exports { package, to } if to.is_empty() => {
-                        format!("exports {package}")
+                        format!("exports {}", package.text(names))
                     }
                     Directive::Exports { package, to } => {
-                        format!("exports {package} to {}", names(to))
+                        format!("exports {} to {}", package.text(names), list(to))
                     }
                     Directive::Opens { package, to } if to.is_empty() => {
-                        format!("opens {package}")
+                        format!("opens {}", package.text(names))
                     }
                     Directive::Opens { package, to } => {
-                        format!("opens {package} to {}", names(to))
+                        format!("opens {} to {}", package.text(names), list(to))
                     }
-                    Directive::Uses { service } => format!("uses {service}"),
+                    Directive::Uses { service } => format!("uses {}", service.text(names)),
                     Directive::Provides { service, with } => {
-                        format!("provides {service} with {}", names(with))
+                        format!("provides {} with {}", service.text(names), list(with))
                     }
                 };
                 writeln!(out, "  {text}").unwrap();
@@ -186,7 +186,7 @@ impl Summary {
     }
 }
 
-fn method(method: &Method) -> String {
+fn method(method: &Method, names: &Interner) -> String {
     let kind = match method.kind {
         MethodKind::Method => "method",
         MethodKind::Constructor => "constructor",
@@ -195,20 +195,30 @@ fn method(method: &Method) -> String {
     let result = method
         .result
         .as_ref()
-        .map_or_else(String::new, |r| format!("{r} "));
+        .map_or_else(String::new, |r| format!("{} ", r.display(names)));
     let mut text = format!(
         "{kind} {}{}{}{result}{}",
-        annotations(&method.annotations),
+        annotations(&method.annotations, names),
         modifiers(method.modifiers),
-        type_parameters(&method.type_parameters).map_or_else(String::new, |p| p + " "),
-        method.name
+        type_parameters(&method.type_parameters, names).map_or_else(String::new, |p| p + " "),
+        names.text(method.name)
     );
     if method.kind != MethodKind::CompactConstructor {
-        let parameters: Vec<String> = method.parameters.iter().map(parameter).collect();
-        write!(text, "({}){}", parameters.join(", "), dims(&method.dims)).unwrap();
+        let parameters: Vec<String> = method
+            .parameters
+            .iter()
+            .map(|p| parameter(p, names))
+            .collect();
+        write!(
+            text,
+            "({}){}",
+            parameters.join(", "),
+            dims(&method.dims, names)
+        )
+        .unwrap();
     }
     if !method.throws.is_empty() {
-        write!(text, " throws {}", list(&method.throws)).unwrap();
+        write!(text, " throws {}", list(&method.throws, names)).unwrap();
     }
     if method.default_value.is_some() {
         text.push_str(" default (…)");
@@ -217,37 +227,45 @@ fn method(method: &Method) -> String {
     text
 }
 
-fn parameter(parameter: &Parameter) -> String {
+fn parameter(parameter: &Parameter, names: &Interner) -> String {
     format!(
         "{}{}{}{} {}{}",
-        annotations(&parameter.annotations),
+        annotations(&parameter.annotations, names),
         modifiers(parameter.modifiers),
-        parameter.ty,
-        varargs(parameter.varargs.as_deref()),
-        parameter.name,
-        dims(&parameter.dims)
+        parameter.ty.display(names),
+        varargs(parameter.varargs.as_deref(), names),
+        names.text(parameter.name),
+        dims(&parameter.dims, names)
     )
 }
 
-fn varargs(varargs: Option<&[Annotation]>) -> String {
+fn varargs(varargs: Option<&[Annotation]>, names: &Interner) -> String {
     match varargs {
         Some([]) => "...".to_owned(),
-        Some(list) => format!(" {}...", annotations(list)),
+        Some(list) => format!(" {}...", annotations(list, names)),
         None => String::new(),
     }
 }
 
 /// `<T, U extends V>`, or nothing.
-fn type_parameters(parameters: &[TypeParameter]) -> Option<String> {
+fn type_parameters(parameters: &[TypeParameter], names: &Interner) -> Option<String> {
     if parameters.is_empty() {
         return None;
     }
     let parameters: Vec<String> = parameters
         .iter()
         .map(|p| {
-            let mut text = format!("{}{}", annotations(&p.annotations), p.name);
+            let mut text = format!(
+                "{}{}",
+                annotations(&p.annotations, names),
+                names.text(p.name)
+            );
             if !p.bounds.is_empty() {
-                let bounds: Vec<String> = p.bounds.iter().map(|b| b.to_string()).collect();
+                let bounds: Vec<String> = p
+                    .bounds
+                    .iter()
+                    .map(|b| b.display(names).to_string())
+                    .collect();
                 write!(text, " extends {}", bounds.join(" & ")).unwrap();
             }
             text
@@ -257,8 +275,11 @@ fn type_parameters(parameters: &[TypeParameter]) -> Option<String> {
 }
 
 /// Each annotation and a space after it.
-fn annotations(annotations: &[Annotation]) -> String {
-    annotations.iter().map(|a| format!("{a} ")).collect()
+fn annotations(annotations: &[Annotation], names: &Interner) -> String {
+    annotations
+        .iter()
+        .map(|a| format!("{} ", a.display(names)))
+        .collect()
 }
 
 /// Each modifier's keyword and a space after it.
@@ -270,16 +291,16 @@ fn modifiers(modifiers: Modifiers) -> String {
         .collect()
 }
 
-fn dims(dims: &[Dim]) -> String {
+fn dims(dims: &[Dim], names: &Interner) -> String {
     dims.iter()
-        .map(|d| format!("{}[]", annotations(&d.annotations)))
+        .map(|d| format!("{}[]", annotations(&d.annotations, names)))
         .collect()
 }
 
-fn list(types: &[TypeRef]) -> String {
+fn list(types: &[TypeRef], names: &Interner) -> String {
     types
         .iter()
-        .map(|t| t.to_string())
+        .map(|t| t.display(names).to_string())
         .collect::<Vec<_>>()
         .join(", ")
 }

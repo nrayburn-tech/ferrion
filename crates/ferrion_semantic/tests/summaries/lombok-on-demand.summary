@@ -5,7 +5,7 @@ import single-type java.util.List
 class @Deprecated Plain
   method @Override public String toString() {…}
   implicit default constructor
-class @Getter Annotated [lombok]
+class @Getter Annotated
   implicit default constructor
 class @List SingleImportWins
   implicit default constructor

@@ -343,8 +343,9 @@ Release build, Apple M1 Pro, on the shared machine (load averages 8 to 10).
 
 A last phase reading every tree again took 2 to 8 ms with the cache, and 248 to 743 ms without
 it, parsing every file again. The summaries and tables take 51 MB, against the prototype's 26 MB
-for its cruder summaries and results: types as written are 40 bytes a part, and names aren't
-interned, which is where to look if memory matters more later.
+for its cruder summaries and results: types as written were 40 bytes a part, and names weren't
+interned. At the start of W4, interning every name and making a part 12 bytes took the 51 MB to
+36 MB (49 MB to 36 MB measured the same way, a cold run on four threads with trees dropped).
 
 After a cold run on four threads, `AbstractDocIdSetIterator.java` was edited and everything asked
 for again (`run_batch`), five times each:

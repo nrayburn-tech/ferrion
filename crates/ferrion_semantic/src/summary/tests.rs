@@ -1,12 +1,15 @@
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use ferrion_parser::{ParseOptions, parse};
 
 use super::*;
 
+/// The names of every summary these tests make, so that summaries made apart compare equal.
+static NAMES: LazyLock<Interner> = LazyLock::new(Interner::new);
+
 fn summary_of(text: &str) -> Summary {
     let tree = parse(Arc::from(text), ParseOptions { release: 27 }).tree;
-    summarize(&tree, false)
+    summarize(&tree, false, &NAMES)
 }
 
 const BASE: &str = r#"package p;
@@ -117,10 +120,21 @@ fn declaration_edits_change_the_summary() {
 #[test]
 fn paths_name_enclosing_types() {
     let summary = summary_of("class A { class B { interface C {} } enum D {} } class E {}");
-    let paths: Vec<String> = (0..summary.types.len()).map(|i| summary.path(i)).collect();
+    let paths: Vec<String> = (0..summary.types.len())
+        .map(|i| summary.path(i, &NAMES))
+        .collect();
     assert_eq!(paths, ["A", "A.B", "A.B.C", "A.D", "E"]);
-    let top: Vec<&str> = summary.top_level_types().map(|t| &*t.name).collect();
+    let top: Vec<String> = summary
+        .top_level_types()
+        .map(|t| NAMES.text(t.name).to_string())
+        .collect();
     assert_eq!(top, ["A", "E"]);
+    let path = |p: &[&str]| -> Vec<Name> { p.iter().map(|n| NAMES.intern(n)).collect() };
+    assert_eq!(summary.find(&path(&["A", "B", "C"])), Some(2));
+    assert_eq!(summary.find(&path(&["A", "D"])), Some(3));
+    assert_eq!(summary.find(&path(&["A", "C"])), None);
+    let members: Vec<usize> = summary.members_of(0).map(|(i, _)| i).collect();
+    assert_eq!(members, [1, 3]);
 }
 
 #[test]
@@ -131,7 +145,7 @@ fn type_refs_print_as_written() {
     let types: Vec<String> = summary.types[0]
         .fields
         .iter()
-        .map(|f| f.ty.to_string())
+        .map(|f| f.ty.display(&NAMES).to_string())
         .collect();
     assert_eq!(
         types,
@@ -199,12 +213,13 @@ fn deep_nesting_doesnt_recurse() {
             .stack_size(256 * 1024)
             .spawn(move || {
                 let tree = parse(Arc::from(text), ParseOptions { release: 27 }).tree;
-                let summary = summarize(&tree, false);
+                let names = Interner::new();
+                let summary = summarize(&tree, false, &names);
                 let copy = summary.clone();
                 assert_eq!(copy, summary, "{name}");
                 assert_eq!(Fingerprint::of(&copy), Fingerprint::of(&summary), "{name}");
                 if dump {
-                    assert!(!summary.debug_dump().is_empty(), "{name}");
+                    assert!(!summary.debug_dump(&names).is_empty(), "{name}");
                 }
                 drop(copy);
                 drop(summary);

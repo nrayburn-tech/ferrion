@@ -12,5 +12,8 @@ record .Pair(int a, int b)
   implicit accessor b()
   implicit field a
   implicit field b
+  implicit equals(Object)
+  implicit hashCode()
+  implicit toString()
 class .Helper
   implicit default constructor
