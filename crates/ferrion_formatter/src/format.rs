@@ -44,6 +44,8 @@ pub struct Formatter<'t> {
     comment_break: bool,
     /// The capped indents open now (see [`Formatter::take_capped_indent`]).
     capped_indents: u32,
+    /// The type-use annotations the file imports (see [`Formatter::type_use_imports`]).
+    type_use_imports: u32,
 }
 
 impl<'t> Formatter<'t> {
@@ -62,6 +64,7 @@ impl<'t> Formatter<'t> {
             line_owed: 0,
             comment_break: false,
             capped_indents: 0,
+            type_use_imports: 0,
         }
     }
 
@@ -153,6 +156,19 @@ impl<'t> Formatter<'t> {
     /// Returns a place taken with [`Formatter::take_capped_indent`].
     pub fn give_back_capped_indent(&mut self) {
         self.capped_indents -= 1;
+    }
+
+    /// Which of the type-use annotations that GJF recognizes by their import the file imports, one
+    /// bit each, as the declarations rules record them with
+    /// [`Formatter::set_type_use_imports`] at the compilation unit, so that the rules below it
+    /// look them up without scanning the imports again.
+    pub fn type_use_imports(&self) -> u32 {
+        self.type_use_imports
+    }
+
+    /// Records the file's [`Formatter::type_use_imports`].
+    pub fn set_type_use_imports(&mut self, imports: u32) {
+        self.type_use_imports = imports;
     }
 
     /// Whether the formatter is inside a disable region, copying instead of laying out.
