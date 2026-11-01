@@ -43,6 +43,246 @@ differences` checks against GJF and Ferrion both.
 The compilation unit, package and imports, type declarations and their bodies, members,
 annotations, enums, records, and `module-info.java`.
 
+### The compilation unit
+
+The package declaration, the imports, and the types, in input order. A blank line follows the
+package declaration and the last import, whatever the input has. Between imports, the input's
+blank lines are kept, at most one. Neither the package declaration nor an import ever breaks,
+however long. Imports aren't sorted or removed.
+
+```java
+package com.example;
+
+import java.util.List;
+import static java.util.Map.entry;
+
+class A {}
+```
+
+### Annotations on declarations
+
+The annotations before the first keyword modifier of a type, a method, a constructor, an enum
+constant, a package, or a module each go on their own line. An annotation after a keyword modifier
+stays on its line, and a block comment after an annotation stays on the annotation's line.
+
+```java
+@Override
+@Deprecated
+public @Nullable String name() {}
+```
+
+The exception is a method's `@Nullable` or `@NonNull` right before its return type, which stays on
+the type's line when the file imports it from `org.jspecify.annotations` or
+`org.checkerframework.checker.nullness.qual`. GJF recognizes those type-use annotations by their
+import (observed), and Ferrion does the same, from the syntax alone.
+
+```java
+import org.jspecify.annotations.Nullable;
+
+class A {
+  @Override
+  @Nullable String name() {}
+}
+```
+
+A field's annotations do the same if any of them has arguments. Annotations without arguments stay
+on the field's line, unless the field doesn't fit on it, and then they go on a line of their own
+before it, still together.
+
+```java
+@Inject @Named private Foo foo;
+
+@Column(name = "id")
+private long id;
+```
+
+A local variable's annotations go on their own lines if there are two or more, if one has
+arguments, or if the declaration doesn't fit on its line; otherwise they stay on its line. A
+parameter's annotations stay inline, and when the parameter doesn't fit, they break first, all on
+one line at +4 if they fit there, otherwise one per line.
+
+```java
+void m(@Nullable String name, final @Deprecated int count) {
+  @A int x = 1;
+  @SuppressWarnings("unchecked")
+  List<String> list = null;
+}
+```
+
+### Annotation arguments
+
+On the annotation's line if they fit. Otherwise one per line at +4, and also when there are two or
+more and one of them is a pair whose value is an array. A single array of values hugs the
+parentheses, with the values on the lines between the braces at +2.
+
+```java
+@A(
+    value = {"a", "b"},
+    other = 1)
+@B({
+  "first value",
+  "second value"
+})
+```
+
+An array of values that doesn't fit is filled, as many to a line as fit, if no value is wider than
+9 columns, and otherwise has one value per line, or all of them on one line between the broken
+braces if they fit there. A trailing comma keeps the braces broken. A pair's value breaks onto the
+next line at +4 when it doesn't fit, as a variable's value does, unless it's an array.
+
+### Type declarations
+
+`class`, `interface`, `enum`, `record`, and `@interface` headers. Each clause, `extends`,
+`implements`, or `permits`, moves onto the next line at +4 only if it doesn't fit on the line it
+would continue, so one clause can stay on the first line while the next breaks. A clause's types
+break one per line at +8 when they don't fit on its line. Type parameters that break are indented
+from the clause lines. The `{` ends the header's last line.
+
+```java
+class Handler extends AbstractHandler
+    implements FirstInterface, SecondInterface {
+  ...
+}
+
+class Registry
+    implements FirstVeryLongInterfaceName,
+        SecondVeryLongInterfaceName,
+        ThirdVeryLongInterfaceName {}
+```
+
+An enum's `implements` is the exception: when its types don't fit on the clause's line, they move
+together onto the next line at +8, and fill the lines from there. A record's `implements` goes on
+the next line when its components break.
+
+### Bodies and blank lines
+
+A body's members go on their own lines at +2; an empty body is `{}`. A blank line at the start of a
+class body is kept, and one at the end is removed, even after a trailing comment. A block comment on
+the line of the `{` goes on a line of its own, and a line comment stays on the line of the `{`.
+
+A doc comment goes on lines of its own, wherever it is, and a blank line between it and the code
+after it is removed: `/** Doc. */ int x;` becomes two lines, and so does `@A /** Doc. */`. Other
+comments before a member keep the input's line breaks.
+
+Between members, a blank line is required before and after every member except a plain field and
+an empty declaration (`;`), but not between a member and a `;` after it. A field is plain unless it
+has a doc comment or its annotations are on their own lines, because one has arguments or because
+the field doesn't fit on its line; a line comment that breaks the field doesn't count. Between two
+plain fields, or a plain field and a `;`, the input's choice is kept.
+
+```java
+class A {
+  int a;
+  int b;
+
+  /** The count. */
+  int count;
+
+  A() {}
+
+  void m() {}
+}
+```
+
+### Enums
+
+Each constant goes on its own line, whatever their number or length, with its annotations on their
+own lines before it. Blank lines between constants are kept, and one at the start or the end of the
+body is removed. The `;` that ends the constants follows the last of them, or goes on its own line
+after a trailing comma or when there are none. The members after it are laid out as in a class
+body.
+
+```java
+enum Color {
+  RED,
+  GREEN,
+  BLUE;
+
+  Color next() {}
+}
+```
+
+### Records
+
+The header's components break as a method's parameters do. A compact constructor is its name and
+its body.
+
+```java
+record Point(int x, int y) {
+  Point {
+    check(x, y);
+  }
+}
+```
+
+### Fields and variables
+
+`Type name = value`. When it doesn't fit, the value breaks onto the next line at +4, except an
+array initializer, whose braces break instead. If `Type name =` doesn't fit either, the name moves
+onto the next line at +4, and the value is indented from it. A value whose layout forces a break,
+such as a lambda with a block or an anonymous class, starts on the next line. Several declarators
+go one per line at +4 when they don't fit on one.
+
+```java
+private static final String MESSAGE =
+    "a string that doesn't fit on the line of the field's name";
+int first = 1,
+    second = 2;
+```
+
+### Methods and constructors
+
+Three breaks, outermost first, each taken only if what it ends doesn't fit on the line: after the
+type parameters, between the return type and the name (`Type name(` must fit), and in the
+parameters. The parameters go all on the line; otherwise all on the next line at +4; otherwise one
+per line at +4. When a break before the name is taken, the parameters are indented from the name.
+`throws` goes on the next line at +4 when the header from the parameters on doesn't fit on the
+line, or the parameters break. (GJF keeps `) throws X {` on the parameters' line when they're all on
+one line after the `(` and it fits there, and still breaks before `throws` when they're one per
+line; the document has no element for that choice yet, so Ferrion breaks in both cases.)
+
+```java
+void process(
+    String firstArgument, String secondArgument, String thirdArgument, int count) {}
+
+public static Map<String, List<Integer>>
+    longMethodName(int first, int second) {}
+
+void read(int first, int second)
+    throws IOException {}
+```
+
+A parameter's name moves onto the next line at +4 when the parameter doesn't fit on its line. An
+empty parameter list with a block comment in it gets a space before the `)`, `(/* none */ )`.
+
+### Annotation type elements
+
+An element's `default` value breaks onto the next line at +4 when it doesn't fit, unless it's an
+array, whose braces break instead.
+
+```java
+@interface Info {
+  String[] names() default {"a", "b"};
+}
+```
+
+### Modules
+
+`module-info.java`'s annotations go on their own lines. The directives go one per line, with a
+blank line between directives of different kinds and none between directives of the same kind,
+whatever the input has. The modules after `to` and the classes after `with` go one per line at +4,
+always.
+
+```java
+module com.example {
+  requires java.base;
+  requires java.sql;
+
+  exports com.example.api to
+      com.example.client;
+}
+```
+
 ## Statements
 
 Blocks, control flow, switch statements and expressions, `try`, labels, and local declarations.
