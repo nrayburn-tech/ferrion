@@ -182,7 +182,8 @@ impl Jar {
         for (position, &(name, _, index)) in candidates.iter().enumerate() {
             let skip = (archive_name(&archive, index).len() - name.len()) as u16;
             resolved.push((index, skip));
-            if name.ends_with(".class") {
+            // A name with an empty segment (`/A.class`, `p//A.class`) names no class.
+            if name.ends_with(".class") && !name.starts_with('/') && !name.contains("//") {
                 let package = name.rsplit_once('/').map_or("", |(package, _)| package);
                 packages
                     .entry(package.into())

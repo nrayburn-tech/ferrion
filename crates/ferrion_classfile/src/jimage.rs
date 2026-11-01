@@ -548,6 +548,9 @@ fn read_index(source: Source) -> Result<Image> {
             if module.is_empty() || module == "modules" || module == "packages" {
                 return Ok(None);
             }
+            // The other names are decoded on use, so a resource whose name can't be is left out.
+            image.text(location.base)?;
+            image.text(location.extension)?;
             Ok(Some((module, image.text(location.parent)?)))
         })();
         let (module, package) = match names {
