@@ -448,8 +448,10 @@ changes that fall in the range. A1 only has to keep that true; the range API its
   A1, `--skip-javadoc-formatting`, `--skip-sorting-imports`, and `--skip-removing-unused-imports`,
   since A1 doesn't reflow doc comments or touch imports. A2 drops the last three.
 - **Fixed point:** GJF runs on its own output until it stops changing, at most three times. Files
-  that don't settle are reported and left out. Every sample observed for this document settled in
-  one pass.
+  that don't settle are reported and left out. Over the corpus, 27 files change again on a second
+  pass, and all settle on it (observed): mostly a `//` comment aligned under a trailing `//`
+  comment on the line before, which moves to the code's indentation on the second pass. The
+  observations are logged in `tools/format-check/gjf.toml`.
 - **Left out:** files GJF rejects, files with `@formatter:off` or `@formatter:on`, and files
   Ferrion skips.
 - **Batching:** GJF is given many files per JVM start, on copies in a temporary directory, so the
