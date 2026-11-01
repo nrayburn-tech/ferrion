@@ -7,10 +7,9 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
-ferrion_diagnostics = { path = "../ferrion_diagnostics" }
-ferrion_lexer = { path = "../ferrion_lexer" }
-# Only the parser: the default features add an HTML renderer and a command-line option parser.
-pulldown-cmark = { version = "=0.13.6", default-features = false }
+ferrion_diagnostics.workspace = true
+ferrion_lexer.workspace = true
+pulldown-cmark.workspace = true
 
 [lints]
 workspace = true
