@@ -35,6 +35,8 @@ differences` checks against GJF and Ferrion both.
   code (SCOPE.md and the comments design). Case: `modifier-comment`.
 - **Disable regions:** GJF doesn't recognize the markers and formats the code between them;
   Ferrion copies it (SCOPE.md). Case: `formatter-off`.
+- **Long `//` comments** are left as they are, past the column limit. GJF 2.0.0 wraps one that
+  goes over onto a new `//` line (SCOPE.md: `//` comments are not wrapped). Case: `line-comment`.
 
 ## Declarations
 
