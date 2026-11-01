@@ -31,7 +31,7 @@ use ferrion_syntax::token_sets;
 use crate::SyntaxKind::{self, *};
 use crate::diagnostic::{Expected, ParseDiagnosticKind};
 use crate::grammar::types::{self, PRIMITIVE};
-use crate::grammar::{IDENT, decls, patterns, stmts};
+use crate::grammar::{IDENT, decls, numbers, patterns, stmts};
 use crate::parser::{CompletedMarker, Marker, Parser, TokenSet};
 
 const LITERAL: TokenSet = TokenSet::new(token_sets::LITERAL);
@@ -376,13 +376,18 @@ fn instanceof_rest(p: &mut Parser<'_>) {
 /// node for each, parses the operand once, and closes them at the end.
 fn unary(p: &mut Parser<'_>) -> Option<CompletedMarker> {
     let mut open: Vec<(Marker, SyntaxKind)> = Vec::new();
+    // Whether the last operator is a prefix `-`, which lets a decimal literal after it be one
+    // more than its type's largest value.
+    let mut negated = false;
     let mut progress = p.progress();
     loop {
         if p.at_set(PREFIX_OP) {
+            negated = p.at(Minus);
             let m = p.start();
             p.bump();
             open.push((m, PrefixExpr));
         } else if p.at(LParen) && classify_paren(p) == ParenKind::Cast {
+            negated = false;
             let m = p.start();
             p.bump();
             if types::intersection_type(p).is_none() {
@@ -397,7 +402,7 @@ fn unary(p: &mut Parser<'_>) -> Option<CompletedMarker> {
             break;
         }
     }
-    let mut result = postfix(p);
+    let mut result = postfix(p, negated);
     if result.is_none() && !open.is_empty() {
         expression_expected(p);
     }
@@ -408,13 +413,13 @@ fn unary(p: &mut Parser<'_>) -> Option<CompletedMarker> {
 }
 
 /// A primary, then member access, calls, array access, method references, and postfix `++`
-/// and `--`, in a loop.
-fn postfix(p: &mut Parser<'_>) -> Option<CompletedMarker> {
+/// and `--`, in a loop. `negated` if a prefix `-` comes right before it.
+fn postfix(p: &mut Parser<'_>, negated: bool) -> Option<CompletedMarker> {
     // At the start of a statement expression, javac reads a leading name as a type or an
     // expression, so its segments after the first can be annotated: `java.util.@A
     // Arrays.stream(a);`. Elsewhere, an annotation after a `.` is an error.
     let mut annotated_names = p.at_statement_expr_start() && p.at_set(IDENT);
-    let mut lhs = primary(p)?;
+    let mut lhs = primary(p, negated)?;
     // javac takes nothing after a switch expression or a lambda but binary operators.
     if matches!(lhs.kind(), SwitchExpr | LambdaExpr) {
         return Some(lhs);
@@ -551,8 +556,12 @@ fn method_reference(p: &mut Parser<'_>, qualifier: CompletedMarker) -> Completed
 
 // ----- Primaries -----
 
-fn primary(p: &mut Parser<'_>) -> Option<CompletedMarker> {
+fn primary(p: &mut Parser<'_>, negated: bool) -> Option<CompletedMarker> {
     if p.at_set(LITERAL) {
+        if let Some(kind) = numbers::out_of_range(p.current(), &p.nth_text(0), negated) {
+            let span = p.nth_span(0);
+            p.error(kind, span, span.start);
+        }
         let m = p.start();
         p.bump();
         return Some(m.complete(p, LiteralExpr));
@@ -724,7 +733,7 @@ fn annotated_primary(p: &mut Parser<'_>) -> Option<CompletedMarker> {
     types::annotations(p);
     let first = p.current();
     let reported = p.diagnostic_count();
-    let expr = postfix(p);
+    let expr = postfix(p, false);
     // An error inside the expression was reported first.
     if p.diagnostic_count() == reported {
         let span = Span::new(at.start, p.previous_end());

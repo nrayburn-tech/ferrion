@@ -1,0 +1,268 @@
+CompilationUnit 0..443 [error]
+  ClassDecl 0..442 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..13 "Numbers"
+    Whitespace 13..14 " "
+    ClassBody 14..442 [error]
+      LBrace 14..15 "{"
+      LineTerminator 15..16 "\n"
+      Whitespace 16..20 "    "
+      FieldDecl 20..39 [error]
+        PrimitiveType 20..23
+          IntKw 20..23 "int"
+        Whitespace 23..24 " "
+        VariableDeclarator 24..38 [error]
+          Identifier 24..25 "a"
+          Whitespace 25..26 " "
+          Eq 26..27 "="
+          Whitespace 27..28 " "
+          LiteralExpr 28..38
+            IntLiteral 28..38 "2147483648"
+        Semi 38..39 ";"
+      LineTerminator 39..40 "\n"
+      Whitespace 40..44 "    "
+      FieldDecl 44..64
+        PrimitiveType 44..47
+          IntKw 44..47 "int"
+        Whitespace 47..48 " "
+        VariableDeclarator 48..63
+          Identifier 48..49 "b"
+          Whitespace 49..50 " "
+          Eq 50..51 "="
+          Whitespace 51..52 " "
+          PrefixExpr 52..63
+            Minus 52..53 "-"
+            LiteralExpr 53..63
+              IntLiteral 53..63 "2147483648"
+        Semi 63..64 ";"
+      LineTerminator 64..65 "\n"
+      Whitespace 65..69 "    "
+      FieldDecl 69..89 [error]
+        PrimitiveType 69..72
+          IntKw 69..72 "int"
+        Whitespace 72..73 " "
+        VariableDeclarator 73..88 [error]
+          Identifier 73..74 "c"
+          Whitespace 74..75 " "
+          Eq 75..76 "="
+          Whitespace 76..77 " "
+          PrefixExpr 77..88 [error]
+            Minus 77..78 "-"
+            LiteralExpr 78..88
+              IntLiteral 78..88 "2147483649"
+        Semi 88..89 ";"
+      LineTerminator 89..90 "\n"
+      Whitespace 90..94 "    "
+      FieldDecl 94..116
+        PrimitiveType 94..97
+          IntKw 94..97 "int"
+        Whitespace 97..98 " "
+        VariableDeclarator 98..115
+          Identifier 98..99 "d"
+          Whitespace 99..100 " "
+          Eq 100..101 "="
+          Whitespace 101..102 " "
+          PrefixExpr 102..115
+            Minus 102..103 "-"
+            Whitespace 103..104 " "
+            PrefixExpr 104..115
+              Minus 104..105 "-"
+              LiteralExpr 105..115
+                IntLiteral 105..115 "2147483648"
+        Semi 115..116 ";"
+      LineTerminator 116..117 "\n"
+      Whitespace 117..121 "    "
+      FieldDecl 121..144 [error]
+        PrimitiveType 121..124
+          IntKw 121..124 "int"
+        Whitespace 124..125 " "
+        VariableDeclarator 125..143 [error]
+          Identifier 125..126 "e"
+          Whitespace 126..127 " "
+          Eq 127..128 "="
+          Whitespace 128..129 " "
+          BinaryExpr 129..143 [error]
+            LiteralExpr 129..130
+              IntLiteral 129..130 "1"
+            Whitespace 130..131 " "
+            Minus 131..132 "-"
+            Whitespace 132..133 " "
+            LiteralExpr 133..143
+              IntLiteral 133..143 "2147483648"
+        Semi 143..144 ";"
+      LineTerminator 144..145 "\n"
+      Whitespace 145..149 "    "
+      FieldDecl 149..171 [error]
+        PrimitiveType 149..152
+          IntKw 149..152 "int"
+        Whitespace 152..153 " "
+        VariableDeclarator 153..170 [error]
+          Identifier 153..154 "f"
+          Whitespace 154..155 " "
+          Eq 155..156 "="
+          Whitespace 156..157 " "
+          PrefixExpr 157..170 [error]
+            Minus 157..158 "-"
+            ParenExpr 158..170 [error]
+              LParen 158..159 "("
+              LiteralExpr 159..169
+                IntLiteral 159..169 "2147483648"
+              RParen 169..170 ")"
+        Semi 170..171 ";"
+      LineTerminator 171..172 "\n"
+      Whitespace 172..176 "    "
+      FieldDecl 176..195
+        PrimitiveType 176..179
+          IntKw 176..179 "int"
+        Whitespace 179..180 " "
+        VariableDeclarator 180..194
+          Identifier 180..181 "g"
+          Whitespace 181..182 " "
+          Eq 182..183 "="
+          Whitespace 183..184 " "
+          LiteralExpr 184..194
+            IntLiteral 184..194 "0xffffffff"
+        Semi 194..195 ";"
+      LineTerminator 195..196 "\n"
+      Whitespace 196..200 "    "
+      FieldDecl 200..222 [error]
+        PrimitiveType 200..203
+          IntKw 200..203 "int"
+        Whitespace 203..204 " "
+        VariableDeclarator 204..221 [error]
+          Identifier 204..205 "h"
+          Whitespace 205..206 " "
+          Eq 206..207 "="
+          Whitespace 207..208 " "
+          LiteralExpr 208..221
+            IntLiteral 208..221 "0x1_0000_0000"
+        Semi 221..222 ";"
+      LineTerminator 222..223 "\n"
+      Whitespace 223..227 "    "
+      FieldDecl 227..257 [error]
+        PrimitiveType 227..231
+          LongKw 227..231 "long"
+        Whitespace 231..232 " "
+        VariableDeclarator 232..256 [error]
+          Identifier 232..233 "i"
+          Whitespace 233..234 " "
+          Eq 234..235 "="
+          Whitespace 235..236 " "
+          LiteralExpr 236..256
+            LongLiteral 236..256 "9223372036854775808L"
+        Semi 256..257 ";"
+      LineTerminator 257..258 "\n"
+      Whitespace 258..262 "    "
+      FieldDecl 262..293
+        PrimitiveType 262..266
+          LongKw 262..266 "long"
+        Whitespace 266..267 " "
+        VariableDeclarator 267..292
+          Identifier 267..268 "j"
+          Whitespace 268..269 " "
+          Eq 269..270 "="
+          Whitespace 270..271 " "
+          PrefixExpr 271..292
+            Minus 271..272 "-"
+            LiteralExpr 272..292
+              LongLiteral 272..292 "9223372036854775808L"
+        Semi 292..293 ";"
+      LineTerminator 293..294 "\n"
+      Whitespace 294..298 "    "
+      FieldDecl 298..315 [error]
+        PrimitiveType 298..304
+          DoubleKw 298..304 "double"
+        Whitespace 304..305 " "
+        VariableDeclarator 305..314 [error]
+          Identifier 305..306 "k"
+          Whitespace 306..307 " "
+          Eq 307..308 "="
+          Whitespace 308..309 " "
+          LiteralExpr 309..314
+            DoubleLiteral 309..314 "1e309"
+        Semi 314..315 ";"
+      LineTerminator 315..316 "\n"
+      Whitespace 316..320 "    "
+      FieldDecl 320..338 [error]
+        PrimitiveType 320..326
+          DoubleKw 320..326 "double"
+        Whitespace 326..327 " "
+        VariableDeclarator 327..337 [error]
+          Identifier 327..328 "l"
+          Whitespace 328..329 " "
+          Eq 329..330 "="
+          Whitespace 330..331 " "
+          LiteralExpr 331..337
+            DoubleLiteral 331..337 "1e-400"
+        Semi 337..338 ";"
+      LineTerminator 338..339 "\n"
+      Whitespace 339..343 "    "
+      FieldDecl 343..360
+        PrimitiveType 343..349
+          DoubleKw 343..349 "double"
+        Whitespace 349..350 " "
+        VariableDeclarator 350..359
+          Identifier 350..351 "m"
+          Whitespace 351..352 " "
+          Eq 352..353 "="
+          Whitespace 353..354 " "
+          LiteralExpr 354..359
+            DoubleLiteral 354..359 "0e999"
+        Semi 359..360 ";"
+      LineTerminator 360..361 "\n"
+      Whitespace 361..365 "    "
+      FieldDecl 365..383 [error]
+        PrimitiveType 365..370
+          FloatKw 365..370 "float"
+        Whitespace 370..371 " "
+        VariableDeclarator 371..382 [error]
+          Identifier 371..372 "n"
+          Whitespace 372..373 " "
+          Eq 373..374 "="
+          Whitespace 374..375 " "
+          LiteralExpr 375..382
+            FloatLiteral 375..382 "3.5e38f"
+        Semi 382..383 ";"
+      LineTerminator 383..384 "\n"
+      Whitespace 384..388 "    "
+      FieldDecl 388..408 [error]
+        PrimitiveType 388..393
+          FloatKw 388..393 "float"
+        Whitespace 393..394 " "
+        VariableDeclarator 394..407 [error]
+          Identifier 394..395 "o"
+          Whitespace 395..396 " "
+          Eq 396..397 "="
+          Whitespace 397..398 " "
+          LiteralExpr 398..407
+            FloatLiteral 398..407 "0x1p-150f"
+        Semi 407..408 ";"
+      LineTerminator 408..409 "\n"
+      Whitespace 409..413 "    "
+      FieldDecl 413..440
+        PrimitiveType 413..418
+          FloatKw 413..418 "float"
+        Whitespace 418..419 " "
+        VariableDeclarator 419..439
+          Identifier 419..420 "p"
+          Whitespace 420..421 " "
+          Eq 421..422 "="
+          Whitespace 422..423 " "
+          LiteralExpr 423..439
+            FloatLiteral 423..439 "0x1.000002p-150f"
+        Semi 439..440 ";"
+      LineTerminator 440..441 "\n"
+      RBrace 441..442 "}"
+  LineTerminator 442..443 "\n"
+  Eof 443..443 ""
+error 28..38 @28 IntTooLarge: this number is too large for its type
+error 78..88 @78 IntTooLarge: this number is too large for its type
+error 133..143 @133 IntTooLarge: this number is too large for its type
+error 159..169 @159 IntTooLarge: this number is too large for its type
+error 208..221 @208 IntTooLarge: this number is too large for its type
+error 236..256 @236 IntTooLarge: this number is too large for its type
+error 309..314 @309 FloatTooLarge: this number is too large for its type: it would be infinity
+error 331..337 @331 FloatTooSmall: this number is too small for its type: it would be zero
+error 375..382 @375 FloatTooLarge: this number is too large for its type: it would be infinity
+error 398..407 @398 FloatTooSmall: this number is too small for its type: it would be zero

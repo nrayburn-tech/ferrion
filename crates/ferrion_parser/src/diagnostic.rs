@@ -187,6 +187,16 @@ pub enum ParseDiagnosticKind {
     /// switch rule in a switch statement. Anchor: the start of the statement, as for javac's
     /// `switch.case.unexpected.statement`.
     StatementNotAllowedInRule,
+    /// An `int` or `long` literal too large for its type: more than its largest value, or for a
+    /// decimal literal right after a prefix `-`, more than one more. Anchor: the literal, as for
+    /// javac's `int.number.too.large`.
+    IntTooLarge,
+    /// A floating-point literal that rounds to infinity in its type. Anchor: the literal, as for
+    /// javac's `fp.number.too.large`.
+    FloatTooLarge,
+    /// A floating-point literal that isn't zero but rounds to zero in its type. Anchor: the
+    /// literal, as for javac's `fp.number.too.small`.
+    FloatTooSmall,
     /// A language feature the release doesn't have (the version check). Anchor: the feature's,
     /// documented on [`Feature`]. javac's code and phase are in the feature's row: usually
     /// `feature.not.supported.in.source.plural`, with the feature's name and the release.
@@ -330,6 +340,9 @@ impl ParseDiagnosticKind {
             | ParseDiagnosticKind::DefaultNotAllowed
             | ParseDiagnosticKind::GuardNotAllowed
             | ParseDiagnosticKind::StatementNotAllowedInRule
+            | ParseDiagnosticKind::IntTooLarge
+            | ParseDiagnosticKind::FloatTooLarge
+            | ParseDiagnosticKind::FloatTooSmall
             | ParseDiagnosticKind::RestrictedTypeName { .. }
             | ParseDiagnosticKind::RestrictedType { .. }
             | ParseDiagnosticKind::VarArray
@@ -426,6 +439,9 @@ impl ParseDiagnosticKind {
             | ParseDiagnosticKind::InstanceInitializerInRecord
             | ParseDiagnosticKind::ImplicitClassPackage
             | ParseDiagnosticKind::RecordPatternAnnotations => false,
+            ParseDiagnosticKind::IntTooLarge
+            | ParseDiagnosticKind::FloatTooLarge
+            | ParseDiagnosticKind::FloatTooSmall => false,
         }
     }
 }
@@ -570,6 +586,13 @@ impl ParseDiagnostic {
             }
             ParseDiagnosticKind::StatementNotAllowedInRule => {
                 "a switch rule's body must be an expression, a block, or 'throw'".to_owned()
+            }
+            ParseDiagnosticKind::IntTooLarge => "this number is too large for its type".to_owned(),
+            ParseDiagnosticKind::FloatTooLarge => {
+                "this number is too large for its type: it would be infinity".to_owned()
+            }
+            ParseDiagnosticKind::FloatTooSmall => {
+                "this number is too small for its type: it would be zero".to_owned()
             }
             ParseDiagnosticKind::FeatureNotInRelease { feature, release } => {
                 feature.message(release)

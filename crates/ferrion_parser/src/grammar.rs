@@ -7,13 +7,15 @@
 //! - `types.rs`: types, type arguments, and type parameters;
 //! - `exprs.rs`: expressions;
 //! - `stmts.rs`: blocks, statements, and switch blocks;
-//! - `patterns.rs`: patterns.
+//! - `patterns.rs`: patterns;
+//! - `numbers.rs`: numeric literals out of range.
 //!
 //! Functions other areas call are `pub(crate)`, with the signatures their callers need.
 
 mod decls;
 mod exprs;
 mod modules;
+mod numbers;
 mod patterns;
 mod stmts;
 mod types;
