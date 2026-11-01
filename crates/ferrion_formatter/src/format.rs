@@ -411,6 +411,8 @@ impl<'t> Formatter<'t> {
 
     fn before_comment(&mut self, comment: Comment, token: SyntaxToken<'t>) {
         match comment.line_breaks_before {
+            // A doc comment starts its line, as GJF prints it (observed).
+            0 if token.kind() == SyntaxKind::DocComment => self.hard_line(),
             0 => {
                 if token
                     .prev_token()
