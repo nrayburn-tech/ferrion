@@ -313,6 +313,16 @@ cargo format-check differences
 When the GJF pin moves, `--bless` rewrites GJF's outputs. Ferrion's are written by hand, from the
 departure's entry in `docs/style.md`.
 
+The formatter's snapshots record GJF's style: check that each snapshot's expected output is GJF's
+output for its input, for every area or the ones named:
+
+```bash
+cargo format-check snapshots statements
+```
+
+A snapshot that isn't GJF's on purpose, for a departure or because its area's rules aren't written
+yet, is listed in `NOT_GJF` in `tools/format-check/src/snapshots.rs` with the reason.
+
 ### javap oracle
 
 `tools/javap-oracle` checks the class file reader (`crates/ferrion_classfile`) against the JDK's

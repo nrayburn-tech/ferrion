@@ -144,7 +144,7 @@ fn check_ferrion(name: &str, input: &[u8], expected: &[u8]) -> Result<Check> {
 }
 
 /// Every hunk from `old` to `new`, indented.
-fn show_diff(old: &[u8], new: &[u8]) -> String {
+pub fn show_diff(old: &[u8], new: &[u8]) -> String {
     let diff = Diff::new(old, new);
     let mut out = String::new();
     for hunk in diff.hunks(2) {

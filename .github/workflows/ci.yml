@@ -199,10 +199,14 @@ jobs:
         run: cargo format-check verify jedis
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
-      # Both download the pinned Google Java Format jar (tools/format-check/gjf.toml) into the
+      # These download the pinned Google Java Format jar (tools/format-check/gjf.toml) into the
       # corpus directory, and run it on this job's JDK.
       - name: Check the departures from Google Java Format
         run: cargo format-check differences
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Check that the formatter's snapshots are Google Java Format's output
+        run: cargo format-check snapshots
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
       - name: Check the diff against Google Java Format

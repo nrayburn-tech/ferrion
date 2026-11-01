@@ -415,8 +415,9 @@ changes that fall in the range. A1 only has to keep that true; the range API its
 
 - **Snapshots:** `crates/ferrion_formatter/tests/snapshots/<area>/`, each input with its expected
   output, written with `FERRION_BLESS=1` as the parser's are. Every snapshot also runs `verify`.
-  Expected outputs that match GJF are checked against it by the comparison below, so they don't
-  drift from the reference.
+  `cargo format-check snapshots` checks that each expected output is GJF's fixed point for the
+  input, so the snapshots don't drift from the reference; the ones that aren't GJF's on purpose,
+  for a departure or a rule not written yet, are listed in the tool with the reason.
 - **Corpus and javac tests:** a new tool, `tools/format-check` (`cargo format-check`), formats every
   corpus file at the releases it's meant for, and every javac test input that parses, runs `verify`
   on each, and reports throughput. It runs on one corpus project in CI for each pull request, as
