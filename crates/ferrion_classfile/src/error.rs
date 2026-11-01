@@ -79,6 +79,10 @@ impl Error {
         Error::new(ErrorKind::TooLarge, message)
     }
 
+    pub(crate) fn io(error: &std::io::Error, path: &Path) -> Error {
+        Error::new(ErrorKind::Io, error.to_string()).in_origin(Origin::File(path.into()))
+    }
+
     /// Sets the byte offset, if none is set yet.
     pub(crate) fn at(mut self, offset: u64) -> Error {
         self.0.offset.get_or_insert(offset);

@@ -33,6 +33,10 @@ impl<'a> Cursor<'a> {
         self.pos == self.data.len()
     }
 
+    pub(crate) fn rest(&self) -> &'a [u8] {
+        &self.data[self.pos..]
+    }
+
     pub(crate) fn error(&self, message: impl Into<String>) -> Error {
         Error::malformed(self.offset(), message)
     }
@@ -70,6 +74,18 @@ impl<'a> Cursor<'a> {
     pub(crate) fn u32(&mut self) -> Result<u32> {
         Ok(u32::from_be_bytes(self.array()?))
     }
+
+    pub(crate) fn u16_le(&mut self) -> Result<u16> {
+        Ok(u16::from_le_bytes(self.array()?))
+    }
+
+    pub(crate) fn u32_le(&mut self) -> Result<u32> {
+        Ok(u32::from_le_bytes(self.array()?))
+    }
+
+    pub(crate) fn u64_le(&mut self) -> Result<u64> {
+        Ok(u64::from_le_bytes(self.array()?))
+    }
 }
 
 #[cfg(test)]
@@ -80,7 +96,7 @@ mod tests {
     fn reads_and_bounds() {
         let mut cursor = Cursor::new(&[1, 2, 3, 4, 5, 6, 7], 100);
         assert_eq!(cursor.u16().unwrap(), 0x0102);
-        assert_eq!(cursor.u16().unwrap(), 0x0304);
+        assert_eq!(cursor.u16_le().unwrap(), 0x0403);
         assert_eq!(cursor.offset(), 104);
         let error = cursor.u32().unwrap_err();
         assert_eq!(error.offset(), Some(104));
