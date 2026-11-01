@@ -36,6 +36,9 @@ pub struct Formatter<'t> {
     last_token: Option<TokenId>,
     /// The region being copied, if any.
     in_region: Option<Region>,
+    /// Whether a line comment trailing a token ended, and the line break after it is still to
+    /// come (see [`Formatter::doc`]).
+    line_owed: bool,
 }
 
 impl<'t> Formatter<'t> {
@@ -51,6 +54,7 @@ impl<'t> Formatter<'t> {
             next_comment: 0,
             last_token: None,
             in_region: None,
+            line_owed: false,
         }
     }
 
@@ -151,33 +155,33 @@ impl<'t> Formatter<'t> {
 
     pub fn space(&mut self) {
         if self.in_region.is_none() {
-            self.doc.space();
+            self.doc().space();
         }
     }
 
     #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn line(&mut self) {
         if self.in_region.is_none() {
-            self.doc.line();
+            self.doc().line();
         }
     }
 
     #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn soft_line(&mut self) {
         if self.in_region.is_none() {
-            self.doc.soft_line();
+            self.doc().soft_line();
         }
     }
 
     pub fn hard_line(&mut self) {
         if self.in_region.is_none() {
-            self.doc.hard_line();
+            self.doc().hard_line();
         }
     }
 
     pub fn blank_line(&mut self) {
         if self.in_region.is_none() {
-            self.doc.blank_line();
+            self.doc().blank_line();
         }
     }
 
@@ -211,7 +215,7 @@ impl<'t> Formatter<'t> {
     /// Runs `f` in a group and returns the group, for [`Formatter::indent_if_broken`].
     #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn group(&mut self, f: impl FnOnce(&mut Self)) -> u32 {
-        let group = self.doc.start_group();
+        let group = self.doc().start_group();
         f(self);
         self.doc.end();
         group
@@ -221,26 +225,26 @@ impl<'t> Formatter<'t> {
     /// names the group it's in.
     #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn start_group(&mut self) -> u32 {
-        self.doc.start_group()
+        self.doc().start_group()
     }
 
     /// Starts a group with an alternative to breaking (see
     /// [`crate::document::Element::Alternative`]), which the caller ends with [`Formatter::end`].
     pub fn start_group_with_alternative(&mut self) -> u32 {
-        self.doc.start_group_with_alternative()
+        self.doc().start_group_with_alternative()
     }
 
     /// Marks the end of the head of `group`'s alternative.
     pub fn alternative_head(&mut self, group: u32) {
         if self.in_region.is_none() {
-            self.doc.alternative_head(group);
+            self.doc().alternative_head(group);
         }
     }
 
     /// Marks the start of the tail of `group`'s alternative.
     pub fn alternative_tail(&mut self, group: u32) {
         if self.in_region.is_none() {
-            self.doc.alternative_tail(group);
+            self.doc().alternative_tail(group);
         }
     }
 
@@ -251,31 +255,31 @@ impl<'t> Formatter<'t> {
 
     #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn indent(&mut self, kind: IndentKind, f: impl FnOnce(&mut Self)) {
-        self.doc.start_indent(kind);
+        self.doc().start_indent(kind);
         f(self);
         self.doc.end();
     }
 
     pub fn start_indent(&mut self, kind: IndentKind) {
-        self.doc.start_indent(kind);
+        self.doc().start_indent(kind);
     }
 
     /// Starts a hanging indent (see [`crate::document::Element::Hanging`]), which the caller
     /// ends with [`Formatter::end`].
     pub fn start_hanging(&mut self, kind: IndentKind) {
-        self.doc.start_hanging(kind);
+        self.doc().start_hanging(kind);
     }
 
     #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn indent_if_broken(&mut self, group: u32, f: impl FnOnce(&mut Self)) {
-        self.doc.start_indent_if_broken(group);
+        self.doc().start_indent_if_broken(group);
         f(self);
         self.doc.end();
     }
 
     #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn fill(&mut self, f: impl FnOnce(&mut Self)) {
-        self.doc.start_fill();
+        self.doc().start_fill();
         f(self);
         self.doc.end();
     }
@@ -284,13 +288,13 @@ impl<'t> Formatter<'t> {
     #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn fill_break(&mut self, soft: bool) {
         if self.in_region.is_none() {
-            self.doc.fill_break(soft);
+            self.doc().fill_break(soft);
         }
     }
 
     #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn hug(&mut self, f: impl FnOnce(&mut Self)) {
-        self.doc.start_hug();
+        self.doc().start_hug();
         f(self);
         self.doc.end();
     }
@@ -298,9 +302,23 @@ impl<'t> Formatter<'t> {
     /// Runs `f` in a hug that keeps only the innermost group around it from breaking (see
     /// [`DocumentBuilder::start_hug_in_group`]).
     pub fn hug_in_group(&mut self, f: impl FnOnce(&mut Self)) {
-        self.doc.start_hug_in_group();
+        self.doc().start_hug_in_group();
         f(self);
         self.doc.end();
+    }
+
+    /// The document, after the line break owed to a line comment, if any. That break comes
+    /// before whatever is emitted next, so it lands after the containers that end at the
+    /// comment: `a == b / 2 // c` then `|| d` breaks the `||` but not the `==` or the `/`, as
+    /// in GJF. Only ending a container doesn't pay it.
+    fn doc(&mut self) -> &mut DocumentBuilder {
+        if self.line_owed {
+            self.line_owed = false;
+            if self.in_region.is_none() {
+                self.doc.hard_line();
+            }
+        }
+        &mut self.doc
     }
 
     /// Asserts, in debug builds, that the tokens from `first` to `last` come next: after the last
@@ -388,7 +406,7 @@ impl<'t> Formatter<'t> {
             SyntaxKind::LineComment | SyntaxKind::DocLineComment
         );
         match comment.line_breaks_after {
-            0 if line_comment => self.hard_line(),
+            0 if line_comment => self.line_owed = true,
             0 => {
                 if token
                     .next_token()
@@ -410,7 +428,7 @@ impl<'t> Formatter<'t> {
         let end = region
             .end
             .map_or(text.len() as u32, |e| self.tree.token(e).span().end);
-        self.doc.verbatim(copied(
+        self.doc().verbatim(copied(
             text,
             start,
             end,
@@ -428,29 +446,31 @@ impl<'t> Formatter<'t> {
         match token.kind() {
             SyntaxKind::TextBlock => {
                 let span = token.span();
-                self.doc.verbatim(copied(
+                let verbatim = copied(
                     self.tree.text(),
                     span.start,
                     span.end,
                     VerbatimKind::Copy { to_end: false },
-                ));
+                );
+                self.doc().verbatim(verbatim);
             }
             SyntaxKind::BlockComment | SyntaxKind::DocComment if text.contains(['\n', '\r']) => {
                 let span = token.span();
-                self.doc.verbatim(copied(
+                let verbatim = copied(
                     self.tree.text(),
                     span.start,
                     span.end,
                     VerbatimKind::Comment,
-                ));
+                );
+                self.doc().verbatim(verbatim);
             }
             SyntaxKind::LineComment | SyntaxKind::DocLineComment => {
                 let trimmed = trim_end(text);
-                self.doc
+                self.doc()
                     .token(token.id(), trimmed.len() as u32, width(trimmed));
             }
             _ if text.is_empty() => {}
-            _ => self.doc.token(token.id(), text.len() as u32, width(text)),
+            _ => self.doc().token(token.id(), text.len() as u32, width(text)),
         }
     }
 }
