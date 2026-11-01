@@ -287,3 +287,16 @@ questions W2 raised:
    annotations, then by the resolved annotation.
 4. **A record's `equals`, `hashCode`, and `toString`** are listed with its implicit members
    (JLS 8.10.3).
+
+### The project symbols review
+
+After W4, the user accepted the project symbols as built and settled the questions W4 raised:
+
+1. **A dependency source set's types stay resolved in its own view**, once, and shared by every
+   source set that reads them. Where javac resolves a name differently because a dependent source
+   set redeclares the type (observation 5 in [names](semantic-names.md#observations)), the
+   comparison lists it as a known difference, and the corpus run counts how often it happens. If
+   the count isn't negligible, a dependency's references are resolved again by binary name in the
+   reader's view, as a class file's are.
+2. **A qualified name of more than 1,024 segments** is resolved up to the first 1,024 and is an
+   error after them (`Cause::TooLong`), so the parser's stress patterns stay linear.
