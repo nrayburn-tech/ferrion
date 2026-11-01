@@ -13,8 +13,6 @@
 //! - **Parameters and record components:** inline; when the parameter doesn't fit, the
 //!   annotations break onto their own lines at +4 as a group, then the rest of the parameter.
 
-use std::cell::Cell;
-
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
 use super::{emit, parts};
@@ -154,7 +152,7 @@ pub(super) fn modifiers<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, layout:
         .count();
     // The leading annotations that go on lines of their own.
     let own_lines = match layout {
-        Layout::BeforeType if leading == items.len() => leading - type_use_suffix(&items),
+        Layout::BeforeType if leading == items.len() => leading - type_use_suffix(f, &items),
         Layout::OwnLines | Layout::BeforeType => leading,
         _ => 0,
     };
@@ -213,11 +211,11 @@ pub(super) fn modifiers<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, layout:
 
 /// How many of the annotations at the end of `items`, all annotations, are type-use annotations
 /// that GJF keeps on the line of the type after them (see [`is_type_use`]).
-fn type_use_suffix(items: &[Item<'_>]) -> usize {
+fn type_use_suffix(f: &Formatter<'_>, items: &[Item<'_>]) -> usize {
     items
         .iter()
         .rev()
-        .take_while(|item| matches!(item, Item::Annotation(a) if is_type_use(*a)))
+        .take_while(|item| matches!(item, Item::Annotation(a) if is_type_use(f, *a)))
         .count()
 }
 
@@ -231,17 +229,10 @@ const TYPE_USE: &[&str] = &[
     "org.checkerframework.checker.nullness.qual.NonNull",
 ];
 
-thread_local! {
-    /// The simple names of the [`TYPE_USE`] annotations the file being formatted imports: set by
-    /// [`with_type_use`] while the compilation unit's rule formats the file, so that the rules
-    /// below it can look them up without scanning the imports again.
-    static IMPORTED_TYPE_USE: Cell<[bool; TYPE_USE.len()]> = const { Cell::new([false; TYPE_USE.len()]) };
-}
-
-/// Runs `format` with the type-use annotations `unit`, a compilation unit, imports, for
-/// [`is_type_use`] to see.
-pub(super) fn with_type_use<R>(unit: SyntaxNode<'_>, format: impl FnOnce() -> R) -> R {
-    let mut imported = [false; TYPE_USE.len()];
+/// Records on the formatter which of the [`TYPE_USE`] annotations `unit`, a compilation unit,
+/// imports, for [`is_type_use`] to look up without scanning the imports again.
+pub(super) fn record_type_use_imports(f: &mut Formatter<'_>, unit: SyntaxNode<'_>) {
+    let mut imported = 0;
     for import in unit
         .children()
         .take_while(|n| matches!(n.kind(), K::PackageDecl | K::ImportDecl))
@@ -254,18 +245,13 @@ pub(super) fn with_type_use<R>(unit: SyntaxNode<'_>, format: impl FnOnce() -> R)
             && name.kind() == K::Name
         {
             for (i, &qualified) in TYPE_USE.iter().enumerate() {
-                imported[i] |= name_is(*name, qualified);
+                if name_is(*name, qualified) {
+                    imported |= 1 << i;
+                }
             }
         }
     }
-    struct Restore([bool; TYPE_USE.len()]);
-    impl Drop for Restore {
-        fn drop(&mut self) {
-            IMPORTED_TYPE_USE.set(self.0);
-        }
-    }
-    let _restore = Restore(IMPORTED_TYPE_USE.replace(imported));
-    format()
+    f.set_type_use_imports(imported);
 }
 
 /// Whether `name`, a `Name` node, is the qualified name `qualified`, comparing its identifiers.
@@ -287,7 +273,7 @@ fn name_is(name: SyntaxNode<'_>, qualified: &str) -> bool {
 
 /// Whether `annotation` is one of the [`TYPE_USE`] annotations the file imports, without
 /// arguments.
-fn is_type_use(annotation: SyntaxNode<'_>) -> bool {
+fn is_type_use(f: &Formatter<'_>, annotation: SyntaxNode<'_>) -> bool {
     let annotation = parts(annotation);
     let [_, NodeOrToken::Node(name)] = annotation.as_slice() else {
         return false;
@@ -296,9 +282,9 @@ fn is_type_use(annotation: SyntaxNode<'_>) -> bool {
     let [NodeOrToken::Token(identifier)] = name.as_slice() else {
         return false;
     };
-    let imported = IMPORTED_TYPE_USE.get();
-    TYPE_USE.iter().zip(imported).any(|(qualified, imported)| {
-        imported && qualified.rsplit('.').next() == Some(identifier.text())
+    let imported = f.type_use_imports();
+    TYPE_USE.iter().enumerate().any(|(i, qualified)| {
+        imported & (1 << i) != 0 && qualified.rsplit('.').next() == Some(identifier.text())
     })
 }
 

@@ -2,7 +2,7 @@
 
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
-use super::annotations::{own_lines, with_type_use};
+use super::annotations::{own_lines, record_type_use_imports};
 use super::{emit, first_token, parts, types};
 use crate::document::IndentKind;
 use crate::format::Formatter;
@@ -13,30 +13,29 @@ use crate::rules::space_between;
 /// imports, the imports in input order with the input's blank lines between them, and the
 /// types and members with the blank lines of a class body between them.
 pub(super) fn compilation_unit<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
-    with_type_use(node, || {
-        let mut previous: Option<NodeOrToken<'t>> = None;
-        let mut previous_spaced = false;
-        for part in parts(node) {
-            let kind = part.kind();
-            if kind == K::Eof {
-                emit(f, part);
-                break;
-            }
-            let spaced = types::spaced_member(part);
-            match previous.map(|p| p.kind()) {
-                None => {}
-                Some(K::PackageDecl) => f.blank_line(),
-                Some(K::ImportDecl) if kind == K::ImportDecl => {
-                    f.line_break_before(first_token(part));
-                }
-                Some(K::ImportDecl) => f.blank_line(),
-                Some(_) => types::member_break(f, previous_spaced, part, spaced),
-            }
+    record_type_use_imports(f, node);
+    let mut previous: Option<NodeOrToken<'t>> = None;
+    let mut previous_spaced = false;
+    for part in parts(node) {
+        let kind = part.kind();
+        if kind == K::Eof {
             emit(f, part);
-            previous = Some(part);
-            previous_spaced = spaced;
+            break;
         }
-    });
+        let spaced = types::spaced_member(part);
+        match previous.map(|p| p.kind()) {
+            None => {}
+            Some(K::PackageDecl) => f.blank_line(),
+            Some(K::ImportDecl) if kind == K::ImportDecl => {
+                f.line_break_before(first_token(part));
+            }
+            Some(K::ImportDecl) => f.blank_line(),
+            Some(_) => types::member_break(f, previous_spaced, part, spaced),
+        }
+        emit(f, part);
+        previous = Some(part);
+        previous_spaced = spaced;
+    }
 }
 
 /// The rule for a package declaration: its annotations on their own lines, then the declaration,
