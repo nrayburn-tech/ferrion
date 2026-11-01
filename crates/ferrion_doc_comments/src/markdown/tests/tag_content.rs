@@ -1,5 +1,4 @@
 //! Each case was observed by running javadoc 27 on a `///` comment of the same shape and reading
-//! the HTML it generated. The case names (`M01`, `E05`, ...) are those of the observations.
 
 use super::*;
 use crate::model::Inline as Literal;
@@ -117,7 +116,7 @@ fn check(lines: &str, blocks: &[&str], expected_tags: &[&str]) -> MarkdownCommen
 
 #[test]
 fn descriptive_content_is_markdown() {
-    // M01, M02: link labels are Markdown.
+    // Link labels are Markdown.
     check(
         " {@link List the *list* and **bold** and `code`} and {@linkplain List a *b*}.",
         &["p: {@link} and {@linkplain}."],
@@ -126,7 +125,7 @@ fn descriptive_content_is_markdown() {
             "{@linkplain List => p: a *b*}",
         ],
     );
-    // M03, M04: so are summaries and returns.
+    // So are summaries and returns.
     check(
         " {@summary The *summary*. Second.} {@return the *value* and `code`}",
         &["p: {@summary} {@return}"],
@@ -135,8 +134,8 @@ fn descriptive_content_is_markdown() {
             "{@return p: the *value* and `code`}",
         ],
     );
-    // M05, E11: an index entry's description is Markdown (the search index reads "a *x* b c"),
-    // but its term isn't ("t *u*").
+    // An index entry's description is Markdown (the search index reads "a *x* b c"), but its term
+    // isn't ("t *u*").
     check(
         r#" {@index term a \*x\* `b` **c**} {@index "t *u*" d}."#,
         &["p: {@index} {@index}."],
@@ -145,19 +144,19 @@ fn descriptive_content_is_markdown() {
             "{@index t *u* => p: d}",
         ],
     );
-    // E34: no label.
+    // No label.
     check(
         " {@link List} and {@linkplain List   }.",
         &["p: {@link} and {@linkplain}."],
         &["{@link List}", "{@linkplain List}"],
     );
-    // M15: links to program elements, links, and HTML.
+    // Links to program elements, links, and HTML.
     check(
         " {@summary see [List] and [x](http://e.com) and <b>html</b>.} Rest.",
         &["p: {@summary} Rest."],
         &["{@summary p: see [List][=List] and [x](http://e.com) and <b>html</b>.}"],
     );
-    // E10, E33: hard line breaks.
+    // Hard line breaks.
     check(
         " top  \n break {@link List a  \n b} and {@link List c\\\n d}.",
         &["p: top⏎!break {@link} and {@link}."],
@@ -167,7 +166,7 @@ fn descriptive_content_is_markdown() {
 
 #[test]
 fn descriptive_content_is_a_document() {
-    // M16, E35, E09: content has blocks of its own.
+    // Content has blocks of its own.
     check(
         " {@link List a\n # b\n - c\n\n d} e.",
         &["p: {@link} e."],
@@ -178,7 +177,7 @@ fn descriptive_content_is_a_document() {
         &["p: {@link} e."],
         &["{@link List => p: a | list None tight=true: [[\"p: b\"], [\"p: c\"]]}"],
     );
-    // F21, J05: from its first line.
+    // From its first line.
     check(
         " {@link List  # x} {@linkplain List - a} {@link List > q}.",
         &["p: {@link} {@linkplain} {@link}."],
@@ -188,8 +187,8 @@ fn descriptive_content_is_a_document() {
             "{@link List => quote: [\"p: q\"]}",
         ],
     );
-    // E23: which starts after whitespace and line breaks, so `code` isn't a code block, but E24:
-    // later lines keep their indentation.
+    // The content starts after whitespace and line breaks, so `code` isn't a code block, but later
+    // lines keep their indentation.
     check(
         " {@summary\n     code\n } c.",
         &["p: {@summary} c."],
@@ -200,8 +199,8 @@ fn descriptive_content_is_a_document() {
         &["p: {@link} c."],
         &["{@link List => p: a | code None: \"code\\n\"}"],
     );
-    // E15: the section's link reference definitions don't apply in it, so `[a]` is a link to a
-    // program element (javadoc: "reference not found"), but F22: its own do.
+    // The section's link reference definitions don't apply in it, so `[a]` is a link to a
+    // program element (javadoc: "reference not found"), but its own do.
     check(
         " {@link List see [a] and [List]} b.\n\n [a]: http://example.com",
         &["p: {@link} b.", "def [a]: http://example.com"],
@@ -216,18 +215,18 @@ fn descriptive_content_is_a_document() {
 
 #[test]
 fn literal_content_is_not_markdown() {
-    // M06, M07: `{@code}`, `{@literal}`, and snippets are literal text.
+    // `{@code}`, `{@literal}`, and snippets are literal text.
     check(
         " {@code a *b* `c`} and {@literal x *y* `z`}.",
         &["p: {@code} and {@literal}."],
         &["{@code a *b* `c`}", "{@literal x *y* `z`}"],
     );
     check(
-        " M07 {@snippet :\n int *x* = 1; // `y`\n }",
-        &["p: M07 {@snippet}"],
+        " a {@snippet :\n int *x* = 1; // `y`\n }",
+        &["p: a {@snippet}"],
         &["{@snippet : int *x* = 1; // `y`⏎}"],
     );
-    // M09: so are unknown tags; E12, E13: code spans and escapes don't hide their braces.
+    // So are unknown tags, and code spans in literal text don't hide its braces.
     check(
         " {@foo the *custom* `tag`} after.",
         &["p: {@foo} after."],
@@ -239,7 +238,7 @@ fn literal_content_is_not_markdown() {
         &["p: {@code}` b} c."],
         &["{@code a `}"],
     );
-    // E06, E32
+    // Nor do backslashes.
     check(
         " {@code a\\}b} c}.",
         &["p: {@code}b} c}."],
@@ -250,7 +249,7 @@ fn literal_content_is_not_markdown() {
         &["p: {@literal} b} c."],
         &["{@literal a \\}"],
     );
-    // M08
+    // Nor are tags without descriptive content.
     check(
         " {@value #C} and {@value %x #C} and {@inheritDoc} and {@systemProperty a.b}.",
         &["p: {@value} and {@value} and {@inheritDoc} and {@systemProperty}."],
@@ -265,19 +264,19 @@ fn literal_content_is_not_markdown() {
 
 #[test]
 fn markdown_does_not_cross_tag_boundaries() {
-    // M11: emphasis forms around a tag, but its `*`s don't pair with the label's.
+    // Emphasis forms around a tag, but its `*`s don't pair with the label's.
     check(
         " *a {@link List b* c} d*.",
         &["p: *a {@link} d*."],
         &["{@link List => p: b* c}"],
     );
-    // M12
+    // Nor with `*`s after it.
     check(
         " {@link List *a} b*.",
         &["p: {@link} b*."],
         &["{@link List => p: *a}"],
     );
-    // E29, E28, E16, E17: links, autolinks, and HTML don't hide braces.
+    // Links, autolinks, and HTML don't hide braces.
     check(
         " {@link List a [b}](http://x) c} d.",
         &["p: {@link}](http://x) c} d."],
@@ -298,7 +297,7 @@ fn markdown_does_not_cross_tag_boundaries() {
         &["p: {@link}\">x</b>} c."],
         &["{@link List => p: a <b title=\"}"],
     );
-    // E26, E27: braces nest.
+    // Braces nest.
     check(
         " {@link List a {b} c} d.",
         &["p: {@link} d."],
@@ -313,8 +312,7 @@ fn markdown_does_not_cross_tag_boundaries() {
 
 #[test]
 fn code_hides_braces() {
-    // M13, M19, E01, E07, E14: a code span in the content hides a `}`, as does E08, one over a
-    // line break.
+    // A code span in the content hides a `}`, as does one over a line break.
     check(
         " {@link List a `}` b} c.",
         &["p: {@link} c."],
@@ -345,20 +343,20 @@ fn code_hides_braces() {
         &["p: {@link} e."],
         &["{@link List => p: a `b } c` d}"],
     );
-    // F29, G15: within a block quote or list item too.
+    // Within a block quote or list item too.
     check(
         " {@link List a\n > `b\n > }` c} d.",
         &["p: {@link} d."],
         &["{@link List => p: a | quote: [\"p: `b }` c\"]}"],
     );
-    // E02: a backtick without a match is text.
+    // A backtick without a match is text.
     check(
         " {@link List a `b} c.",
         &["p: {@link} c."],
         &["{@link List => p: a `b}"],
     );
-    // E04, F24, F04, G03, G04, G06, G16: a code span doesn't continue past a blank line or into
-    // a heading, list, block quote, or fence.
+    // A code span doesn't continue past a blank line or into a heading, list, block quote, or
+    // fence.
     check(
         " {@link List a `b} c.\n\n Para `text` here.",
         &["p: {@link} c.", "p: Para `text` here."],
@@ -374,7 +372,7 @@ fn code_hides_braces() {
         &["p: {@link} c", "list None tight=true: [[\"p: H ` d} e.\"]]"],
         &["{@link List => p: a `b}"],
     );
-    // E30, F01, F02, G14: code blocks hide braces.
+    // Code blocks hide braces.
     check(
         " {@link List a\n ```\n }\n ```\n b} c.",
         &["p: {@link} c."],
@@ -390,7 +388,7 @@ fn code_hides_braces() {
         &["p: {@link} c."],
         &["{@link List => p: a | code None: \"}\\n\" | p: b}"],
     );
-    // E18, J12, J13: and tags.
+    // And tags.
     check(
         " {@link List a `{@code x}` b} c.",
         &["p: {@link} c."],
@@ -406,13 +404,13 @@ fn code_hides_braces() {
         &["p: {@link} b."],
         &["{@link List => p: a | code Some(\"\"): \"{@code x}\\n\"}"],
     );
-    // J02: a code span that starts inside a literal tag hides nothing after it.
+    // A code span that starts inside a literal tag hides nothing after it.
     check(
         " {@code `} {@link List x `y} z}.",
         &["p: {@code} {@link} z}."],
         &["{@code `}", "{@link List => p: x `y}"],
     );
-    // E03, G13: but a code span or code block can make the tag unclosed.
+    // But a code span or code block can make the tag unclosed.
     let parsed = check(
         " {@link List a `b} c.\n More `text` here.",
         &["p: {@link}"],
@@ -429,9 +427,8 @@ fn code_hides_braces() {
 
 #[test]
 fn backslashes_hide_two_characters() {
-    // H1x, I5, I6, I9, I13, H50: before `{@`, one or two backslashes, or a backslash and any
-    // character, hide the tag; three don't. (H13: the Markdown renders `\\\` before the tag as
-    // `\\`.)
+    // Before `{@`, one or two backslashes, or a backslash and any character, hide the tag; three
+    // don't. (The Markdown renders `\\\` before the tag as `\\`.)
     check(" a \\{@code x} b.", &["p: a {@code x} b."], &[]);
     check(" a \\\\{@code x} b.", &["p: a \\{@code x} b."], &[]);
     check(
@@ -448,7 +445,7 @@ fn backslashes_hide_two_characters() {
     );
     check(" x\\ {@code x} b.", &["p: x\\ {@code x} b."], &[]);
     check(" a \\*{@code x}* b.", &["p: a *{@code x}* b."], &[]);
-    // M14, E20, E25, H2x, I1 to I4, I10, J11: the same before a `}` in descriptive content.
+    // The same before a `}` in descriptive content.
     check(
         " {@link List a \\*b\\* \\} c} d.",
         &["p: {@link} d."],
@@ -504,13 +501,13 @@ fn backslashes_hide_two_characters() {
         &["p: {@link} c."],
         &["{@link List => p: }} b}"],
     );
-    // I7: a line break is one of the two.
+    // A line break is one of the two.
     check(
         " {@link List a\\\n } b} c.",
         &["p: {@link} c."],
         &["{@link List => p: a⏎!} b}"],
     );
-    // E05, H4x, E21: before a `{`, which then doesn't nest, or a nested tag.
+    // Before a `{`, which then doesn't nest, or a nested tag.
     check(
         " {@link List a \\{ b} c}.",
         &["p: {@link} c}."],
@@ -526,7 +523,7 @@ fn backslashes_hide_two_characters() {
         &["p: {@link} b} c."],
         &["{@link List => p: a {@code x}"],
     );
-    // E19, H3x, F08: before a backtick, which then doesn't begin a code span.
+    // Before a backtick, which then doesn't begin a code span.
     check(
         " {@link List a \\`} b} c.",
         &["p: {@link} c."],
@@ -542,7 +539,7 @@ fn backslashes_hide_two_characters() {
         &["p: {@link} c` d} e."],
         &["{@link List => p: a \\`b}"],
     );
-    // I11, I12: but backslashes in code spans are text.
+    // But backslashes in code spans are text.
     check(
         " a `b \\` {@code x} c.",
         &["p: a `b \\` {@code} c."],
@@ -557,8 +554,8 @@ fn backslashes_hide_two_characters() {
 
 #[test]
 fn nested_tags() {
-    // M10, M17, F10, F17, F27, F28: tags nest in descriptive content, which is Markdown at every
-    // level, and emphasis forms around them.
+    // Tags nest in descriptive content, which is Markdown at every level, and emphasis forms around
+    // them.
     let parsed = check(
         " {@summary a {@link List *b* `c`} d.}",
         &["p: {@summary}"],
@@ -609,7 +606,7 @@ fn nested_tags() {
 
 #[test]
 fn malformed_tags() {
-    // M20, F14: an unclosed tag's content runs to the end of the comment.
+    // An unclosed tag's content runs to the end of the comment.
     let parsed = check(
         " {@link List *a*",
         &["p: {@link}"],
@@ -636,7 +633,7 @@ fn malformed_tags() {
         &["{@link List => p: a {@ b}"],
     );
     assert_eq!(kinds(&parsed), [DiagnosticKind::MissingTagName]);
-    // F16: block tags aren't read in a tag.
+    // Block tags aren't read in a tag.
     check(
         " {@link List a\n @param x} c.",
         &["p: {@link} c."],
