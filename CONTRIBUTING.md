@@ -277,6 +277,42 @@ recovery improves, raise the thresholds to a little below the new measurements o
 and of the weekly one (`--seed 2 --sample 20000`), as the file explains. `--verbose` lists the first declarations lost (`--limit` sets how many), with the mutation
 that lost them.
 
+### Format checks
+
+`tools/format-check` checks the formatter on the corpus. With the projects checked out, format
+every file at its source set's release, check the four safety properties of
+[docs/SCOPE.md](docs/SCOPE.md) on each output, and report throughput and peak memory:
+
+```bash
+cargo format-check verify
+```
+
+Like `cargo parser-check`, it takes project names, `jdk-tests`, and `jdk-deep-nesting`. Any
+failure fails the run; files with syntax errors are skipped and counted.
+
+The formatter's style follows Google Java Format 2.0.0, pinned in `tools/format-check/gjf.toml`
+and downloaded on first use into the corpus's jar cache. Never read GJF's source; learn what it
+does by running it, and write down what you find (see
+[docs/design/formatter.md](docs/design/formatter.md)). With `JAVA_HOME` set to Temurin 27, compare
+Ferrion's output with GJF's for each corpus file, and print the files compared and identical, the
+lines that differ, the largest differences, and a sample of hunks:
+
+```bash
+cargo format-check gjf
+```
+
+`--check` fails if a project's differing lines are above the number committed in
+`tools/format-check/gjf-diff.toml`. A change that lowers them records the new numbers with
+`--update`. Each departure from GJF has a case in `tools/format-check/differences/`: an input,
+GJF's output (`.gjf`), and Ferrion's (`.ferrion`). Check that both tools still produce them:
+
+```bash
+cargo format-check differences
+```
+
+When the GJF pin moves, `--bless` rewrites GJF's outputs. Ferrion's are written by hand, from the
+departure's entry in `docs/style.md`.
+
 ### javap oracle
 
 `tools/javap-oracle` checks the class file reader (`crates/ferrion_classfile`) against the JDK's
