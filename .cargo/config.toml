@@ -2,5 +2,6 @@
 benchmark = "run --quiet --release --package bench --"
 codegen = "run --quiet --package codegen --"
 corpus = "run --quiet --package corpus --"
+format-check = "run --quiet --release --package format-check --"
 oracle = "run --quiet --release --package oracle-check --"
 parser-check = "run --quiet --release --package parser-check --"
