@@ -41,6 +41,7 @@ use crate::classes::{Cache, ClassSource, ClassSources};
 use crate::decl_names::FileNames;
 use crate::input::ClassPathInput;
 use crate::packages::{Package, PackageIndex, TopLevel};
+use crate::resolve::FileScope;
 use crate::summary::{Summary, summarize};
 use crate::symbols::{ClassSourceId, MemberTypes, Supertypes, TypeEntry, TypeKey};
 use crate::view::{ModuleView, PlatformModules, SetConfig, SetEntry};
@@ -94,6 +95,7 @@ pub(crate) struct Shared {
     pub(crate) package_indexes: DerivedTable<SourceSetId, PackageIndex>,
     pub(crate) packages: DerivedTable<(SourceSetId, Name), Package>,
     pub(crate) module_views: DerivedTable<SourceSetId, ModuleView>,
+    pub(crate) file_scopes: DerivedTable<FileId, FileScope>,
     pub(crate) supertypes: DerivedTable<TypeKey, Supertypes>,
     pub(crate) member_types: DerivedTable<(SourceSetId, TypeKey), MemberTypes>,
     pub(crate) type_entries: DerivedTable<TypeKey, TypeEntry>,
@@ -287,6 +289,7 @@ impl Engine {
                 package_indexes: DerivedTable::new(),
                 packages: DerivedTable::new(),
                 module_views: DerivedTable::new(),
+                file_scopes: DerivedTable::new(),
                 supertypes: DerivedTable::tracked(|key| Dep::Supertypes(*key)),
                 member_types: DerivedTable::tracked(|(view, key)| Dep::MemberTypes(*view, *key)),
                 type_entries: DerivedTable::new(),
@@ -636,6 +639,7 @@ impl Snapshot {
                 Fingerprint::of(self.package_index_memo(*set)?.value.module_files())
             }
             Dep::ModuleView(set) => self.module_view_memo(*set)?.fingerprint,
+            Dep::FileScope(file) => self.file_scope_memo(*file)?.fingerprint,
             Dep::Supertypes(key) => self
                 .supertypes_memo(*key)?
                 .map_or(Fingerprint::CYCLE, |m| m.fingerprint),
@@ -664,6 +668,19 @@ impl Reads<'_> {
         })?;
         self.record(Dep::SetFiles(set), Fingerprint::from_version(version));
         Ok(files)
+    }
+
+    /// A file's summary entry. Records the whole summary.
+    pub(crate) fn summary_memo_recorded(
+        &mut self,
+        file: FileId,
+    ) -> Result<Arc<Memo<FileSummary>>, Cancelled> {
+        let memo = self
+            .snapshot
+            .summary_memo(file)?
+            .unwrap_or_else(|| missing(file));
+        self.record(Dep::Summary(file), memo.fingerprint);
+        Ok(memo)
     }
 
     /// A file's summary. Records the whole summary.

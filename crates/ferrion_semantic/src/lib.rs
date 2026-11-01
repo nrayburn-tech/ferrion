@@ -34,4 +34,4 @@ pub use input::{
     ClassPathInput, ClassesInput, FileId, FileInput, Platform, ProjectInput, SkippedFile,
     SourceSetId, SourceSetInput,
 };
-pub use names::{Interner, Name};
+pub use names::{Interner, Name, Path};

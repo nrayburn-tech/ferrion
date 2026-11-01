@@ -2,9 +2,10 @@
 //! the fuzz target in `fuzz/` and the tests. Not part of the public API.
 //!
 //! A dependency the engine fails to record would make it reuse a stale entry. So [`check_edits`]
-//! applies a sequence of edits to a small project with two source sets, and after each one asks
-//! the engine some of its questions and compares every answer with a fresh engine's, built from
-//! the same inputs. Which edits, and which questions, come from the input bytes: asking only some
+//! applies a sequence of edits to a small project with two source sets on the stand-in platform,
+//! and after each one asks the engine some of its questions (summaries, package tables, each
+//! file's type entries with their supertypes and member types, and its names in declarations)
+//! and compares every answer with a fresh engine's, built from the same inputs. Which edits, and which questions, come from the input bytes: asking only some
 //! questions leaves the other entries unverified across several revisions, which is where a
 //! stale entry would hide. Every entry the engine returns is also checked to carry its value's
 //! fingerprint.
@@ -13,6 +14,7 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use crate::packages::{Package, PackageIndex};
+use crate::testing::dump_file;
 use crate::{
     Cancelled, ClassPathInput, Engine, EngineOptions, FileId, FileInput, Fingerprint, ProjectInput,
     Snapshot, SourceSetId, SourceSetInput,
@@ -165,11 +167,31 @@ const STARTING_FILES: &[(usize, &str, &str)] = &[
         "r/D.java",
         "package r;\n\n@Generated\nclass D { @interface Q { int v() default 1; } }\n",
     ),
+    (
+        0,
+        "p/E.java",
+        "package p;\n\nimport java.util.*;\n\nclass E extends A<String> implements Runnable {\n    Inner inner;\n    B.M m;\n    List<Map.Entry<String, T>> entries;\n    public void run() {}\n}\n",
+    ),
+    (
+        1,
+        "p/F.java",
+        "package p;\n\nclass F extends E { Inner i; M m; static class G extends F {} }\n",
+    ),
 ];
 
 /// Fragments that edits insert, chosen to make and break declarations.
 const FRAGMENTS: &[&str] = &[
     "class A {}",
+    "class M {}",
+    "static class Inner {}",
+    "class Inner extends E {}",
+    "extends B.M",
+    "extends F",
+    "implements Runnable",
+    "import java.util.*;",
+    "import java.util.Map.Entry;",
+    "import static p.B.*;",
+    "List<String> list;",
     "class N { int f; }",
     "interface I {}",
     "enum E { X }",
@@ -257,7 +279,7 @@ impl Model {
                         .iter()
                         .map(|&d| ClassPathInput::SourceSet(d))
                         .collect(),
-                    platform: None,
+                    platform: Some(crate::testing::stub_platform()),
                     files: set
                         .files
                         .iter()
@@ -476,6 +498,19 @@ fn compare(
                     "{}'s summary differs from a fresh engine's:\n{actual}\nexpected:\n{expected}",
                     file.path,
                 ));
+            }
+            // Its types' entries, supertypes, and member types, and its names in declarations.
+            if every || choices.flip() {
+                old.check_fingerprints(file.id)
+                    .map_err(|e| format!("{}: {e}", file.path))?;
+                let actual = dump_file(&old, file.id);
+                let expected = dump_file(&new, new_id);
+                if actual != expected {
+                    return Err(format!(
+                        "{}'s names and types differ from a fresh engine's:\n{actual}\nexpected:\n{expected}",
+                        file.path,
+                    ));
+                }
             }
         }
         if every || choices.flip() {

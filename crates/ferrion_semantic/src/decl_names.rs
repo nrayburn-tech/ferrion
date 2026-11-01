@@ -21,7 +21,7 @@ use ferrion_syntax::{NodeId, SyntaxKind, SyntaxNode};
 
 use crate::classes::ClassSource;
 use crate::engine::derived::Reads;
-use crate::resolve::{FileScope, Frame, Resolver, Scope};
+use crate::resolve::{FileScope, Resolver, Scope};
 use crate::summary::{Header, ImportKind, QualifiedName, UnitKind, qualified};
 use crate::symbols::{
     Cause, ClassSourceId, ErrorSymbol, SymbolKey, Ty, TyPart, TypeKey, TypeResolution, TypeVarOwner,
@@ -146,7 +146,7 @@ impl Snapshot {
         let names = self.names();
         Ok(match key {
             TypeKey::Source { package, path, .. } => {
-                let path = names.text(path).replace('.', "$");
+                let path = names.path_text(path, "$");
                 if package.is_empty() {
                     path
                 } else {
@@ -160,10 +160,9 @@ impl Snapshot {
                     .file_stem()
                     .map(|s| s.to_string_lossy().into_owned())
                     .unwrap_or_default();
-                if path.is_empty() {
-                    stem
-                } else {
-                    format!("{stem}${}", names.text(path).replace('.', "$"))
+                match path {
+                    None => stem,
+                    Some(path) => format!("{stem}${}", names.path_text(path, "$")),
                 }
             }
             TypeKey::Class { binary, .. } => names.text(binary).to_string(),
@@ -351,40 +350,33 @@ struct Walker<'r, 's> {
     r: Resolver<'r, 's>,
     names: Arc<Interner>,
     set: SourceSetId,
-    file: FileId,
-    package: Name,
-    compact: bool,
     out: Vec<ResolvedName>,
+    /// The summary index the next type declaration has: the walk takes them in the summary's
+    /// order.
+    next_index: usize,
 }
 
-/// A type declaration still to walk, with the frames of its enclosing classes and its path.
+/// A type declaration still to walk, with the index of the type it is a member of.
 struct Pending<'t> {
     decl: ast::TypeDecl<'t>,
-    frames: Vec<Frame>,
-    path: Vec<Name>,
+    outer: Option<usize>,
 }
 
 fn compute(reads: &mut Reads<'_>, file: FileId) -> Result<FileNames, Cancelled> {
     let (tree, _) = reads.tree(file)?;
     let set = reads.snapshot.file(file)?.set;
-    let summary = reads.summary(file)?;
+    let file_scope = reads.file_scope(file)?;
     let names = reads.snapshot.names().clone();
-    let file_scope = FileScope::of(set, file, &summary, &names);
     let root = ast::CompilationUnit::cast(tree.root()).expect("the root is a compilation unit");
+    let compact = file_scope.summary.kind == UnitKind::Compact;
     let mut w = Walker {
         r: Resolver::new(reads, set),
         names: names.clone(),
         set,
-        file,
-        package: summary.package_name(),
-        compact: summary.kind == UnitKind::Compact,
         out: Vec::new(),
+        next_index: 0,
     };
-    let top = Scope {
-        file: &file_scope,
-        frames: Vec::new(),
-        method: None,
-    };
+    let top = Scope::top(&file_scope);
     if let Some(package) = root.package_decl() {
         for annotation in package.annotations() {
             w.annotation(&top, annotation)?;
@@ -400,27 +392,15 @@ fn compute(reads: &mut Reads<'_>, file: FileId) -> Result<FileNames, Cancelled> 
         w.module(&top, module)?;
     }
     let mut pending: Vec<Pending<'_>> = Vec::new();
-    if w.compact {
-        let key = TypeKey::Compact {
-            set,
-            file,
-            path: Name::EMPTY,
-        };
-        let frames = vec![Frame {
-            key,
-            type_params: Vec::new(),
-            members: true,
-        }];
+    if compact {
+        // The implicitly declared class is the summary's first type.
+        w.next_index = 1;
         let members: Vec<ast::Member<'_>> = root.members().collect();
-        w.body(&file_scope, key, &frames, &[], members, &mut pending)?;
+        w.body(&file_scope, 0, members, &mut pending)?;
     } else {
         for member in root.members().collect::<Vec<_>>().into_iter().rev() {
             if let ast::Member::TypeDecl(decl) = member {
-                pending.push(Pending {
-                    decl,
-                    frames: Vec::new(),
-                    path: Vec::new(),
-                });
+                pending.push(Pending { decl, outer: None });
             }
         }
     }
@@ -463,11 +443,27 @@ impl<'t> Walker<'_, '_> {
 
     /// A package declaration's name: every prefix is a package.
     fn packages(&mut self, name: ast::Name<'_>) -> Result<(), Cancelled> {
-        for node in name.syntax().descendants() {
-            if let Some(n) = ast::Name::cast(node) {
-                let package = qualified(n, &self.names).name();
-                self.record(node, Symbol::Package(package));
-            }
+        let chain = self.name_chain(name);
+        let mut package = Name::EMPTY;
+        for (i, (node, segment)) in chain.iter().enumerate() {
+            let symbol = if i < crate::resolve::MAX_SEGMENTS {
+                package = if i == 0 {
+                    *segment
+                } else {
+                    self.names.intern(&format!(
+                        "{}.{}",
+                        self.names.text(package),
+                        self.names.text(*segment)
+                    ))
+                };
+                Symbol::Package(package)
+            } else {
+                Symbol::Error(ErrorSymbol {
+                    name: qualified(name, &self.names).name(),
+                    cause: Cause::TooLong,
+                })
+            };
+            self.record(*node, symbol);
         }
         Ok(())
     }
@@ -778,59 +774,31 @@ impl<'t> Walker<'_, '_> {
         Ok(())
     }
 
-    fn type_decl<'f>(
+    fn type_decl(
         &mut self,
-        file_scope: &'f FileScope,
+        file_scope: &FileScope,
         pending: Pending<'t>,
         queue: &mut Vec<Pending<'t>>,
     ) -> Result<(), Cancelled> {
         let header = Header::of(pending.decl);
-        let mut path = pending.path;
-        path.push(
-            header
-                .name
-                .map_or(Name::EMPTY, |n| crate::summary::name_text(n, &self.names)),
-        );
-        let joined = self.written(&path);
-        let key = if self.compact {
-            TypeKey::Compact {
-                set: self.set,
-                file: self.file,
-                path: self.written(&path[1..]),
-            }
-        } else {
-            TypeKey::Source {
-                set: self.set,
-                package: self.package,
-                path: joined,
-            }
-        };
-        let around = Scope {
-            file: file_scope,
-            frames: pending.frames.clone(),
-            method: None,
-        };
+        let index = self.next_index;
+        self.next_index += 1;
+        // The summary has the type at this index, unless the tree and summary disagree, which
+        // they can't for the same tree; the names are left out if they do.
+        let name = header
+            .name
+            .map_or(Name::EMPTY, |n| crate::summary::name_text(n, &self.names));
+        let matches = file_scope
+            .summary
+            .types
+            .get(index)
+            .is_some_and(|t| t.name == name && t.outer.map(|o| o as usize) == pending.outer);
+        if !matches {
+            return Ok(());
+        }
+        let header_scope = Scope::of_type(file_scope, index, false);
+        let around = header_scope.around();
         self.modifiers(&around, header.modifiers)?;
-        let type_params: Vec<Name> = header
-            .type_parameters
-            .iter()
-            .flat_map(|p| p.parameters())
-            .map(|p| {
-                p.name()
-                    .map_or(Name::EMPTY, |n| crate::summary::name_text(n, &self.names))
-            })
-            .collect();
-        let mut frames = pending.frames;
-        frames.push(Frame {
-            key,
-            type_params: type_params.clone(),
-            members: false,
-        });
-        let header_scope = Scope {
-            file: file_scope,
-            frames: frames.clone(),
-            method: None,
-        };
         if let Some(params) = header.type_parameters {
             self.types_in(&header_scope, params.syntax())?;
         }
@@ -844,12 +812,7 @@ impl<'t> Walker<'_, '_> {
         {
             self.types_in(&header_scope, clause)?;
         }
-        frames.last_mut().unwrap().members = true;
-        let body = Scope {
-            file: file_scope,
-            frames: frames.clone(),
-            method: None,
-        };
+        let body = Scope::of_type(file_scope, index, true);
         if let Some(components) = header.components {
             self.types_in(&body, components.syntax())?;
         }
@@ -859,24 +822,19 @@ impl<'t> Walker<'_, '_> {
             }
         }
         let members: Vec<ast::Member<'t>> = header.members.into_iter().flatten().collect();
-        self.body(file_scope, key, &frames, &path, members, queue)
+        self.body(file_scope, index, members, queue)
     }
 
-    /// A body's members: their signatures, and member types queued with `frames`.
-    fn body<'f>(
+    /// The members of the type at `index`: their signatures, and member types queued.
+    fn body(
         &mut self,
-        file_scope: &'f FileScope,
-        key: TypeKey,
-        frames: &[Frame],
-        path: &[Name],
+        file_scope: &FileScope,
+        index: usize,
         members: Vec<ast::Member<'t>>,
         queue: &mut Vec<Pending<'t>>,
     ) -> Result<(), Cancelled> {
-        let body = Scope {
-            file: file_scope,
-            frames: frames.to_vec(),
-            method: None,
-        };
+        let key = file_scope.keys[index];
+        let body = Scope::of_type(file_scope, index, true);
         let mut member_types = Vec::new();
         let mut method_index = 0u32;
         for member in members {
@@ -940,8 +898,7 @@ impl<'t> Walker<'_, '_> {
         for decl in member_types.into_iter().rev() {
             queue.push(Pending {
                 decl,
-                frames: frames.to_vec(),
-                path: path.to_vec(),
+                outer: Some(index),
             });
         }
         Ok(())

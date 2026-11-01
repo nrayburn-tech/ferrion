@@ -65,6 +65,8 @@ pub(crate) enum Dep {
     ModuleFiles(SourceSetId),
     /// A source set's module.
     ModuleView(SourceSetId),
+    /// A file's scope: its summary and its types' keys.
+    FileScope(FileId),
     /// A source type's erased supertypes.
     Supertypes(TypeKey),
     /// A type's member types, in a view (the type's own set for a source type).
@@ -87,16 +89,26 @@ struct Active {
 
 struct Frame {
     dep: Dep,
-    cyclic: bool,
+    /// The entries of the cycles found through this one, itself included; empty if none.
+    cycle: Vec<Dep>,
 }
 
 /// Pushes `dep` on this thread's stack, or marks the cycle and returns `None` if it is on it
-/// already.
+/// already: every entry from it to the top of the stack is in the cycle, and each is told the
+/// cycle's entries.
 fn enter(dep: &Dep) -> Option<Entered> {
     ACTIVE.with_borrow_mut(|active| {
         if let Some(&position) = active.positions.get(dep) {
+            let members: Vec<Dep> = active.stack[position..]
+                .iter()
+                .map(|f| f.dep.clone())
+                .collect();
             for frame in &mut active.stack[position..] {
-                frame.cyclic = true;
+                for member in &members {
+                    if !frame.cycle.contains(member) {
+                        frame.cycle.push(member.clone());
+                    }
+                }
             }
             return None;
         }
@@ -104,7 +116,7 @@ fn enter(dep: &Dep) -> Option<Entered> {
         active.positions.insert(dep.clone(), position);
         active.stack.push(Frame {
             dep: dep.clone(),
-            cyclic: false,
+            cycle: Vec::new(),
         });
         Some(Entered { position })
     })
@@ -117,14 +129,18 @@ struct Entered {
 }
 
 impl Entered {
-    /// Whether a request made since the entry was pushed (or since [`Entered::reset`]) found a
-    /// cycle through it.
+    /// The entries of the cycles that requests made since the entry was pushed (or since
+    /// [`Entered::reset`]) found through it; empty if none.
+    fn cycle(&self) -> Vec<Dep> {
+        ACTIVE.with_borrow(|active| active.stack[self.position].cycle.clone())
+    }
+
     fn cyclic(&self) -> bool {
-        ACTIVE.with_borrow(|active| active.stack[self.position].cyclic)
+        ACTIVE.with_borrow(|active| !active.stack[self.position].cycle.is_empty())
     }
 
     fn reset(&self) {
-        ACTIVE.with_borrow_mut(|active| active.stack[self.position].cyclic = false);
+        ACTIVE.with_borrow_mut(|active| active.stack[self.position].cycle.clear());
     }
 }
 
@@ -176,6 +192,12 @@ impl<'s> Reads<'s> {
     /// cycle, and should give its cyclic value. Always false for an entry that isn't tracked.
     pub(crate) fn in_cycle(&self) -> bool {
         self.frame.is_some_and(Entered::cyclic)
+    }
+
+    /// The entries of the cycles found through this computation: whose values every entry in
+    /// the cycle gives, so that it is the same whichever was asked for first.
+    pub(crate) fn cycle(&self) -> Vec<Dep> {
+        self.frame.map(Entered::cycle).unwrap_or_default()
     }
 
     /// For loops in a computation: `Err(Cancelled)` once the revision has moved.

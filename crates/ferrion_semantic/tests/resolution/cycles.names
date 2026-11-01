@@ -4,7 +4,7 @@ B.C -> type a/B$C source a/B.java
 B -> type a/B source a/B.java
 # type a/A source a/A.java
   superclass error cycle B.C
-  cyclic
+  cyclic with type a/A source a/A.java, type a/B source a/B.java
   incomplete
   method A()V implicit
 == main a/B.java
@@ -12,7 +12,7 @@ a -> package a
 A -> type a/A source a/A.java
 # type a/B source a/B.java
   superclass error cycle A
-  cyclic
+  cyclic with type a/A source a/A.java, type a/B source a/B.java
   member C: type a/B$C source a/B.java
   incomplete
   method B()V implicit
@@ -42,7 +42,7 @@ O.B -> type b/O$B source b/O.java
 O -> type b/O source b/O.java
 # type b/O source b/O.java
   superclass error cycle O.B
-  cyclic
+  cyclic with type b/O source b/O.java
   member B: type b/O$B source b/O.java
   incomplete
   method O()V implicit
@@ -55,7 +55,7 @@ I.J -> type b/I$J source b/I.java
 I -> type b/I source b/I.java
 # type b/I source b/I.java
   interface error cycle I.J
-  cyclic
+  cyclic with type b/I source b/I.java
   member J: type b/I$J source b/I.java
   incomplete
 # type b/I$J source b/I.java
@@ -82,7 +82,7 @@ c -> package c
 Q -> type c/Q source c/Q.java
 # type c/P source c/P.java
   superclass error cycle Q
-  cyclic
+  cyclic with type c/P source c/P.java, type c/Q source c/Q.java
   incomplete
   method P()V implicit
 == main c/Q.java
@@ -90,6 +90,6 @@ c -> package c
 P -> type c/P source c/P.java
 # type c/Q source c/Q.java
   superclass error cycle P
-  cyclic
+  cyclic with type c/P source c/P.java, type c/Q source c/Q.java
   incomplete
   method Q()V implicit
