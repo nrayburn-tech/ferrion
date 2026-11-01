@@ -1,0 +1,20 @@
+class Features$P2 implements Features$Sh
+  minor version: 0
+  major version: 71
+  flags: (0x0020) ACC_SUPER
+  this_class: Features$P2
+  super_class: java/lang/Object
+  interfaces: 1, fields: 0, methods: 1, attributes: 3
+{
+  Features$P2(Features);
+    descriptor: (LFeatures;)V
+    flags: (0x0000)
+    MethodParameters:
+      Name                           Flags
+      this$0                         final mandated
+}
+SourceFile: "Features.java"
+NestHost: class Features
+InnerClasses:
+  P2=class Features$P2 of class Features
+  static Sh=class Features$Sh of class Features

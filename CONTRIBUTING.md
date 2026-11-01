@@ -277,6 +277,36 @@ recovery improves, raise the thresholds to a little below the new measurements o
 and of the weekly one (`--seed 2 --sample 20000`), as the file explains. `--verbose` lists the first declarations lost (`--limit` sets how many), with the mutation
 that lost them.
 
+### javap oracle
+
+`tools/javap-oracle` checks the class file reader (`crates/ferrion_classfile`) against the JDK's
+own tools, through public APIs only. It runs `javap -v -p` in process and normalizes its output,
+digests what the jrt file system, `ZipFile`, and `JarFile` return for each file of a container, and
+lists what javac sees with `--release` through the javac API. It runs on JDK 11 and later; build it
+with the newest GA JDK:
+
+```bash
+mvn --batch-mode --file tools/javap-oracle/pom.xml package
+```
+
+`cargo oracle classfile` compares Ferrion's reading with it. With `JAVA_HOME` set to the newest GA
+JDK, which runs javap for every input, check a JDK's every release, its image against jrt, its
+`ct.sym` (or JDK 8's jars) against `ZipFile`, and, for JDK 11 and later, what javac sees with each
+`--release`:
+
+```bash
+cargo oracle classfile --jdk ~/.local/share/mise/installs/java/corretto-21.0.11.10.1
+```
+
+`--jdk` is repeatable, and `--release <N>` limits the releases checked. Without `--jdk`, or with
+project names, the corpus projects' dependency jars are checked (fetch them first with `cargo
+corpus fetch`): as zips, as jars at each source set's release against `JarFile`, and each class
+with javap. Each distinct class is compared with javap once per run, and javap's output is cached
+in `target/oracle/javap`. The weekly oracle workflow runs it on every JDK in the matrix of
+[docs/design/classfile.md](docs/design/classfile.md#jdks-and-vendors) and on every project's jars;
+pull requests check the latest JDK's own release and one project's jars. The design document
+explains every difference the check allows.
+
 ### Tests
 
 - Every bug fix comes with a regression test.

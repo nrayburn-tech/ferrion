@@ -1,0 +1,25 @@
+final class Features$E$1 extends Features$E
+  minor version: 0
+  major version: 71
+  flags: (0x4030) ACC_FINAL, ACC_SUPER, ACC_ENUM
+  this_class: Features$E$1
+  super_class: Features$E
+  interfaces: 0, fields: 0, methods: 2, attributes: 4
+{
+  private Features$E$1(java.lang.String, int);
+    descriptor: (Ljava/lang/String;I)V
+    flags: (0x0002) ACC_PRIVATE
+    MethodParameters:
+      Name                           Flags
+      $enum$name                     synthetic
+      $enum$ordinal                  synthetic
+  void f();
+    descriptor: ()V
+    flags: (0x0000)
+}
+SourceFile: "Features.java"
+EnclosingMethod: Features$E
+NestHost: class Features
+InnerClasses:
+  static E=class Features$E of class Features
+  final class Features$E$1

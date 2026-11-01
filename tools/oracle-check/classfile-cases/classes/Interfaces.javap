@@ -1,0 +1,57 @@
+public interface Interfaces<T extends java.lang.Object> extends java.lang.Comparable<T>, java.io.Serializable
+  minor version: 0
+  major version: 71
+  flags: (0x0601) ACC_PUBLIC, ACC_INTERFACE, ACC_ABSTRACT
+  this_class: Interfaces
+  super_class: java/lang/Object
+  interfaces: 2, fields: 6, methods: 4, attributes: 2
+{
+  public static final java.lang.String A;
+    descriptor: Ljava/lang/String;
+    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+    ConstantValue: String x\ny
+  public static final char CH;
+    descriptor: C
+    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+    ConstantValue: int 39
+  public static final double PI;
+    descriptor: D
+    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+    ConstantValue: double 3.141592653589793d
+  public static final long MAXL;
+    descriptor: J
+    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+    ConstantValue: long 9223372036854775807l
+  public static final int MINI;
+    descriptor: I
+    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+    ConstantValue: int -2147483648
+  public static final double NEGINF;
+    descriptor: D
+    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+    ConstantValue: double -Infinityd
+  public default void d(java.lang.String...);
+    descriptor: ([Ljava/lang/String;)V
+    flags: (0x0081) ACC_PUBLIC, ACC_VARARGS
+    MethodParameters:
+      Name                           Flags
+      args
+  public static <X extends java.lang.Number & java.lang.Comparable<? super X>> void s(java.util.List<? extends X>, java.util.Map<java.lang.String, ? super java.lang.Integer>[]) throws java.lang.Exception;
+    descriptor: (Ljava/util/List;[Ljava/util/Map;)V
+    flags: (0x0009) ACC_PUBLIC, ACC_STATIC
+    Exceptions:
+      throws java.lang.Exception
+    MethodParameters:
+      Name                           Flags
+      l
+      m
+    Signature: <X:Ljava/lang/Number;:Ljava/lang/Comparable<-TX;>;>(Ljava/util/List<+TX;>;[Ljava/util/Map<Ljava/lang/String;-Ljava/lang/Integer;>;)V
+  public abstract int x();
+    descriptor: ()I
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+  private void p();
+    descriptor: ()V
+    flags: (0x0002) ACC_PRIVATE
+}
+Signature: <T:Ljava/lang/Object;>Ljava/lang/Object;Ljava/lang/Comparable<TT;>;Ljava/io/Serializable;
+SourceFile: "Interfaces.java"

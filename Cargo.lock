@@ -277,6 +277,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "corpus",
+ "ferrion_classfile",
  "ferrion_diagnostics",
  "ferrion_java_version",
  "ferrion_lexer",

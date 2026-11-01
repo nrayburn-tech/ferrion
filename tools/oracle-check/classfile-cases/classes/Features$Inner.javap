@@ -1,0 +1,31 @@
+class Features$Inner
+  minor version: 0
+  major version: 71
+  flags: (0x0020) ACC_SUPER
+  this_class: Features$Inner
+  super_class: java/lang/Object
+  interfaces: 0, fields: 0, methods: 2, attributes: 3
+{
+  Features$Inner(Features, int);
+    descriptor: (LFeatures;I)V
+    flags: (0x0000)
+    MethodParameters:
+      Name                           Flags
+      this$0                         final mandated
+      a
+    RuntimeVisibleParameterAnnotations:
+      parameter 0:
+        0:
+          RA
+  void r();
+    descriptor: ()V
+    flags: (0x0000)
+    RuntimeInvisibleTypeAnnotations:
+      0: METHOD_RECEIVER, location=[INNER_TYPE]
+        TA
+}
+SourceFile: "Features.java"
+NestHost: class Features
+InnerClasses:
+  Inner=class Features$Inner of class Features
+  Deep=class Features$Inner$Deep of class Features$Inner

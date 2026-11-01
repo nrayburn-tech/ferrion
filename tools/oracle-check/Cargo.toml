@@ -10,6 +10,7 @@ publish.workspace = true
 [dependencies]
 anyhow = "1"
 corpus = { path = "../corpus" }
+ferrion_classfile = { path = "../../crates/ferrion_classfile" }
 ferrion_diagnostics = { path = "../../crates/ferrion_diagnostics" }
 ferrion_java_version = { path = "../../crates/ferrion_java_version" }
 ferrion_lexer = { path = "../../crates/ferrion_lexer" }

@@ -1,0 +1,10 @@
+interface RA2 extends java.lang.annotation.Annotation
+  minor version: 0
+  major version: 71
+  flags: (0x2600) ACC_INTERFACE, ACC_ABSTRACT, ACC_ANNOTATION
+  this_class: RA2
+  super_class: java/lang/Object
+  interfaces: 1, fields: 0, methods: 0, attributes: 1
+{
+}
+SourceFile: "Features.java"

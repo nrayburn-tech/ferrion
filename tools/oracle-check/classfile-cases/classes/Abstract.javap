@@ -1,0 +1,45 @@
+abstract class Abstract implements java.lang.Runnable,java.lang.Cloneable
+  minor version: 0
+  major version: 71
+  flags: (0x0420) ACC_SUPER, ACC_ABSTRACT
+  this_class: Abstract
+  super_class: java/lang/Object
+  interfaces: 2, fields: 2, methods: 4, attributes: 3
+{
+  public static final java.lang.Object O;
+    descriptor: Ljava/lang/Object;
+    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+    Deprecated: true
+    RuntimeVisibleAnnotations:
+      0:
+        java.lang.Deprecated(
+          since="9"
+          forRemoval=true
+        )
+  Abstract$Nested<java.lang.String>.Inner<java.lang.Integer> ni;
+    descriptor: LAbstract$Nested$Inner;
+    flags: (0x0000)
+    Signature: LAbstract$Nested<Ljava/lang/String;>.Inner<Ljava/lang/Integer;>;
+  Abstract();
+    descriptor: ()V
+    flags: (0x0000)
+  protected abstract void am();
+    descriptor: ()V
+    flags: (0x0404) ACC_PROTECTED, ACC_ABSTRACT
+  <E extends java.lang.Exception> void thrower() throws E;
+    descriptor: ()V
+    flags: (0x0000)
+    Exceptions:
+      throws java.lang.Exception
+    Signature: <E:Ljava/lang/Exception;>()V^TE;
+  static {};
+    descriptor: ()V
+    flags: (0x0008) ACC_STATIC
+}
+SourceFile: "Interfaces.java"
+NestMembers:
+  Abstract$Nested
+  Abstract$Nested$Inner
+InnerClasses:
+  public static Nested=class Abstract$Nested of class Abstract
+  public Inner=class Abstract$Nested$Inner of class Abstract$Nested
