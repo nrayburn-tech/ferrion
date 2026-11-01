@@ -159,6 +159,15 @@ the project's own build:
 cargo corpus lock <project>
 ```
 
+Name resolution reads a fetched project through a project model written from its lock, to
+`target/corpus/models/<project>.json`, with the JDK given (default: `JAVA_HOME`, which should be
+the newest GA JDK) for every source set. See
+[docs/design/project-inputs.md](docs/design/project-inputs.md#corpus-models):
+
+```bash
+cargo corpus project-model --jdk ~/.local/share/mise/installs/java/temurin-27 <project>
+```
+
 OpenJDK's javac tests are parser inputs too. Like the other incompatibly licensed test suites,
 they're fetched at test time, at the tag pinned in `tools/corpus/jdk-tests.toml`, into
 `target/corpus/jdk-tests` (or under `FERRION_CORPUS_DIR`), and never committed. Only the test

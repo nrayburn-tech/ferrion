@@ -18,6 +18,9 @@ pub struct Manifest {
     pub multi_release: bool,
     /// `Class-Path`: relative URLs, which `ferrion_project` resolves against the jar's directory.
     pub class_path: Vec<String>,
+    /// `Automatic-Module-Name`, which names the module a jar without a `module-info` is on the
+    /// module path.
+    pub automatic_module_name: Option<String>,
 }
 
 impl Manifest {
@@ -86,6 +89,9 @@ impl Manifest {
                 .filter(|s| !s.is_empty())
                 .map(str::to_owned)
                 .collect();
+        }
+        if let Some(value) = get("Automatic-Module-Name") {
+            manifest.automatic_module_name = Some(value.trim().to_owned());
         }
         Ok(manifest)
     }
@@ -312,6 +318,12 @@ mod tests {
         let manifest = Manifest::parse(b"Multi-Release: true\rClass-Path: x.jar\n").unwrap();
         assert!(manifest.multi_release);
         assert_eq!(manifest.class_path, ["x.jar"]);
+        assert_eq!(manifest.automatic_module_name, None);
+        let manifest = Manifest::parse(b"automatic-module-name: com.example.lib\n").unwrap();
+        assert_eq!(
+            manifest.automatic_module_name.as_deref(),
+            Some("com.example.lib")
+        );
         assert!(
             !Manifest::parse(b"Multi-Release: yes\n")
                 .unwrap()

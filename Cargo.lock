@@ -92,7 +92,9 @@ name = "corpus"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "ferrion_classfile",
  "ferrion_java_version",
+ "ferrion_project",
  "roxmltree",
  "serde",
  "serde_json",
@@ -208,6 +210,12 @@ dependencies = [
 [[package]]
 name = "ferrion_project"
 version = "0.0.0"
+dependencies = [
+ "ferrion_classfile",
+ "ferrion_java_version",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "ferrion_rules"
