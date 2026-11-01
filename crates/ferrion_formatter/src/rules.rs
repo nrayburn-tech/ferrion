@@ -12,6 +12,7 @@ pub mod declarations;
 pub mod expressions;
 pub mod statements;
 pub mod types;
+mod variables;
 
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxKind, SyntaxNode, SyntaxToken};
 
@@ -222,6 +223,27 @@ fn only_whitespace_before(token: SyntaxToken<'_>) -> bool {
         token = t.prev_token();
     }
     true
+}
+
+/// Emits a child: a token with [`Formatter::token`], a node with its kind's rule.
+fn emit<'t>(f: &mut Formatter<'t>, child: NodeOrToken<'t>) {
+    match child {
+        NodeOrToken::Token(token) => f.token(token),
+        NodeOrToken::Node(node) => f.node(node),
+    }
+}
+
+/// The children of `node` that aren't trivia, in order.
+fn children<'t>(node: SyntaxNode<'t>) -> impl Iterator<Item = NodeOrToken<'t>> {
+    node.children_with_tokens()
+        .filter(|child| !matches!(child, NodeOrToken::Token(token) if token.is_trivia()))
+}
+
+fn first_token(element: NodeOrToken<'_>) -> SyntaxToken<'_> {
+    match element {
+        NodeOrToken::Token(token) => token,
+        NodeOrToken::Node(node) => node.first_token(),
+    }
 }
 
 fn last_token(element: NodeOrToken<'_>) -> SyntaxToken<'_> {

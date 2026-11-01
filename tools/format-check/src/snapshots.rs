@@ -33,11 +33,6 @@ const NOT_GJF: &[(&str, &str)] = &[
         "a comment between modifiers pins them (docs/style.md)",
     ),
     ("core/regions", "disable regions are copied (docs/style.md)"),
-    (
-        "types/in-other-constructs",
-        "a type broken inside a declaration, cast, or catch lands 4 columns short of GJF: an \
-         indent counts from the first text after a line break, not from the break",
-    ),
 ];
 
 /// Each snapshot's input under [`DIR`], in path order, as its path and its name in [`NOT_GJF`].

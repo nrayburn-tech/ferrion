@@ -14,6 +14,8 @@ class Try {
     try { b(); } catch (IllegalStateException | IllegalArgumentException e) { c(); }
     try { b(); } catch (final IllegalStateException | IllegalArgumentException | NullPointerException e) { c(); }
     try { b(); } catch (IllegalStateExceptionWithAVeryVeryVeryVeryVeryVeryLongNameThatGoesOnAndOn exception) { c(); }
+    try { b(); } catch (SomeVeryLongExceptionNameAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA eeeeeeeeeeeeeeeeeee) { c(); }
+    try { b(); } catch (A | SomeVeryLongExceptionNameAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA eeeeeeeeeeeeeeeeeee) { c(); }
     try { a(); }
 
     catch (E e) { b(); }

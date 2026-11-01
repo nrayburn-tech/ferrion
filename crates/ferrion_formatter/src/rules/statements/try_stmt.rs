@@ -5,6 +5,8 @@ use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 use super::{elements, emit, line_break};
 use crate::document::IndentKind;
 use crate::format::Formatter;
+use crate::rules::types;
+use crate::rules::variables::type_then_name;
 
 /// `try (…) { … } catch (…) { … } finally { … }`, each part after a space.
 pub fn try_stmt<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
@@ -39,24 +41,60 @@ pub fn resources<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     }
 }
 
-/// `catch (Type name) { … }`.
+/// `catch (Type name) { … }`. A parameter whose type isn't a union breaks after the `(` first,
+/// at +4, when it doesn't fit; a union stays on the `(`'s line (observed in GJF).
 pub fn catch_clause<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     for element in elements(node) {
-        if matches!(element.kind(), K::LParen | K::Block) {
-            f.space();
+        match element {
+            NodeOrToken::Token(token) if token.kind() == K::LParen => {
+                f.space();
+                f.token(token);
+            }
+            NodeOrToken::Node(parameter) if parameter.kind() == K::CatchParameter => {
+                if parameter.children().any(|c| c.kind() == K::UnionType) {
+                    f.node(parameter);
+                } else {
+                    f.comments_before(parameter.first_token().id());
+                    f.group(|f| {
+                        f.indent(IndentKind::Continuation, |f| {
+                            f.soft_line();
+                            f.node(parameter);
+                        });
+                    });
+                }
+            }
+            _ => {
+                if element.kind() == K::Block {
+                    f.space();
+                }
+                emit(f, element);
+            }
         }
-        emit(f, element);
     }
 }
 
-/// A `catch` parameter: modifiers, the type, and the name, separated by spaces. The type's
-/// alternatives (`A | B`) are the type's.
+/// A `catch` parameter: modifiers, then the type and the name, which breaks before the name at
+/// +4 as a variable's does. A union type's alternatives break first (see
+/// [`types::union_then_name`]).
 pub fn catch_parameter<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
-    for (i, element) in elements(node).enumerate() {
-        if i > 0 {
-            f.space();
+    let elements: Vec<_> = elements(node).collect();
+    let [modifiers @ .., ty, name] = elements.as_slice() else {
+        elements.into_iter().for_each(|element| emit(f, element));
+        return;
+    };
+    for &modifiers in modifiers {
+        emit(f, modifiers);
+        f.space();
+    }
+    let name = |f: &mut Formatter<'t>| emit(f, *name);
+    match ty {
+        NodeOrToken::Node(union) if union.kind() == K::UnionType => {
+            types::union_then_name(f, *union, name);
         }
-        emit(f, element);
+        _ => {
+            f.comments_before(crate::rules::first_token(*ty).id());
+            f.group(|f| type_then_name(f, *ty, name));
+        }
     }
 }
 
