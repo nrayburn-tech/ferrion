@@ -8,8 +8,7 @@ class A {
   int d = 4;
 
   void m() {
-    int x = 1;
-    /* @formatter:off */ int   y  =  2;
+    int x = 1; /* @formatter:off */ int   y  =  2;
     /* @formatter:on */ int z = 3;
   }
 

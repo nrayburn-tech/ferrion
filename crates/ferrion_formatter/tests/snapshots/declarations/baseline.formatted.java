@@ -19,7 +19,8 @@ import java.util.*;
     return u;
   }
 
-  static {}
+  static {
+  }
 
   enum E {
     ONE, TWO(2) {

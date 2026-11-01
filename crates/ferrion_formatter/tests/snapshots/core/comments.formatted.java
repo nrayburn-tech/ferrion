@@ -19,7 +19,8 @@ import c.D;
     // only a comment
   }
 
-  void n() { /* dangling in the block */
+  void n() {
+    /* dangling in the block */
   }
 
   void o() {
