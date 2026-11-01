@@ -17,13 +17,11 @@ use std::cell::Cell;
 
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
-use super::{
-    ListLayout, delimited_list, emit, first_token, fits_flat, fits_on_line,
-    leads_on_separator_line, parts,
-};
+use super::{ListLayout, delimited_list, emit, first_token, fits_flat, fits_on_line, parts};
 use crate::document::IndentKind;
 use crate::format::Formatter;
 use crate::modifiers::{self, Item};
+use crate::rules::comments::leads_on_code_line;
 use crate::rules::variables::value_after_eq;
 
 /// How a declaration's modifiers are laid out; see the module's documentation.
@@ -179,7 +177,7 @@ pub(super) fn modifiers<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, layout:
                 None => node.last_token().next_non_trivia(),
             };
             if let Some(next) = next
-                && leads_on_separator_line(next)
+                && leads_on_code_line(next)
                 && !f.in_region()
             {
                 f.comments_before(next.id());

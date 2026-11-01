@@ -15,8 +15,10 @@ mod unit;
 
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
 
+use super::{children, emit, first_token, last_token};
 use crate::document::{IndentKind, LINE_WIDTH, width};
 use crate::format::Formatter;
+use crate::rules::comments::leads_on_code_line;
 
 pub fn format<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     match node.kind() {
@@ -58,31 +60,7 @@ pub fn format<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
 
 /// The children of `node` that aren't trivia, in order.
 fn parts(node: SyntaxNode<'_>) -> Vec<NodeOrToken<'_>> {
-    node.children_with_tokens()
-        .filter(|part| !matches!(part, NodeOrToken::Token(token) if token.is_trivia()))
-        .collect()
-}
-
-/// Emits a child: a token, or a node with its kind's rule.
-fn emit<'t>(f: &mut Formatter<'t>, part: NodeOrToken<'t>) {
-    match part {
-        NodeOrToken::Token(token) => f.token(token),
-        NodeOrToken::Node(node) => f.node(node),
-    }
-}
-
-fn first_token(part: NodeOrToken<'_>) -> SyntaxToken<'_> {
-    match part {
-        NodeOrToken::Token(token) => token,
-        NodeOrToken::Node(node) => node.first_token(),
-    }
-}
-
-fn last_token(part: NodeOrToken<'_>) -> SyntaxToken<'_> {
-    match part {
-        NodeOrToken::Token(token) => token,
-        NodeOrToken::Node(node) => node.last_token(),
-    }
+    children(node).collect()
 }
 
 /// How a delimited, comma-separated list breaks when it doesn't fit on the line.
@@ -159,7 +137,7 @@ fn separated<'t>(f: &mut Formatter<'t>, items: &[NodeOrToken<'t>], hard: bool) {
         }
         if after_comma {
             let first = first_token(part);
-            if !f.in_region() && leads_on_separator_line(first) {
+            if !f.in_region() && leads_on_code_line(first) {
                 f.comments_before(first.id());
             }
             if hard {
@@ -171,25 +149,6 @@ fn separated<'t>(f: &mut Formatter<'t>, items: &[NodeOrToken<'t>], hard: bool) {
         emit(f, part);
         after_comma = false;
     }
-}
-
-/// Whether the comments before `token` start on the line of the code before them: a block
-/// comment after a separator that leads the next item.
-fn leads_on_separator_line(token: SyntaxToken<'_>) -> bool {
-    let mut previous = token.prev_token();
-    let mut comment = false;
-    while let Some(t) = previous
-        && t.is_trivia()
-    {
-        match t.kind() {
-            K::LineTerminator => comment = false,
-            K::BlockComment | K::DocComment => comment = true,
-            K::Whitespace => {}
-            _ => return false,
-        }
-        previous = t.prev_token();
-    }
-    comment
 }
 
 /// Places the comments before `close`, the closing delimiter of an empty list, with a space after

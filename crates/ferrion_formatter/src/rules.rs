@@ -8,6 +8,7 @@
 //! working one. To add a rule, add an arm for the kind to its module's `format`; the area of
 //! every kind is fixed here, so the modules don't share code that changes.
 
+mod comments;
 pub mod declarations;
 pub mod expressions;
 pub mod statements;
@@ -226,7 +227,7 @@ fn only_whitespace_before(token: SyntaxToken<'_>) -> bool {
 }
 
 /// Emits a child: a token with [`Formatter::token`], a node with its kind's rule.
-fn emit<'t>(f: &mut Formatter<'t>, child: NodeOrToken<'t>) {
+pub(crate) fn emit<'t>(f: &mut Formatter<'t>, child: NodeOrToken<'t>) {
     match child {
         NodeOrToken::Token(token) => f.token(token),
         NodeOrToken::Node(node) => f.node(node),
@@ -234,19 +235,19 @@ fn emit<'t>(f: &mut Formatter<'t>, child: NodeOrToken<'t>) {
 }
 
 /// The children of `node` that aren't trivia, in order.
-fn children<'t>(node: SyntaxNode<'t>) -> impl Iterator<Item = NodeOrToken<'t>> {
+pub(crate) fn children<'t>(node: SyntaxNode<'t>) -> impl Iterator<Item = NodeOrToken<'t>> {
     node.children_with_tokens()
         .filter(|child| !matches!(child, NodeOrToken::Token(token) if token.is_trivia()))
 }
 
-fn first_token(element: NodeOrToken<'_>) -> SyntaxToken<'_> {
+pub(crate) fn first_token(element: NodeOrToken<'_>) -> SyntaxToken<'_> {
     match element {
         NodeOrToken::Token(token) => token,
         NodeOrToken::Node(node) => node.first_token(),
     }
 }
 
-fn last_token(element: NodeOrToken<'_>) -> SyntaxToken<'_> {
+pub(crate) fn last_token(element: NodeOrToken<'_>) -> SyntaxToken<'_> {
     match element {
         NodeOrToken::Token(token) => token,
         NodeOrToken::Node(node) => node.last_token(),

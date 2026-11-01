@@ -4,11 +4,10 @@
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
 
 use super::annotations::{self, After, Layout};
-use super::{
-    doc_comment_before, emit, first_token, fits_on_line, leads_on_separator_line, parts, separated,
-};
+use super::{doc_comment_before, emit, first_token, fits_on_line, parts, separated};
 use crate::document::IndentKind;
 use crate::format::Formatter;
+use crate::rules::comments::{block_comment_after, has_comments_before, leads_on_code_line};
 
 /// The rule for a class, interface, enum, record, or annotation type declaration.
 ///
@@ -186,7 +185,7 @@ pub(super) fn class_body<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                 let first = first_token(member);
                 f.line_break_before(first);
                 // A block comment on the line of the `{` goes on a line of its own.
-                if leads_on_separator_line(first) && !f.in_region() {
+                if leads_on_code_line(first) && !f.in_region() {
                     f.comments_before(first.id());
                     f.hard_line();
                 }
@@ -200,17 +199,6 @@ pub(super) fn class_body<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     emit(f, *close);
 }
 
-/// Whether the first thing after `token` other than whitespace is a block comment on its line.
-fn block_comment_after(token: SyntaxToken<'_>) -> bool {
-    let mut next = token.next_token();
-    while let Some(t) = next
-        && t.kind() == K::Whitespace
-    {
-        next = t.next_token();
-    }
-    next.is_some_and(|t| matches!(t.kind(), K::BlockComment | K::DocComment))
-}
-
 /// Ends a body's indent before `close`, its `}`, with the comments before it inside.
 fn close_body<'t>(f: &mut Formatter<'t>, close: SyntaxToken<'t>) {
     // A blank line after the last member's trailing comment is removed too.
@@ -218,20 +206,6 @@ fn close_body<'t>(f: &mut Formatter<'t>, close: SyntaxToken<'t>) {
     f.comments_before(close.id());
     f.end();
     f.hard_line();
-}
-
-/// Whether the trivia before `token` holds a comment.
-fn has_comments_before(token: SyntaxToken<'_>) -> bool {
-    let mut previous = token.prev_token();
-    while let Some(t) = previous
-        && t.is_trivia()
-    {
-        if ferrion_syntax::comments::is_comment(t.kind()) {
-            return true;
-        }
-        previous = t.prev_token();
-    }
-    false
 }
 
 /// The line break before `next`, a member, after a member that [`spaced_member`] says is
@@ -298,7 +272,7 @@ pub(super) fn enum_body<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             K::EnumConstant if constants => {
                 if previous.is_some() {
                     let first = first_token(part);
-                    if leads_on_separator_line(first) && !f.in_region() {
+                    if leads_on_code_line(first) && !f.in_region() {
                         f.comments_before(first.id());
                         f.hard_line();
                     } else {
