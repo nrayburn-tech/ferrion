@@ -5,6 +5,7 @@ use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 use super::{Indentation, elements, emit};
 use crate::document::IndentKind;
 use crate::format::Formatter;
+use crate::rules::variables::assigned_value;
 
 /// A run of operators of one precedence, `a + b - c`, as one group: the operands stay on one
 /// line, or each operator starts a line, all at once, +4 from the first operand. Operators of
@@ -97,7 +98,8 @@ pub fn conditional<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     f.end();
 }
 
-/// `x = value`: on one line, or a line break after the operator and the value at +4.
+/// `x = value`: on one line, or a line break after the operator and the value at +4, as after a
+/// declarator's `=` (see [`assigned_value`]).
 pub fn assign<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     f.start_group();
     let mut target = true;
@@ -108,6 +110,7 @@ pub fn assign<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                 f.node(child);
                 target = false;
             }
+            // An operator the lexer splits, such as `>>=`, is several tokens.
             NodeOrToken::Token(token) => {
                 if !op {
                     f.space();
@@ -115,12 +118,7 @@ pub fn assign<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                 }
                 f.token(token);
             }
-            NodeOrToken::Node(value) => {
-                let indentation = Indentation::start(f, IndentKind::Continuation);
-                f.line();
-                f.node(value);
-                indentation.end(f);
-            }
+            NodeOrToken::Node(_) => assigned_value(f, element),
         }
     }
     f.end();
