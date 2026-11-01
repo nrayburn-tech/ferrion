@@ -625,7 +625,7 @@ mod tests {
             });
         }
         tokens.push(Token {
-            kind: TokenKind::Eof,
+            kind: Eof,
             span: Span::empty(text.len() as u32),
         });
         (text, tokens)

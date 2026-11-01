@@ -385,8 +385,8 @@ impl Feature {
     /// Whether `release` has the feature. Preview features are in no release.
     pub fn is_in(self, release: u32) -> bool {
         match self.status() {
-            Status::Final(first) => release >= first,
-            Status::Preview => false,
+            Final(first) => release >= first,
+            Preview => false,
         }
     }
 
@@ -396,14 +396,14 @@ impl Feature {
     pub fn message(self, release: u32) -> String {
         let row = self.row();
         match row.status {
-            Status::Final(first) => {
+            Final(first) => {
                 let verb = if row.plural { "require" } else { "requires" };
                 format!(
                     "{} {verb} Java {first}+ (the target is Java {release})",
                     row.name
                 )
             }
-            Status::Preview => {
+            Preview => {
                 let verb = if row.plural { "are" } else { "is" };
                 format!("{} {verb} a preview feature, not supported", row.name)
             }

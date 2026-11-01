@@ -409,7 +409,10 @@ impl Grammar {
     /// once.
     fn resolve(&mut self) -> Result<(), String> {
         let mut names = HashMap::new();
-        let all_names = (self.tokens.iter().map(|t| &t.name))
+        let all_names = self
+            .tokens
+            .iter()
+            .map(|t| &t.name)
             .chain(self.token_sets.iter().map(|t| &t.name))
             .chain(self.nodes.iter().map(|n| &n.name))
             .chain(self.enums.iter().map(|e| &e.name));

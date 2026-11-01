@@ -493,7 +493,7 @@ mod tests {
         let mut lexed = lexed(&[(Error, 1)]);
         rejects(text, &lexed, "an Error token with no error");
         lexed.errors.push(LexError {
-            kind: crate::LexErrorKind::IllegalCharacter,
+            kind: LexErrorKind::IllegalCharacter,
             span: Span::new(0, 1),
         });
         check(text, &lexed).unwrap();
