@@ -3,7 +3,7 @@
 
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
 
-use super::{body, elements, emit};
+use super::{body, elements, emit, line_break};
 use crate::document::IndentKind;
 use crate::format::Formatter;
 
@@ -213,8 +213,8 @@ pub fn for_each_stmt<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
 /// `label:`, then the statement on the next line, at the same indentation.
 pub fn labeled_stmt<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     for element in elements(node) {
-        if element.as_node().is_some() {
-            f.hard_line();
+        if let NodeOrToken::Node(statement) = element {
+            line_break(f, statement.first_token(), false);
         }
         emit(f, element);
     }

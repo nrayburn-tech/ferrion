@@ -3,7 +3,7 @@
 
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
 
-use super::{elements, emit};
+use super::{elements, emit, line_break};
 use crate::document::IndentKind;
 use crate::format::Formatter;
 
@@ -33,11 +33,7 @@ pub fn switch_block<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             }
             NodeOrToken::Node(item) => {
                 f.indent(IndentKind::Block, |f| {
-                    if first {
-                        f.hard_line();
-                    } else {
-                        f.line_break_before(item.first_token());
-                    }
+                    line_break(f, item.first_token(), !first);
                     f.node(item);
                 });
                 first = false;
@@ -59,8 +55,12 @@ pub fn switch_rule<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         while let Some(element) = elements.next() {
             match element.kind() {
                 K::Arrow => {
-                    f.space();
-                    emit(f, element);
+                    // At +4, like the label's continuation lines, when a comment in the label
+                    // puts it on a line of its own.
+                    f.indent(IndentKind::Continuation, |f| {
+                        f.space();
+                        emit(f, element);
+                    });
                     arrow = true;
                 }
                 K::Block if arrow => {
@@ -112,12 +112,13 @@ pub fn switch_group<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             }
             K::Colon => emit(f, element),
             _ => {
+                let first = element.as_node().expect("a statement").first_token();
                 if !statements {
                     f.start_indent(IndentKind::Block);
-                    f.hard_line();
+                    line_break(f, first, false);
                     statements = true;
                 } else {
-                    f.line_break_before(element.as_node().expect("a statement").first_token());
+                    line_break(f, first, true);
                 }
                 emit(f, element);
             }
