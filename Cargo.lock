@@ -31,6 +31,7 @@ dependencies = [
  "corpus",
  "ferrion_classfile",
  "ferrion_diagnostics",
+ "ferrion_formatter",
  "ferrion_lexer",
  "ferrion_parser",
  "nix",
