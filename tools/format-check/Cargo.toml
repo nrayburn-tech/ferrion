@@ -11,8 +11,8 @@ publish.workspace = true
 anyhow.workspace = true
 corpus.workspace = true
 ferrion_diagnostics.workspace = true
+ferrion_formatter.workspace = true
 ferrion_java_version.workspace = true
-ferrion_parser.workspace = true
 serde.workspace = true
 toml.workspace = true
 

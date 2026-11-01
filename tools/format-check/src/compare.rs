@@ -115,15 +115,7 @@ pub fn run(targets: Vec<(String, Vec<Source>)>, options: &Options) -> Result<boo
     let mut total = Stats::default();
     let mut found = Found::default();
     let mut results = Vec::new();
-    println!(
-        "Ferrion's {} compared with GJF {}",
-        if crate::formatter::STAND_IN {
-            "input, unchanged (the formatter isn't wired in yet),"
-        } else {
-            "output"
-        },
-        gjf.version
-    );
+    println!("Ferrion's output compared with GJF {}", gjf.version);
     for (name, sources) in targets {
         let mut stats = Stats::default();
         compare(&gjf, &sources, &mut stats, &mut found)?;

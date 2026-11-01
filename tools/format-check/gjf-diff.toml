@@ -5,42 +5,43 @@
 # differing lines are above the number here; a change that lowers them records the new numbers
 # with `cargo format-check gjf --update`. This file's history is the record over time.
 #
-# The starting baseline: these numbers were taken before the formatter was wired in, when
-# `format-check` compared each file's input, unchanged, with GJF's output. They measure how far
-# the corpus itself is from GJF's style. Most of guava's and lucene's files are identical
-# already, and most of lucene's differing lines are in two generated files.
+# The starting baseline is the formatter's core (work order step 1), whose first rule prints every
+# construct with single spaces and line breaks. It is further from GJF than guava's and lucene's
+# files as written, which GJF formats, and closer than the other projects' files. Measured before
+# the formatter, with each input compared unchanged, the total was 1,747,623 lines; most of
+# lucene's differing lines are in a few generated files.
 
 [jedis]
 compared = 1077
-identical = 250
-differing-lines = 81058
+identical = 130
+differing-lines = 99789
 
 [guava]
-compared = 1533
-identical = 1356
-differing-lines = 2106
+compared = 1531
+identical = 12
+differing-lines = 117882
 
 [caffeine]
 compared = 708
-identical = 226
-differing-lines = 78123
+identical = 9
+differing-lines = 81990
 
 [spring-data-jpa]
 compared = 612
-identical = 23
-differing-lines = 117673
+identical = 51
+differing-lines = 35919
 
 [lucene]
 compared = 5968
-identical = 5805
-differing-lines = 98286
+identical = 829
+differing-lines = 443136
 
 [hertzbeat]
 compared = 1384
-identical = 1
-differing-lines = 228637
+identical = 153
+differing-lines = 69944
 
 [helidon]
 compared = 4439
-identical = 293
-differing-lines = 1141740
+identical = 686
+differing-lines = 307855

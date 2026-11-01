@@ -8,9 +8,9 @@
 //! shows a departure). When the GJF pin moves, a departure GJF no longer makes shows up here.
 //!
 //! GJF's side is generated: `--bless` writes the `.gjf` files that changed. Ferrion's side is the
-//! departure as docs/style.md decides it, so it's written by hand and never blessed. While the
-//! formatter is the stand-in (see [`crate::formatter`]), Ferrion's side is reported as pending
-//! and not checked; `cargo test` checks it, without a JDK, once the formatter is wired in.
+//! departure as docs/style.md decides it, so it's written by hand and never blessed. `cargo test`
+//! checks it too, without a JDK. Cases whose Ferrion side needs layout not written yet are in
+//! [`PENDING`].
 
 use std::path::PathBuf;
 
@@ -19,11 +19,18 @@ use ferrion_diagnostics::SourceText;
 use ferrion_java_version::LATEST_RELEASE;
 
 use crate::diff::Diff;
-use crate::formatter::STAND_IN;
 use crate::gjf::{Gjf, Input, Outcome};
 use crate::{Options, ferrion_output};
 
 const DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/differences");
+
+/// The cases whose Ferrion side needs construct rules not written yet, with what they wait for.
+/// Their Ferrion side is reported as pending instead of failing, and fails as soon as it gives
+/// the expected output, so that the case moves out of the list when its rule lands.
+const PENDING: &[(&str, &str)] = &[(
+    "text-block",
+    "the expressions rules, which break after `=` before a text block",
+)];
 
 /// Each case's input, in name order.
 fn cases() -> Result<Vec<PathBuf>> {
@@ -94,31 +101,42 @@ pub fn run(options: &Options) -> Result<bool> {
             );
             failures += 1;
         }
-        if !STAND_IN && let Some(problem) = check_ferrion(input, &expected_ferrion)? {
-            println!("{name}: {problem}");
-            failures += 1;
+        match check_ferrion(&name, input, &expected_ferrion)? {
+            Check::Passed => {}
+            Check::Pending(reason) => println!("{name}: Ferrion's side pending: {reason}"),
+            Check::Failed(problem) => {
+                println!("{name}: {problem}");
+                failures += 1;
+            }
         }
     }
     println!(
-        "{} cases, {changed} with GJF's output changed, {failures} failed{}",
-        cases.len(),
-        if STAND_IN {
-            "; Ferrion's side pending: the formatter isn't wired in yet (see \
-             tools/format-check/src/formatter.rs)"
-        } else {
-            ""
-        }
+        "{} cases, {changed} with GJF's output changed, {failures} failed",
+        cases.len()
     );
     Ok(failures == 0)
 }
 
-/// What's wrong with Ferrion's output for `input`, if anything.
-fn check_ferrion(input: &[u8], expected: &[u8]) -> Result<Option<String>> {
+enum Check {
+    Passed,
+    /// The case is in [`PENDING`], with this reason, and doesn't give its output yet.
+    Pending(&'static str),
+    Failed(String),
+}
+
+/// Whether Ferrion gives the expected output for case `name`.
+fn check_ferrion(name: &str, input: &[u8], expected: &[u8]) -> Result<Check> {
     let source = SourceText::decode(input).map_err(|reason| anyhow!("{reason}"))?;
-    Ok(match ferrion_output(&source, LATEST_RELEASE) {
-        None => Some("Ferrion skipped it".to_owned()),
-        Some(output) if output == expected => None,
-        Some(output) => Some(format!(
+    let output = ferrion_output(&source, LATEST_RELEASE);
+    let pending = PENDING.iter().find(|(case, _)| *case == name);
+    Ok(match (output, pending) {
+        (Some(output), None) if output == expected => Check::Passed,
+        (Some(output), Some(_)) if output == expected => Check::Failed(
+            "Ferrion gives the expected output now; remove the case from PENDING".to_owned(),
+        ),
+        (_, Some((_, reason))) => Check::Pending(reason),
+        (None, None) => Check::Failed("Ferrion skipped it".to_owned()),
+        (Some(output), None) => Check::Failed(format!(
             "Ferrion's output changed:\n{}",
             show_diff(expected, &output)
         )),
@@ -156,18 +174,15 @@ mod tests {
         }
     }
 
-    /// Ferrion's side of every case, which needs no JDK. It passes trivially until the formatter
-    /// is wired in.
+    /// Ferrion's side of every case, which needs no JDK.
     #[test]
     fn the_formatter_gives_every_expected_output() {
-        if STAND_IN {
-            return;
-        }
         let mut failures = Vec::new();
         for case in cases().unwrap() {
             let input = std::fs::read(&case).unwrap();
             let expected = std::fs::read(case.with_extension("ferrion")).unwrap();
-            if let Some(problem) = check_ferrion(&input, &expected).unwrap() {
+            let name = case.file_stem().unwrap().to_string_lossy();
+            if let Check::Failed(problem) = check_ferrion(&name, &input, &expected).unwrap() {
                 failures.push(format!("{}: {problem}", case.display()));
             }
         }

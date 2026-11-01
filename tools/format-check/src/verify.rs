@@ -13,8 +13,8 @@ use std::time::{Duration, Instant};
 
 use corpus::sources::Source;
 use ferrion_diagnostics::SourceText;
+use ferrion_formatter::{self as formatter, FormatOptions, Formatted};
 
-use crate::formatter::{self, FormatOptions, Formatted};
 use crate::{Options, on_small_stack};
 
 #[derive(Default)]
@@ -71,9 +71,6 @@ impl Stats {
 /// Checks each target's files, prints a line per target, a total, and the peak memory, and returns
 /// whether every file passed.
 pub fn run(targets: Vec<(String, Vec<Source>)>, options: &Options) -> bool {
-    if formatter::STAND_IN {
-        println!("the formatter isn't wired in yet: every file is returned unchanged");
-    }
     let verbose = options.verbose;
     let mut total = Stats::default();
     let mut failures = Vec::new();

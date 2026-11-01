@@ -14,7 +14,6 @@
 mod compare;
 mod diff;
 mod differences;
-mod formatter;
 mod gjf;
 mod verify;
 
@@ -27,7 +26,7 @@ use corpus::project::Project;
 use corpus::sources;
 use ferrion_diagnostics::SourceText;
 
-use crate::formatter::{FormatOptions, Formatted};
+use ferrion_formatter::{FormatOptions, Formatted};
 
 const USAGE: &str = "\
 usage: format-check <check> [<option>...] [<target>...]
@@ -170,7 +169,7 @@ fn run() -> Result<bool> {
 /// Ferrion's output for `source` at `release`: the formatted file, or `None` if the formatter
 /// skipped it.
 fn ferrion_output(source: &SourceText, release: u32) -> Option<Vec<u8>> {
-    match formatter::format(source, &FormatOptions { release }) {
+    match ferrion_formatter::format(source, &FormatOptions { release }) {
         Formatted::Unchanged => Some(source.to_bytes()),
         Formatted::Changed(bytes) => Some(bytes),
         Formatted::Skipped(_) => None,
