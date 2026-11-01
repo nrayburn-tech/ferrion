@@ -4,6 +4,7 @@
 
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
+use super::expressions::Indentation;
 use super::{children, emit, first_token};
 use crate::document::IndentKind;
 use crate::format::Formatter;
@@ -65,19 +66,34 @@ pub(crate) fn name_part<'t>(f: &mut Formatter<'t>, part: NodeOrToken<'t>) {
     emit(f, part);
 }
 
-/// Emits the value after an `=`, in a variable declarator or an element-value pair: on the line
-/// if it's an array initializer, whose braces break instead, and otherwise in a group that breaks
-/// before it, at +4.
+/// Emits the value after an `=`, in a variable declarator, an element-value pair, or an
+/// annotation element's default: on the line if it's an array initializer, whose braces break
+/// instead, and otherwise in a group that breaks before it, at +4 (observed in GJF, as for an
+/// assignment, whose group also holds what it assigns to; see [`assigned_value`]).
 pub(crate) fn value_after_eq<'t>(f: &mut Formatter<'t>, value: NodeOrToken<'t>) {
     if matches!(value.kind(), K::ArrayInitializer | K::ElementValueArray) {
         f.space();
         emit(f, value);
     } else {
-        f.group(|f| {
-            f.indent(IndentKind::Continuation, |f| {
-                f.line();
-                emit(f, value);
-            });
-        });
+        f.group(|f| line_then_value(f, value, Indentation::uncapped));
     }
+}
+
+/// Emits an assignment's value, after its operator: a line break of the assignment's group,
+/// which the caller has open around the target too, and the value at +4. GJF breaks after the
+/// operator when the target doesn't fit on its line either. The indent is one of the expression
+/// rules' capped ones, since assignments chain (docs/style.md, "Expressions").
+pub(crate) fn assigned_value<'t>(f: &mut Formatter<'t>, value: NodeOrToken<'t>) {
+    line_then_value(f, value, Indentation::start);
+}
+
+fn line_then_value<'t>(
+    f: &mut Formatter<'t>,
+    value: NodeOrToken<'t>,
+    indent: fn(&mut Formatter<'_>, IndentKind) -> Indentation,
+) {
+    let indentation = indent(f, IndentKind::Continuation);
+    f.line();
+    emit(f, value);
+    indentation.end(f);
 }
