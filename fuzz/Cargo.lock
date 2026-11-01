@@ -88,6 +88,7 @@ dependencies = [
  "ferrion_formatter",
  "ferrion_lexer",
  "ferrion_parser",
+ "ferrion_semantic",
  "libfuzzer-sys",
 ]
 
@@ -109,6 +110,16 @@ dependencies = [
  "ferrion_diagnostics",
  "ferrion_java_version",
  "ferrion_lexer",
+ "ferrion_stack",
+ "ferrion_syntax",
+]
+
+[[package]]
+name = "ferrion_semantic"
+version = "0.0.0"
+dependencies = [
+ "ferrion_lexer",
+ "ferrion_parser",
  "ferrion_stack",
  "ferrion_syntax",
 ]

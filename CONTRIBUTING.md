@@ -457,14 +457,19 @@ rustup toolchain install && cargo install cargo-fuzz --version 0.13.2 --locked
   builds a valid image from the input, in either byte order and with each compression, then
   changes a few bytes, to reach the code random bytes rarely do.
 - `ctsym` reads arbitrary bytes as a zip and then as `ct.sym`, resolving every release.
+- `semantic_edits` applies edits chosen by the input to a small project, and after each compares
+  the semantic engine's summaries and package tables with a fresh engine's. The input's bytes up
+  to a first zero byte, if any, are one more file of the project.
 
 The lexer targets fail when `ferrion_lexer::invariants` finds that the lexer broke a promise its API
 documents, the doc comment targets when `ferrion_doc_comments::invariants` finds the same of the
 doc comment parsers, the `parse` target when `ferrion_parser::invariants` finds the same of the
 parser or its tree, the `format` target when `ferrion_formatter::invariants` finds a safety
-property broken, and the class file targets when `ferrion_classfile::invariants` finds the same
-of the class file, container, and platform readers. All of them fail when the code under test
-panics, and the parser's debug assertions catch a loop that makes no progress and an empty node.
+property broken, the class file targets when `ferrion_classfile::invariants` finds the same of
+the class file, container, and platform readers, and `semantic_edits` when
+`ferrion_semantic::invariants` finds an answer that differs from a fresh engine's. All of them
+fail when the code under test panics, and the parser's debug assertions catch a loop that makes
+no progress and an empty node.
 Run a target, reading the committed seeds in `seeds/` and keeping what it finds in `corpus/`
 (ignored by git):
 
