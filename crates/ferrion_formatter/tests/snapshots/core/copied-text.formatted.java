@@ -1,12 +1,14 @@
 class A {
-  String a = """
+  String a =
+      """
           Text blocks are copied as written,
             indentation included.
           """;
-  String b = f(
-      """
+  String b =
+      f(
+          """
       an argument
       """,
-      """
+          """
       and another""");
 }
