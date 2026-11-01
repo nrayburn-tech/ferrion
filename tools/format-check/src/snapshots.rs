@@ -42,14 +42,6 @@ const NOT_GJF: &[(&str, &str)] = &[
     ),
     ("core/regions", "disable regions are copied (docs/style.md)"),
     (
-        "declarations/baseline",
-        "the first rule's output, until the declarations rules land",
-    ),
-    (
-        "declarations/module-info",
-        "the first rule's output, until the declarations rules land",
-    ),
-    (
         "types/in-other-constructs",
         "waits for the declarations, statements, and expressions rules",
     ),

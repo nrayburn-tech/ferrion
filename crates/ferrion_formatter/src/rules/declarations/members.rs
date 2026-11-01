@@ -1,0 +1,377 @@
+//! Members: fields and variable declarators, methods and constructors, compact constructors and
+//! initializers, parameters, and annotation defaults.
+
+use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
+
+use super::annotations::{self, After, Layout, value_after_eq};
+use super::{emit, parts, separated};
+use crate::document::IndentKind;
+use crate::format::Formatter;
+
+/// The rule for a field: its annotations as [`annotations::field_layout`] says, then the type
+/// and the declarators. A single declarator's name moves to the next line at +4 only if
+/// `Type name =` doesn't fit, and then its value is indented from the name; several declarators
+/// go one per line at +4 when they don't fit on the line.
+pub(super) fn field<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
+    f.comments_before(node.first_token().id());
+    let parts = parts(node);
+    let mut rest = parts.as_slice();
+    let mut group = false;
+    let mut space = false;
+    if let [NodeOrToken::Node(modifiers), tail @ ..] = rest
+        && modifiers.kind() == K::Modifiers
+    {
+        let layout = annotations::field_layout(*modifiers);
+        if layout == Layout::LineAfter {
+            f.start_group();
+            group = true;
+        }
+        space = annotations::modifiers(f, *modifiers, layout) == After::Space;
+        rest = tail;
+    }
+    if space {
+        f.space();
+    }
+    variables(f, rest, space);
+    if group {
+        f.end();
+    }
+}
+
+/// Emits a variable declaration's type, declarators, and `;`: `parts`, after its modifiers.
+/// `inline` says the type follows other text on its line, so that an indent can start before
+/// it: the printer indents a line by the indent its first text is in.
+fn variables<'t>(f: &mut Formatter<'t>, parts: &[NodeOrToken<'t>], inline: bool) {
+    let [ty, rest @ ..] = parts else {
+        return;
+    };
+    let (declarators, end) = match rest {
+        [declarators @ .., semi] if semi.kind() == K::Semi => (declarators, Some(*semi)),
+        _ => (rest, None),
+    };
+    match declarators {
+        [NodeOrToken::Node(declarator)] if declarator.kind() == K::VariableDeclarator => {
+            single_declarator(f, *ty, *declarator, inline);
+        }
+        _ => {
+            emit(f, *ty);
+            f.space();
+            f.group(|f| {
+                f.indent(IndentKind::Continuation, |f| {
+                    separated(f, declarators, false)
+                })
+            });
+        }
+    }
+    if let Some(end) = end {
+        emit(f, end);
+    }
+}
+
+/// Emits a type and its one declarator: `Type name` in a group that breaks before the name, then
+/// `= value`, indented from the name if that group broke. The type is in the name's indent when
+/// `inline`, so that its own breaks are indented from the name's.
+fn single_declarator<'t>(
+    f: &mut Formatter<'t>,
+    ty: NodeOrToken<'t>,
+    declarator: SyntaxNode<'t>,
+    inline: bool,
+) {
+    let parts = parts(declarator);
+    let eq = parts.iter().position(|part| part.kind() == K::Eq);
+    let (name, value) = parts.split_at(eq.unwrap_or(parts.len()));
+    let group = f.group(|f| {
+        type_then_name(f, ty, inline, |f| {
+            for &part in name {
+                emit(f, part);
+            }
+        });
+    });
+    if let [eq, value @ ..] = value {
+        f.indent_if_broken(group, |f| {
+            f.space();
+            emit(f, *eq);
+            match value {
+                [value] => value_after_eq(f, *value),
+                _ => value.iter().for_each(|&part| emit(f, part)),
+            }
+        });
+    }
+}
+
+/// Emits `ty`, a line break at +4, and what `name` emits. The indent starts before the type when
+/// `inline`, the type following other text on its line, and after it otherwise: the printer
+/// indents a line by the indent its first text is in, so an indent that starts right after a
+/// line break would indent the type's line too.
+fn type_then_name<'t>(
+    f: &mut Formatter<'t>,
+    ty: NodeOrToken<'t>,
+    inline: bool,
+    name: impl FnOnce(&mut Formatter<'t>),
+) {
+    if inline {
+        f.indent(IndentKind::Continuation, |f| {
+            emit(f, ty);
+            f.line();
+            name(f);
+        });
+    } else {
+        emit(f, ty);
+        f.indent(IndentKind::Continuation, |f| {
+            f.line();
+            name(f);
+        });
+    }
+}
+
+/// The rule for a variable declarator, `name[] = value`, breaking after the `=` unless the value
+/// is an array initializer.
+pub(super) fn declarator<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
+    let mut after_eq = false;
+    for part in parts(node) {
+        if after_eq {
+            value_after_eq(f, part);
+            after_eq = false;
+            continue;
+        }
+        if part.kind() == K::Eq {
+            f.space();
+            after_eq = true;
+        }
+        emit(f, part);
+    }
+}
+
+/// The rule for a method or a constructor.
+///
+/// Its annotations go on their own lines. Then three breaks, outermost first, each taken only if
+/// what it ends doesn't fit on the line: after the type parameters, then between the return type
+/// and the name (`Type name(` must fit), and then in the parameters (see
+/// [`super::ListLayout::Parameters`]). `throws` goes on the next line at +4 when the header from
+/// the parameters on doesn't fit, or the parameters break. The parameters are indented from the
+/// name when a break before it is taken.
+pub(super) fn method<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
+    f.comments_before(node.first_token().id());
+    let parts = parts(node);
+    let mut rest = parts.as_slice();
+    // Whether text comes before on the line, so that an indent can start (see
+    // `type_then_name`), and a space goes before what follows.
+    let mut space = false;
+    if let [NodeOrToken::Node(modifiers), tail @ ..] = rest
+        && modifiers.kind() == K::Modifiers
+    {
+        space = annotations::modifiers(f, *modifiers, Layout::OwnLines) == After::Space;
+        rest = tail;
+    }
+    let type_parameters = take(&mut rest, |k| k == K::TypeParameters).map(|type_parameters| {
+        let group = f.start_group();
+        if space {
+            f.space();
+            f.start_indent(IndentKind::Continuation);
+            emit(f, type_parameters);
+        } else {
+            emit(f, type_parameters);
+            f.start_indent(IndentKind::Continuation);
+        }
+        f.line();
+        group
+    });
+    if type_parameters.is_some() {
+        space = false;
+    }
+    // Annotations after the type parameters, the return type, and the name.
+    let name_at = rest
+        .iter()
+        .position(|part| part.kind() == K::Identifier)
+        .unwrap_or(0);
+    let (before_name, after_name) = rest.split_at(name_at);
+    let (annotations, ty) = match before_name {
+        [annotations @ .., ty] => (annotations, Some(*ty)),
+        [] => (before_name, None),
+    };
+    if space {
+        f.space();
+    }
+    for &annotation in annotations {
+        emit(f, annotation);
+        f.space();
+        space = true;
+    }
+    let Some((name, after_name)) = after_name.split_first() else {
+        return;
+    };
+    let named = match ty {
+        Some(ty) => Some(f.group(|f| type_then_name(f, ty, space, |f| emit(f, *name)))),
+        None => {
+            emit(f, *name);
+            None
+        }
+    };
+    if type_parameters.is_some() {
+        // The type parameters' indent and group.
+        f.end();
+        f.end();
+    }
+    let tail = |f: &mut Formatter<'t>| method_tail(f, after_name);
+    match (type_parameters, named) {
+        (Some(outer), Some(inner)) => {
+            f.indent_if_broken(outer, |f| f.indent_if_broken(inner, tail));
+        }
+        (Some(group), None) | (None, Some(group)) => f.indent_if_broken(group, tail),
+        (None, None) => tail(f),
+    }
+}
+
+/// Emits a method header from its parameters on, and its body: `parts`.
+fn method_tail<'t>(f: &mut Formatter<'t>, parts: &[NodeOrToken<'t>]) {
+    let throws = parts.iter().position(|part| part.kind() == K::ThrowsClause);
+    let body_at = parts
+        .iter()
+        .position(|part| matches!(part.kind(), K::Block | K::Semi | K::DefaultValue))
+        .unwrap_or(parts.len());
+    let (header, body) = parts.split_at(body_at);
+    match throws {
+        Some(at) if at < body_at => {
+            let (before, clause) = header.split_at(at);
+            f.group(|f| {
+                header_parts(f, before);
+                f.indent(IndentKind::Continuation, |f| {
+                    for &part in clause {
+                        f.line();
+                        emit(f, part);
+                    }
+                });
+            });
+        }
+        _ => header_parts(f, header),
+    }
+    for &part in body {
+        if part.kind() != K::Semi {
+            f.space();
+        }
+        emit(f, part);
+    }
+}
+
+/// Emits the parameters and the dimensions after them, with no spaces.
+fn header_parts<'t>(f: &mut Formatter<'t>, parts: &[NodeOrToken<'t>]) {
+    for &part in parts {
+        emit(f, part);
+    }
+}
+
+/// Takes the first of `rest` if its kind passes `kind`.
+fn take<'t>(rest: &mut &[NodeOrToken<'t>], kind: impl Fn(K) -> bool) -> Option<NodeOrToken<'t>> {
+    match rest {
+        [first, tail @ ..] if kind(first.kind()) => {
+            let first = *first;
+            *rest = tail;
+            Some(first)
+        }
+        _ => None,
+    }
+}
+
+/// The rule for a compact constructor or an initializer: its annotations on their own lines, then
+/// its tokens and body with a space between them.
+pub(super) fn spaced<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
+    let mut space = false;
+    for part in parts(node) {
+        match part {
+            NodeOrToken::Node(modifiers) if modifiers.kind() == K::Modifiers => {
+                space = annotations::modifiers(f, modifiers, Layout::OwnLines) == After::Space;
+                continue;
+            }
+            _ => {}
+        }
+        if space {
+            f.space();
+        }
+        emit(f, part);
+        space = true;
+    }
+}
+
+/// The rule for a formal parameter, a receiver parameter, or a record component: on one line if
+/// it fits. Otherwise its leading annotations break first, as a group, one per line at +4 if they
+/// don't fit together, and then the name, onto the next line at +4.
+pub(super) fn parameter<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
+    f.comments_before(node.first_token().id());
+    let parts = parts(node);
+    let mut rest = parts.as_slice();
+    let mut outer = false;
+    let mut inline = false;
+    if let [NodeOrToken::Node(modifiers), tail @ ..] = rest
+        && modifiers.kind() == K::Modifiers
+    {
+        rest = tail;
+        if annotations::leading_annotations(*modifiers).is_empty() {
+            annotations::modifiers(f, *modifiers, Layout::Inline);
+            f.space();
+            inline = true;
+        } else {
+            // The modifiers leave an indent open for the rest of the parameter.
+            outer = true;
+            f.start_group();
+            if annotations::modifiers(f, *modifiers, Layout::Parameter) == After::Space {
+                f.space();
+            }
+        }
+    }
+    if let [ty, rest @ ..] = rest {
+        let mut rest = rest;
+        let varargs = take(&mut rest, |k| k == K::Varargs);
+        let ty_and_varargs = |f: &mut Formatter<'t>| {
+            emit(f, *ty);
+            if let Some(varargs) = varargs {
+                if varargs
+                    .as_node()
+                    .is_some_and(|v| v.first_token().kind() != K::Ellipsis)
+                {
+                    f.space();
+                }
+                emit(f, varargs);
+            }
+        };
+        if rest.is_empty() {
+            ty_and_varargs(f);
+        } else {
+            f.group(|f| {
+                if inline {
+                    f.indent(IndentKind::Continuation, |f| {
+                        ty_and_varargs(f);
+                        f.line();
+                        rest.iter().for_each(|&part| emit(f, part));
+                    });
+                } else {
+                    ty_and_varargs(f);
+                    f.indent(IndentKind::Continuation, |f| {
+                        f.line();
+                        rest.iter().for_each(|&part| emit(f, part));
+                    });
+                }
+            });
+        }
+    }
+    if outer {
+        f.end();
+        f.end();
+    }
+}
+
+/// The rule for an annotation element's default value: `default` and the value, which breaks
+/// onto the next line at +4 as a variable's value does after its `=`.
+pub(super) fn default_value<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
+    let parts = parts(node);
+    let [keyword, rest @ ..] = parts.as_slice() else {
+        return;
+    };
+    emit(f, *keyword);
+    match rest {
+        [value] => value_after_eq(f, *value),
+        _ => rest.iter().for_each(|&part| {
+            f.space();
+            emit(f, part);
+        }),
+    }
+}
