@@ -110,18 +110,21 @@ elements, and each start records the index of its end.
 
 | Element | Prints as |
 | --- | --- |
-| `Token(TokenId)` | the token's text from the source. Its width is the text's length in UTF-16 code units. |
-| `Space` | one space |
+| `Token { token, len, width }` | the token's text from the source, or a line comment's without trailing whitespace. Its width is the text's length in UTF-16 code units. |
+| `Space` | one space, or nothing at the start of a line |
 | `Line` | a space when its group is flat, a line break when it's broken |
 | `SoftLine` | nothing when flat, a line break when broken |
 | `HardLine` | always a line break; its enclosing groups can't be flat (see [Hugging](#hugging)) |
 | `BlankLine` | a line break and an empty line; also forces its groups to break |
-| `Group { end, flat_width }` … `End` | its contents, flat if they fit on the rest of the line, otherwise broken |
+| `Group { end, width, forced, stopped }` … `End` | its contents, flat if they fit on the rest of the line, otherwise broken |
+| `Alternative { head, tail }` | right after a group's start: an alternative to breaking the group (see [Hugging](#hugging)) |
+| `BreaksWith { group }` | right after a group's start: the group breaks if the earlier group `group` broke, and otherwise as usual |
 | `Indent(kind)` … `End` | its contents, with line breaks inside indented by +2 (`Block`) or +4 (`Continuation`) |
 | `IndentIfBroken { group }` … `End` | indented by +4 only if the given group is broken |
-| `Fill` … `End` | items and separators, each separator breaking only if the next item doesn't fit |
+| `Fill { … }` … `End` | items and `FillBreak`s, each breaking only if the next item doesn't fit (see [Fill](#fill)) |
+| `FillBreak { soft, next }` | a separator in a fill: a space (nothing if `soft`) if the next item, `next` wide, fits, otherwise a line break |
 | `Hug` … `End` | its contents; their forced breaks don't force the groups around the hug to break |
-| `Verbatim { tokens }` | a run of source text copied as written, line breaks included (see [Copied text](#copied-text)) |
+| `Verbatim(index)` | a run of source text copied as written, line breaks included (see [Copied text](#copied-text)) |
 
 Only `Token` and `Verbatim` produce non-whitespace text, and both take it from the source by token
 index, so the document can't invent or alter code.
@@ -131,8 +134,30 @@ Consecutive line elements merge when they're printed: two `HardLine`s print one 
 here" without counting what the rules around them asked for, and comments can add their own breaks
 without doubling them.
 
-Indentation is written lazily, at the first text after a line break, so no line ends with
-whitespace. Indentation is always spaces.
+A line starts at the indentation in effect at its line break, as in Wadler's printer: an indent
+that starts after a line break doesn't indent that line, and one that ends after it does. Merged
+line breaks start the line at the last one's indentation. So a rule opens an indent before the
+text it indents, and `x =`, a line break, then `a + b` can put `a` at +4 and `+ b` at +8 with two
+nested indents. The indentation is written at the first text after the line break, so no line
+ends with whitespace. Indentation is always spaces.
+
+### What the builder adds
+
+The rules build the document through the `Formatter`, which adds a few behaviors of its own:
+
+- **Owed comment line breaks.** The line breaks after a comment (a `//` comment's, or the input's
+  after a block comment) are owed, and paid before whatever the rules emit next, except the end
+  of a container. So they come after the containers that end at the comment, which they don't
+  break, and before the containers that start after it. When one of those starts with a line
+  element before any text, that element breaks too: `int x = // why` puts `1;` on the next line
+  at +4, the break after `=` taken.
+- **`no_blank_line`** turns a blank line just emitted, or still owed after a comment, into a line
+  break, for a place that allows none, such as before a body's `}`.
+- **Capped indents.** The `Formatter` counts the expression rules' open indents, and past 100 an
+  expression rule starts none (see [Deep nesting](#deep-nesting)). The rules other areas share,
+  such as lists', use capped indents only for an expression's list.
+- **State a rule needs from elsewhere in the file,** such as the type-use annotations the file
+  imports, is kept on the `Formatter`, so no rule keeps state of its own.
 
 ### Why Wadler–Leijen
 
@@ -187,9 +212,17 @@ Two elements cover it:
 Inside a hug, groups are decided by fitting as usual, even when the group around the hug is flat,
 so long statements in a hugged lambda still break.
 
-The same two elements are the plan for any other construct the work finds to hug. If one needs a
-choice that fitting can't make, the fallback is a `BestFit` element with alternatives tried in
-order, as some other pretty printers have, added then rather than now.
+A hug started with `hug_in_group` spares only the innermost group or fill around it from its
+forced breaks, and the groups around that one still break: `x = foo(a -> {` breaks after the `=`,
+as GJF does, while the call's arguments stay flat.
+
+One choice that fitting can't make came up, and instead of a general `BestFit` element it is an
+`Alternative` right after the group's start. A mark after the group's first line break splits the
+group into a head, from its start to the first line element after the mark, and a tail, from the
+mark to the end of the line after the group. When the group doesn't fit, and neither does the
+tail on a line of its own at +4, the group stays flat if its head fits, and the groups in the hug
+inside it break instead: `foo(x ->` then the lambda's body at +4, or `when(a.b(` then `b`'s
+arguments.
 
 ### Fill
 
@@ -202,25 +235,35 @@ int[] a = {
 };
 ```
 
-`Fill` holds items and separators, and breaks a separator only when the item after it doesn't fit
-on the line. Which initializers fill and which put one element per line is a construct rule, to be
-observed.
+`Fill` holds items and `FillBreak` separators, and breaks a separator only when the item after it
+doesn't fit on the line. The last separator's item counts the text after the fill up to the next
+line element, so the last item fits only if what follows it on its line does too (`27` then
+`};`). A separator can be inside an indent in its fill, so that the items after the first are
+indented from the first line break on, as a `for` update's are. Which lists fill is a construct
+rule: GJF fills arguments and initializers whose items are all at most 9 wide.
 
 ## The printer
 
 The printer is a loop over the elements with a stack of open containers. Each entry holds the
 container's mode (flat or broken) and indentation. Starting a group decides its mode:
 
-- **Broken** if it contains a forced break outside any hug.
+- **Broken** if it contains a forced break outside any hug, or if it has a `BreaksWith` whose
+  group broke.
 - Otherwise **flat** if `column + flat_width + rest ≤ 100`, where `rest` is the width from the
-  group's end to the next line element of any kind. Otherwise **broken**.
+  group's end to the next line element of any kind, or if its `Alternative` applies (see
+  [Hugging](#hugging)). Otherwise **broken**. A group whose forced breaks are all in hugs is
+  measured only up to the first of them, with no `rest`.
 - Inside a flat group, nested groups are flat without a check, except inside a `Hug`.
+
+`column` is the column the group starts at: after line breaks still to be written, the
+indentation they start the line at.
 
 `flat_width` is computed while building: the builder keeps a stack of open groups, adds each
 token's width and each `Line`'s space to every open group's running total in one step (by adding
 to the innermost and folding into the parent at `End`), and marks open groups at a forced break.
-`rest` is one backward pass over the elements before printing. So deciding a group is constant
-time, and printing is linear in the number of elements.
+`rest`, a fill's last item's width after it, and an alternative's head and tail are one backward
+pass over the elements when the document is finished. So deciding a group is constant time, and
+printing is linear in the number of elements.
 
 Width is counted in UTF-16 code units, as SCOPE.md and GJF count it: a character outside the Basic
 Multilingual Plane counts 2 (observed: a line of emoji breaks where the same number of CJK
@@ -616,3 +659,19 @@ The core (work order step 1) settled some details the design left open:
   cross that share when the input didn't (found by the fuzz target). Equivalence also compares
   each node's subtree size and each token's node, not only the kinds in order. A `Violation` has
   the property, a message, and the byte offset in the output where it first fails.
+
+## Changes in step 3
+
+The construct work changed some of the choices above in step 3:
+
+- **A line's indentation is the one at its line break.** The core wrote indentation at the first
+  text after a line break, by the indent that text was in, so an indent opened after a line break
+  indented that line. Every area worked around it: types emitted a list's first item before the
+  indent, declarations had an `inline` mode for a type after other text, and the expression rules
+  added a `Hanging` indent, which kept a line break from before it out. The printer now indents a
+  line as Wadler's printer does, and `Hanging` and the workarounds are gone.
+- **`BreaksWith`** was added, for a method's `throws`, which breaks when the parameters went one
+  per line.
+- **Fill separators** can be inside an indent in their fill.
+- **The rules share what more than one area lays out** (lists, variables, comments) in modules
+  of their own, rather than each area keeping a copy.
