@@ -204,11 +204,12 @@ impl<'t> Formatter<'t> {
         }
     }
 
-    /// Removes a blank line just emitted, as the line break after a trailing comment with a blank
-    /// line after it in the input: for a rule that allows no blank line where the comment is,
-    /// such as before a body's `}`.
+    /// Removes a blank line just emitted, or still owed after a comment, as the line break after
+    /// a trailing comment with a blank line after it in the input: for a rule that allows no
+    /// blank line where the comment is, such as before a body's `}`.
     pub fn no_blank_line(&mut self) {
         if self.in_region.is_none() {
+            self.line_owed = self.line_owed.min(1);
             self.doc.demote_blank_line();
         }
     }

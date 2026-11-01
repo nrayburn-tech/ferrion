@@ -86,7 +86,7 @@ fn single_declarator<'t>(
     let group = f.group(|f| {
         type_then_name(f, ty, inline, |f| {
             for &part in name {
-                emit(f, part);
+                name_part(f, part);
             }
         });
     });
@@ -140,9 +140,23 @@ pub(super) fn declarator<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         if part.kind() == K::Eq {
             f.space();
             after_eq = true;
+            emit(f, part);
+        } else {
+            name_part(f, part);
         }
-        emit(f, part);
     }
+}
+
+/// Emits a part of a declarator before its `=`: the name, or a dimension, which is spaced from
+/// what comes before it when it has annotations, as in a type (`g @A []`).
+fn name_part<'t>(f: &mut Formatter<'t>, part: NodeOrToken<'t>) {
+    if let NodeOrToken::Node(dim) = part
+        && dim.kind() == K::Dim
+        && dim.first_child().is_some()
+    {
+        f.space();
+    }
+    emit(f, part);
 }
 
 /// The rule for a method or a constructor.
