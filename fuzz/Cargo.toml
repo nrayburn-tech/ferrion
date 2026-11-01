@@ -9,15 +9,23 @@ publish = false
 cargo-fuzz = true
 
 [dependencies]
-ferrion_classfile = { path = "../crates/ferrion_classfile" }
-ferrion_doc_comments = { path = "../crates/ferrion_doc_comments" }
-ferrion_lexer = { path = "../crates/ferrion_lexer" }
-ferrion_parser = { path = "../crates/ferrion_parser" }
-libfuzzer-sys = "0.4.13"
+ferrion_classfile.workspace = true
+ferrion_doc_comments.workspace = true
+ferrion_lexer.workspace = true
+ferrion_parser.workspace = true
+libfuzzer-sys.workspace = true
 
 # The fuzz targets need a nightly toolchain, so they have their own workspace instead of being
 # members of the root one.
 [workspace]
+
+[workspace.dependencies]
+ferrion_classfile = { path = "../crates/ferrion_classfile" }
+ferrion_doc_comments = { path = "../crates/ferrion_doc_comments" }
+ferrion_lexer = { path = "../crates/ferrion_lexer" }
+ferrion_parser = { path = "../crates/ferrion_parser" }
+
+libfuzzer-sys = "0.4.13"
 
 [profile.release]
 debug = 1

@@ -9,5 +9,28 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/nrayburn-tech/ferrion"
 publish = false
 
+[workspace.dependencies]
+corpus = { path = "tools/corpus" }
+ferrion_classfile = { path = "crates/ferrion_classfile" }
+ferrion_diagnostics = { path = "crates/ferrion_diagnostics" }
+ferrion_doc_comments = { path = "crates/ferrion_doc_comments" }
+ferrion_java_version = { path = "crates/ferrion_java_version" }
+ferrion_lexer = { path = "crates/ferrion_lexer" }
+ferrion_parser = { path = "crates/ferrion_parser" }
+ferrion_stack = { path = "crates/ferrion_stack" }
+ferrion_syntax = { path = "crates/ferrion_syntax" }
+
+anyhow = "1"
+miniz_oxide = "0.9.1"
+nix = { version = "0.31", features = ["resource"] }
+# Only the parser: the default features add an HTML renderer and a command-line option parser.
+pulldown-cmark = { version = "=0.13.6", default-features = false }
+roxmltree = "0.21"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.11"
+stacker = "0.1.25"
+toml = "1"
+
 [workspace.lints.rust]
 unsafe_code = "deny"

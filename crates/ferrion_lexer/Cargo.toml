@@ -7,7 +7,7 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
-ferrion_diagnostics = { path = "../ferrion_diagnostics" }
+ferrion_diagnostics.workspace = true
 
 [lints]
 workspace = true
