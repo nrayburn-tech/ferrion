@@ -79,6 +79,50 @@ fn line_comment_after(token: SyntaxToken<'_>) -> bool {
     false
 }
 
+/// A line break before `next`, which starts a line: a statement, or a rule or group of a switch.
+/// With `keep_blank`, a blank line there in the input is kept.
+///
+/// A block comment that leads `next` but sits on the line of the code before it stays on that
+/// line, as GJF does (`a(); /* why */` then `b();`), except after a `{`, where it goes on a line of
+/// its own before `next`.
+fn line_break<'t>(f: &mut Formatter<'t>, next: SyntaxToken<'t>, keep_blank: bool) {
+    let comment = block_comment_after_code(next);
+    let after_brace = comment
+        && next
+            .prev_non_trivia()
+            .is_some_and(|t| t.kind() == K::LBrace);
+    if comment && !after_brace {
+        f.comments_before(next.id());
+    }
+    if keep_blank {
+        f.line_break_before(next);
+    } else {
+        f.hard_line();
+    }
+    if after_brace {
+        f.comments_before(next.id());
+        f.hard_line();
+    }
+}
+
+/// Whether the first comment before `next` is a block comment on the line of the code before
+/// it.
+fn block_comment_after_code(next: SyntaxToken<'_>) -> bool {
+    let Some(code) = next.prev_non_trivia() else {
+        return false;
+    };
+    let mut token = code.next_token();
+    while let Some(t) = token
+        && t.id() < next.id()
+    {
+        match t.kind() {
+            K::Whitespace => token = t.next_token(),
+            kind => return kind == K::BlockComment,
+        }
+    }
+    false
+}
+
 /// The body of an `if`, `else`, loop, or `do`, after `before`, the token ahead of it.
 ///
 /// A block follows after a space, and an empty statement goes on the next line at +2. Any
@@ -92,11 +136,14 @@ fn body<'t>(f: &mut Formatter<'t>, body: SyntaxNode<'t>, before: SyntaxToken<'t>
             f.node(body);
         }
         K::EmptyStmt => f.indent(IndentKind::Block, |f| {
-            f.hard_line();
+            line_break(f, body.first_token(), false);
             f.node(body);
         }),
         _ if line_comment_after(before) => f.node(body),
         _ => {
+            if block_comment_after_code(body.first_token()) {
+                f.comments_before(body.first_token().id());
+            }
             f.group(|f| {
                 f.indent(IndentKind::Block, |f| {
                     f.line();

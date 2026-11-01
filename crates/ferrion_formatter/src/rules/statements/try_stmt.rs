@@ -1,8 +1,8 @@
 //! `try`, its resources, and its `catch` and `finally` clauses.
 
-use ferrion_syntax::{SyntaxKind as K, SyntaxNode};
+use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
-use super::{elements, emit};
+use super::{elements, emit, line_break};
 use crate::document::IndentKind;
 use crate::format::Formatter;
 
@@ -25,9 +25,9 @@ pub fn resources<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         while let Some(element) = elements.next() {
             emit(f, element);
             if element.kind() == K::Semi {
-                match elements.peek().map(|e| e.kind()) {
-                    Some(K::RParen) | None => f.space(),
-                    Some(_) => f.hard_line(),
+                match elements.peek() {
+                    Some(NodeOrToken::Node(next)) => line_break(f, next.first_token(), false),
+                    _ => f.space(),
                 }
             }
         }

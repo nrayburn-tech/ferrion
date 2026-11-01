@@ -297,9 +297,22 @@ case 3 -> {
 
 ### Comments in statements
 
-Comments follow the general rules. In a switch block, a comment above a label goes at the
-label's indentation, and a comment after the last rule or statement, before the `}`, goes at +4
-from the `switch`, where the statements of a group go, as GJF does.
+Comments follow the general rules. A block comment on the line of the code before a statement,
+or before a rule or group of a switch, stays on that line, and the statement starts the next one,
+as GJF does. After a `{`, the comment goes on a line of its own instead.
+
+```java
+a(); /* why */
+b();
+{
+  /* why */
+  c();
+}
+```
+
+In a switch block, a comment above a label goes at the label's indentation, and a comment after
+the last rule or statement, before the `}`, goes at +4 from the `switch`, where the statements of
+a group go, as GJF does.
 
 ```java
 switch (a) {

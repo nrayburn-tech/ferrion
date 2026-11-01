@@ -89,15 +89,14 @@ fn declarators_after_type<'t>(
     }
     f.indent(IndentKind::Continuation, |f| {
         f.group(|f| {
-            let mut rest = rest.iter().copied();
+            let mut rest = rest.iter().copied().peekable();
             if statement {
+                // The break after the type measures the first declarator and its comma, which
+                // stays out of the group so that a comment after it doesn't break the type.
                 f.group(|f| {
                     f.line();
-                    for element in rest.by_ref() {
+                    while let Some(element) = rest.next_if(|e| e.kind() != K::Comma) {
                         super::emit(f, element);
-                        if element.kind() == K::Comma {
-                            break;
-                        }
                     }
                 });
             } else {

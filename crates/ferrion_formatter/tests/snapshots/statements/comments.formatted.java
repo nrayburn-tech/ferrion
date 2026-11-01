@@ -97,4 +97,33 @@ class Comments {
         // after the last rule
     }
   }
+
+  void blockCommentsBeforeALineBreak() {
+    a(); /* stays on the line before */
+    b();
+    {
+      /* after the brace, on its own line */
+      a();
+    }
+    if (a) /* stays after the condition */
+      ;
+    label: /* stays after the label */
+    x++;
+    try (R r = open(); /* stays after the semicolon */
+        S s = open()) {}
+    switch (a) {
+      /* after the brace */
+      case 1: /* stays after the colon */
+        f();
+    }
+    switch (a) {
+      case 1 // in the label
+          ->
+          f();
+      case 2 -> f(); /* stays after the rule */
+      case 3 -> g();
+    }
+    int x = 1, // after the comma
+        y = 2;
+  }
 }

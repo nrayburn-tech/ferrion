@@ -3,7 +3,7 @@
 
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
 
-use super::elements;
+use super::{elements, line_break};
 use crate::document::IndentKind;
 use crate::format::Formatter;
 
@@ -46,14 +46,10 @@ pub fn block<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             NodeOrToken::Node(statement) => {
                 if first {
                     f.start_indent(IndentKind::Block);
-                    if style.keep_blank_at_start {
-                        f.line_break_before(statement.first_token());
-                    } else {
-                        f.hard_line();
-                    }
+                    line_break(f, statement.first_token(), style.keep_blank_at_start);
                     first = false;
                 } else {
-                    f.line_break_before(statement.first_token());
+                    line_break(f, statement.first_token(), true);
                 }
                 f.node(statement);
             }
