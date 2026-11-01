@@ -536,9 +536,11 @@ the position from the anchor, with these rules:
   | --- | --- | --- |
   | `IllegalCharacter` | `illegal.char`, or `illegal.nonascii.digit` for a digit that isn't ASCII | the character |
   | `InvalidUnicodeEscape` | `illegal.unicode.esc` | the end of the escape so far |
-  | `InvalidEscape` | `illegal.esc.char` | the character after the `\` |
+  | `InvalidEscape` | `illegal.esc.char` | the character after the `\`, after the escape when the `\` is one (`\u005cq`) |
   | `UnterminatedComment` | `unclosed.comment` | the `/*` |
   | `UnterminatedCharLiteral`, `MultipleCharsInCharLiteral` | `unclosed.char.lit` | the literal's start |
+  | `SupplementaryCharLiteral` | `illegal.char.literal.multiple.surrogates` | the literal's start |
+  | `DoubleDot` | `illegal.dot` | the second dot |
   | `UnterminatedStringLiteral`, `UnterminatedTextBlock` | `unclosed.str.lit`, `unclosed.text.block` | the literal's start |
   | `EmptyCharLiteral`, `LineTerminatorInCharLiteral` | `empty.char.lit`, `illegal.line.end.in.char.lit` | the literal's start |
   | `TextBlockOpeningNotOnOwnLine` | `illegal.text.block.open` | the text after `"""` |

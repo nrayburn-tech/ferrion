@@ -209,8 +209,8 @@ fn lexical(kind: LexErrorKind, span: Span, tree: &SyntaxTree) -> (&'static str, 
         LexErrorKind::IllegalCharacter => ("illegal.char", span.start),
         // At the character that isn't a hexadecimal digit.
         LexErrorKind::InvalidUnicodeEscape => ("illegal.unicode.esc", span.end),
-        // At the character after the backslash.
-        LexErrorKind::InvalidEscape => ("illegal.esc.char", span.start + 1),
+        // At the character after the backslash; either can be an escape (`\u005cq`).
+        LexErrorKind::InvalidEscape => ("illegal.esc.char", first_char_end(tree.text(), span)),
         LexErrorKind::UnterminatedComment => ("unclosed.comment", span.start),
         LexErrorKind::UnterminatedCharLiteral | LexErrorKind::MultipleCharsInCharLiteral => {
             ("unclosed.char.lit", token.start)
@@ -221,6 +221,30 @@ fn lexical(kind: LexErrorKind, span: Span, tree: &SyntaxTree) -> (&'static str, 
         LexErrorKind::LineTerminatorInCharLiteral => ("illegal.line.end.in.char.lit", token.start),
         LexErrorKind::TextBlockOpeningNotOnOwnLine => ("illegal.text.block.open", span.start),
         LexErrorKind::MalformedNumber => malformed_number(tree.text(), span, token),
+        LexErrorKind::SupplementaryCharLiteral => {
+            ("illegal.char.literal.multiple.surrogates", token.start)
+        }
+        // At the second dot: the last token the error covers.
+        LexErrorKind::DoubleDot => {
+            let second = tokens[..tokens.partition_point(|token| token.span.start < span.end)]
+                .last()
+                .map_or(span.start, |token| token.span.start);
+            ("illegal.dot", second)
+        }
+    }
+}
+
+/// Where the first character of `span` ends, as written: after its Unicode escape, if it is one.
+fn first_char_end(text: &str, span: Span) -> u32 {
+    match ferrion_lexer::unicode_escapes(text, span).next() {
+        Some(escape) if escape.start == span.start => escape.end,
+        _ => {
+            span.start
+                + text[span.range()]
+                    .chars()
+                    .next()
+                    .map_or(0, |c| c.len_utf8() as u32)
+        }
     }
 }
 

@@ -220,7 +220,7 @@ reports one error at the mistake. Category: deliberate departure.
 | --- | --- | --- | --- | --- |
 | [`multiple-chars-in-char-literal.java`](../../tools/oracle-check/differences/multiple-chars-in-char-literal.java) | `'ab';` | `ERROR 'a`, `IDENTIFIER b`, `ERROR ';`, two `unclosed.char.lit` errors; the `;` is lost | `CharLiteral 'ab'`, `MultipleCharsInCharLiteral`; the `;` is kept | Most likely a string written with single quotes. One error where the mistake is, and the parser still sees a complete statement. |
 | [`text-block-opened-mid-line.java`](../../tools/oracle-check/differences/text-block-opened-mid-line.java) | `"""abc""";` | `ERROR """`, `abc` lexed as code, `ERROR """`, two `illegal.text.block.open` errors | one `TextBlock` up to the closing `"""`, `TextBlockOpeningNotOnOwnLine` on `abc` | javac lexes the block's content as code, where a `'` or `"` in it starts a new literal and errors cascade. The intent is clear, so the block stays one token. |
-| [`dot-dot.java`](../../tools/oracle-check/differences/dot-dot.java) | `a..b` | `ERROR ..`, `illegal.dot` | `Dot`, `Dot`, no lexer error | The JLS has no `..` token, and longest match gives two `.` (JLS §3.2, §3.11). The parser reports the error, with a message about what it expected. |
+| [`dot-dot.java`](../../tools/oracle-check/differences/dot-dot.java) | `a..b` | `ERROR ..`, `illegal.dot` | `Dot`, `Dot`, and a `DoubleDot` error on both | The JLS has no `..` token, and longest match gives two `.` (JLS §3.2, §3.11). The lexer reports the pair, as javac does, and the parser reports nothing more at it. A `.` after `..` doesn't start a number: `a..2` is `Dot`, `Dot`, `IntLiteral`, as in javac. |
 
 ### javac recovery the lexer doesn't follow
 

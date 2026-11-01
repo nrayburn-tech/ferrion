@@ -151,10 +151,29 @@ impl<'a> Lexer<'a> {
             '"' => self.string_literal(start),
             '\'' => self.char_literal(start),
             '0'..='9' => self.number(start),
+            '.' if self.follows_dot(start) => {
+                // The second dot of `..`, which isn't a token (the first wasn't followed by two
+                // more, or it would have started `...`). javac makes the pair one illegal token;
+                // the lexer keeps two dots, for the parser, and reports the pair.
+                self.cursor.bump();
+                let first = self
+                    .tokens
+                    .last()
+                    .map_or(start, |dot| dot.span.start as usize);
+                self.error_from(LexErrorKind::DoubleDot, first);
+                TokenKind::Dot
+            }
             '.' if self.cursor.peek2().is_some_and(|c| c.is_ascii_digit()) => self.number(start),
             _ if ident::is_start(c) => self.identifier(start),
             _ => self.separator_or_operator(start, c),
         }
+    }
+
+    /// Whether the token before `start` is a `.` that ends right there.
+    fn follows_dot(&self, start: usize) -> bool {
+        self.tokens
+            .last()
+            .is_some_and(|token| token.kind == TokenKind::Dot && token.span.end as usize == start)
     }
 
     /// JLS §3.11, §3.12. `>` only ever forms `>` and `>=` (see [`TokenKind`]).
@@ -169,8 +188,7 @@ impl<'a> Lexer<'a> {
             ']' => &[("]", K::RBracket)],
             ';' => &[(";", K::Semi)],
             ',' => &[(",", K::Comma)],
-            // `..` is two dots: javac reports it as one illegal token, but it isn't one in the JLS,
-            // and the parser reports the error.
+            // `..` is two dots: see `token`.
             '.' => &[("...", K::Ellipsis), (".", K::Dot)],
             '@' => &[("@", K::At)],
             ':' => &[("::", K::ColonColon), (":", K::Colon)],
@@ -520,9 +538,11 @@ impl<'a> Lexer<'a> {
                 c.len_utf16()
             }
         };
+        // A character outside the BMP is the mistake javac reports, however the literal goes on.
+        let supplementary = units > 1;
         if self.cursor.eat('\'') {
-            if units > 1 {
-                self.error_from(LexErrorKind::MultipleCharsInCharLiteral, start);
+            if supplementary {
+                self.error_from(LexErrorKind::SupplementaryCharLiteral, start);
             }
         } else if self.closes_later_on_line() {
             while !self.cursor.eat('\'') {
@@ -532,7 +552,14 @@ impl<'a> Lexer<'a> {
                     self.cursor.bump();
                 }
             }
-            self.error_from(LexErrorKind::MultipleCharsInCharLiteral, start);
+            let kind = if supplementary {
+                LexErrorKind::SupplementaryCharLiteral
+            } else {
+                LexErrorKind::MultipleCharsInCharLiteral
+            };
+            self.error_from(kind, start);
+        } else if supplementary {
+            self.error_from(LexErrorKind::SupplementaryCharLiteral, start);
         } else {
             self.error_from(LexErrorKind::UnterminatedCharLiteral, start);
         }
