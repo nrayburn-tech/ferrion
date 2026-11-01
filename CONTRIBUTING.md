@@ -391,8 +391,10 @@ new component adds its benchmarks to `tools/bench/src/benchmarks/`.
   ```
 
 - The deep-nesting stress tests in `crates/ferrion_parser/tests/nesting_stress.rs` generate their
-  inputs. A pattern whose grammar isn't written yet is listed in `PENDING` there, and its test
-  fails once it parses without errors, so that it's moved out of the list.
+  inputs from the patterns in `crates/ferrion_parser/src/stress.rs`. A pattern whose grammar isn't
+  written yet is listed in `PENDING` there, and its test fails once it parses without errors, so
+  that it's moved out of the list. The tree's consumers run the same patterns: the formatter's
+  are in `crates/ferrion_formatter/tests/deep_nesting.rs`. A new pattern gets a test in each.
 - Generated rule documentation is checked in CI, so regenerate it when rule metadata changes.
 
 ### Generated syntax code
