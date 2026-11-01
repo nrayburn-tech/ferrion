@@ -9,6 +9,8 @@
 //! - [`members`]: fields and variables, methods and constructors, initializers, and parameters.
 
 mod annotations;
+
+pub(crate) use annotations::local_variable;
 mod members;
 mod types;
 mod unit;

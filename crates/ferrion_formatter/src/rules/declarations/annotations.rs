@@ -17,7 +17,7 @@ use std::cell::Cell;
 
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
-use super::{emit, fits_on_line, parts};
+use super::{emit, parts};
 use crate::document::IndentKind;
 use crate::format::Formatter;
 use crate::modifiers::{self, Item};
@@ -54,19 +54,11 @@ pub(super) enum After {
 }
 
 /// The rule for a `Modifiers` node formatted on its own, as one in another area's construct is
-/// (a local variable, a catch or lambda parameter, a pattern): local variables in a block get the
-/// locals' layout, and the rest are inline. A line break after the modifiers is emitted here,
-/// since the parent puts only a space after them.
+/// (a catch or lambda parameter, a pattern): inline. A line break after the modifiers is emitted
+/// here, since the parent puts only a space after them. A local variable's are laid out by
+/// [`local_variable`].
 pub(super) fn modifiers_node<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     let layout = match node.parent() {
-        Some(local)
-            if local.kind() == K::LocalVarDecl
-                && local
-                    .parent()
-                    .is_some_and(|p| matches!(p.kind(), K::Block | K::SwitchGroup)) =>
-        {
-            local_layout(node, local)
-        }
         Some(parent) if super::super::is_member(parent.kind()) => match parent.kind() {
             K::FieldDecl => field_layout(node),
             K::MethodDecl => Layout::BeforeType,
@@ -83,18 +75,39 @@ pub(super) fn modifiers_node<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     modifiers(f, node, layout);
 }
 
-/// The layout of a local variable's modifiers, `node`, in `local`.
-fn local_layout(node: SyntaxNode<'_>, local: SyntaxNode<'_>) -> Layout {
+/// Emits a local variable's modifiers, `node`, then what `declaration` emits, the rest of the
+/// declaration before its `;`. In a block, the leading annotations go on their own lines if
+/// there are two or more or one has arguments; otherwise they stay on the declaration's line
+/// unless it doesn't fit there, as a field's do, in a group around the declaration. In a `for`
+/// or `try` header they stay on the line (observed in GJF).
+pub(crate) fn local_variable<'t>(
+    f: &mut Formatter<'t>,
+    node: SyntaxNode<'t>,
+    declaration: impl FnOnce(&mut Formatter<'t>),
+) {
+    let in_block = node
+        .parent()
+        .and_then(|local| local.parent())
+        .is_some_and(|p| matches!(p.kind(), K::Block | K::SwitchGroup));
     let leading = leading_annotations(node);
-    if leading.is_empty() {
+    let layout = if !in_block || leading.is_empty() {
         Layout::Inline
-    } else if leading.len() > 1
-        || leading.iter().any(|&a| has_arguments(a))
-        || !fits_on_line(local, true)
-    {
+    } else if leading.len() > 1 || leading.iter().any(|&a| has_arguments(a)) {
         Layout::OwnLines
     } else {
-        Layout::Inline
+        Layout::LineAfter
+    };
+    // The comments before the declaration go before its group, so they don't break it.
+    f.comments_before(node.first_token().id());
+    if layout == Layout::LineAfter {
+        f.start_group();
+    }
+    if modifiers(f, node, layout) == After::Space {
+        f.space();
+    }
+    declaration(f);
+    if layout == Layout::LineAfter {
+        f.end();
     }
 }
 
