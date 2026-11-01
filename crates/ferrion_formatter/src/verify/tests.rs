@@ -85,7 +85,13 @@ fn errors_in_the_output_are_reported() {
     let violation = check("class A {}", "class A {\n").unwrap_err();
     assert_eq!(violation.property, Property::NoNewErrors);
     assert_eq!(
-        property("class A {}", "class A {} \u{0}\u{0}\u{0}\u{0}"),
+        verify(
+            &SourceText::decode("class A {}").unwrap(),
+            b"class A {} \xFF",
+            &OPTIONS
+        )
+        .unwrap_err()
+        .property,
         Property::NoNewErrors
     );
 }

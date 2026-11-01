@@ -107,15 +107,23 @@ pub struct SourceText {
 impl SourceText {
     /// Reads a file's bytes. Files that are not UTF-8 or ASCII are skipped.
     pub fn decode(bytes: impl Into<Vec<u8>>) -> Result<SourceText, SkipReason> {
-        let mut bytes = bytes.into();
-        if bytes.len() > u32::MAX as usize {
-            return Err(SkipReason::TooLarge { len: bytes.len() });
-        }
+        let bytes = bytes.into();
         if let Some(name) = foreign_encoding(&bytes) {
             return Err(SkipReason::UnsupportedEncoding {
                 detected: Some(name),
                 invalid_at: None,
             });
+        }
+        SourceText::from_utf8(bytes)
+    }
+
+    /// Reads bytes known to be meant as UTF-8, such as text Ferrion wrote, without looking for
+    /// signs of another encoding: [`SourceText::decode`] takes a file with many NUL bytes near its
+    /// start for UTF-16, and a file of valid UTF-8 can have them.
+    pub fn from_utf8(bytes: impl Into<Vec<u8>>) -> Result<SourceText, SkipReason> {
+        let mut bytes = bytes.into();
+        if bytes.len() > u32::MAX as usize {
+            return Err(SkipReason::TooLarge { len: bytes.len() });
         }
         let bom = bytes.starts_with(UTF8_BOM);
         if bom {
@@ -246,6 +254,21 @@ mod tests {
         assert_eq!(detected(b"\xFF\xFE\x00\x00c\x00\x00\x00"), Some("UTF-32LE"));
         assert_eq!(detected(b"\x00\x00\xFE\xFF"), Some("UTF-32BE"));
         assert!(detected(b"c\x00l\x00a\x00s\x00s\x00").is_some());
+    }
+
+    #[test]
+    fn utf8_with_many_nuls_can_be_read_as_utf8() {
+        let text = "/*\0\0\0*/";
+        assert!(SourceText::decode(text).is_err());
+        let source = SourceText::from_utf8(text).unwrap();
+        assert_eq!(source.text(), text);
+        assert_eq!(source.encoding(), Encoding::Ascii);
+        assert!(
+            SourceText::from_utf8(b"\xEF\xBB\xBFa".to_vec())
+                .unwrap()
+                .has_bom()
+        );
+        assert!(SourceText::from_utf8(b"\xFF".to_vec()).is_err());
     }
 
     #[test]
