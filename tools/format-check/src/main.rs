@@ -5,7 +5,8 @@
 //! properties on each, and reports throughput and peak memory (see [`verify`]). `format-check gjf`
 //! compares Ferrion's output with GJF's fixed point for the same input, per project, against the
 //! numbers committed in `gjf-diff.toml` (see [`compare`]). `format-check differences` checks the
-//! departures from GJF in `differences/` (see [`differences`]).
+//! departures from GJF in `differences/` (see [`differences`]), and `format-check snapshots` that
+//! the formatter's snapshots are GJF's output (see [`snapshots`]).
 //!
 //! The corpus is found as `tools/corpus` finds it, and the GJF jar is cached with the corpus's jars
 //! (see [`gjf`]).
@@ -14,6 +15,7 @@ mod compare;
 mod diff;
 mod differences;
 mod gjf;
+mod snapshots;
 mod verify;
 
 use std::path::PathBuf;
@@ -38,6 +40,9 @@ checks:
   differences  check the departures from GJF in tools/format-check/differences: that GJF and
                Ferrion still give each case's expected outputs (takes only --bless, --jobs, and
                --batch)
+  snapshots    check that the expected outputs of the formatter's snapshots are GJF's fixed point,
+               except those listed as not; its targets are areas, such as `statements`, or
+               snapshots, such as `core/comments` (takes only --jobs and --batch)
 
 options:
   --check        gjf: fail if a project's differing lines are above the number in
@@ -46,8 +51,9 @@ options:
   --tracking <f> gjf: the tracking file (default: tools/format-check/gjf-diff.toml)
   --largest <N>  gjf: list the N files with the most differing lines (default: 10)
   --hunks <N>    gjf: show the first hunk of N differing files, spread over them (default: 5)
-  --jobs <N>     gjf, differences: the processors GJF's JVM may use (default: the number of CPUs)
-  --batch <N>    gjf, differences: files per JVM start (default: 1000)
+  --jobs <N>     gjf, differences, snapshots: the processors GJF's JVM may use (default: the
+                 number of CPUs)
+  --batch <N>    gjf, differences, snapshots: files per JVM start (default: 1000)
   --bless        differences: write GJF's outputs that changed instead of failing
   --limit <N>    show the first N failures, rejected files, and unsettled files (default: 10)
   --verbose      verify: print each file before formatting it, to find one that aborts
@@ -56,7 +62,8 @@ Targets default to every corpus project. `jdk-tests` names OpenJDK's javac tests
 at the releases its jtreg header compiles it at (gjf: at the newest of them), and
 `jdk-deep-nesting` only its deep-nesting stress tests; fetch them with `cargo corpus jdk-tests`.
 Projects must be checked out (`cargo corpus checkout`). gjf and differences need JAVA_HOME to be
-the JDK tools/format-check/gjf.toml names, and download the GJF jar it pins on first use.";
+the JDK tools/format-check/gjf.toml names, and download the GJF jar it pins on first use; so do
+snapshots.";
 
 /// The stack size of the thread that formats, as in the deep-nesting tests.
 const STACK_SIZE: usize = 256 * 1024;
@@ -138,6 +145,9 @@ fn run() -> Result<bool> {
             bail!("differences takes no targets");
         }
         return differences::run(&options);
+    }
+    if check == "snapshots" {
+        return snapshots::run(&names, &options);
     }
     if check != "verify" && check != "gjf" {
         eprintln!("{USAGE}");
