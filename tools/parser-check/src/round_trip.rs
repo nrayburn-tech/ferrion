@@ -4,9 +4,9 @@
 //!
 //! Throughput counts only the time spent in `parse`, so the checks don't skew it: megabytes
 //! (10^6 bytes) and files parsed per second, on one thread, summed over every release a file is
-//! parsed at. It also counts the parses with syntax errors and with `NestingTooDeep`, so later
-//! rounds can see the grammar fill in. Neither fails the check: the oracle comparison decides
-//! which errors are right.
+//! parsed at. It also counts the parses with lexical or syntax errors, with version errors, and
+//! with `NestingTooDeep`, so later rounds can see the grammar fill in. None fails the check: the
+//! oracle comparison decides which errors are right.
 //!
 //! Each tree's `CommentMap` is built too, without a panic, and the time it takes is reported
 //! separately. (`invariants::check` checks the map's contents.)
@@ -36,6 +36,8 @@ struct Stats {
     /// Files that aren't UTF-8 or ASCII, which Ferrion skips.
     skipped: usize,
     with_errors: usize,
+    /// Parses whose only errors are the version check's.
+    with_version_errors: usize,
     too_deep: usize,
     failures: Vec<String>,
 }
@@ -49,6 +51,7 @@ impl Stats {
         self.comments_time += other.comments_time;
         self.skipped += other.skipped;
         self.with_errors += other.with_errors;
+        self.with_version_errors += other.with_version_errors;
         self.too_deep += other.too_deep;
     }
 
@@ -59,8 +62,8 @@ impl Stats {
         };
         println!(
             "{name}: {} files, {} parses, {:.1} MB in {seconds:.2} s of parsing: {:.1} MB/s, {:.0} \
-             files/s; comment maps in {:.2} s; {} with syntax errors, {} too deeply nested, {} \
-             skipped (not UTF-8), {} failed",
+             files/s; comment maps in {:.2} s; {} with syntax errors, {} with only version errors, \
+             {} too deeply nested, {} skipped (not UTF-8), {} failed",
             self.files,
             self.parses,
             self.bytes as f64 / 1e6,
@@ -68,6 +71,7 @@ impl Stats {
             rate(self.parses as f64),
             self.comments_time.as_secs_f64(),
             self.with_errors,
+            self.with_version_errors,
             self.too_deep,
             self.skipped,
             self.failures.len(),
@@ -152,12 +156,16 @@ fn check_all(sources: &[Source], verbose: bool) -> Stats {
 }
 
 fn count(stats: &mut Stats, parsed: &Parse) {
-    if parsed
-        .diagnostics
-        .iter()
-        .any(|d| d.severity == Severity::Error)
-    {
+    let errors = || {
+        parsed
+            .diagnostics
+            .iter()
+            .filter(|d| d.severity == Severity::Error)
+    };
+    if errors().any(|d| !d.kind.is_version()) {
         stats.with_errors += 1;
+    } else if errors().next().is_some() {
+        stats.with_version_errors += 1;
     }
     if parsed
         .diagnostics
