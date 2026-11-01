@@ -14,6 +14,7 @@ ferrion_doc_comments.workspace = true
 ferrion_formatter.workspace = true
 ferrion_lexer.workspace = true
 ferrion_parser.workspace = true
+ferrion_semantic.workspace = true
 libfuzzer-sys.workspace = true
 
 # The fuzz targets need a nightly toolchain, so they have their own workspace instead of being
@@ -26,6 +27,7 @@ ferrion_doc_comments = { path = "../crates/ferrion_doc_comments" }
 ferrion_formatter = { path = "../crates/ferrion_formatter" }
 ferrion_lexer = { path = "../crates/ferrion_lexer" }
 ferrion_parser = { path = "../crates/ferrion_parser" }
+ferrion_semantic = { path = "../crates/ferrion_semantic" }
 
 libfuzzer-sys = "0.4.13"
 
@@ -70,6 +72,13 @@ bench = false
 [[bin]]
 name = "format"
 path = "fuzz_targets/format.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "semantic_edits"
+path = "fuzz_targets/semantic_edits.rs"
 test = false
 doc = false
 bench = false
