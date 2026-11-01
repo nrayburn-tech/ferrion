@@ -58,24 +58,29 @@ jobs:
   parser:
     name: parser checks on javac's tests and a larger mutation sample
     runs-on: ubuntu-latest
-    env:
-      # Kept out of target/, so the Rust cache doesn't save them.
-      FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
       - run: rustup toolchain install
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      # The corpus and javac's tests are kept out of target/, so the Rust cache doesn't save them.
+      # (The runner context isn't available in a job's env, only in a step's.)
       - name: Check out the corpus and javac's tests
         run: |
           cargo corpus checkout
           cargo corpus jdk-tests
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
       # Pull requests check the corpus projects (see ci.yml); javac's tests add unusual and broken
       # input, and its deep-nesting tests.
       - name: Check that the parser reproduces javac's tests, and its throughput
         run: cargo parser-check round-trip jdk-tests
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
       # Ten times the pull requests' sample, with another seed, against the same thresholds.
       - name: Check error recovery on more mutated corpus files
         run: cargo parser-check mutate --seed 2 --sample 20000
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
 
   jdk-tests:
     name: javac's tests
