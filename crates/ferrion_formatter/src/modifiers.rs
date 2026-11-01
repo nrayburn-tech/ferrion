@@ -74,37 +74,25 @@ pub fn rank(unit: &[SyntaxToken<'_>]) -> usize {
     ORDER.iter().position(|&k| k == kind).unwrap_or(ORDER.len())
 }
 
-/// The rule for a `Modifiers` node: its items in source order with a space between them, each
-/// run sorted into [`ORDER`] unless the list mustn't be reordered.
-pub fn format<'t>(f: &mut Formatter<'t>, modifiers: SyntaxNode<'t>) {
-    // A region that starts with a comment before the list is entered when that comment is
-    // placed, so place it first.
-    f.comments_before(modifiers.first_token().id());
-    let reorder = !f.in_region() && !f.has_marker(modifiers);
-    for (i, item) in items(modifiers).into_iter().enumerate() {
-        if i > 0 {
-            f.space();
-        }
-        match item {
-            Item::Annotation(annotation) => f.node(annotation),
-            Item::Run(run) => {
-                let mut sorted: Vec<&[SyntaxToken<'t>]> = run.iter().map(Vec::as_slice).collect();
-                sorted.sort_by_key(|unit| rank(unit));
-                let in_order = sorted.iter().zip(&run).all(|(a, b)| a[0].id() == b[0].id());
-                if reorder && !in_order {
-                    let first = run[0][0].id();
-                    let last = run.last().and_then(|unit| unit.last()).unwrap().id();
-                    f.reordered_run(first, last, &sorted);
-                } else {
-                    for (j, unit) in run.iter().enumerate() {
-                        if j > 0 {
-                            f.space();
-                        }
-                        for &token in unit {
-                            f.token(token);
-                        }
-                    }
-                }
+/// Emits one run of keyword modifiers, with a space between them, sorted into [`ORDER`] if
+/// `reorder`. The rule for a `Modifiers` node, in `rules::declarations`, lays out the runs and
+/// annotations, and allows reordering unless the list is in a disable region or holds a
+/// formatter marker.
+pub fn run<'t>(f: &mut Formatter<'t>, run: &[Vec<SyntaxToken<'t>>], reorder: bool) {
+    let mut sorted: Vec<&[SyntaxToken<'t>]> = run.iter().map(Vec::as_slice).collect();
+    sorted.sort_by_key(|unit| rank(unit));
+    let in_order = sorted.iter().zip(run).all(|(a, b)| a[0].id() == b[0].id());
+    if reorder && !in_order {
+        let first = run[0][0].id();
+        let last = run.last().and_then(|unit| unit.last()).unwrap().id();
+        f.reordered_run(first, last, &sorted);
+    } else {
+        for (j, unit) in run.iter().enumerate() {
+            if j > 0 {
+                f.space();
+            }
+            for &token in unit {
+                f.token(token);
             }
         }
     }
