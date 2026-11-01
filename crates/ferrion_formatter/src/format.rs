@@ -262,6 +262,15 @@ impl<'t> Formatter<'t> {
         self.doc().start_group()
     }
 
+    /// Runs `f` in a group that also breaks if `group` broke (see
+    /// [`crate::document::Element::BreaksWith`]), and returns the group.
+    pub fn group_breaking_with(&mut self, group: u32, f: impl FnOnce(&mut Self)) -> u32 {
+        let index = self.doc().start_group_breaking_with(group);
+        f(self);
+        self.doc.end();
+        index
+    }
+
     /// Starts a group with an alternative to breaking (see
     /// [`crate::document::Element::Alternative`]), which the caller ends with [`Formatter::end`].
     pub fn start_group_with_alternative(&mut self) -> u32 {

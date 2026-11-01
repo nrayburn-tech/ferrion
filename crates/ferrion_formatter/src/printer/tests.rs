@@ -323,6 +323,43 @@ fn a_hug_falls_back_when_its_first_line_doesnt_fit() {
 }
 
 #[test]
+fn a_group_breaking_with_another_breaks_when_that_one_did() {
+    // `( items ) tail`: the tail's group breaks when the items' group broke, even though the
+    // tail fits, and otherwise only when the tail doesn't fit.
+    let print = |items: &str| {
+        let text = format!("( {items} ) tail");
+        let words = items.split(' ').count();
+        print_lf(&text, |b, emit| {
+            emit(b, 0);
+            let list = b.start_group();
+            b.start_indent(IndentKind::Continuation);
+            b.soft_line();
+            for i in 0..words {
+                if i > 0 {
+                    b.line();
+                }
+                emit(b, 1 + i);
+            }
+            b.end();
+            b.end();
+            emit(b, 1 + words);
+            b.start_group_breaking_with(list);
+            b.start_indent(IndentKind::Continuation);
+            b.line();
+            emit(b, 2 + words);
+            b.end();
+            b.end();
+        })
+    };
+    assert_eq!(print("a b"), "(a b) tail\n");
+    let word = "w".repeat(40);
+    assert_eq!(
+        print(&format!("{word} {word} {word}")),
+        format!("(\n    {word}\n    {word}\n    {word})\n    tail\n")
+    );
+}
+
+#[test]
 fn a_fill_breaks_only_before_an_item_that_doesnt_fit() {
     let items: Vec<String> = (0..12)
         .map(|i| format!("i{i:02}{}", "x".repeat(10)))

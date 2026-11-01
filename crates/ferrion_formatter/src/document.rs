@@ -97,6 +97,11 @@ pub enum Element {
     /// on a line of its own at +4 either, the group stays flat if its head fits, and the groups
     /// in the hug inside it break instead. Elsewhere it prints nothing.
     Alternative { head: u32, tail: u32 },
+    /// Right after a group's start: the group breaks if the group starting at index `group`, which
+    /// comes before it, broke, and otherwise as usual, if it doesn't fit. A method's `throws`
+    /// stays on the line of its parameters when they all moved to the next line together, and
+    /// goes on a line of its own when they went one per line (observed in GJF).
+    BreaksWith { group: u32 },
     /// Text copied rather than laid out, by its index in [`Document::verbatims`].
     Verbatim(u32),
 }
@@ -261,6 +266,18 @@ impl DocumentBuilder {
         self.elements
             .push(Element::Alternative { head: 0, tail: 0 });
         group
+    }
+
+    /// Starts a group that also breaks if `group`, a group that started before it, broke (see
+    /// [`Element::BreaksWith`]).
+    pub fn start_group_breaking_with(&mut self, group: u32) -> u32 {
+        debug_assert!(
+            matches!(self.elements[group as usize], Element::Group { .. }),
+            "BreaksWith names element {group}, which isn't a group"
+        );
+        let index = self.start_group();
+        self.elements.push(Element::BreaksWith { group });
+        index
     }
 
     /// Sets the mark of `group`'s alternative here. Until [`DocumentBuilder::finish`], the
@@ -501,7 +518,7 @@ impl DocumentBuilder {
                 Element::IndentIfBroken { .. } | Element::Hug => {
                     after_end.pop().expect("a container without an End");
                 }
-                Element::Alternative { .. } => {}
+                Element::Alternative { .. } | Element::BreaksWith { .. } => {}
             }
             while let Some(&(_, mark)) = self.alternatives.get(next_mark)
                 && mark as usize >= index

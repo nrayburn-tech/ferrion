@@ -114,7 +114,12 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
                 let flat = if top.flat && !top.decide {
                     true
                 } else {
+                    let with_broken = matches!(
+                        elements.get(index + 1),
+                        Some(&Element::BreaksWith { group }) if broken[group as usize]
+                    );
                     !forced
+                        && !with_broken
                         && (printer.fits(width)
                             || matches!(
                                 elements.get(index + 1),
@@ -149,7 +154,7 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
                     printer.line_break(1, indent);
                 }
             }
-            Element::Alternative { .. } => {}
+            Element::Alternative { .. } | Element::BreaksWith { .. } => {}
             Element::Hug => stack.push(Frame {
                 decide: true,
                 ..top

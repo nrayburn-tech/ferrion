@@ -45,7 +45,9 @@ pub fn format<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         K::VariableDeclarator => members::declarator(f, node),
         K::MethodDecl | K::ConstructorDecl => members::method(f, node),
         K::CompactConstructorDecl | K::Initializer => members::spaced(f, node),
-        K::FormalParameters | K::RecordHeader => delimited_list(f, node, ListLayout::Parameters),
+        K::FormalParameters | K::RecordHeader => {
+            delimited_list(f, node, ListLayout::Parameters);
+        }
         K::FormalParameter | K::ReceiverParameter | K::RecordComponent => {
             members::parameter(f, node)
         }
@@ -102,19 +104,27 @@ pub(crate) enum ListLayout {
 ///
 /// A block comment on a separator's line that leads the next item stays on that line when the
 /// list breaks (docs/design/formatter.md, "Comments").
-pub(crate) fn delimited_list<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, layout: ListLayout) {
+///
+/// Returns the group of the items, which breaks when they go one per line, for
+/// [`ListLayout::Parameters`].
+pub(crate) fn delimited_list<'t>(
+    f: &mut Formatter<'t>,
+    node: SyntaxNode<'t>,
+    layout: ListLayout,
+) -> Option<u32> {
     f.comments_before(node.first_token().id());
     let parts = parts(node);
     let [open, items @ .., close] = parts.as_slice() else {
         parts.into_iter().for_each(|part| emit(f, part));
-        return;
+        return None;
     };
     if items.is_empty() {
         emit(f, *open);
         dangling(f, first_token(*close));
         emit(f, *close);
-        return;
+        return None;
     }
+    let mut items_group = None;
     f.group(|f| {
         emit(f, *open);
         f.indent(IndentKind::Continuation, |f| {
@@ -126,15 +136,14 @@ pub(crate) fn delimited_list<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, la
             }
             let items = |f: &mut Formatter<'t>| separated(f, items, hard);
             match layout {
-                ListLayout::Parameters => {
-                    f.group(items);
-                }
+                ListLayout::Parameters => items_group = Some(f.group(items)),
                 ListLayout::OnePerLine | ListLayout::Broken => items(f),
             }
         });
     });
     // After the group, so that a line comment after it doesn't break the list.
     emit(f, *close);
+    items_group
 }
 
 /// Emits `items`, a list's items and the commas between them, with a `Line` after each comma, or
