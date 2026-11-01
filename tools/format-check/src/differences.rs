@@ -27,10 +27,7 @@ const DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/differences");
 /// The cases whose Ferrion side needs construct rules not written yet, with what they wait for.
 /// Their Ferrion side is reported as pending instead of failing, and fails as soon as it gives
 /// the expected output, so that the case moves out of the list when its rule lands.
-const PENDING: &[(&str, &str)] = &[(
-    "text-block",
-    "the declarations rules, which break after a field's `=` before a text block",
-)];
+const PENDING: &[(&str, &str)] = &[];
 
 /// Each case's input, in name order.
 fn cases() -> Result<Vec<PathBuf>> {
