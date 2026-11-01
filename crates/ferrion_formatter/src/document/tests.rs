@@ -131,6 +131,31 @@ fn a_fill_break_records_the_width_of_the_next_item() {
 }
 
 #[test]
+fn a_fills_last_break_counts_the_width_after_the_fill() {
+    let mut b = DocumentBuilder::new();
+    b.start_fill();
+    text(&mut b, 2);
+    b.fill_break(false);
+    text(&mut b, 3);
+    b.fill_break(false);
+    text(&mut b, 4);
+    b.end();
+    text(&mut b, 6);
+    b.line();
+    text(&mut b, 7);
+    let document = b.finish();
+    let nexts: Vec<_> = document
+        .elements
+        .iter()
+        .filter_map(|e| match e {
+            Element::FillBreak { next, .. } => Some(*next),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(nexts, [3, 10]);
+}
+
+#[test]
 #[should_panic(expected = "still open")]
 fn finishing_with_an_open_container_panics() {
     let mut b = DocumentBuilder::new();

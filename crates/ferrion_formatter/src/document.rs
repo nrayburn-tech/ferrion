@@ -336,36 +336,54 @@ impl DocumentBuilder {
     }
 
     /// Closes the document: adds to each group's width the width after it up to the next line
-    /// element, in one backward pass. Panics if a container is still open.
+    /// element, and the same to the next item of each fill's last separator, so that the last
+    /// item fits only if what follows the fill on its line does too. One backward pass. Panics if
+    /// a container is still open.
     pub fn finish(mut self) -> Document {
         assert!(
             self.open.is_empty(),
             "{} containers still open",
             self.open.len()
         );
-        // The width from the current element to the next line element, scanning backward, and
-        // its value after each End not yet matched with its start.
+        // The width from the current element to the next line element, scanning backward, and,
+        // for each End not yet matched with its start, the width after it and the last fill
+        // separator directly inside its container.
         let mut rest: u64 = 0;
-        let mut after_end: Vec<u64> = Vec::new();
-        for element in self.elements.iter_mut().rev() {
-            match element {
+        let mut after_end: Vec<(u64, Option<usize>)> = Vec::new();
+        for index in (0..self.elements.len()).rev() {
+            match &mut self.elements[index] {
                 Element::Token { width, .. } => rest += u64::from(*width),
                 Element::Space => rest += 1,
-                Element::Line
-                | Element::SoftLine
-                | Element::HardLine
-                | Element::BlankLine
-                | Element::FillBreak { .. } => rest = 0,
-                Element::Verbatim(index) => {
-                    let verbatim = &self.verbatims[*index as usize];
+                Element::Line | Element::SoftLine | Element::HardLine | Element::BlankLine => {
+                    rest = 0;
+                }
+                Element::FillBreak { .. } => {
+                    rest = 0;
+                    if let Some((_, last @ None)) = after_end.last_mut() {
+                        *last = Some(index);
+                    }
+                }
+                Element::Verbatim(verbatim) => {
+                    let verbatim = &self.verbatims[*verbatim as usize];
                     let first = u64::from(verbatim.first_width);
                     rest = if verbatim.breaks { first } else { rest + first };
                 }
-                Element::End => after_end.push(rest),
-                Element::Group { width, stopped, .. } | Element::Fill { width, stopped, .. } => {
-                    let after = after_end.pop().expect("a container without an End");
+                Element::End => after_end.push((rest, None)),
+                Element::Group { width, stopped, .. } => {
+                    let (after, _) = after_end.pop().expect("a container without an End");
                     if !*stopped {
                         *width = (u64::from(*width) + after).min(u64::from(u32::MAX)) as u32;
+                    }
+                }
+                Element::Fill { width, stopped, .. } => {
+                    let (after, last) = after_end.pop().expect("a container without an End");
+                    if !*stopped {
+                        *width = (u64::from(*width) + after).min(u64::from(u32::MAX)) as u32;
+                    }
+                    if let Some(last) = last
+                        && let Element::FillBreak { next, .. } = &mut self.elements[last]
+                    {
+                        *next = (u64::from(*next) + after).min(u64::from(u32::MAX)) as u32;
                     }
                 }
                 Element::Indent(_) | Element::IndentIfBroken { .. } | Element::Hug => {
