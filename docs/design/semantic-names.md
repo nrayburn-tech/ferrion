@@ -106,7 +106,32 @@ jumping to their `subtree_end`.
   again in the current tree by its path.
 
 "As written" is the syntax of a type with its name segments, type arguments, array dimensions, and
-annotations, as a small owned structure rather than tree nodes, so a summary outlives its tree.
+annotations, as a small owned structure rather than tree nodes, so a summary outlives its tree. It
+is flat, its parts in pre-order each with a count of children, so a type nested ten thousand deep
+is built, compared, hashed, and dropped without recursion. Names have their Unicode escapes
+translated, so `\u0041` and `A` declare the same type.
+
+Details of `ferrion_semantic::summary` as built:
+
+- **Compact units:** their top-level fields and methods, and any type declarations beside them,
+  are members of an implicitly declared class, the summary's first type, which has no name (it is
+  the file's) and isn't in the package table, since no other file can name it.
+- **Constants:** an interface's or annotation interface's fields are implicitly final (JLS 9.3),
+  so their initializers are fingerprinted too.
+- **Implicit members** are recorded by the rule that declares them (default constructor, `values`,
+  `valueOf`, canonical constructor, accessor and field per component), not as signatures. A
+  declared constructor is canonical when its parameters have the components' shapes as written:
+  the same types without annotations, with `T...` and C-style dimensions counted as array
+  dimensions. Resolution can refine that. A record's `equals`, `hashCode`, and `toString` aren't
+  listed.
+- **Generated:** a member type of a generated type is generated too.
+- **Lombok:** recognized from how the file names the annotation, without resolving it: qualified
+  by `lombok.`, or brought in by a single-type import from a `lombok` package (so `@Value` from
+  Spring isn't Lombok's), or, with an on-demand import of a `lombok` package, any simple name no
+  single-type import covers except `java.lang`'s annotations. On the type or any of its fields.
+- **Receiver parameters** aren't recorded: they don't change what other files see.
+- **Fingerprints** of arguments, constants, and defaults hash each token's kind and text, escapes
+  translated, without trivia, so comments in them don't change the summary.
 
 Left out: method bodies, initializer expressions of non-`final` fields, instance and static
 initializer blocks, local and anonymous classes, comments, and doc comments. Lombok (B4) will add

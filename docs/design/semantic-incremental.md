@@ -206,7 +206,16 @@ since the hand-written writer doesn't wait.
   change of the source sets using it.
 
 `Engine::set_text(file, text)` bumps the revision, then replaces the text and drops the file's
-tree, summary, and body results. It doesn't wait for running work.
+tree. It doesn't wait for running work. Both happen under the inputs lock, which readers hold only
+to copy an input out, so no snapshot sees the new revision without the new text. The file's
+summary and body results aren't dropped: their recorded version no longer matches, so their next
+use computes them again. `add_file`, `remove_file`, and `set_release` work the same way; a release
+change gives each of the source set's files a new version.
+
+The engine is given its inputs as `ferrion_semantic::ProjectInput`: source sets with a name, a
+release, the source sets they read from source in classpath order, and files with their text and
+whether they are generated. The CLI and language server build it from `ferrion_project::Project`,
+so the engine doesn't depend on how a project is loaded.
 
 ### File summaries
 
@@ -223,9 +232,13 @@ Per source set:
 
 - **The package table:** for each package, the source types declared in it (from summaries, with
   duplicates across roots marked ambiguous), merged lazily with the class path's and platform's
-  listings. Rebuilt whenever a summary's set of top-level types changes, which is a cheap pass over
-  all summaries (under 5 ms for lucene in the prototype), with each package entry's fingerprint
-  compared so that an unchanged package keeps its entry.
+  listings. It is two kinds of derived entry, using the same verification as type entries below:
+  a package index per source set (each package and the files declaring it), which reads the set's
+  file list and each file's package and top-level type names, the only part of a summary it
+  depends on, so it is rebuilt by a cheap pass over the summaries only when a file is added or
+  removed or that part changes; and an entry per package (its top-level types, each with the files
+  declaring it), which reads only its own package's files in the index. A new type recomputes its
+  own package's entry, and the others are verified without computing.
 - **Type entries:** for each type, its resolved header (supertypes, type parameters' bounds, member
   types, fields and method signatures with their types resolved), computed on demand and memoized.
   An entry records what it read: the summaries of the files it resolved names in, and the package
@@ -234,9 +247,22 @@ Per source set:
   recursively); if any differ, it is recomputed, and if the new value has the old fingerprint, the
   entries and bodies that read it stay valid.
 
-This is the same early-cutoff rule salsa applies, for the two kinds of derived entry that need it.
+This is the same early-cutoff rule salsa applies, for the kinds of derived entry that need it.
 Class-file types are entries of the same kind, whose only input is their class file, so they never
 change unless a jar does.
+
+In the engine, every derived entry works this way, summaries included (a summary reads its file's
+input, whose fingerprint is its version). A computation reads only through a recorder that notes
+each dependency and the fingerprint it had, so a dependency can't be read without being recorded;
+each kind of dependency is a variant of one enum, and one function gives each one's current
+fingerprint. An entry stores the latest revision at which it was known valid: a use at that
+revision returns it at once, and a use at a later one checks its dependencies in the order they
+were read, stopping at the first that differs. A result finished at a revision that has since
+moved is still stored, with what it read, and is verified like any other at the next revision, so
+work that the change didn't affect isn't lost. Verification recurses through entries that read
+entries, on `ferrion_stack::ensure_stack`, so a long chain of type entries can't overflow the
+stack. Entries can't yet detect a computation that reads itself; type entries (W4) need that for
+supertype cycles.
 
 ### Body results
 
@@ -253,15 +279,21 @@ files and drops the rest after use; the CLI drops each file's after its rules ha
 
 Trees are an input-derived cache, not a layer: computed from a file's text, used by the summary and
 body phases, and kept in a cache with a byte budget (by default 256 MB, a setting for the language
-server). A tree evicted while in use stays alive through its `Arc` until its user is done.
+server), least recently used evicted first. A tree evicted while in use stays alive through its
+`Arc` until its user is done. The budget counts each tree's node and token arrays by their
+lengths; the trees' real memory is about half as much again, from the arrays' spare capacity
+(lucene: 243 MB counted, about 360 MB allocated), until the parser's builder shrinks them.
 
 ## Threads
 
 - **Batch (CLI):** three phases over a pool of worker threads (one per core by default): parse and
   summarize every file; build each source set's package table; then, per file, verify or compute
   the type entries its bodies need and resolve the bodies. Files are handed out by an atomic
-  counter, as in the prototype. Source sets are processed together, so a dependent source set's
-  summaries exist before its dependents' bodies run.
+  counter, as in the prototype, to scoped threads started for each phase; with one thread, a phase
+  runs on the calling thread. Source sets are processed together, so a dependent source set's
+  summaries exist before its dependents' bodies run. `Snapshot::run_batch` runs the summary and
+  package table phases, then a callback per file in reverse order; W4 and W5 add their phases
+  before the callback.
 - **Language server:** a writer (the message loop) applies edits and bumps the revision; requests
   run on a pool and hold `Arc`s to what they read. A request started at revision N that sees N+1
   stops and is retried or answered with "content modified", as LSP allows.
@@ -275,9 +307,12 @@ server). A tree evicted while in use stays alive through its `Arc` until its use
 
 - between files in each phase;
 - every 1,024 tokens in a body walk, and in every loop over members or supertypes in layer 3;
-- before storing a result, which is dropped if the inputs it was computed from have changed.
+- at every read of an input, and between the dependencies checked when verifying an entry.
 
-`Cancelled` is an ordinary error value returned with `?`, never a panic.
+A result finished after the revision moved is stored with what it read, as above, and the query
+that computed it still returns `Err(Cancelled)`. Summaries don't poll: a summary is a fast pure
+function of a tree, and its parse doesn't poll either. `Cancelled` is an ordinary error value
+returned with `?`, never a panic.
 
 ## Memory
 
@@ -290,8 +325,39 @@ text. The budget the design holds to:
 - body results only where needed, as above;
 - class files are read on demand and not cached by B1; type entries keep what B3 needs from them.
 
-`tools/bench` gains a semantic benchmark measuring the cold run and the edit scenarios above on a
-corpus project, with peak memory, so regressions show up in pull requests (benchmarks.md).
+`tools/bench` has `semantic/corpus-cold` and `semantic/edits`, measuring the cold run and the edit
+scenarios above on a corpus project on one thread, with peak memory, so regressions show up in
+pull requests (benchmarks.md).
+
+### The engine as built
+
+Measured after W2 on lucene through its lock file: 79 source sets, 5,968 files, 50.3 MB, with the
+summaries of [names](semantic-names.md#file-summaries) and the package tables (no bodies yet).
+Release build, Apple M1 Pro, on the shared machine (load averages 8 to 10).
+
+| Cold run | 1 thread | 2 | 4 | 8 | Kept after | Peak |
+| --- | --- | --- | --- | --- | --- | --- |
+| tree cache 256 MB (every tree fits) | 922 ms | 520 ms | 331 ms | 419 ms | 412 MB | 412 MB |
+| trees dropped (cache of 0 bytes) | 885 ms | 502 ms | 334 ms | 431 ms | 51 MB | 51 to 56 MB |
+
+A last phase reading every tree again took 2 to 8 ms with the cache, and 248 to 743 ms without
+it, parsing every file again. The summaries and tables take 51 MB, against the prototype's 26 MB
+for its cruder summaries and results: types as written are 40 bytes a part, and names aren't
+interned, which is where to look if memory matters more later.
+
+After a cold run on four threads, `AbstractDocIdSetIterator.java` was edited and everything asked
+for again (`run_batch`), five times each:
+
+| Edit | Time | Work |
+| --- | --- | --- |
+| The same text again | 4.1 to 4.9 ms | 1 parse and summary (cut off); 5,967 summaries, 79 indexes, 594 packages verified |
+| Statement added to a method body | 3.8 to 4.5 ms | the same |
+| Method renamed | 3.6 to 4.7 ms | 1 summary changed; no package table entry computed |
+| Top-level class added | 3.7 to 5.5 ms | also 1 index computed (cut off) and 1 package entry computed; 593 verified |
+
+Cancellation, at 5%, 10%, ... 95% of a cold run on four threads: the setter returned in 1 to
+14 µs, and the run stopped in a median of 0.5 ms (0.7 ms with trees dropped); the slowest three
+took 18, 39, and 54 ms, each a parse in flight of one of lucene's largest files.
 
 ## Checking the engine
 
@@ -302,6 +368,17 @@ differential:
   token in a body, rename a member, add or remove a type or import, change a supertype) and, after
   each, compares every body result and type entry with a fresh engine's. A fuzz target does the
   same on corpus-derived inputs.
+
+  As built, `ferrion_semantic::invariants::check_edits` does this for summaries and package
+  tables, on a project of two source sets, with edits chosen from bytes: a fragment inserted at a
+  token, a token deleted or renamed, a statement added to a body, the same text set again, a file
+  added or removed, and a release changed. After each edit it asks only some questions, chosen
+  from the bytes, so that entries go unverified across several revisions, and checks each
+  entry's stored fingerprint against its value. The tests run it from seeds, with a batch at the
+  old revision running while each edit lands, and with a deeply nested file; the
+  `semantic_edits` fuzz target runs it on fuzzer-chosen bytes, from seeds of small files of each
+  kind rather than corpus files, whose licenses vary. Leaving out one recorded dependency (a
+  file's top-level part, read by the package table) makes each of the three tests fail.
 - **Corpus:** `oracle-check` runs the comparison with javac twice, once from a cold engine and once
   after replaying each file as an edit, and the results must be identical.
 
