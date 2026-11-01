@@ -29,7 +29,7 @@ const DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/differences");
 /// the expected output, so that the case moves out of the list when its rule lands.
 const PENDING: &[(&str, &str)] = &[(
     "text-block",
-    "the expressions rules, which break after `=` before a text block",
+    "the declarations rules, which break after a field's `=` before a text block",
 )];
 
 /// Each case's input, in name order.
