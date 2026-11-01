@@ -125,13 +125,18 @@ impl SyntaxTree {
         nodes: Vec<Node>,
         release: u32,
     ) -> SyntaxTree {
-        let tree = SyntaxTree {
+        // The builder grows these as it goes; a tree lives on in caches, so it gives back the
+        // spare capacity, which was about a third of each array on lucene.
+        let mut tree = SyntaxTree {
             text,
             tokens,
             token_kinds,
             nodes,
             release,
         };
+        tree.tokens.shrink_to_fit();
+        tree.token_kinds.shrink_to_fit();
+        tree.nodes.shrink_to_fit();
         if cfg!(debug_assertions)
             && let Err(problem) = crate::invariants::check_structure(&tree)
         {
