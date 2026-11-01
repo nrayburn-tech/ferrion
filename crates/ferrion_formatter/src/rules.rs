@@ -6,7 +6,22 @@
 //! with single spaces, a line break between statements and members, and indented bodies. That
 //! keeps the safety properties on every file that parses, so each rule written later replaces a
 //! working one. To add a rule, add an arm for the kind to its module's `format`; the area of
-//! every kind is fixed here, so the modules don't share code that changes.
+//! every kind is fixed here.
+//!
+//! What more than one area lays out the same way is in a module of its own, which each area's
+//! rules call, so that a construct breaks alike wherever it appears:
+//!
+//! - [`lists`]: delimited lists (arguments, parameters, initializers, annotation arguments, type
+//!   arguments), with a [`lists::Shape`] for what differs between them, and undelimited
+//!   comma-separated lists;
+//! - [`variables`]: `Type name`, which breaks before the name, and the value after an `=` or an
+//!   assignment's operator;
+//! - [`comments`]: what the rules ask about the comments next to a token.
+//!
+//! This module also has the helpers for a node's children ([`children`], [`emit`],
+//! [`first_token`], [`last_token`]). Rules keep no state of their own: what a rule needs from
+//! elsewhere in the file, such as the type-use annotations it imports, or how many capped
+//! indents are open, is on the [`Formatter`].
 
 mod comments;
 pub mod declarations;
