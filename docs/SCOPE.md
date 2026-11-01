@@ -114,10 +114,14 @@ The lexer and parser are internal and not published as a public API or as crates
   rule needs types.
 - **Platform API:**
     - JDK 8: javac 8's default boot class path in `jre/lib` (`rt.jar`, `jce.jar`, `jsse.jar`,
-      `charsets.jar`, and the others present), then the jars in `jre/lib/ext`. A JDK 8 can only serve
+      `charsets.jar`, and the others present), then the jars in `jre/lib/ext`, with `rt.jar`'s
+      classes read through `lib/ct.sym` (`META-INF/sym/rt.jar/`) when it exists, as javac 8 does,
+      so `rt.jar` classes that `ct.sym` leaves out don't resolve. A JDK 8 can only serve
       release 8;
-    - JDK 9+: the module image, and `ct.sym` for older releases. Each JDK's `ct.sym` covers a limited
-      range of releases, and its format differs between JDK versions;
+    - JDK 9+: `ct.sym` for every release it holds in full, and the module image for the JDK's own
+      release when `ct.sym` doesn't hold it. Each JDK's `ct.sym` covers a limited range of
+      releases, and its format differs between JDK versions. JDK 9 and 10 installations aren't
+      supported; their releases are targeted through a newer JDK's `ct.sym`;
     - compressed module images (such as the JetBrains Runtime) are supported;
     - JDK internals that aren't exported (such as `jdk.internal.misc`) don't resolve, as with javac.
 - **Class files:** multi-release jars are read for the target release. Annotations that aren't visible

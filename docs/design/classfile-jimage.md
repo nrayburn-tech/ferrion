@@ -179,7 +179,14 @@ doesn't match is `Malformed`.
    simple name, read its content with a positional read, and decompress it if needed.
 
 The index stores names as string offsets into the index buffer, so it costs a few megabytes. Its
-building took 7.5 ms for the JDK 27 image in the prototype.
+building took 7.5 ms for the JDK 27 image in the prototype. A class is found by comparing the
+names' bytes in place, without decoding the other names in its package (5.8 µs to find and parse a
+class of Corretto 21's image, on average).
+
+The implementation was checked against the jrt file system on every image of the
+[matrix](classfile.md#jdks-and-vendors), compressed ones included (`cargo oracle classfile`),
+and on two `jlink` images of a module written for the purpose (O13): every resource's bytes
+matched.
 
 ## Limits
 
@@ -308,6 +315,15 @@ They matched for all eight: Temurin 11 (31,377 files), Corretto 17 (27,469), 21 
 **O12. The redirect table.** A script counted the table's negative, zero, and positive values, as
 in [The redirect table](#the-redirect-table), for JDK 27 and Temurin 11 (12,556 negative, 12,536
 zero, 8,939 positive from 0x01000194 to 0x010001C3).
+
+**O13. A module of our own, in `compact-cp` and `zip` images.** A module `lmod` exporting
+`lpkg.Lower`, whose class `LList<LIST extends List<LIST>, EL, L>` and inner class `LInner<LX>` put
+`L` in package names, class names, and type variables of signatures (`TLIST;`, `TEL;`, `TL;`), and
+a string constant `"L;L<L>"`, was compiled with Corretto 21 and linked with `jdk.compiler` by
+`jlink --compress=1` and `--compress=zip-6`. Ferrion's reader, which inserts a name after every
+`L` of a skeleton, read every resource of both images with the same bytes as the images' own jrt
+file system (9,387 resources each), and javap agreed with Ferrion on every class of the images'
+own release 21.
 
 To reproduce: install the JDKs with mise, and run the commands above. The scripts are short, and
 each description says what it computes; a later round turns them into

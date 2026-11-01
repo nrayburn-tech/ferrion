@@ -13,9 +13,11 @@ PKWARE's APPNOTE.TXT, version 6.3.10.
 ### The subset read
 
 - **End of central directory** (4.3.16): found by scanning back from the end of the file, over at
-  most 22 + 65,535 bytes (the record plus the longest comment), for the signature 0x06054b50. When
-  more than one candidate is found, the last whose comment length reaches exactly to the end of
-  the file is used.
+  most 22 + 65,535 bytes (the record plus the longest comment), for the signature 0x06054b50.
+  Candidates are tried from the end backwards, those whose comment length reaches exactly to the
+  end of the file first, and the first whose central directory reads, with entries, is used. A
+  comment can hold bytes that look like an end record; this skips them (a unit test writes such
+  a comment).
 - **Zip64** (4.3.14, 4.3.15, 4.5.3): when the record's entry count, central directory size, or
   offset is 0xFFFF or 0xFFFFFFFF, the zip64 end of central directory locator just before it gives
   the zip64 record. In each central directory header, a 0xFFFFFFFF size or offset is replaced by
@@ -45,10 +47,18 @@ digital signatures, and the CRC (see [dependencies](classfile.md#dependencies)).
 
 ### Duplicate names
 
-When the central directory lists the same name twice, the first wins. In the survey, one jar of
+When the central directory lists the same name twice, the **last** wins. In the survey, one jar of
 3,166 has duplicates, and only of directory entries (`archunit-1.4.1.jar`: four directories, each
-listed twice). Which copy javac uses when a class is duplicated wasn't observed; the implementation
-round checks it with a test jar (see [open questions](classfile.md#open-questions)).
+listed twice).
+
+The design proposed that the first wins, to be checked before relying on it (decision 8 in
+[review](classfile.md#decisions-made-in-review)). The check, with a jar written by Python's
+`zipfile` holding two `p/A.class` entries, the first with a method `first()` and the second with
+`second()`: javac 27 compiling `p.A.first()` against it reports `cannot find symbol`, and
+`p.A.second()` compiles. `java.util.zip.ZipFile.getEntry("p/A.class")` returns the second entry's
+bytes too (its SHA-256 through the javap oracle's `zip` mode), and `JarFile.versionedStream()`
+lists both. So Ferrion takes the last entry in central directory order, matching javac and
+`ZipFile`, and the zip container check confirms it on every corpus jar.
 
 ### Limits
 
@@ -106,19 +116,28 @@ true`, read for release R:
   highest such N wins;
 - names that only exist under `META-INF/versions/N/` with N ≤ R exist for release R;
 - entries under `META-INF/versions/N/` with N > R, or N not an integer, are ignored;
-- for release 8, and for jars without the attribute, `META-INF/versions/` is ignored entirely. The
-  survey found 5,355 versioned entries in jars without the attribute, almost all in `-sources`
-  jars.
+- for release 8, a multi-release jar's `META-INF/versions/` entries are ignored entirely: they
+  aren't names of their own either, as `JarFile`'s versioned view at release 8 shows;
+- in a jar without the attribute, `META-INF/versions/` entries are ordinary entries, as
+  `JarFile` lists them, so no class is read from them. The survey found 5,355 versioned entries in
+  jars without the attribute, almost all in `-sources` jars.
+
+An entry whose name has an empty segment (`/A.class`, `p//A.class`) is no class: no lookup by
+binary name reaches it, so it isn't listed in a package (found by fuzzing).
 
 The jar's index is built per release: two source sets with different releases that use the same
 jar share the zip archive and its central directory, and each gets its own resolved view.
 `META-INF/versions/N/module-info.class` follows the same rule.
 
 The check against the JDK's implementation uses `java.util.jar.JarFile` opened with
-`Runtime.Version.parse("<R>")` (see [container checks](classfile.md#container-checks)). Which
-release javac itself uses for multi-release jars on the classpath (the `--release` value) is
-checked in the implementation round with a test jar whose versioned class differs from its base
-class.
+`Runtime.Version.parse("<R>")` (see [container checks](classfile.md#container-checks)).
+
+javac reads a multi-release jar on the classpath for the release it compiles for, observed with a
+jar whose `p.A` has a method `first()` in the base entry, `nine()` under `META-INF/versions/9/`, and
+`seventeen()` under `META-INF/versions/17/`. javac 27 with `--release 8` compiles a call to
+`first()` only; with `--release 11`, `nine()` only; with `--release 17`, `21`, and `27`,
+`seventeen()` only; and with `-source 11 -target 11`, `nine()`. So the release to resolve a jar for
+is the source set's target release, which is what `ferrion_project` passes.
 
 ## Directories
 
@@ -163,9 +182,13 @@ in a future release`.
 
 So, to match javac 8, Ferrion reads the JDK 8 boot class path in javac 8's order, with `rt.jar`'s
 classes taken from `lib/ct.sym` when it exists. The other boot jars and the `ext` jars are read
-as they are. This refines SCOPE.md's wording, so it is an
-[open question](classfile.md#open-questions). JDK 8 has no modules, so every package is visible.
-A JDK 8 serves only release 8.
+as they are. SCOPE.md says so (decision 3 in [review](classfile.md#decisions-made-in-review)).
+JDK 8 has no modules, so every package is visible. A JDK 8 serves only release 8. For a JRE, which
+has `lib/rt.jar` and no `jre/` directory or `ct.sym`, the boot class path is read from `lib`.
+
+`ct.sym` names only the classes; Ferrion lists `rt.jar`'s classes from the entries under
+`META-INF/sym/rt.jar/` and reads them there, and a class `rt.jar` has but `ct.sym` doesn't is
+missing, as for javac 8.
 
 ## JMOD files
 
