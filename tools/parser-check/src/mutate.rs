@@ -349,11 +349,13 @@ fn unbalanced(tree: &SyntaxTree) -> bool {
     depth != [0; 3]
 }
 
+/// Whether `parsed` has a lexical or syntax error. Version errors don't count: the tree is
+/// complete, and a mutation that only changes what the release allows broke nothing.
 fn has_errors(parsed: &Parse) -> bool {
     parsed
         .diagnostics
         .iter()
-        .any(|d| d.severity == Severity::Error)
+        .any(|d| d.severity == Severity::Error && !d.kind.is_version())
 }
 
 /// Totals for one mutation kind.
@@ -599,7 +601,7 @@ fn mutate_all(
 }
 
 /// Reads and parses `source` at its first release, or `None` if it can't be decoded or has
-/// errors.
+/// lexical or syntax errors.
 fn read_clean(source: &Source) -> Option<Clean> {
     let bytes = std::fs::read(&source.path).ok()?;
     let text: Arc<str> = Arc::from(SourceText::decode(bytes).ok()?.text());
