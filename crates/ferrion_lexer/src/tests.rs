@@ -835,13 +835,14 @@ mod numbers {
                 "1..2",
                 &[(K::DoubleLiteral, "1."), (K::DoubleLiteral, ".2")],
             ),
-            // javac lexes `..` as one illegal token here.
+            // javac lexes `..` as one illegal token here, and the lexer as two dots.
             (
                 "1...2",
                 &[
                     (K::DoubleLiteral, "1."),
                     (K::Dot, "."),
-                    (K::DoubleLiteral, ".2"),
+                    (K::Dot, "."),
+                    (K::IntLiteral, "2"),
                 ],
             ),
             ("1ee5", &[(K::DoubleLiteral, "1e"), (K::Identifier, "e5")]),
@@ -911,9 +912,8 @@ mod char_literals {
             "'abc'",
             r"'\400'",
             r"'\1234'",
-            "'😀'",
-            r"'\uD83D\uDE00'",
             r"'a\''",
+            r"'a\uD83D\uDE00'",
         ] {
             assert_eq!(toks(text), [(K::CharLiteral, text)], "{text:?}");
             assert_eq!(
@@ -930,6 +930,28 @@ mod char_literals {
                 (K::CharLiteral, "'c'")
             ]
         );
+    }
+
+    #[test]
+    fn supplementary_character() {
+        // javac reports the character, whether or not the literal is closed right after it.
+        let cases: &[(&str, &str)] = &[
+            ("'😀'", "'😀'"),
+            (r"'\uD83D\uDE00'", r"'\uD83D\uDE00'"),
+            ("'😀a'", "'😀a'"),
+            ("'😀", "'😀"),
+            ("'😀 ;", "'😀"),
+        ];
+        for &(text, literal) in cases {
+            assert_eq!(toks(text)[0], (K::CharLiteral, literal), "{text:?}");
+            assert_eq!(
+                errs(text),
+                [(E::SupplementaryCharLiteral, literal)],
+                "{text:?}"
+            );
+        }
+        // A lone surrogate is one code unit.
+        assert!(errs(r"'\uD83D'").is_empty());
     }
 
     #[test]
@@ -1364,6 +1386,27 @@ mod operators {
         ];
         for &(text, expected) in cases {
             assert_eq!(kinds(text), expected, "{text:?}");
+        }
+    }
+
+    #[test]
+    fn double_dots() {
+        // Two dots, reported together, as javac reports its one illegal token.
+        for (text, pair) in [
+            ("..", ".."),
+            ("a..b", ".."),
+            (".....", ".."),
+            ("a..2", ".."),
+            ("1...2", ".."),
+        ] {
+            assert_eq!(errs(text), [(E::DoubleDot, pair)], "{text:?}");
+        }
+        assert_eq!(
+            kinds("a..2"),
+            [K::Identifier, K::Dot, K::Dot, K::IntLiteral]
+        );
+        for text in ["...", "....", "......", ". .", "./**/.", "1..2"] {
+            assert!(errs(text).is_empty(), "{text:?}");
         }
     }
 

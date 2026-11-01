@@ -1,9 +1,14 @@
 //! Unicode escapes (JLS §3.3).
 //!
-//! A `\` is eligible to begin a Unicode escape when it is preceded by an even number of contiguous
-//! backslashes as written, so `\\u0041` is a backslash, a backslash, and `u0041`. An eligible `\`
-//! followed by one or more `u`s begins an escape, which must go on to four hex digits. A backslash
-//! produced by an escape (`\u005c`) never begins another escape.
+//! A `\` as written is eligible to begin a Unicode escape unless it is the second of a pair of
+//! backslashes. Backslashes pair up from the left in a run of them, so `\\u0041` is a backslash,
+//! a backslash, and `u0041`, but `\\\u0041` is `\\` and `A`. An eligible `\` followed by
+//! one or more `u`s begins an escape, which must go on to four hex digits. A backslash produced by
+//! an escape (`\u005c`) never begins another escape, but it pairs like any other, except that a
+//! `\` right after it is always eligible: `\u005c\u0041` is a backslash and `A`, and
+//! `\u005c\\u0041` is a backslash, a backslash, and `A`. That is how javac reads them
+//! (observed with the oracle; the JLS counts only backslashes as written, which would make the last
+//! one `\`, `\`, and `u0041`).
 //!
 //! Escapes are found in a single pass over the raw text, before tokens are formed, so the lexer
 //! sees the translated characters while spans keep covering the escapes as written.
@@ -41,25 +46,54 @@ pub struct Escapes<'a> {
     bytes: &'a [u8],
     pos: usize,
     end: usize,
-    /// The number of contiguous raw backslashes just before `pos`.
-    backslashes: usize,
+    /// Whether the character just before `pos` is a backslash that doesn't pair with one before
+    /// it, so that a `\` written at `pos` would be the second of a pair.
+    unpaired: bool,
+    /// Whether the character just before `pos` came from an escape.
+    translated: bool,
 }
 
 impl<'a> Escapes<'a> {
-    /// Escapes in `bytes[start..end]`. Backslashes before `start` count toward the even-backslash
-    /// rule, but escapes that begin before `start` aren't found.
+    /// Escapes in `bytes[start..end]`. Backslashes before `start` count toward the pairing rule,
+    /// but escapes that begin before `start` aren't found.
     pub(crate) fn new(bytes: &'a [u8], start: usize, end: usize) -> Escapes<'a> {
-        let backslashes = bytes[..start]
-            .iter()
-            .rev()
-            .take_while(|&&b| b == b'\\')
-            .count();
-        Escapes {
+        // Read the run of backslashes before `start`, if any, for its pairing.
+        let mut escapes = Escapes {
             bytes,
-            pos: start,
-            end,
-            backslashes,
+            pos: backslash_run_start(bytes, start),
+            end: start,
+            unpaired: false,
+            translated: false,
+        };
+        while escapes.next().is_some() {}
+        escapes.pos = start;
+        escapes.end = end;
+        escapes
+    }
+}
+
+/// Where the run of backslashes, as written or as escapes (`\u005c`), that ends at `pos` starts.
+/// The character before it isn't a backslash, so pairing starts afresh there. Linear in the run's
+/// length.
+fn backslash_run_start(bytes: &[u8], mut pos: usize) -> usize {
+    loop {
+        if pos > 0 && bytes[pos - 1] == b'\\' {
+            pos -= 1;
+            continue;
         }
+        if pos >= 6 && bytes[pos - 4..pos].eq_ignore_ascii_case(b"005c") {
+            let digits = pos - 4;
+            let us = bytes[..digits]
+                .iter()
+                .rev()
+                .take_while(|&&b| b == b'u')
+                .count();
+            if us > 0 && digits > us && bytes[digits - us - 1] == b'\\' {
+                pos = digits - us - 1;
+                continue;
+            }
+        }
+        return pos;
     }
 }
 
@@ -76,17 +110,18 @@ impl Iterator for Escapes<'_> {
                 return None;
             };
             if offset > 0 {
-                self.backslashes = 0;
+                self.unpaired = false;
+                self.translated = false;
                 self.pos += offset;
             }
             let start = self.pos;
-            if self.backslashes % 2 == 1 || self.bytes.get(start + 1) != Some(&b'u') {
-                self.backslashes += 1;
+            let eligible = !self.unpaired || self.translated;
+            if !eligible || self.bytes.get(start + 1) != Some(&b'u') {
+                self.unpaired = !self.unpaired;
+                self.translated = false;
                 self.pos += 1;
                 continue;
             }
-            // An escape always ends with a `u` or a hex digit, so the next backslash is eligible.
-            self.backslashes = 0;
             let (end, unit) = scan(self.bytes, start, self.end);
             self.pos = end;
             let ch = match unit {
@@ -111,6 +146,10 @@ impl Iterator for Escapes<'_> {
                 }
                 Some(unit) => Some(char::from_u32(unit).unwrap_or(char::REPLACEMENT_CHARACTER)),
             };
+            // A backslash from an escape pairs with an unpaired one before it, and the next `\`
+            // after any escape is eligible.
+            self.unpaired = ch == Some('\\') && !self.unpaired;
+            self.translated = true;
             return Some(Escape {
                 start: start as u32,
                 end: self.pos as u32,
@@ -198,13 +237,58 @@ mod tests {
         assert_eq!(escapes(r"\\u0041"), []);
         assert_eq!(escapes(r"\\\u0041"), [(2, 8, Some('A'))]);
         assert_eq!(escapes(r"\\\\u0041"), []);
-        // The backslash an escape produces doesn't start another escape, and doesn't count as a
-        // backslash before the next one.
+        // The backslash an escape produces doesn't start another escape, and a backslash right
+        // after it is eligible.
         assert_eq!(escapes(r"\u005cu0041"), [(0, 6, Some('\\'))]);
         assert_eq!(
             escapes(r"\u005c\u005c"),
             [(0, 6, Some('\\')), (6, 12, Some('\\'))]
         );
+        assert_eq!(
+            escapes(r"\u005c\u0041"),
+            [(0, 6, Some('\\')), (6, 12, Some('A'))]
+        );
+    }
+
+    #[test]
+    fn escaped_backslashes_pair_with_written_ones() {
+        // The escape's backslash and the one after it pair, which leaves the next eligible.
+        assert_eq!(
+            escapes(r"\u005c\\u0041"),
+            [(0, 6, Some('\\')), (7, 13, Some('A'))]
+        );
+        assert_eq!(escapes(r"\u005c\\\u0041"), [(0, 6, Some('\\'))]);
+        assert_eq!(
+            escapes(r"\u005c\\u005c\]"),
+            [(0, 6, Some('\\')), (7, 13, Some('\\'))]
+        );
+        assert_eq!(
+            escapes(r"\\\u005c\u0041"),
+            [(2, 8, Some('\\')), (8, 14, Some('A'))]
+        );
+        assert_eq!(
+            escapes(r"\u005c\u005c\u005cu0041"),
+            [
+                (0, 6, Some('\\')),
+                (6, 12, Some('\\')),
+                (12, 18, Some('\\'))
+            ]
+        );
+    }
+
+    #[test]
+    fn pairing_before_the_range_counts() {
+        // From the written backslash: the escape before it pairs with it.
+        let text = r"\u005c\\u0041";
+        let found: Vec<_> = Escapes::new(text.as_bytes(), 6, text.len())
+            .map(|e| e.start)
+            .collect();
+        assert_eq!(found, [7]);
+        let text = r"\u005c\\\u0041";
+        let found: Vec<_> = Escapes::new(text.as_bytes(), 8, text.len())
+            .map(|e| e.start)
+            .collect();
+        assert_eq!(found, [] as [u32; 0]);
     }
 
     #[test]

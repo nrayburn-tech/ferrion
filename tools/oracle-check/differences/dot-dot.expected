@@ -25,4 +25,5 @@ ferrion IDENTIFIER 23..24 "b"
 ferrion SEMI 24..25 ";"
 ferrion RBRACE 26..27 "}"
 ferrion EOF 28..28 ""
+ferrion error DoubleDot 21..23 ".."
 first difference at item 8

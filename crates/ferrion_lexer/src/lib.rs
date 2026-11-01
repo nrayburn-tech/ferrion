@@ -74,15 +74,21 @@ pub enum LexErrorKind {
     UnterminatedTextBlock,
     /// `''`
     EmptyCharLiteral,
-    /// A character literal with more than one character, counting UTF-16 code units as javac does,
-    /// so `'😀'` is one too.
+    /// A character literal with more than one character, such as `'ab'`.
     MultipleCharsInCharLiteral,
+    /// A character literal whose character is outside the Basic Multilingual Plane, such as
+    /// `'😀'`: two UTF-16 code units, which a `char` can't hold. Reported instead of any other
+    /// mistake in the literal after it, as javac does.
+    SupplementaryCharLiteral,
     /// A line terminator right after the opening `'` of a character literal, as in `'\u000a'`.
     LineTerminatorInCharLiteral,
     /// Text after `"""` on the line that opens a text block.
     TextBlockOpeningNotOnOwnLine,
     /// A numeric literal that doesn't match JLS §3.10.1 or §3.10.2, such as `0x`, `1e`, or `1_`.
     MalformedNumber,
+    /// Two adjacent dots that don't start `...`, as in `a..b`. They're two `Dot` tokens, and the
+    /// error spans both.
+    DoubleDot,
 }
 
 /// Lexes `text`, a [`SourceText`](ferrion_diagnostics::SourceText)'s text.

@@ -272,20 +272,25 @@ struct Escape {
     unit: Option<u16>,
 }
 
-/// The text's Unicode escapes. A `\` begins one when it is followed by `u` and preceded by an even
-/// number of `\`s.
+/// The text's Unicode escapes. A `\` begins one when it is followed by `u`, and either an escape
+/// ends right before it or an even number of `\`s precede it. Those `\`s include the ones escapes
+/// stand for (`\`), as javac counts them (see `escape.rs`).
 fn unicode_escapes(text: &str) -> Vec<Escape> {
     let bytes = text.as_bytes();
     let mut escapes = Vec::new();
     let mut backslashes = 0;
+    let mut after_escape = false;
     let mut i = 0;
     while i < bytes.len() {
         if bytes[i] != b'\\' {
             backslashes = 0;
+            after_escape = false;
             i += 1;
             continue;
         }
-        if backslashes % 2 == 1 || bytes.get(i + 1) != Some(&b'u') {
+        let eligible = backslashes % 2 == 0 || after_escape;
+        after_escape = false;
+        if !eligible || bytes.get(i + 1) != Some(&b'u') {
             backslashes += 1;
             i += 1;
             continue;
@@ -308,7 +313,12 @@ fn unicode_escapes(text: &str) -> Vec<Escape> {
             span: Span::new(start as u32, i as u32),
             unit,
         });
-        backslashes = 0;
+        backslashes = if unit == Some(0x5C) {
+            backslashes + 1
+        } else {
+            0
+        };
+        after_escape = true;
     }
     escapes
 }
@@ -597,6 +607,12 @@ mod tests {
             [(0, 8, Some(0x5C)), (8, 14, Some(0x41))]
         );
         assert_eq!(found("\\\\u0041 \\\\\\u0041"), [(10, 16, Some(0x41))]);
+        // An escaped `\` pairs with a written one after it.
+        assert_eq!(
+            found("\\u005c\\\\u0041"),
+            [(0, 6, Some(0x5C)), (7, 13, Some(0x41))]
+        );
+        assert_eq!(found("\\u005c\\\\\\u0041"), [(0, 6, Some(0x5C))]);
         assert_eq!(found("\\u00g \\u"), [(0, 4, None), (6, 8, None)]);
         assert_eq!(found("\\x \\"), []);
     }

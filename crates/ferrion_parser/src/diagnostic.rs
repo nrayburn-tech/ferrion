@@ -693,10 +693,14 @@ fn lexical_message(kind: LexErrorKind) -> &'static str {
         LexErrorKind::MultipleCharsInCharLiteral => {
             "more than one character in a character literal"
         }
+        LexErrorKind::SupplementaryCharLiteral => {
+            "a character outside the Basic Multilingual Plane doesn't fit in a character literal"
+        }
         LexErrorKind::LineTerminatorInCharLiteral => "line break in a character literal",
         LexErrorKind::TextBlockOpeningNotOnOwnLine => {
             "a text block's opening delimiter must end its line"
         }
         LexErrorKind::MalformedNumber => "malformed number",
+        LexErrorKind::DoubleDot => "`..` isn't an operator: write `.` or `...`",
     }
 }
