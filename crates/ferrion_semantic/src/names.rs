@@ -49,6 +49,25 @@ const SHARDS: usize = 64;
 pub struct Interner {
     shards: Box<[RwLock<Shard>]>,
     hasher: RandomState,
+    paths: RwLock<Paths>,
+}
+
+/// A type's path of simple names (`Outer.Inner`), interned as its last name and the path of the
+/// type it is a member of, so that a path is 4 bytes and making one is O(1) however deep the
+/// type is nested. Ids mean something only within one engine, like names'.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Path(u32);
+
+impl fmt::Debug for Path {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Path({})", self.0)
+    }
+}
+
+#[derive(Default)]
+struct Paths {
+    ids: HashMap<(Option<Path>, Name), Path>,
+    paths: Vec<(Option<Path>, Name)>,
 }
 
 #[derive(Default)]
@@ -68,7 +87,61 @@ impl Interner {
         Interner {
             shards: (0..SHARDS).map(|_| RwLock::default()).collect(),
             hasher: RandomState::new(),
+            paths: RwLock::default(),
         }
+    }
+
+    /// The path of the member type `simple` of the type at `outer`, or of the top-level type
+    /// `simple` for `None`.
+    pub fn path(&self, outer: Option<Path>, simple: Name) -> Path {
+        let key = (outer, simple);
+        if let Some(&path) = read(&self.paths).ids.get(&key) {
+            return path;
+        }
+        let mut paths = write(&self.paths);
+        if let Some(&path) = paths.ids.get(&key) {
+            return path;
+        }
+        let path = Path(u32::try_from(paths.paths.len()).expect("fewer than four billion paths"));
+        paths.paths.push(key);
+        paths.ids.insert(key, path);
+        path
+    }
+
+    /// The path of `names`, outermost first; `None` for no names.
+    pub fn path_of(&self, names: &[Name]) -> Option<Path> {
+        names
+            .iter()
+            .fold(None, |outer, &name| Some(self.path(outer, name)))
+    }
+
+    /// A path's simple names, outermost first. A loop up the path, however deep.
+    pub fn path_names(&self, path: Path) -> Vec<Name> {
+        let paths = read(&self.paths);
+        let mut names = Vec::new();
+        let mut next = Some(path);
+        while let Some(p) = next {
+            let (outer, name) = paths.paths[p.0 as usize];
+            names.push(name);
+            next = outer;
+        }
+        names.reverse();
+        names
+    }
+
+    /// A path's last name: the type's simple name.
+    pub fn path_last(&self, path: Path) -> Name {
+        read(&self.paths).paths[path.0 as usize].1
+    }
+
+    /// The path joined by `separator`: `Outer.Inner`, or `Outer$Inner` for a binary name.
+    pub fn path_text(&self, path: Path, separator: &str) -> String {
+        let texts: Vec<Arc<str>> = self
+            .path_names(path)
+            .into_iter()
+            .map(|n| self.text(n))
+            .collect();
+        texts.join(separator)
     }
 
     /// The id of `text`, interning it the first time.

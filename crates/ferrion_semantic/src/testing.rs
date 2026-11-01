@@ -449,26 +449,33 @@ pub fn dump(engine: &Engine) -> String {
 
 /// [`dump`] at a snapshot.
 pub fn dump_snapshot(snapshot: &Snapshot) -> String {
-    let names = snapshot.names().clone();
     let mut out = String::new();
     for set in snapshot.source_sets().unwrap() {
         let info = snapshot.source_set(set).unwrap();
         for &file in snapshot.files(set).unwrap().iter() {
             let path = snapshot.file(file).unwrap().path;
             writeln!(out, "== {} {}", info.name, path.display()).unwrap();
-            let text = snapshot.text(file).unwrap();
-            let decl_names = snapshot.decl_names(file).unwrap();
-            for name in decl_names.names.iter() {
-                let written = &text[name.start as usize..name.end as usize];
-                let key = snapshot.symbol_key(&name.symbol).unwrap();
-                writeln!(out, "{written} -> {key}").unwrap();
-            }
-            let summary = snapshot.summary(file).unwrap();
-            for index in 0..summary.types.len() {
-                let key = crate::resolve::key_of(set, file, &summary, index, &names);
-                out.push_str(&describe_type(snapshot, set, key));
-            }
+            out.push_str(&dump_file(snapshot, file));
         }
+    }
+    out
+}
+
+/// One file's part of [`dump`]: its names in declarations, then its types.
+pub fn dump_file(snapshot: &Snapshot, file: crate::FileId) -> String {
+    let mut out = String::new();
+    let set = snapshot.file(file).unwrap().set;
+    let text = snapshot.text(file).unwrap();
+    let decl_names = snapshot.decl_names(file).unwrap();
+    for name in decl_names.names.iter() {
+        let written = &text[name.start as usize..name.end as usize];
+        let key = snapshot.symbol_key(&name.symbol).unwrap();
+        writeln!(out, "{written} -> {key}").unwrap();
+    }
+    let summary = snapshot.summary(file).unwrap();
+    for index in 0..summary.types.len() {
+        let key = snapshot.type_key(file, index).unwrap();
+        out.push_str(&describe_type(snapshot, set, key));
     }
     out
 }
@@ -494,7 +501,7 @@ pub fn describe_type(snapshot: &Snapshot, view: SourceSetId, key: TypeKey) -> St
         let Supertypes {
             superclass,
             interfaces,
-            cyclic,
+            cycle,
         } = &*supertypes;
         let one = |r: &Result<TypeKey, crate::symbols::ErrorSymbol>| match r {
             Ok(k) => type_text(*k),
@@ -506,8 +513,10 @@ pub fn describe_type(snapshot: &Snapshot, view: SourceSetId, key: TypeKey) -> St
         for interface in interfaces.iter() {
             writeln!(out, "  interface {}", one(interface)).unwrap();
         }
-        if *cyclic {
-            writeln!(out, "  cyclic").unwrap();
+        if !cycle.is_empty() {
+            let mut members: Vec<String> = cycle.iter().map(|&k| type_text(k)).collect();
+            members.sort();
+            writeln!(out, "  cyclic with {}", members.join(", ")).unwrap();
         }
     }
     let members = snapshot.member_types(view, key).unwrap();

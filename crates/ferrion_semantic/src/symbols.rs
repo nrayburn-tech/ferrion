@@ -18,7 +18,7 @@ use std::fmt;
 use std::sync::Arc;
 
 use crate::summary::{MethodKind, Modifiers, Primitive, TypeKind, WildcardBound};
-use crate::{FileId, Interner, Name, SourceSetId};
+use crate::{FileId, Interner, Name, Path, SourceSetId};
 
 /// A class source: a platform API or a classpath entry, numbered across the engine, so that a jar
 /// several source sets use is one source.
@@ -35,18 +35,18 @@ impl ClassSourceId {
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub enum TypeKey {
     /// A class, interface, enum, record, or annotation interface declared in `set`'s own sources,
-    /// top level or a member: `path` is its simple names joined by `.`.
+    /// top level or a member: `path` is its simple names, outermost first.
     Source {
         set: SourceSetId,
         package: Name,
-        path: Name,
+        path: Path,
     },
-    /// A compact compilation unit's implicitly declared class (`path` empty) or a member of it,
+    /// A compact compilation unit's implicitly declared class (`path` `None`) or a member of it,
     /// which no other file can name (JLS 7.3).
     Compact {
         set: SourceSetId,
         file: FileId,
-        path: Name,
+        path: Option<Path>,
     },
     /// A class file, by where it came from and its binary name in internal form
     /// (`java/util/Map$Entry`).
@@ -218,6 +218,8 @@ pub enum Cause {
     BadClass { binary: Name, message: Arc<str> },
     /// The parser found the name missing.
     Syntax,
+    /// A qualified name of more segments than are resolved (`resolve::MAX_SEGMENTS`, 1,024).
+    TooLong,
 }
 
 /// An error symbol: the name that failed and why. Where is known by what holds it: an entry's
@@ -247,8 +249,15 @@ pub struct Supertypes {
     /// `None` for `java.lang.Object`, interfaces' implicit `Object` aside.
     pub superclass: Option<Result<TypeKey, ErrorSymbol>>,
     pub interfaces: Box<[Result<TypeKey, ErrorSymbol>]>,
-    /// In a cycle of supertypes: every supertype above is an error with [`Cause::Cycle`].
-    pub cyclic: bool,
+    /// For a type in a cycle of supertypes, the source types in it, sorted: every supertype
+    /// above is then an error with [`Cause::Cycle`]. Empty otherwise.
+    pub cycle: Box<[TypeKey]>,
+}
+
+impl Supertypes {
+    pub fn cyclic(&self) -> bool {
+        !self.cycle.is_empty()
+    }
 }
 
 /// A type's member types by simple name, declared and inherited (JLS 8.5, 9.5): a declared one
@@ -458,6 +467,7 @@ impl Cause {
             Cause::Incomplete { .. } => "incomplete".to_owned(),
             Cause::BadClass { binary, .. } => format!("bad-class {}", names.text(*binary)),
             Cause::Syntax => "syntax".to_owned(),
+            Cause::TooLong => "too-long".to_owned(),
         }
     }
 }

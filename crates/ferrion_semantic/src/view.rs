@@ -419,7 +419,7 @@ impl Reads<'_> {
         let key = TypeKey::Source {
             set,
             package,
-            path: simple,
+            path: self.snapshot.names().path(None, simple),
         };
         Ok(Some(if declarations.len() > 1 {
             Found::Ambiguous(vec![key; declarations.len()].into_boxed_slice())
@@ -531,16 +531,13 @@ impl Reads<'_> {
             {
                 continue;
             }
-            let path = if rest.is_empty() {
-                top.to_owned()
-            } else {
-                format!("{top}.{}", rest[1..].replace('$', "."))
-            };
-            let key = TypeKey::Source {
-                set,
-                package,
-                path: names.intern(&path),
-            };
+            let mut path = names.path(None, top_name);
+            if !rest.is_empty() {
+                for member in rest[1..].split('$') {
+                    path = names.path(Some(path), names.intern(member));
+                }
+            }
+            let key = TypeKey::Source { set, package, path };
             if rest.is_empty() || self.source_type_exists(key)? {
                 return Ok(Some(key));
             }

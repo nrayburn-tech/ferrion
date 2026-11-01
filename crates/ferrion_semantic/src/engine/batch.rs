@@ -68,10 +68,8 @@ impl Snapshot {
 
         parallel(self, threads, files.len(), |i| {
             let file = files[i];
-            let summary = self.summary(file)?;
-            let set = self.file(file)?.set;
-            for index in 0..summary.types.len() {
-                let key = crate::resolve::key_of(set, file, &summary, index, self.names());
+            let scope = self.file_scope_memo(file)?;
+            for &key in scope.value.keys.iter() {
                 self.type_entry_memo(key)?;
             }
             Ok(())

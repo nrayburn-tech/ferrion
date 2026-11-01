@@ -83,6 +83,36 @@ impl Snapshot {
         Ok(Some(self.type_entry_memo(key)?.value.clone()))
     }
 
+    /// Checks that each entry of `file`'s types (its scope, and each type's supertypes, member
+    /// types, and entry) carries its value's fingerprint, for the differential check.
+    #[doc(hidden)]
+    pub fn check_fingerprints(&self, file: FileId) -> Result<(), String> {
+        let cancelled = |_| "cancelled with no edit running".to_owned();
+        let scope = self.file_scope_memo(file).map_err(cancelled)?;
+        if scope.fingerprint != Fingerprint::of(&*scope.value) {
+            return Err("its scope has a stale fingerprint".to_owned());
+        }
+        for &key in scope.value.keys.iter() {
+            if let Some(memo) = self.supertypes_memo(key).map_err(cancelled)?
+                && memo.fingerprint != Fingerprint::of(&*memo.value)
+            {
+                return Err(format!("{key:?}'s supertypes have a stale fingerprint"));
+            }
+            if let Some(memo) = self
+                .member_types_memo(key.home(scope.value.set), key)
+                .map_err(cancelled)?
+                && memo.fingerprint != Fingerprint::of(&*memo.value)
+            {
+                return Err(format!("{key:?}'s member types have a stale fingerprint"));
+            }
+            let memo = self.type_entry_memo(key).map_err(cancelled)?;
+            if memo.fingerprint != Fingerprint::of(&*memo.value) {
+                return Err(format!("{key:?}'s entry has a stale fingerprint"));
+            }
+        }
+        Ok(())
+    }
+
     /// A class file's entry, as read.
     pub fn class_entry(&self, key: TypeKey) -> Option<Arc<ClassEntry>> {
         let TypeKey::Class { source, binary } = key else {
@@ -145,58 +175,31 @@ impl Reads<'_> {
     /// The file and summary declaring a source type, or `None` if no file of its set declares
     /// it or more than one does. Records the package entry and the summary.
     pub(crate) fn locate(&mut self, key: TypeKey) -> Result<Option<Located>, Cancelled> {
-        let names = self.snapshot.names().clone();
-        let segments = |path: Name| -> Vec<Name> {
-            if path.is_empty() {
-                return Vec::new();
-            }
-            names
-                .text(path)
-                .split('.')
-                .map(|s| names.intern(s))
-                .collect()
-        };
-        match key {
+        let file = match key {
             TypeKey::Source { set, package, path } => {
-                let path = segments(path);
-                let Some(&top) = path.first() else {
-                    return Ok(None);
-                };
+                let top = self.snapshot.names().path_names(path)[0];
                 let Some(declarations) = self.package_type(set, package, top)? else {
                     return Ok(None);
                 };
                 if declarations.len() > 1 {
                     return Ok(None);
                 }
-                let file = declarations[0];
-                let summary = self.summary(file)?;
-                Ok(summary.find_in(None, &path).map(|index| Located {
-                    file,
-                    summary: summary.clone(),
-                    index,
-                }))
+                declarations[0]
             }
-            TypeKey::Compact { file, path, .. } => {
+            TypeKey::Compact { file, .. } => {
                 if !self.snapshot.file_exists(file)? {
                     return Ok(None);
                 }
-                let summary = self.summary(file)?;
-                if summary.kind != UnitKind::Compact {
-                    return Ok(None);
-                }
-                let index = if path.is_empty() {
-                    Some(0)
-                } else {
-                    summary.find_in(Some(0), &segments(path))
-                };
-                Ok(index.map(|index| Located {
-                    file,
-                    summary: summary.clone(),
-                    index,
-                }))
+                file
             }
-            TypeKey::Class { .. } => Ok(None),
-        }
+            TypeKey::Class { .. } => return Ok(None),
+        };
+        let scope = self.file_scope(file)?;
+        Ok(scope.indexes.get(&key).map(|&index| Located {
+            file,
+            summary: scope.summary.clone(),
+            index,
+        }))
     }
 
     /// A source type's erased supertypes, or a class file's resolved in `view`. `None` if asking
@@ -218,7 +221,7 @@ impl Reads<'_> {
             return Ok(Some(Arc::new(Supertypes {
                 superclass: None,
                 interfaces: Box::default(),
-                cyclic: false,
+                cycle: Box::default(),
             })));
         };
         let resolve = |reads: &mut Self, binary: Name| -> Result<_, Cancelled> {
@@ -238,7 +241,7 @@ impl Reads<'_> {
         Ok(Some(Arc::new(Supertypes {
             superclass,
             interfaces: interfaces.into_boxed_slice(),
-            cyclic: false,
+            cycle: Box::default(),
         })))
     }
 
@@ -265,132 +268,197 @@ impl Reads<'_> {
     }
 }
 
-/// The key of the type at `index` in `summary`, a file of `set`.
-pub(crate) fn key_of(
-    set: SourceSetId,
-    file: FileId,
-    summary: &Summary,
-    index: usize,
-    names: &Interner,
-) -> TypeKey {
-    let path = summary.path_names(index);
-    let join = |path: &[Name]| -> Name {
-        let texts: Vec<Arc<str>> = path.iter().map(|&n| names.text(n)).collect();
-        names.intern(&texts.join("."))
-    };
-    if summary.kind == UnitKind::Compact {
-        TypeKey::Compact {
-            set,
-            file,
-            path: join(&path[1..]),
-        }
-    } else {
-        TypeKey::Source {
-            set,
-            package: summary.package_name(),
-            path: join(&path),
-        }
-    }
-}
-
-/// What a file's names are resolved against at the top level: its package, its own types, and
-/// its imports, as its summary has them. Imports are resolved when a name needs them, so that an
-/// import nothing uses can't make a cycle.
+/// What a file's names are resolved against, a derived entry per file: its summary, each of its
+/// types' keys (made once, so a type nested ten thousand deep costs one step more than its outer
+/// type), and its imports. Imports are resolved when a name needs them, so that an import nothing
+/// uses can't make a cycle.
 pub(crate) struct FileScope {
     pub(crate) set: SourceSetId,
-    pub(crate) package: Name,
-    /// The implicitly declared class of a compact unit, whose members are everything else.
-    pub(crate) compact: Option<TypeKey>,
-    pub(crate) own: Vec<(Name, TypeKey)>,
-    pub(crate) imports: Vec<Import>,
+    pub(crate) file: FileId,
+    pub(crate) summary: Arc<Summary>,
+    /// Each of the summary's types' keys, by index.
+    pub(crate) keys: Box<[TypeKey]>,
+    /// Each import's last segment, by index.
+    import_last: Box<[Name]>,
+    /// Each type's index by key, the first if two types of the file have the same path.
+    indexes: HashMap<TypeKey, usize>,
+    /// The top-level types' indexes by name, the first of each name.
+    top_level: HashMap<Name, usize>,
+    /// Each type's member types' indexes.
+    members: Box<[Box<[u32]>]>,
+    /// The summary's fingerprint, which everything else follows from.
+    fingerprint: Fingerprint,
+}
+
+/// The scope follows from the summary, so its fingerprint is the summary's.
+impl std::hash::Hash for FileScope {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.set.hash(state);
+        self.file.hash(state);
+        self.fingerprint.hash(state);
+    }
 }
 
 impl FileScope {
-    pub(crate) fn of(
-        set: SourceSetId,
-        file: FileId,
-        summary: &Summary,
-        names: &Interner,
-    ) -> FileScope {
-        let compact =
-            (summary.kind == UnitKind::Compact).then(|| key_of(set, file, summary, 0, names));
-        let own = summary
-            .types
-            .iter()
-            .enumerate()
-            .filter(|(_, t)| t.outer.is_none() && t.kind != TypeKind::Implicit)
-            .map(|(i, t)| (t.name, key_of(set, file, summary, i, names)))
-            .collect();
-        FileScope {
-            set,
-            package: summary.package_name(),
-            compact,
-            own,
-            imports: summary.imports.clone(),
-        }
+    pub(crate) fn package(&self) -> Name {
+        self.summary.package_name()
+    }
+
+    /// Whether the file is a compact compilation unit, whose types are the implicitly declared
+    /// class's members.
+    pub(crate) fn is_compact(&self) -> bool {
+        self.summary.kind == UnitKind::Compact
+    }
+
+    /// The top-level type `name` the file declares.
+    fn own(&self, name: Name) -> Option<TypeKey> {
+        self.top_level.get(&name).map(|&i| self.keys[i])
+    }
+
+    /// The indexes of the member types of the type at `index`, in order.
+    pub(crate) fn members(&self, index: usize) -> &[u32] {
+        &self.members[index]
+    }
+
+    fn imports(&self) -> &[Import] {
+        &self.summary.imports
+    }
+
+    /// The last segment of the import at `index`.
+    fn import_last(&self, index: usize) -> Name {
+        self.import_last[index]
     }
 }
 
-/// An enclosing class, for the names in it.
-#[derive(Clone, Debug)]
-pub(crate) struct Frame {
-    pub(crate) key: TypeKey,
-    pub(crate) type_params: Vec<Name>,
-    /// Whether its member types are in scope: in its body, not its header.
-    pub(crate) members: bool,
+fn compute_file_scope(reads: &mut Reads<'_>, file: FileId) -> Result<FileScope, Cancelled> {
+    let set = reads.snapshot.file(file)?.set;
+    let memo = reads.summary_memo_recorded(file)?;
+    let summary = memo.value.summary.clone();
+    let names = reads.snapshot.names().clone();
+    let compact = summary.kind == UnitKind::Compact;
+    let package = summary.package_name();
+    let mut paths: Vec<Option<crate::Path>> = Vec::with_capacity(summary.types.len());
+    let mut keys = Vec::with_capacity(summary.types.len());
+    for (index, ty) in summary.types.iter().enumerate() {
+        let outer = ty.outer.and_then(|o| paths[o as usize]);
+        let path = if compact && index == 0 {
+            None
+        } else {
+            Some(names.path(outer, ty.name))
+        };
+        paths.push(path);
+        keys.push(if compact {
+            TypeKey::Compact { set, file, path }
+        } else {
+            TypeKey::Source {
+                set,
+                package,
+                path: path.expect("a type of an ordinary unit has a path"),
+            }
+        });
+    }
+    let import_last = summary
+        .imports
+        .iter()
+        .map(|i| i.name.last(&names))
+        .collect();
+    let mut indexes = HashMap::with_capacity(keys.len());
+    for (index, &key) in keys.iter().enumerate() {
+        indexes.entry(key).or_insert(index);
+    }
+    let mut top_level = HashMap::new();
+    let mut members: Vec<Vec<u32>> = vec![Vec::new(); summary.types.len()];
+    for (index, ty) in summary.types.iter().enumerate() {
+        match ty.outer {
+            Some(outer) => members[outer as usize].push(index as u32),
+            None if ty.kind != TypeKind::Implicit => {
+                top_level.entry(ty.name).or_insert(index);
+            }
+            None => {}
+        }
+    }
+    let members = members.into_iter().map(Vec::into_boxed_slice).collect();
+    Ok(FileScope {
+        set,
+        file,
+        import_last,
+        indexes,
+        top_level,
+        members,
+        summary,
+        keys: keys.into_boxed_slice(),
+        fingerprint: memo.fingerprint,
+    })
 }
 
-/// The scope of a name in a declaration.
+impl Snapshot {
+    pub(crate) fn file_scope_memo(&self, file: FileId) -> Result<Arc<Memo<FileScope>>, Cancelled> {
+        self.shared()
+            .file_scopes
+            .get(self, &file, |reads| compute_file_scope(reads, file))
+    }
+
+    /// The key of the type at `index` in `file`'s summary.
+    pub fn type_key(&self, file: FileId, index: usize) -> Result<TypeKey, Cancelled> {
+        Ok(self.file_scope_memo(file)?.value.keys[index])
+    }
+}
+
+impl Reads<'_> {
+    /// `file`'s scope. Records it.
+    pub(crate) fn file_scope(&mut self, file: FileId) -> Result<Arc<FileScope>, Cancelled> {
+        let memo = self.snapshot.file_scope_memo(file)?;
+        self.record(Dep::FileScope(file), memo.fingerprint);
+        Ok(memo.value.clone())
+    }
+}
+
+/// The scope of a name in a declaration: the file's, and the types enclosing the name, found from
+/// the innermost by the summary's links, so a scope is made in O(1) however deep it is.
 #[derive(Clone)]
 pub(crate) struct Scope<'f> {
     pub(crate) file: &'f FileScope,
-    /// Outermost first.
-    pub(crate) frames: Vec<Frame>,
+    /// The index of the innermost enclosing type, if any.
+    pub(crate) innermost: Option<usize>,
+    /// Whether the name is in the innermost type's header, where its members aren't in scope.
+    pub(crate) header: bool,
     /// The type parameters of the method whose signature the name is in.
     pub(crate) method: Option<(TypeVarOwner, Vec<Name>)>,
 }
 
 impl<'f> Scope<'f> {
-    /// The scope of the declarations of the type at `index`: its header (`body` false) or its
-    /// body.
-    pub(crate) fn of_type(
-        file_scope: &'f FileScope,
-        file: FileId,
-        summary: &Summary,
-        index: usize,
-        body: bool,
-        names: &Interner,
-    ) -> Scope<'f> {
-        let mut chain = Vec::new();
-        let mut next = Some(index);
-        while let Some(i) = next {
-            chain.push(i);
-            next = summary.types[i].outer.map(|o| o as usize);
-        }
-        chain.reverse();
-        let frames = chain
-            .iter()
-            .map(|&i| Frame {
-                key: key_of(file_scope.set, file, summary, i, names),
-                type_params: summary.types[i]
-                    .type_parameters
-                    .iter()
-                    .map(|p| p.name)
-                    .collect(),
-                members: i != index || body,
-            })
-            .collect();
+    /// The scope of the file's top level.
+    pub(crate) fn top(file: &'f FileScope) -> Scope<'f> {
         Scope {
-            file: file_scope,
-            frames,
+            file,
+            innermost: None,
+            header: false,
             method: None,
         }
     }
 
-    /// The scope around a type: its enclosing classes' bodies, for its annotations.
-    pub(crate) fn around(mut self) -> Scope<'f> {
-        self.frames.pop();
-        self
+    /// The scope of the declarations of the type at `index`: its header (`body` false) or its
+    /// body.
+    pub(crate) fn of_type(file: &'f FileScope, index: usize, body: bool) -> Scope<'f> {
+        Scope {
+            file,
+            innermost: Some(index),
+            header: !body,
+            method: None,
+        }
+    }
+
+    /// The scope around a type: its enclosing types' bodies, for its annotations.
+    pub(crate) fn around(&self) -> Scope<'f> {
+        let outer = self
+            .innermost
+            .and_then(|i| self.file.summary.types[i].outer.map(|o| o as usize));
+        Scope {
+            file: self.file,
+            innermost: outer,
+            header: false,
+            method: None,
+        }
     }
 }
 
@@ -491,42 +559,45 @@ impl<'r, 's> Resolver<'r, 's> {
             return Ok(TypeResolution::TypeVar(*owner, index as u32));
         }
         let mut incomplete = None;
-        for frame in scope.frames.iter().rev() {
-            if frame.members {
-                match self.member_type(frame.key, name)? {
+        let file = scope.file;
+        let mut next = scope.innermost;
+        let mut members = !scope.header;
+        while let Some(index) = next {
+            self.reads.check()?;
+            let key = file.keys[index];
+            let ty = &file.summary.types[index];
+            if members {
+                match self.member_type(key, name)? {
                     MemberLookup::Found(key) => return Ok(TypeResolution::Type(key)),
                     MemberLookup::Ambiguous(keys) => {
                         return Ok(Self::error(name, Cause::Ambiguous(keys)));
                     }
                     MemberLookup::Cycle => return Ok(Self::error(name, Cause::Cycle)),
                     MemberLookup::None { incomplete: true } => {
-                        incomplete.get_or_insert(frame.key);
+                        incomplete.get_or_insert(key);
                     }
                     MemberLookup::None { incomplete: false } => {}
                 }
             }
-            if let Some(index) = frame.type_params.iter().position(|&p| p == name) {
-                return Ok(TypeResolution::TypeVar(
-                    TypeVarOwner::Type(frame.key),
-                    index as u32,
-                ));
+            if let Some(i) = ty.type_parameters.iter().position(|p| p.name == name) {
+                return Ok(TypeResolution::TypeVar(TypeVarOwner::Type(key), i as u32));
             }
+            next = ty.outer.map(|o| o as usize);
+            members = true;
         }
-        let file = scope.file;
-        if let Some((_, key)) = file.own.iter().find(|(n, _)| *n == name) {
-            return Ok(TypeResolution::Type(*key));
+        if let Some(key) = file.own(name) {
+            return Ok(TypeResolution::Type(key));
         }
-        let names = self.names.clone();
-        for import in &file.imports {
-            if import.kind == ImportKind::SingleType && import.name.last(&names) == name {
+        for (i, import) in file.imports().iter().enumerate() {
+            if import.kind == ImportKind::SingleType && file.import_last(i) == name {
                 let resolved = self.canonical(import.name)?;
                 if let Some(last) = resolved.last() {
                     return self.single_import_result(import.name, &resolved, last.clone());
                 }
             }
         }
-        for import in &file.imports {
-            if import.kind == ImportKind::SingleStatic && import.name.last(&names) == name {
+        for (i, import) in file.imports().iter().enumerate() {
+            if import.kind == ImportKind::SingleStatic && file.import_last(i) == name {
                 let owner_name = self.owner_of(import.name);
                 if let Some(TypeResolution::Type(owner)) =
                     self.canonical(QualifiedName(owner_name))?.last().cloned()
@@ -536,7 +607,7 @@ impl<'r, 's> Resolver<'r, 's> {
                 }
             }
         }
-        let package = file.package;
+        let package = file.package();
         let found = self.reads.find_top_level(self.set, package, name)?;
         if let Some(resolution) = self.found(found, name, package) {
             return Ok(resolution);
@@ -545,7 +616,7 @@ impl<'r, 's> Resolver<'r, 's> {
         // On demand: every import that has the name, and `java.lang`.
         let mut candidates: Vec<TypeKey> = Vec::new();
         let mut first_error = None;
-        for import in &file.imports {
+        for import in file.imports() {
             let target = match import.kind {
                 ImportKind::OnDemand | ImportKind::StaticOnDemand => self
                     .canonical(import.name)?
@@ -592,12 +663,12 @@ impl<'r, 's> Resolver<'r, 's> {
 
         // Module imports, shadowed by everything above.
         let mut modules: Vec<Name> = file
-            .imports
+            .imports()
             .iter()
             .filter(|i| i.kind == ImportKind::Module)
             .map(|i| i.name.0)
             .collect();
-        if file.compact.is_some() {
+        if file.is_compact() {
             modules.push(self.java_base);
         }
         for module in modules {
@@ -738,8 +809,15 @@ impl<'r, 's> Resolver<'r, 's> {
         let mut resolved = Vec::with_capacity(segments.len());
         resolved.push(first);
         let mut written = segments[0];
-        for &segment in &segments[1..] {
+        for (i, &segment) in segments.iter().enumerate().skip(1) {
             self.reads.check()?;
+            if i >= MAX_SEGMENTS {
+                // Each prefix has its own name, so resolving them all would cost the square of
+                // the name's length.
+                let error = Self::error(self.written(segments), Cause::TooLong);
+                resolved.resize(segments.len(), error);
+                break;
+            }
             written = self.join(written, segment);
             let next = match resolved.last().unwrap().clone() {
                 TypeResolution::Package(package) => {
@@ -975,6 +1053,11 @@ impl<'r, 's> Resolver<'r, 's> {
     }
 }
 
+/// The most segments of a qualified name that are resolved: each prefix of a name is a name of
+/// its own (`a`, `a.b`, `a.b.c`), so resolving every prefix of a name costs the square of its
+/// length. Longer names are error symbols; no Java code has packages that deep.
+pub(crate) const MAX_SEGMENTS: usize = 1024;
+
 /// For each part of a flat type, the index just past its subtree. Children of part `i` are at
 /// `i + 1`, then at each child's end, up to `i`'s end.
 pub(crate) fn subtree_ends(parts: &[TypePart]) -> Vec<usize> {
@@ -1011,20 +1094,12 @@ fn compute_supertypes(reads: &mut Reads<'_>, key: TypeKey) -> Result<Supertypes,
         return Ok(Supertypes {
             superclass: None,
             interfaces: Box::default(),
-            cyclic: false,
+            cycle: Box::default(),
         });
     };
-    let summary = located.summary.clone();
-    let ty = &summary.types[located.index];
-    let file_scope = FileScope::of(set, located.file, &summary, &names);
-    let scope = Scope::of_type(
-        &file_scope,
-        located.file,
-        &summary,
-        located.index,
-        false,
-        &names,
-    );
+    let file_scope = reads.file_scope(located.file)?;
+    let ty = &located.summary.types[located.index];
+    let scope = Scope::of_type(&file_scope, located.index, false);
     let mut resolver = Resolver::new(reads, set);
     let lang = |resolver: &mut Resolver<'_, '_>, simple: &str| -> Result<_, Cancelled> {
         let name = names.intern(simple);
@@ -1073,20 +1148,34 @@ fn compute_supertypes(reads: &mut Reads<'_>, key: TypeKey) -> Result<Supertypes,
         });
     }
     // A cycle through the supertypes alone (`class P extends Q`, `class Q extends P`) doesn't
-    // read any member types, so the source supertypes' own supertypes are read to find it.
+    // read any member types, so the source supertypes' own supertypes are read to find it. A
+    // supertype found in a cycle with this type, made earlier, says so: the cycle is the same
+    // whichever of its types was asked for first.
+    let mut cycle: Vec<TypeKey> = Vec::new();
     for supertype in superclass.iter().chain(&interfaces) {
         if let Ok(supertype) = supertype
             && supertype.is_source()
+            && let Some(theirs) = reads.supertypes(set, *supertype)?
+            && theirs.cycle.contains(&key)
         {
-            reads.supertypes(set, *supertype)?;
+            cycle.extend(theirs.cycle.iter());
         }
     }
-    if reads.in_cycle() {
-        let cycle = |r: &Result<TypeKey, ErrorSymbol>| -> Result<TypeKey, ErrorSymbol> {
+    for dep in reads.cycle() {
+        if let Dep::Supertypes(member) = dep {
+            cycle.push(member);
+        }
+    }
+    cycle.sort();
+    cycle.dedup();
+    if !cycle.is_empty() {
+        let error = |r: &Result<TypeKey, ErrorSymbol>| -> Result<TypeKey, ErrorSymbol> {
             Err(ErrorSymbol {
                 name: match r {
-                    Ok(TypeKey::Source { path, .. }) => *path,
-                    Ok(TypeKey::Compact { path, .. }) => *path,
+                    Ok(TypeKey::Source { path, .. }) => names.path_last(*path),
+                    Ok(TypeKey::Compact { path, .. }) => {
+                        path.map_or(Name::EMPTY, |p| names.path_last(p))
+                    }
                     Ok(TypeKey::Class { binary, .. }) => *binary,
                     Err(e) => e.name,
                 },
@@ -1094,15 +1183,15 @@ fn compute_supertypes(reads: &mut Reads<'_>, key: TypeKey) -> Result<Supertypes,
             })
         };
         return Ok(Supertypes {
-            superclass: superclass.as_ref().map(cycle),
-            interfaces: interfaces.iter().map(cycle).collect(),
-            cyclic: true,
+            superclass: superclass.as_ref().map(error),
+            interfaces: interfaces.iter().map(error).collect(),
+            cycle: cycle.into_boxed_slice(),
         });
     }
     Ok(Supertypes {
         superclass,
         interfaces: interfaces.into_boxed_slice(),
-        cyclic: false,
+        cycle: Box::default(),
     })
 }
 
@@ -1164,8 +1253,10 @@ fn compute_member_types(
                 summary.types[located.index].kind,
                 TypeKind::Interface | TypeKind::Annotation
             );
-            let set = key.home(view);
-            for (i, member) in summary.members_of(located.index) {
+            let file_scope = reads.file_scope(located.file)?;
+            for &i in file_scope.members(located.index) {
+                let i = i as usize;
+                let member = &summary.types[i];
                 let access = if interface
                     || member.modifiers.contains(Modifiers::PUBLIC)
                     || member.modifiers.contains(Modifiers::PROTECTED)
@@ -1176,11 +1267,7 @@ fn compute_member_types(
                 } else {
                     Access::Package(package)
                 };
-                declared.push((
-                    member.name,
-                    key_of(set, located.file, summary, i, &names),
-                    access,
-                ));
+                declared.push((member.name, file_scope.keys[i], access));
             }
         }
     }
@@ -1195,7 +1282,7 @@ fn compute_member_types(
     match &supertypes {
         None => incomplete = true,
         Some(supertypes) => {
-            incomplete |= supertypes.cyclic;
+            incomplete |= supertypes.cyclic();
             let mut inherited: HashMap<Name, (MemberType, Access)> = HashMap::new();
             for supertype in supertypes
                 .superclass
@@ -1243,11 +1330,10 @@ fn compute_member_types(
             members.extend(inherited);
         }
     }
-    if reads.in_cycle() {
-        // The declared members are known; what would be inherited isn't.
-        members.retain(|name, _| declared.iter().any(|(n, _, _)| n == name));
-        incomplete = true;
-    }
+    // A member type entry in a cycle reads a supertype's member types that are being made: they
+    // are left out, and the entry is incomplete. Its type's supertypes are then cyclic too,
+    // unless the cycle is among class files, so nothing is inherited either way.
+    incomplete |= reads.in_cycle();
     let mut members: Vec<(Name, (MemberType, Access))> = members.into_iter().collect();
     members.sort_by_key(|(name, _)| *name);
     Ok(MemberTypes {
@@ -1278,27 +1364,12 @@ fn compute_type_entry(reads: &mut Reads<'_>, key: TypeKey) -> Result<TypeEntry, 
     let Some(located) = reads.locate(key)? else {
         return Ok(empty(Vec::new()));
     };
-    let summary = located.summary.clone();
-    let ty = &summary.types[located.index];
+    let file_scope = reads.file_scope(located.file)?;
+    let ty = &located.summary.types[located.index];
     let generated = ty.generated || reads.snapshot.file(located.file)?.generated;
-    let file_scope = FileScope::of(set, located.file, &summary, &names);
-    let header = Scope::of_type(
-        &file_scope,
-        located.file,
-        &summary,
-        located.index,
-        false,
-        &names,
-    );
-    let around = header.clone().around();
-    let body = Scope::of_type(
-        &file_scope,
-        located.file,
-        &summary,
-        located.index,
-        true,
-        &names,
-    );
+    let header = Scope::of_type(&file_scope, located.index, false);
+    let around = header.around();
+    let body = Scope::of_type(&file_scope, located.index, true);
     let member_types = reads.member_types(set, key)?;
     let supertypes = reads.supertypes(set, key)?;
     let mut r = Resolver::new(reads, set);
@@ -1509,7 +1580,7 @@ fn compute_type_entry(reads: &mut Reads<'_>, key: TypeKey) -> Result<TypeEntry, 
         });
     }
     let errors = std::mem::take(&mut r.errors);
-    let cyclic = supertypes.as_ref().is_none_or(|s| s.cyclic);
+    let cyclic = supertypes.as_ref().is_none_or(|s| s.cyclic());
     let incomplete = member_types.as_ref().is_none_or(|m| m.incomplete) || cyclic || lombok;
     Ok(TypeEntry {
         key,
