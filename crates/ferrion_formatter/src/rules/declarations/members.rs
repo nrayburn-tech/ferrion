@@ -4,7 +4,7 @@
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
 use super::annotations::{self, After, Layout};
-use super::{emit, first_token, parts, separated};
+use super::{ListLayout, delimited_list, emit, first_token, parts, separated};
 use crate::document::IndentKind;
 use crate::format::Formatter;
 use crate::rules::variables::{name_part, single_declarator, type_then_name, value_after_eq};
@@ -93,9 +93,9 @@ pub(super) fn declarator<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
 /// Its annotations go on their own lines. Then three breaks, outermost first, each taken only if
 /// what it ends doesn't fit on the line: after the type parameters, then between the return type
 /// and the name (`Type name(` must fit), and then in the parameters (see
-/// [`super::ListLayout::Parameters`]). `throws` goes on the next line at +4 when the header from
-/// the parameters on doesn't fit, or the parameters break. The parameters are indented from the
-/// name when a break before it is taken.
+/// [`super::ListLayout::Parameters`]). `throws` goes on the next line at +4 when it doesn't fit
+/// on the line of the `)`, or the parameters went one per line. The parameters are indented from
+/// the name when a break before it is taken.
 pub(super) fn method<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     f.comments_before(node.first_token().id());
     let parts = parts(node);
@@ -177,40 +177,45 @@ fn method_layout(node: SyntaxNode<'_>) -> Layout {
     }
 }
 
-/// Emits a method header from its parameters on, and its body: `parts`.
+/// Emits a method header from its parameters on, and its body: `parts`. `throws` goes on the
+/// next line at +4 when the parameters went one per line, and otherwise when it doesn't fit on
+/// the line of the `)`.
 fn method_tail<'t>(f: &mut Formatter<'t>, parts: &[NodeOrToken<'t>]) {
-    let throws = parts.iter().position(|part| part.kind() == K::ThrowsClause);
     let body_at = parts
         .iter()
         .position(|part| matches!(part.kind(), K::Block | K::Semi | K::DefaultValue))
         .unwrap_or(parts.len());
     let (header, body) = parts.split_at(body_at);
-    match throws {
-        Some(at) if at < body_at => {
-            let (before, clause) = header.split_at(at);
-            f.group(|f| {
-                header_parts(f, before);
-                f.indent(IndentKind::Continuation, |f| {
-                    for &part in clause {
+    let mut parameters = None;
+    for &part in header {
+        match part {
+            NodeOrToken::Node(list) if list.kind() == K::FormalParameters => {
+                parameters = delimited_list(f, list, ListLayout::Parameters);
+            }
+            NodeOrToken::Node(clause) if clause.kind() == K::ThrowsClause => {
+                let throws = |f: &mut Formatter<'t>| {
+                    f.indent(IndentKind::Continuation, |f| {
                         f.line();
                         emit(f, part);
+                    });
+                };
+                match parameters {
+                    Some(parameters) => {
+                        f.group_breaking_with(parameters, throws);
                     }
-                });
-            });
+                    None => {
+                        f.group(throws);
+                    }
+                }
+            }
+            // The dimensions after the parameters of an old-style array method, with no spaces.
+            _ => emit(f, part),
         }
-        _ => header_parts(f, header),
     }
     for &part in body {
         if part.kind() != K::Semi {
             f.space();
         }
-        emit(f, part);
-    }
-}
-
-/// Emits the parameters and the dimensions after them, with no spaces.
-fn header_parts<'t>(f: &mut Formatter<'t>, parts: &[NodeOrToken<'t>]) {
-    for &part in parts {
         emit(f, part);
     }
 }

@@ -236,10 +236,9 @@ Three breaks, outermost first, each taken only if what it ends doesn't fit on th
 type parameters, between the return type and the name (`Type name(` must fit), and in the
 parameters. The parameters go all on the line; otherwise all on the next line at +4; otherwise one
 per line at +4. When a break before the name is taken, the parameters are indented from the name.
-`throws` goes on the next line at +4 when the header from the parameters on doesn't fit on the
-line, or the parameters break. (GJF keeps `) throws X {` on the parameters' line when they're all on
-one line after the `(` and it fits there, and still breaks before `throws` when they're one per
-line; the document has no element for that choice yet, so Ferrion breaks in both cases.)
+`throws` goes on the next line at +4 when it doesn't fit on the line of the `)`, and always when
+the parameters went one per line; parameters that all moved to the next line together keep
+`) throws X {` on their line if it fits there.
 
 ```java
 void process(
@@ -249,6 +248,16 @@ public static Map<String, List<Integer>>
     longMethodName(int first, int second) {}
 
 void read(int first, int second)
+    throws IOException {}
+
+void write(
+    String firstArgumentName, String secondArgumentName, int count) throws IOException {}
+
+void copy(
+    String firstArgumentName,
+    String secondArgumentName,
+    String thirdArgumentName,
+    String fourthArgumentName)
     throws IOException {}
 ```
 

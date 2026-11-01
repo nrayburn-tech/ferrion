@@ -6,6 +6,8 @@ abstract class MethodHeaders {
   void e(int aaaaaaaaaaaaaaa, int bbbbbbbbbbbbbbbbbbbbbbb, int cccccccccccccccccccccc, int ddddddddddd) throws Exception {}
   void f(int aaaaaaaaaaaaaaa, int bbbbbbbbbbbbbbbbbbbbbbb, int cccccccccccccccccccccc, int ddddddddddd, int eeeeeeeeeeee) throws Exception {}
   abstract void g(int aaaaaaaaaaaaaaa, int bbbbbbbbbbbbbbbbbbbbbbb, int cccccccccccccccccc) throws Exception;
+  public static <T> Map<String, List<Integer>> typed(String firstArgumentName, String secondArgumentName) throws IOException {}
+  void onePerLine(String firstArgumentName, String secondArgumentName, String thirdArgumentName, String fourthArgumentName) throws IOException {}
   MethodHeaders(int aaaaaaaaaaaaaaa, int bbbbbbbbbbbbbbbbbbbbbbb, int cccccccccccccccccccccc, int ddddddddddd) {
     super();
   }
