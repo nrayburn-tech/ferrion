@@ -77,16 +77,6 @@ impl<'t> Formatter<'t> {
         self.doc.finish()
     }
 
-    #[allow(dead_code, reason = "for the construct rules still to come")]
-    pub fn tree(&self) -> &'t SyntaxTree {
-        self.tree
-    }
-
-    #[allow(dead_code, reason = "for the construct rules still to come")]
-    pub fn comments(&self) -> &CommentMap {
-        &self.comments
-    }
-
     /// Formats `node` with its kind's rule.
     pub fn node(&mut self, node: SyntaxNode<'t>) {
         rules::node(self, node);
@@ -178,14 +168,12 @@ impl<'t> Formatter<'t> {
         }
     }
 
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn line(&mut self) {
         if self.in_region.is_none() {
             self.doc().line();
         }
     }
 
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn soft_line(&mut self) {
         if self.in_region.is_none() {
             self.doc().soft_line();
@@ -242,7 +230,6 @@ impl<'t> Formatter<'t> {
     }
 
     /// Runs `f` in a group and returns the group, for [`Formatter::indent_if_broken`].
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn group(&mut self, f: impl FnOnce(&mut Self)) -> u32 {
         let group = self.doc().start_group();
         f(self);
@@ -252,7 +239,6 @@ impl<'t> Formatter<'t> {
 
     /// Starts a group that the caller ends with [`Formatter::end`]; for an `IndentIfBroken` that
     /// names the group it's in.
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn start_group(&mut self) -> u32 {
         self.doc().start_group()
     }
@@ -275,7 +261,6 @@ impl<'t> Formatter<'t> {
         self.doc.end();
     }
 
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn indent(&mut self, kind: IndentKind, f: impl FnOnce(&mut Self)) {
         self.doc().start_indent(kind);
         f(self);
@@ -292,14 +277,12 @@ impl<'t> Formatter<'t> {
         self.doc().start_hanging(kind);
     }
 
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn indent_if_broken(&mut self, group: u32, f: impl FnOnce(&mut Self)) {
         self.doc().start_indent_if_broken(group);
         f(self);
         self.doc.end();
     }
 
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn fill(&mut self, f: impl FnOnce(&mut Self)) {
         self.doc().start_fill();
         f(self);
@@ -307,14 +290,12 @@ impl<'t> Formatter<'t> {
     }
 
     /// A separator between two items of the fill `f` is building.
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn fill_break(&mut self, soft: bool) {
         if self.in_region.is_none() {
             self.doc().fill_break(soft);
         }
     }
 
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn hug(&mut self, f: impl FnOnce(&mut Self)) {
         self.doc().start_hug();
         f(self);

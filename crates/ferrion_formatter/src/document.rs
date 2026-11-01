@@ -18,7 +18,6 @@ pub enum IndentKind {
     /// +2: a block's or a body's contents.
     Block,
     /// +4: a line that continues the one before it.
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     Continuation,
 }
 
@@ -207,13 +206,11 @@ impl DocumentBuilder {
         self.elements.push(Element::Space);
     }
 
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn line(&mut self) {
         self.position += 1;
         self.elements.push(Element::Line);
     }
 
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn soft_line(&mut self) {
         self.elements.push(Element::SoftLine);
     }
@@ -247,7 +244,6 @@ impl DocumentBuilder {
     }
 
     /// Starts a group, returning its index for [`DocumentBuilder::start_indent_if_broken`].
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn start_group(&mut self) -> u32 {
         self.start(
             Element::Group {
@@ -309,7 +305,6 @@ impl DocumentBuilder {
         self.start(Element::Hanging(kind), None);
     }
 
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn start_indent_if_broken(&mut self, group: u32) {
         debug_assert!(
             matches!(self.elements[group as usize], Element::Group { .. }),
@@ -318,7 +313,6 @@ impl DocumentBuilder {
         self.start(Element::IndentIfBroken { group }, None);
     }
 
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn start_fill(&mut self) {
         self.start(
             Element::Fill {
@@ -332,7 +326,6 @@ impl DocumentBuilder {
     }
 
     /// A separator between two items of the innermost container, which must be a fill.
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn fill_break(&mut self, soft: bool) {
         let open = self.open.last_mut().expect("a fill break outside a fill");
         assert!(
@@ -350,7 +343,6 @@ impl DocumentBuilder {
         self.elements.push(Element::FillBreak { soft, next: 0 });
     }
 
-    #[allow(dead_code, reason = "for the construct rules still to come")]
     pub fn start_hug(&mut self) {
         self.start(Element::Hug, Some(HugKind::All));
     }
