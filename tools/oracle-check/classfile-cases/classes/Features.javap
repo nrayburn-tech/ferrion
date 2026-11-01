@@ -1,0 +1,210 @@
+public class Features<T extends java.lang.Comparable<? super T> & java.io.Serializable> extends java.util.AbstractList<java.lang.String> implements java.util.RandomAccess
+  minor version: 0
+  major version: 71
+  flags: (0x0021) ACC_PUBLIC, ACC_SUPER
+  this_class: Features
+  super_class: java/util/AbstractList
+  interfaces: 1, fields: 15, methods: 10, attributes: 5
+{
+  public static final java.lang.String S;
+    descriptor: Ljava/lang/String;
+    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+    ConstantValue: String hié😀 \t\"\\
+  public static final java.lang.String LONE;
+    descriptor: Ljava/lang/String;
+    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+    ConstantValue: String �
+  protected static final long L;
+    descriptor: J
+    flags: (0x001c) ACC_PROTECTED, ACC_STATIC, ACC_FINAL
+    ConstantValue: long 5l
+  static final double D;
+    descriptor: D
+    flags: (0x0018) ACC_STATIC, ACC_FINAL
+    ConstantValue: double NaNd
+  static final double MIN;
+    descriptor: D
+    flags: (0x0018) ACC_STATIC, ACC_FINAL
+    ConstantValue: double 4.9E-324d
+  static final double BIG;
+    descriptor: D
+    flags: (0x0018) ACC_STATIC, ACC_FINAL
+    ConstantValue: double 1.0E300d
+  static final float F;
+    descriptor: F
+    flags: (0x0018) ACC_STATIC, ACC_FINAL
+    ConstantValue: float -0.0f
+  static final float SMALL;
+    descriptor: F
+    flags: (0x0018) ACC_STATIC, ACC_FINAL
+    ConstantValue: float 1.0E-5f
+  static final char C;
+    descriptor: C
+    flags: (0x0018) ACC_STATIC, ACC_FINAL
+    ConstantValue: int 1
+  static final boolean Z;
+    descriptor: Z
+    flags: (0x0018) ACC_STATIC, ACC_FINAL
+    ConstantValue: int 1
+  static final byte B;
+    descriptor: B
+    flags: (0x0018) ACC_STATIC, ACC_FINAL
+    ConstantValue: int -3
+  volatile transient int vt;
+    descriptor: I
+    flags: (0x00c0) ACC_VOLATILE, ACC_TRANSIENT
+  private java.util.List<java.lang.String[]>[] f;
+    descriptor: [Ljava/util/List;
+    flags: (0x0002) ACC_PRIVATE
+    Deprecated: true
+    Signature: [Ljava/util/List<[Ljava/lang/String;>;
+    RuntimeVisibleAnnotations:
+      0:
+        java.lang.Deprecated
+    RuntimeInvisibleTypeAnnotations:
+      0: FIELD, location=[ARRAY, TYPE_ARGUMENT(0)]
+        TA(
+          value=6
+        )
+      1: FIELD, location=[ARRAY, TYPE_ARGUMENT(0), ARRAY]
+        TA(
+          value=5
+        )
+      2: FIELD, location=[ARRAY]
+        TA(
+          value=4
+        )
+  java.util.Map$Entry<java.lang.String, ? extends java.lang.Object>[][] nested;
+    descriptor: [[Ljava/util/Map$Entry;
+    flags: (0x0000)
+    Signature: [[Ljava/util/Map$Entry<Ljava/lang/String;+Ljava/lang/Object;>;
+    RuntimeInvisibleTypeAnnotations:
+      0: FIELD
+        TA
+      1: FIELD, location=[ARRAY, ARRAY]
+        TA
+      2: FIELD, location=[ARRAY, ARRAY, TYPE_ARGUMENT(0)]
+        TA
+      3: FIELD, location=[ARRAY, ARRAY, TYPE_ARGUMENT(1), WILDCARD]
+        TA
+  Features<T>.Inner.Deep<java.lang.String> deep;
+    descriptor: LFeatures$Inner$Deep;
+    flags: (0x0000)
+    Signature: LFeatures<TT;>.Inner.Deep<Ljava/lang/String;>;
+    RuntimeInvisibleTypeAnnotations:
+      0: FIELD, location=[INNER_TYPE, INNER_TYPE]
+        TA
+  public Features();
+    descriptor: ()V
+    flags: (0x0001) ACC_PUBLIC
+  public <U extends java.lang.Number> U m(int, U) throws java.io.IOException, java.lang.RuntimeException;
+    descriptor: (ILjava/lang/Number;)Ljava/lang/Number;
+    flags: (0x0001) ACC_PUBLIC
+    Exceptions:
+      throws java.io.IOException, java.lang.RuntimeException
+    MethodParameters:
+      Name                           Flags
+      x                              final
+      u
+    Signature: <U:Ljava/lang/Number;>(ITU;)TU;
+    RuntimeVisibleAnnotations:
+      0:
+        RA(
+          s="q"
+          a=[]
+          n=@RA2
+        )
+    RuntimeInvisibleTypeAnnotations:
+      0: METHOD_TYPE_PARAMETER, param_index=0
+        TA(
+          value=7
+        )
+      1: METHOD_TYPE_PARAMETER_BOUND, param_index=0, bound_index=0
+        TA(
+          value=8
+        )
+      2: THROWS, type_index=0
+        TA(
+          value=10
+        )
+      3: METHOD_FORMAL_PARAMETER, param_index=0
+        TA(
+          value=9
+        )
+    RuntimeVisibleParameterAnnotations:
+      parameter 0:
+        0:
+          RA
+      parameter 1:
+  public java.lang.String get(int);
+    descriptor: (I)Ljava/lang/String;
+    flags: (0x0001) ACC_PUBLIC
+    MethodParameters:
+      Name                           Flags
+      i
+  public int size();
+    descriptor: ()I
+    flags: (0x0001) ACC_PUBLIC
+  static void varargs(int[]...);
+    descriptor: ([[I)V
+    flags: (0x0088) ACC_STATIC, ACC_VARARGS
+    MethodParameters:
+      Name                           Flags
+      a
+  static synchronized native void nat();
+    descriptor: ()V
+    flags: (0x0128) ACC_STATIC, ACC_SYNCHRONIZED, ACC_NATIVE
+  public final synchronized void fs();
+    descriptor: ()V
+    flags: (0x0031) ACC_PUBLIC, ACC_FINAL, ACC_SYNCHRONIZED
+  void local();
+    descriptor: ()V
+    flags: (0x0000)
+  public java.lang.Object get(int);
+    descriptor: (I)Ljava/lang/Object;
+    flags: (0x1041) ACC_PUBLIC, ACC_BRIDGE, ACC_SYNTHETIC
+    MethodParameters:
+      Name                           Flags
+      i                              synthetic
+  static {};
+    descriptor: ()V
+    flags: (0x0008) ACC_STATIC
+}
+Signature: <T::Ljava/lang/Comparable<-TT;>;:Ljava/io/Serializable;>Ljava/util/AbstractList<Ljava/lang/String;>;Ljava/util/RandomAccess;
+SourceFile: "Features.java"
+RuntimeInvisibleTypeAnnotations:
+  0: CLASS_EXTENDS, type_index=65535, location=[TYPE_ARGUMENT(0)]
+    TA(
+      value=2
+    )
+  1: CLASS_EXTENDS, type_index=0
+    TA(
+      value=3
+    )
+  2: CLASS_TYPE_PARAMETER, param_index=0
+    TA(
+      value=1
+    )
+NestMembers:
+  Features$P2
+  Features$P1
+  Features$Sh
+  Features$R
+  Features$E
+  Features$E$1
+  Features$Inner
+  Features$Inner$Deep
+  Features$1
+  Features$1Loc
+InnerClasses:
+  class Features$1
+  P2=class Features$P2 of class Features
+  final P1=class Features$P1 of class Features
+  static Sh=class Features$Sh of class Features
+  static final R=class Features$R of class Features
+  static E=class Features$E of class Features
+  Inner=class Features$Inner of class Features
+  Loc=class Features$1Loc
+  public static Entry=class java/util/Map$Entry of class java/util/Map
+  Deep=class Features$Inner$Deep of class Features$Inner
+  final class Features$E$1

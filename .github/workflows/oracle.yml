@@ -4,6 +4,8 @@ name: Oracle
 # latest), and javac's own tests at the releases they're compiled at. Pull requests compare each
 # corpus file at its own release only (see ci.yml). The parser's own checks run here on javac's
 # tests too, and on a larger mutation sample.
+# The class file comparison runs on every JDK of the matrix and on every corpus project's jars;
+# pull requests check one JDK's own release and one project's jars.
 
 on:
   schedule:
@@ -128,4 +130,95 @@ jobs:
         with:
           name: jdk-tests-reports
           path: "*-report.json"
+          if-no-files-found: ignore
+
+  classfile:
+    name: class file reading on the JDK matrix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      # The JDKs whose platform APIs are compared: the LTS releases from 8, and the latest, from
+      # more than one vendor, with compressed images (the JetBrains Runtime). The last one set up,
+      # Temurin 27, is JAVA_HOME: it builds the oracle and runs javap for every input.
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        id: corretto-8
+        with:
+          distribution: corretto
+          java-version: "8" # matrix
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        id: temurin-11
+        with:
+          distribution: temurin
+          java-version: "11" # matrix
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        id: corretto-17
+        with:
+          distribution: corretto
+          java-version: "17" # matrix
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        id: corretto-21
+        with:
+          distribution: corretto
+          java-version: "21" # matrix
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        id: jetbrains-21
+        with:
+          distribution: jetbrains
+          java-version: "21" # matrix
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        id: corretto-25
+        with:
+          distribution: corretto
+          java-version: "25" # matrix
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        id: jetbrains-25
+        with:
+          distribution: jetbrains
+          java-version: "25" # matrix
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        id: corretto-27
+        with:
+          distribution: corretto
+          java-version: "27" # matrix
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        id: temurin-27
+        with:
+          distribution: temurin
+          java-version: "27"
+          cache: maven
+      - name: Build the javap oracle
+        working-directory: tools/javap-oracle
+        run: mvn --batch-mode --no-transfer-progress package
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: Compare class file reading on every JDK
+        run: >-
+          cargo oracle classfile --json classfile-jdks.json
+          --jdk "${{ steps.corretto-8.outputs.path }}"
+          --jdk "${{ steps.temurin-11.outputs.path }}"
+          --jdk "${{ steps.corretto-17.outputs.path }}"
+          --jdk "${{ steps.corretto-21.outputs.path }}"
+          --jdk "${{ steps.jetbrains-21.outputs.path }}"
+          --jdk "${{ steps.corretto-25.outputs.path }}"
+          --jdk "${{ steps.jetbrains-25.outputs.path }}"
+          --jdk "${{ steps.corretto-27.outputs.path }}"
+          --jdk "${{ steps.temurin-27.outputs.path }}"
+        env:
+          FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
+      # The jars are kept out of target/, so the Rust cache doesn't save them.
+      - name: Fetch the corpus's jars
+        run: cargo corpus fetch
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Compare class file reading on the corpus's jars
+        run: cargo oracle classfile --json classfile-corpus.json
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+          FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
+      - name: Upload the reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: classfile-report
+          path: classfile-*.json
           if-no-files-found: ignore

@@ -1,6 +1,7 @@
 //! Checks that what depends on the latest release agrees with `LATEST_RELEASE`: the JDK the
 //! lexer's Unicode tables were generated with, and the JDK the workflows install. Raising
-//! `LATEST_RELEASE` without the others fails these tests.
+//! `LATEST_RELEASE` without the others fails these tests. A workflow line marked `# matrix`
+//! installs a JDK of a test matrix, such as the class file check's, on purpose.
 
 use ferrion_java_version::LATEST_RELEASE;
 
@@ -44,6 +45,9 @@ fn workflows_install_the_latest_release() {
             let Some(version) = line.trim().strip_prefix("java-version:") else {
                 continue;
             };
+            if version.trim_end().ends_with("# matrix") {
+                continue;
+            }
             found += 1;
             let version = version.trim().trim_matches(['"', '\'']);
             if version != LATEST_RELEASE.to_string() {

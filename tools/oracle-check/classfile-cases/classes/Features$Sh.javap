@@ -1,0 +1,18 @@
+interface Features$Sh
+  minor version: 0
+  major version: 71
+  flags: (0x0600) ACC_INTERFACE, ACC_ABSTRACT
+  this_class: Features$Sh
+  super_class: java/lang/Object
+  interfaces: 0, fields: 0, methods: 0, attributes: 4
+{
+}
+SourceFile: "Features.java"
+NestHost: class Features
+PermittedSubclasses:
+  Features$P1
+  Features$P2
+InnerClasses:
+  static Sh=class Features$Sh of class Features
+  final P1=class Features$P1 of class Features
+  P2=class Features$P2 of class Features

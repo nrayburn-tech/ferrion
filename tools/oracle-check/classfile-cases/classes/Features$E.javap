@@ -1,0 +1,52 @@
+class Features$E extends java.lang.Enum<Features$E>
+  minor version: 0
+  major version: 71
+  flags: (0x4020) ACC_SUPER, ACC_ENUM
+  this_class: Features$E
+  super_class: java/lang/Enum
+  interfaces: 0, fields: 3, methods: 6, attributes: 5
+{
+  public static final Features$E A;
+    descriptor: LFeatures$E;
+    flags: (0x4019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL, ACC_ENUM
+  public static final Features$E B;
+    descriptor: LFeatures$E;
+    flags: (0x4019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL, ACC_ENUM
+  private static final Features$E[] $VALUES;
+    descriptor: [LFeatures$E;
+    flags: (0x101a) ACC_PRIVATE, ACC_STATIC, ACC_FINAL, ACC_SYNTHETIC
+  public static Features$E[] values();
+    descriptor: ()[LFeatures$E;
+    flags: (0x0009) ACC_PUBLIC, ACC_STATIC
+  public static Features$E valueOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)LFeatures$E;
+    flags: (0x0009) ACC_PUBLIC, ACC_STATIC
+    MethodParameters:
+      Name                           Flags
+      name                           mandated
+  private Features$E();
+    descriptor: (Ljava/lang/String;I)V
+    flags: (0x0002) ACC_PRIVATE
+    MethodParameters:
+      Name                           Flags
+      $enum$name                     synthetic
+      $enum$ordinal                  synthetic
+    Signature: ()V
+  void f();
+    descriptor: ()V
+    flags: (0x0000)
+  private static Features$E[] $values();
+    descriptor: ()[LFeatures$E;
+    flags: (0x100a) ACC_PRIVATE, ACC_STATIC, ACC_SYNTHETIC
+  static {};
+    descriptor: ()V
+    flags: (0x0008) ACC_STATIC
+}
+Signature: Ljava/lang/Enum<LFeatures$E;>;
+SourceFile: "Features.java"
+NestHost: class Features
+PermittedSubclasses:
+  Features$E$1
+InnerClasses:
+  static E=class Features$E of class Features
+  final class Features$E$1

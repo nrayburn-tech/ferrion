@@ -144,3 +144,12 @@ jobs:
         run: cargo parser-check mutate --seed 1 --sample 2000
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Build the javap oracle
+        working-directory: tools/javap-oracle
+        run: mvn --batch-mode --no-transfer-progress package
+      # The latest JDK's own release, and the fetched project's jars; the weekly oracle workflow
+      # covers every release of every JDK in the matrix.
+      - name: Compare class file reading with javap, jrt, java.util.zip, and javac
+        run: cargo oracle classfile --jdk "$JAVA_HOME" --release 27 jedis
+        env:
+          FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle

@@ -1,0 +1,21 @@
+class Features$Inner$Deep<X extends java.lang.Object> extends java.lang.Object
+  minor version: 0
+  major version: 71
+  flags: (0x0020) ACC_SUPER
+  this_class: Features$Inner$Deep
+  super_class: java/lang/Object
+  interfaces: 0, fields: 0, methods: 1, attributes: 4
+{
+  Features$Inner$Deep(Features$Inner);
+    descriptor: (LFeatures$Inner;)V
+    flags: (0x0000)
+    MethodParameters:
+      Name                           Flags
+      this$1                         final mandated
+}
+Signature: <X:Ljava/lang/Object;>Ljava/lang/Object;
+SourceFile: "Features.java"
+NestHost: class Features
+InnerClasses:
+  Inner=class Features$Inner of class Features
+  Deep=class Features$Inner$Deep of class Features$Inner

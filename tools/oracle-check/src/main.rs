@@ -18,6 +18,7 @@
 mod allowed;
 mod cache;
 mod check;
+mod classfile;
 mod differences;
 mod ferrion;
 mod inventory;
@@ -57,6 +58,11 @@ checks:
                 --oracle-jar and --bless)
   parser-cases  check the snapshots of javac's parser output in tools/oracle-check/parser-cases
                 (takes only --oracle-jar and --bless)
+  classfile     compare class file reading with javap, the jrt file system, java.util.zip, and
+                javac, on JDKs and the corpus's jars (its own options: `classfile --help`)
+  classfile-cases
+                check the class files compiled from tools/oracle-check/classfile-cases and
+                javap's output for them against their snapshots (takes only --bless)
 
 options:
   --release <N>        compare every file at release N (repeatable); by default, each file is
@@ -88,6 +94,25 @@ struct Options {
     projects: Vec<String>,
     files: Vec<PathBuf>,
     bless: bool,
+    /// The arguments of `classfile`, which has its own options.
+    classfile: Vec<String>,
+}
+
+impl Options {
+    fn classfile(args: Vec<String>) -> Options {
+        Options {
+            check: String::new(),
+            releases: Releases::Own,
+            jobs: 1,
+            limit: 0,
+            json: None,
+            oracle_jar: PathBuf::new(),
+            projects: Vec::new(),
+            files: Vec::new(),
+            bless: false,
+            classfile: args,
+        }
+    }
 }
 
 fn main() -> ExitCode {
@@ -109,6 +134,13 @@ fn usage(message: &str) -> ! {
 fn parse_args(args: impl Iterator<Item = String>) -> Options {
     let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let mut args = args.peekable();
+    if args.peek().is_some_and(|a| a == "classfile") {
+        let check = args.next().unwrap_or_default();
+        return Options {
+            check,
+            ..Options::classfile(args.collect())
+        };
+    }
     let check = match args.next() {
         Some(arg) if arg == "-h" || arg == "--help" => {
             println!("{USAGE}");
@@ -127,6 +159,7 @@ fn parse_args(args: impl Iterator<Item = String>) -> Options {
         projects: Vec::new(),
         files: Vec::new(),
         bless: false,
+        classfile: Vec::new(),
     };
     let mut releases = Vec::new();
     // Set by --primary-releases or --all-releases.
@@ -193,11 +226,27 @@ fn parse_args(args: impl Iterator<Item = String>) -> Options {
 fn run() -> Result<bool> {
     let options = parse_args(std::env::args().skip(1));
     match options.check.as_str() {
+        "classfile" => {
+            let usage = |message: &str| -> ! {
+                eprintln!("oracle classfile: {message}\n\n{}", classfile::USAGE);
+                std::process::exit(2);
+            };
+            if options.classfile.iter().any(|a| a == "-h" || a == "--help") {
+                println!("{}", classfile::USAGE);
+                return Ok(true);
+            }
+            classfile::run(classfile::parse_args(options.classfile.into_iter(), usage))
+        }
         "tokens" => run_check(&tokens::Tokens, &options),
         "syntax" => run_check(&syntax::Syntax(ferrion::Ferrion), &options),
         "tree" => run_check(&syntax::Tree(ferrion::Ferrion), &options),
         "differences" => differences::run(options.oracle_jar, options.bless),
         "parser-cases" => parser_cases::run(options.oracle_jar, options.bless),
+        "classfile-cases" => {
+            let jar = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../tools/javap-oracle/target/javap-oracle.jar");
+            classfile::cases::run(jar, options.bless)
+        }
         other => usage(&format!("unknown check `{other}`")),
     }
 }

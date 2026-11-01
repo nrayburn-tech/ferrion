@@ -1,0 +1,23 @@
+class Features$1 implements java.lang.Runnable
+  minor version: 0
+  major version: 71
+  flags: (0x0020) ACC_SUPER
+  this_class: Features$1
+  super_class: java/lang/Object
+  interfaces: 1, fields: 0, methods: 2, attributes: 4
+{
+  Features$1(Features);
+    descriptor: (LFeatures;)V
+    flags: (0x0000)
+    MethodParameters:
+      Name                           Flags
+      this$0                         final mandated
+  public void run();
+    descriptor: ()V
+    flags: (0x0001) ACC_PUBLIC
+}
+SourceFile: "Features.java"
+EnclosingMethod: Features.local
+NestHost: class Features
+InnerClasses:
+  class Features$1

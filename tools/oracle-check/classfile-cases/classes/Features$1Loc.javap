@@ -1,0 +1,20 @@
+class Features$1Loc
+  minor version: 0
+  major version: 71
+  flags: (0x0020) ACC_SUPER
+  this_class: Features$1Loc
+  super_class: java/lang/Object
+  interfaces: 0, fields: 0, methods: 1, attributes: 4
+{
+  Features$1Loc(Features);
+    descriptor: (LFeatures;)V
+    flags: (0x0000)
+    MethodParameters:
+      Name                           Flags
+      this$0                         final mandated
+}
+SourceFile: "Features.java"
+EnclosingMethod: Features.local
+NestHost: class Features
+InnerClasses:
+  Loc=class Features$1Loc

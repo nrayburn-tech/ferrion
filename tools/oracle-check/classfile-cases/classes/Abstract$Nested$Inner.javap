@@ -1,0 +1,21 @@
+public class Abstract$Nested$Inner<B extends java.lang.Object> extends java.lang.Object
+  minor version: 0
+  major version: 71
+  flags: (0x0021) ACC_PUBLIC, ACC_SUPER
+  this_class: Abstract$Nested$Inner
+  super_class: java/lang/Object
+  interfaces: 0, fields: 0, methods: 1, attributes: 4
+{
+  public Abstract$Nested$Inner(Abstract$Nested);
+    descriptor: (LAbstract$Nested;)V
+    flags: (0x0001) ACC_PUBLIC
+    MethodParameters:
+      Name                           Flags
+      this$0                         final mandated
+}
+Signature: <B:Ljava/lang/Object;>Ljava/lang/Object;
+SourceFile: "Interfaces.java"
+NestHost: class Abstract
+InnerClasses:
+  public static Nested=class Abstract$Nested of class Abstract
+  public Inner=class Abstract$Nested$Inner of class Abstract$Nested

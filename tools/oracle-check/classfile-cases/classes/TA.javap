@@ -1,0 +1,25 @@
+interface TA extends java.lang.annotation.Annotation
+  minor version: 0
+  major version: 71
+  flags: (0x2600) ACC_INTERFACE, ACC_ABSTRACT, ACC_ANNOTATION
+  this_class: TA
+  super_class: java/lang/Object
+  interfaces: 1, fields: 0, methods: 1, attributes: 2
+{
+  public abstract int value();
+    descriptor: ()I
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+    AnnotationDefault:
+      default_value:
+        0
+}
+SourceFile: "Features.java"
+RuntimeVisibleAnnotations:
+  0:
+    java.lang.annotation.Retention(
+      value=Ljava/lang/annotation/RetentionPolicy;.CLASS
+    )
+  1:
+    java.lang.annotation.Target(
+      value=[Ljava/lang/annotation/ElementType;.TYPE_USE,Ljava/lang/annotation/ElementType;.TYPE_PARAMETER]
+    )

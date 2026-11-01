@@ -1,0 +1,81 @@
+final class Features$R extends java.lang.Record
+  minor version: 0
+  major version: 71
+  flags: (0x0030) ACC_FINAL, ACC_SUPER
+  this_class: Features$R
+  super_class: java/lang/Record
+  interfaces: 0, fields: 2, methods: 6, attributes: 5
+{
+  private final int x;
+    descriptor: I
+    flags: (0x0012) ACC_PRIVATE, ACC_FINAL
+    RuntimeVisibleAnnotations:
+      0:
+        RA
+    RuntimeInvisibleTypeAnnotations:
+      0: FIELD
+        TA
+  private final java.util.List<java.lang.String> y;
+    descriptor: Ljava/util/List;
+    flags: (0x0012) ACC_PRIVATE, ACC_FINAL
+    Signature: Ljava/util/List<Ljava/lang/String;>;
+  Features$R(int, java.util.List<java.lang.String>);
+    descriptor: (ILjava/util/List;)V
+    flags: (0x0000)
+    MethodParameters:
+      Name                           Flags
+      x
+      y
+    Signature: (ILjava/util/List<Ljava/lang/String;>;)V
+    RuntimeInvisibleTypeAnnotations:
+      0: METHOD_FORMAL_PARAMETER, param_index=0
+        TA
+    RuntimeVisibleParameterAnnotations:
+      parameter 0:
+        0:
+          RA
+      parameter 1:
+  public final java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+    flags: (0x0011) ACC_PUBLIC, ACC_FINAL
+  public final int hashCode();
+    descriptor: ()I
+    flags: (0x0011) ACC_PUBLIC, ACC_FINAL
+  public final boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+    flags: (0x0011) ACC_PUBLIC, ACC_FINAL
+    MethodParameters:
+      Name                           Flags
+      o
+  public int x();
+    descriptor: ()I
+    flags: (0x0001) ACC_PUBLIC
+    RuntimeVisibleAnnotations:
+      0:
+        RA
+    RuntimeInvisibleTypeAnnotations:
+      0: METHOD_RETURN
+        TA
+  public java.util.List<java.lang.String> y();
+    descriptor: ()Ljava/util/List;
+    flags: (0x0001) ACC_PUBLIC
+    Signature: ()Ljava/util/List<Ljava/lang/String;>;
+}
+SourceFile: "Features.java"
+NestHost: class Features
+Record:
+  int x;
+    descriptor: I
+    RuntimeVisibleAnnotations:
+      0:
+        RA
+    RuntimeInvisibleTypeAnnotations:
+      0: FIELD
+        TA
+  java.util.List<java.lang.String> y;
+    descriptor: Ljava/util/List;
+    Signature: Ljava/util/List<Ljava/lang/String;>;
+BootstrapMethods:
+InnerClasses:
+  static final R=class Features$R of class Features
+  public static final Lookup=class java/lang/invoke/MethodHandles$Lookup of class java/lang/invoke/MethodHandles

@@ -1,0 +1,101 @@
+interface RA extends java.lang.annotation.Annotation
+  minor version: 0
+  major version: 71
+  flags: (0x2600) ACC_INTERFACE, ACC_ABSTRACT, ACC_ANNOTATION
+  this_class: RA
+  super_class: java/lang/Object
+  interfaces: 1, fields: 0, methods: 14, attributes: 2
+{
+  public abstract java.lang.String s();
+    descriptor: ()Ljava/lang/String;
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+    AnnotationDefault:
+      default_value:
+        "x\u0000y\n"
+  public abstract java.lang.Class<?> c();
+    descriptor: ()Ljava/lang/Class;
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+    AnnotationDefault:
+      default_value:
+        class Ljava/util/List;
+    Signature: ()Ljava/lang/Class<*>;
+  public abstract java.lang.annotation.RetentionPolicy e();
+    descriptor: ()Ljava/lang/annotation/RetentionPolicy;
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+    AnnotationDefault:
+      default_value:
+        Ljava/lang/annotation/RetentionPolicy;.SOURCE
+  public abstract int[] a();
+    descriptor: ()[I
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+    AnnotationDefault:
+      default_value:
+        [1,2]
+  public abstract RA2 n();
+    descriptor: ()LRA2;
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+    AnnotationDefault:
+      default_value:
+        @RA2
+  public abstract char ch();
+    descriptor: ()C
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+    AnnotationDefault:
+      default_value:
+        'q'
+  public abstract double d();
+    descriptor: ()D
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+    AnnotationDefault:
+      default_value:
+        1.5d
+  public abstract float f();
+    descriptor: ()F
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+    AnnotationDefault:
+      default_value:
+        NaNf
+  public abstract long l();
+    descriptor: ()J
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+    AnnotationDefault:
+      default_value:
+        -9223372036854775808l
+  public abstract boolean z();
+    descriptor: ()Z
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+    AnnotationDefault:
+      default_value:
+        true
+  public abstract byte b();
+    descriptor: ()B
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+    AnnotationDefault:
+      default_value:
+        (byte) -1
+  public abstract short sh();
+    descriptor: ()S
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+    AnnotationDefault:
+      default_value:
+        (short) 3
+  public abstract java.lang.Class<?>[] k();
+    descriptor: ()[Ljava/lang/Class;
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+    AnnotationDefault:
+      default_value:
+        [class I,class V,class [[Ljava/lang/String;]
+    Signature: ()[Ljava/lang/Class<*>;
+  public abstract java.lang.String t();
+    descriptor: ()Ljava/lang/String;
+    flags: (0x0401) ACC_PUBLIC, ACC_ABSTRACT
+    AnnotationDefault:
+      default_value:
+        "tab\there\"q\" back\\ apostrophe\' u\u0001 eé del\u007f"
+}
+SourceFile: "Features.java"
+RuntimeVisibleAnnotations:
+  0:
+    java.lang.annotation.Retention(
+      value=Ljava/lang/annotation/RetentionPolicy;.RUNTIME
+    )
