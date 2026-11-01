@@ -257,6 +257,9 @@ impl CtSym {
                         (Some(id), path)
                     }
                 };
+                if path.is_empty() || path.split('/').any(str::is_empty) {
+                    continue;
+                }
                 let (package, simple) = path.rsplit_once('/').unwrap_or(("", path));
                 result
                     .packages
