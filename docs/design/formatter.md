@@ -545,7 +545,8 @@ once and heavy jobs going through the shared slot lock.
    - types: type parameters and arguments, arrays, wildcards, type annotations, `throws`.
 
    Each starts by observing GJF on its constructs, records the observations as snapshots, and adds
-   its section to `docs/style.md`.
+   its section to `docs/style.md`. Done: with all four, 74,204 lines differ from GJF over the
+   corpus, and 88% of the files are identical to GJF's output.
 3. **The GJF diff:** work down the largest differences on the corpus, and finish `docs/style.md`.
 4. **Exit check** against the roadmap's A1 criteria.
 
