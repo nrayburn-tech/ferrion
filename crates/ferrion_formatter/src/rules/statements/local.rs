@@ -1,6 +1,6 @@
 //! Local variable declarations, as statements and in `for` headers and `try` resources.
 
-use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
+use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
 
 use super::elements;
 use crate::document::IndentKind;
@@ -61,13 +61,24 @@ fn declarators_after_type<'t>(
     declarators: usize,
 ) {
     if declarators <= 1 {
-        if statement {
-            let after_type = f.group(|f| f.line());
-            f.indent_if_broken(after_type, |f| {
+        if statement && let Some(&first) = rest.first() {
+            // Comments before the declarator go before the break, which then measures only
+            // code. A comment that ends its line takes the break, so formatting the output
+            // again indents the declarator as the first time did.
+            let first = first_token(first);
+            let broken = comment_ends_line_before(first);
+            f.comments_before(first.id());
+            let emit_rest = |f: &mut Formatter<'t>| {
                 for &element in rest {
                     super::emit(f, element);
                 }
-            });
+            };
+            if broken {
+                f.indent(IndentKind::Continuation, emit_rest);
+            } else {
+                let after_type = f.group(|f| f.line());
+                f.indent_if_broken(after_type, emit_rest);
+            }
         } else {
             f.space();
             for &element in rest {
@@ -122,4 +133,29 @@ pub(crate) fn annotations_break(modifiers: SyntaxNode<'_>) -> bool {
         }
     }
     false
+}
+
+/// Whether a comment followed by a line break comes between `token` and the code before it.
+fn comment_ends_line_before(token: SyntaxToken<'_>) -> bool {
+    let mut previous = token.prev_token();
+    let mut line_break = false;
+    while let Some(t) = previous
+        && t.is_trivia()
+    {
+        match t.kind() {
+            K::LineTerminator => line_break = true,
+            kind if ferrion_syntax::comments::is_comment(kind) && line_break => return true,
+            K::LineComment | K::DocLineComment => return true,
+            _ => {}
+        }
+        previous = t.prev_token();
+    }
+    false
+}
+
+fn first_token(element: NodeOrToken<'_>) -> SyntaxToken<'_> {
+    match element {
+        NodeOrToken::Token(token) => token,
+        NodeOrToken::Node(node) => node.first_token(),
+    }
 }
