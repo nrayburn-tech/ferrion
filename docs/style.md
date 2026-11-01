@@ -3,8 +3,9 @@
 This is the style `ferrion format` gives, construct by construct, with an example of each. It is
 Google Java Format 2.0.0's style, as observed by running GJF, except where this document marks a
 **departure** from it, with the reason: the GJF output is unstable, it changes the program's
-meaning, or it contradicts [SCOPE.md](SCOPE.md#formatter). How the formatter produces the style is
-in the [formatter design](design/formatter.md).
+meaning, or it contradicts [SCOPE.md](SCOPE.md#formatter). One more, deep indentation in
+expressions, keeps the output's size in proportion to the input's. How the formatter produces the
+style is in the [formatter design](design/formatter.md).
 
 Each departure has a case in `tools/format-check/differences/`, which `cargo format-check
 differences` checks against GJF and Ferrion both.
@@ -556,8 +557,8 @@ x =
 - **Text blocks** aren't re-indented: their content and closing delimiter are copied as written
   (SCOPE.md). The opening `"""` is placed as GJF places it, on a line of its own. Case:
   `text-block`.
-- **Deep indentation (proposed):** past 100 nested indents of the expression rules, a line starts
-  at the indentation of the one before it instead of +4 from it. GJF indents each `?:` in an else
+- **Deep indentation:** past 100 nested indents of the expression rules, a line starts at the
+  indentation of the one before it instead of +4 from it. GJF indents each `?:` in an else
   branch, each cast, and each assignment +4 from the one around it, and the parser takes chains of
   them at any length, so the output grows with the square of the input: an 800 KB chain of `?:`
   prints 40 GB. Past 100 indents a line starts beyond column 400, so no code written by hand is

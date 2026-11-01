@@ -259,9 +259,17 @@ any file the parser accepts without overflowing its stack, and does that with `e
 printer that is a loop.
 
 Indentation grows with depth, so the output can be much larger than the input: 10,000 nested
-blocks print about 20,000 lines with an average of 10,000 spaces of indentation, about 200 MB. The
-formatter indents as GJF does anyway, with no cap. A cap would be a departure, and code nested this
-deep isn't written by hand. Time and memory are linear in the size of the input plus the output.
+blocks print about 20,000 lines with an average of 10,000 spaces of indentation, about 200 MB.
+Blocks and other constructs the parser counts toward its limit are indented as GJF does, with no
+cap. Code nested this deep isn't written by hand. Time and memory are linear in the size of the
+input plus the output.
+
+Expressions are the exception. GJF indents each `?:` in an else branch, each cast, each
+assignment, and each curried lambda +4 from the one around it, and the parser takes chains of
+them at any length, since they don't nest its stack. Without a limit the output grows with the
+square of the input: the `conditional_else` stress pattern, 800 KB, prints 40 GB. So the
+expression rules stop indenting past 100 nested indents of their own, beyond column 400, which is
+a departure (docs/style.md, "Expressions"). The `conditional_else` pattern then prints 81 MB.
 
 Testing:
 
@@ -562,7 +570,9 @@ once and heavy jobs going through the shared slot lock.
   around it. The crate depends on `ferrion_parser` for those two, as an exception to the parser
   design's rule that consumers of the tree depend on `ferrion_syntax` alone.
 - **Indentation isn't capped at deep nesting,** even though the output grows with the square of
-  the depth (see [Deep nesting](#deep-nesting)).
+  the depth (see [Deep nesting](#deep-nesting)). Later, in the construct work, chains of
+  expressions turned out to have no depth limit, so the expression rules' own indents are capped
+  at 100, as a departure.
 - **The core workstream stops for review** before the construct agents start.
 - **Text blocks break before the opening `"""`, as in GJF,** rather than being hugged so that
   `String s = """` stays on one line. Their content is still copied as written.

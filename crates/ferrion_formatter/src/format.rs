@@ -39,6 +39,8 @@ pub struct Formatter<'t> {
     /// The line breaks after the last comment that are still to come (see [`Formatter::doc`]):
     /// 0, 1 for a line break, or 2 for a blank line.
     line_owed: u8,
+    /// The capped indents open now (see [`Formatter::take_capped_indent`]).
+    capped_indents: u32,
 }
 
 impl<'t> Formatter<'t> {
@@ -55,6 +57,7 @@ impl<'t> Formatter<'t> {
             last_token: None,
             in_region: None,
             line_owed: 0,
+            capped_indents: 0,
         }
     }
 
@@ -140,6 +143,22 @@ impl<'t> Formatter<'t> {
             self.next_comment += 1;
             self.comment(comment);
         }
+    }
+
+    /// Takes a place for an indent that only `max` may have open at once, and returns whether
+    /// there was one. The expression rules cap their indents this way (docs/style.md,
+    /// "Expressions"); [`Formatter::give_back_capped_indent`] returns the place.
+    pub fn take_capped_indent(&mut self, max: u32) -> bool {
+        let free = self.capped_indents < max;
+        if free {
+            self.capped_indents += 1;
+        }
+        free
+    }
+
+    /// Returns a place taken with [`Formatter::take_capped_indent`].
+    pub fn give_back_capped_indent(&mut self) {
+        self.capped_indents -= 1;
     }
 
     /// Whether the formatter is inside a disable region, copying instead of laying out.
