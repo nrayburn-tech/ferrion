@@ -10,6 +10,8 @@ mod grammar;
 #[doc(hidden)]
 pub mod invariants;
 mod parser;
+#[doc(hidden)]
+pub mod stress;
 pub mod version;
 
 use std::fmt::Write as _;
