@@ -65,6 +65,18 @@ fn parts(node: SyntaxNode<'_>) -> Vec<NodeOrToken<'_>> {
     children(node).collect()
 }
 
+/// Takes the first of `rest` if its kind passes `kind`.
+fn take<'t>(rest: &mut &[NodeOrToken<'t>], kind: impl Fn(K) -> bool) -> Option<NodeOrToken<'t>> {
+    match rest {
+        [first, tail @ ..] if kind(first.kind()) => {
+            let first = *first;
+            *rest = tail;
+            Some(first)
+        }
+        _ => None,
+    }
+}
+
 /// Whether `node`, printed flat with a space where [`super::space_between`] puts one, fits in
 /// `budget` columns together with the comments after it on its last line. It looks at no more
 /// than `budget` columns of tokens, so it costs a constant, however large the node. Copied text

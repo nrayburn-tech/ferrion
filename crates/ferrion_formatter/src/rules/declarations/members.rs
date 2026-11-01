@@ -4,7 +4,7 @@
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
 use super::annotations::{self, After, Layout};
-use super::{emit, first_token, parts};
+use super::{emit, first_token, parts, take};
 use crate::document::IndentKind;
 use crate::format::Formatter;
 use crate::rules::lists::{Shape, delimited, separated};
@@ -214,18 +214,6 @@ fn method_tail<'t>(f: &mut Formatter<'t>, parts: &[NodeOrToken<'t>]) {
             f.space();
         }
         emit(f, part);
-    }
-}
-
-/// Takes the first of `rest` if its kind passes `kind`.
-fn take<'t>(rest: &mut &[NodeOrToken<'t>], kind: impl Fn(K) -> bool) -> Option<NodeOrToken<'t>> {
-    match rest {
-        [first, tail @ ..] if kind(first.kind()) => {
-            let first = *first;
-            *rest = tail;
-            Some(first)
-        }
-        _ => None,
     }
 }
 
