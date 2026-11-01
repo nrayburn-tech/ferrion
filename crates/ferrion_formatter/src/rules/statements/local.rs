@@ -126,7 +126,11 @@ pub(crate) fn annotations_break(modifiers: SyntaxNode<'_>) -> bool {
     for child in modifiers.children() {
         if child.kind() == K::Annotation {
             annotations += 1;
-            if annotations > 1 || child.children().any(|c| c.kind() == K::AnnotationArguments) {
+            // Empty parentheses aren't arguments: `@A() int x` stays on one line (observed).
+            let arguments = child
+                .children()
+                .any(|c| c.kind() == K::AnnotationArguments && c.children().next().is_some());
+            if annotations > 1 || arguments {
                 return true;
             }
         }
