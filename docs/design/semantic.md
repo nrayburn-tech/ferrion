@@ -37,6 +37,8 @@ ferrion_semantic    the engine, summaries, views, symbols, and resolution
 
 - `engine`: inputs, revisions, the memo tables, cancellation, the tree cache, and batch phases;
 - `summary`: file summaries, from one declaration-only walk of the tree;
+- `packages`: each source set's package index and package entries, the first part of the project
+  symbols, built in W2 to exercise the engine's verified entries; W4's views read it;
 - `view`: a source set's view over its sources, classpath, and platform API;
 - `symbols`: symbol keys, type entries for source and class-file types, error symbols;
 - `resolve`: name contexts, scopes, and the lookups of [names](semantic-names.md#resolving-names);
@@ -46,38 +48,49 @@ ferrion_semantic    the engine, summaries, views, symbols, and resolution
 /// One per process. Holds the inputs and every memo table.
 pub struct Engine;
 impl Engine {
-    pub fn new(project: &Project, types: Option<TypeInputs>) -> Engine;
-    /// Bumps the revision, then replaces the text. Never waits for running work.
+    /// `ProjectInput` is the engine's own input struct (source sets: name, release, dependencies
+    /// in classpath order, files with text and a generated flag), built from
+    /// `ferrion_project::Project`. W4 adds the opened class paths and platforms.
+    pub fn new(input: ProjectInput) -> Engine;
+    /// Bumps the revision and replaces the text. Never waits for running work.
     pub fn set_text(&self, file: FileId, text: Arc<str>);
-    pub fn add_file(&self, set: SourceSetId, path: PathBuf, text: Arc<str>) -> FileId;
+    pub fn add_file(&self, set: SourceSetId, file: FileInput) -> FileId;
     pub fn remove_file(&self, file: FileId);
+    pub fn set_release(&self, set: SourceSetId, release: u32);
     /// A read handle at the current revision; its queries return `Err(Cancelled)` once the
     /// revision moves.
     pub fn snapshot(&self) -> Snapshot;
 }
 
 impl Snapshot {
+    // Built in W2:
+    pub fn tree(&self, file: FileId) -> Result<Arc<SyntaxTree>, Cancelled>;
     pub fn summary(&self, file: FileId) -> Result<Arc<Summary>, Cancelled>;
+    pub fn package_index(&self, set: SourceSetId) -> Result<Arc<PackageIndex>, Cancelled>;
+    pub fn package(&self, set: SourceSetId, name: &str)
+        -> Result<Option<Arc<Package>>, Cancelled>;
+    /// Summaries, then package tables (then, from W4 and W5, symbols and each file's names),
+    /// over `threads` workers; `each` runs per file in the last phase, last file first.
+    pub fn run_batch(
+        &self,
+        threads: usize,
+        each: impl Fn(FileId) -> Result<(), Cancelled> + Sync,
+    ) -> Result<(), Cancelled>;
+
+    // W4 and W5:
     pub fn type_entry(&self, ty: TypeRef) -> Result<Arc<TypeEntry>, Cancelled>;
     pub fn resolve_type_name(&self, set: SourceSetId, binary_name: &str)
         -> Result<Resolution, Cancelled>;
     /// Every name in the file resolved, keyed by `NodeId` of `tree`.
     pub fn names(&self, file: FileId) -> Result<Arc<FileNames>, Cancelled>;
 }
-
-/// Summaries, then symbols, then each file's names, over `threads` workers; `each` runs per file
-/// as soon as its names are ready.
-pub fn run_batch(
-    engine: &Engine,
-    threads: usize,
-    each: impl Fn(FileId, &FileNames) + Sync,
-) -> Result<(), Cancelled>;
 ```
 
-Dependencies: `ferrion_syntax` and `ferrion_parser` (the engine parses), `ferrion_classfile`,
-`ferrion_project`, `ferrion_diagnostics`, and `ferrion_stack` for the few recursive steps (body
-walks use the tree's flat pre-order walk with an explicit scope stack, so deep nesting doesn't
-recurse). No new external crates; fingerprints use the standard library's `DefaultHasher`, whose
+Dependencies: `ferrion_syntax` and `ferrion_parser` (the engine parses), `ferrion_lexer` (names
+with Unicode escapes translated), `ferrion_classfile` and `ferrion_diagnostics` (from W4), and
+`ferrion_stack` for the few recursive steps (body walks use the tree's flat pre-order walk with an
+explicit scope stack, so deep nesting doesn't recurse). Not `ferrion_project`: the engine takes
+its own small input struct, which the CLI and language server build from a project. No new external crates; fingerprints use the standard library's `DefaultHasher`, whose
 fixed keys make them repeatable within a process. They aren't persisted.
 
 ## Verification
