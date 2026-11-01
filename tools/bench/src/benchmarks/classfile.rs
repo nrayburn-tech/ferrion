@@ -49,7 +49,7 @@ pub fn benchmarks() -> Vec<Benchmark> {
     ]
 }
 
-fn jdk_home(inputs: &Inputs) -> Result<PathBuf> {
+pub(super) fn jdk_home(inputs: &Inputs) -> Result<PathBuf> {
     match &inputs.jdk {
         Some(home) => Ok(home.clone()),
         None => std::env::var_os("JAVA_HOME")

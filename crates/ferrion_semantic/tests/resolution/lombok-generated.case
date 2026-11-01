@@ -1,0 +1,47 @@
+// Lombok by resolved annotation, and generated types by the annotation's simple name (decision
+// 4 of the review). With a jar holding lombok.Data, lombok.Getter, and org.spring.Value, javac
+// compiles every file but p/Unresolved.java, where `@Generated` doesn't resolve.
+// - `@Data` from an import, `@lombok.Getter` on a field, and `@Getter` through `import lombok.*`
+//   are Lombok's; `@Value` from another package isn't.
+// - `@javax.annotation.processing.Generated` and an unresolved `@Generated` both mark a type as
+//   generated, with its member types.
+//- jar lombok.jar
+//- class annotation lombok/Data implements java/lang/annotation/Annotation
+//- class annotation lombok/Getter implements java/lang/annotation/Annotation
+//- class annotation org/spring/Value implements java/lang/annotation/Annotation
+//- set main 21 lombok.jar
+//- file main p/Bean.java
+package p;
+
+import lombok.Data;
+
+@Data
+class Bean { int x; }
+//- file main p/Fields.java
+package p;
+
+class Fields { @lombok.Getter int x; }
+//- file main p/OnDemand.java
+package p;
+
+import lombok.*;
+
+@Getter
+class OnDemand {}
+//- file main p/Spring.java
+package p;
+
+import org.spring.Value;
+
+@Value
+class Spring {}
+//- file main p/Gen.java
+package p;
+
+@javax.annotation.processing.Generated("x")
+class Gen { class Member {} }
+//- file main p/Unresolved.java
+package p;
+
+@Generated
+class Unresolved {}

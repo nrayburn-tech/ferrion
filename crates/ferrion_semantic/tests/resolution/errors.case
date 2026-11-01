@@ -1,0 +1,24 @@
+// Names that don't resolve, and syntax errors. javac reports `cannot find symbol` for `Missing`,
+// `Nope`, and `Nope2` ("annotation-not-found"), and a missing supertype makes the hierarchy
+// incomplete for the class and its subclass, where a name found nowhere is an error with the
+// incomplete type as its cause. The parser's errors stop javac before resolution, so
+// p/Syntax.java has no javac names. Without a platform, every name of java.lang is an error.
+//- set main 21
+//- set bare 21 no-platform
+//- file main p/A.java
+package p;
+
+@Nope
+class A extends Missing { @Nope2 int f; Missing.Inner i; }
+//- file main p/B.java
+package p;
+
+class B extends A { Inner i; }
+//- file main p/Syntax.java
+package p;
+
+class Syntax extends { int ; void m(, ) {} java.util. x; }
+//- file bare p/C.java
+package p;
+
+class C { String s; }

@@ -1,0 +1,44 @@
+// Module imports (observation 3, and "import-module-not-read", "compact-unit-module-import").
+// javac compiles p/Same.java, p/WithAwt.java, and Main.java; it reports `reference to List is
+// ambiguous` in q/Two.java, and compiled alone, `unnamed module does not read:
+// jdk.incubator.vector` in q/Vector.java (at release 25 and later; release 21 has no module
+// imports).
+//- set main 27
+//- file main p/List.java
+package p;
+
+public class List {}
+//- file main p/Same.java
+package p;
+
+import module java.base;
+
+class Same { List l; Map<String, String> m; }
+//- file main p/WithAwt.java
+package p;
+
+import module java.base;
+import java.awt.*;
+
+class WithAwt { Component c; Set<String> s; }
+//- file main q/Two.java
+package q;
+
+import module java.base;
+import module java.desktop;
+
+class Two { List l; }
+//- file main q/Vector.java
+package q;
+
+import module jdk.incubator.vector;
+
+class Vector { VectorSpecies s; }
+//- file main Main.java
+import java.awt.*;
+
+List awt;
+Map<String, String> map;
+Inner inner;
+class Inner {}
+void main() {}

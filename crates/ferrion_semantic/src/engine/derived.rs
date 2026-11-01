@@ -17,13 +17,27 @@
 //! Locks are held only to look up or store an entry, never while one is computed or verified.
 //! Two threads that need the same entry at once may both compute it; the values are equal, and
 //! the second store replaces the first.
+//!
+//! **Cycles.** Entries of the kinds that can read themselves through others (a type's supertypes
+//! read the member types of the types named in its `extends` clause, which read their
+//! supertypes) are tracked while they are verified or computed, on a stack per thread. A request
+//! for an entry already on the thread's stack is a cycle: [`DerivedTable::get_or_cycle`] returns
+//! `None` for it, and every entry on the stack from that one up is marked as in the cycle. A
+//! computation asks [`Reads::in_cycle`] when it is done, and gives its cyclic value then (for a
+//! type, error supertypes), so that every entry in a cycle comes out the same whichever was asked
+//! for first. A cyclic request is recorded with [`Fingerprint::CYCLE`], which no entry has, so an
+//! entry that saw a cycle is computed again at every revision: cycles are rare and small, and this
+//! is what notices one being broken. Tracking is per thread, so two threads in the same cycle each
+//! find it on their own stack, and neither waits for the other.
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::{BuildHasher, Hash, RandomState};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use super::{Cancelled, Snapshot, TableStats};
+use crate::symbols::TypeKey;
 use crate::{FileId, Fingerprint, Name, SourceSetId};
 
 /// Something a derived entry can read. [`Snapshot::current`] gives each one's fingerprint now.
@@ -44,6 +58,85 @@ pub(crate) enum Dep {
     PackageFiles(SourceSetId, Name),
     /// A package entry.
     Package(SourceSetId, Name),
+    /// The files declaring one top-level type of a package entry: what a lookup by name reads,
+    /// so that a new type in a package reaches only the lookups of its name.
+    PackageType(SourceSetId, Name, Name),
+    /// The list of a source set's `module-info.java` files, in its package index.
+    ModuleFiles(SourceSetId),
+    /// A source set's module.
+    ModuleView(SourceSetId),
+    /// A source type's erased supertypes.
+    Supertypes(TypeKey),
+    /// A type's member types, in a view (the type's own set for a source type).
+    MemberTypes(SourceSetId, TypeKey),
+    /// A source type's entry.
+    TypeEntry(TypeKey),
+}
+
+thread_local! {
+    /// The tracked entries this thread is verifying or computing, outermost first.
+    static ACTIVE: RefCell<Active> = RefCell::default();
+}
+
+#[derive(Default)]
+struct Active {
+    stack: Vec<Frame>,
+    /// Each tracked entry on the stack, by its position there.
+    positions: HashMap<Dep, usize>,
+}
+
+struct Frame {
+    dep: Dep,
+    cyclic: bool,
+}
+
+/// Pushes `dep` on this thread's stack, or marks the cycle and returns `None` if it is on it
+/// already.
+fn enter(dep: &Dep) -> Option<Entered> {
+    ACTIVE.with_borrow_mut(|active| {
+        if let Some(&position) = active.positions.get(dep) {
+            for frame in &mut active.stack[position..] {
+                frame.cyclic = true;
+            }
+            return None;
+        }
+        let position = active.stack.len();
+        active.positions.insert(dep.clone(), position);
+        active.stack.push(Frame {
+            dep: dep.clone(),
+            cyclic: false,
+        });
+        Some(Entered { position })
+    })
+}
+
+/// An entry on this thread's stack, popped when dropped (also when the computation returns
+/// `Cancelled` or panics).
+struct Entered {
+    position: usize,
+}
+
+impl Entered {
+    /// Whether a request made since the entry was pushed (or since [`Entered::reset`]) found a
+    /// cycle through it.
+    fn cyclic(&self) -> bool {
+        ACTIVE.with_borrow(|active| active.stack[self.position].cyclic)
+    }
+
+    fn reset(&self) {
+        ACTIVE.with_borrow_mut(|active| active.stack[self.position].cyclic = false);
+    }
+}
+
+impl Drop for Entered {
+    fn drop(&mut self) {
+        ACTIVE.with_borrow_mut(|active| {
+            // Inner entries are dropped first, so this one is on top.
+            let frame = active.stack.pop().expect("an entered frame");
+            debug_assert_eq!(active.stack.len(), self.position);
+            active.positions.remove(&frame.dep);
+        });
+    }
 }
 
 /// One derived entry.
@@ -61,11 +154,28 @@ pub(crate) struct Memo<V> {
 pub(crate) struct Reads<'s> {
     pub(crate) snapshot: &'s Snapshot,
     deps: Vec<(Dep, Fingerprint)>,
+    /// The computation's frame on the thread's stack, for a tracked entry.
+    frame: Option<&'s Entered>,
 }
 
 impl<'s> Reads<'s> {
+    /// A recorder for a query that isn't an entry, whose reads are dropped.
+    pub(crate) fn untracked(snapshot: &'s Snapshot) -> Reads<'s> {
+        Reads {
+            snapshot,
+            deps: Vec::new(),
+            frame: None,
+        }
+    }
+
     pub(crate) fn record(&mut self, dep: Dep, fingerprint: Fingerprint) {
         self.deps.push((dep, fingerprint));
+    }
+
+    /// Whether the computation has read an entry that, through others, reads it: it is in a
+    /// cycle, and should give its cyclic value. Always false for an entry that isn't tracked.
+    pub(crate) fn in_cycle(&self) -> bool {
+        self.frame.is_some_and(Entered::cyclic)
     }
 
     /// For loops in a computation: `Err(Cancelled)` once the revision has moved.
@@ -84,6 +194,9 @@ type Shard<K, V> = RwLock<HashMap<K, Arc<Memo<V>>>>;
 pub(crate) struct DerivedTable<K, V> {
     shards: Box<[Shard<K, V>]>,
     hasher: RandomState,
+    /// For a table whose entries can be in cycles, the dependency each key is read as, by which
+    /// it is tracked.
+    tracked: Option<fn(&K) -> Dep>,
     computed: AtomicU64,
     unchanged: AtomicU64,
     verified: AtomicU64,
@@ -94,38 +207,78 @@ impl<K: Clone + Eq + Hash, V: Hash> DerivedTable<K, V> {
         DerivedTable {
             shards: (0..SHARDS).map(|_| RwLock::default()).collect(),
             hasher: RandomState::new(),
+            tracked: None,
             computed: AtomicU64::new(0),
             unchanged: AtomicU64::new(0),
             verified: AtomicU64::new(0),
         }
     }
 
+    /// A table whose entries are tracked for cycles, each read as the dependency `dep_of` gives.
+    pub(crate) fn tracked(dep_of: fn(&K) -> Dep) -> Self {
+        DerivedTable {
+            tracked: Some(dep_of),
+            ..DerivedTable::new()
+        }
+    }
+
     /// The entry for `key`, valid at `snapshot`'s revision: the stored one if it was verified at
     /// this revision or its dependencies still have the fingerprints it saw, else a new one from
-    /// `compute`.
+    /// `compute`. For a table that isn't tracked.
     pub(crate) fn get(
         &self,
         snapshot: &Snapshot,
         key: &K,
         compute: impl FnOnce(&mut Reads<'_>) -> Result<V, Cancelled>,
     ) -> Result<Arc<Memo<V>>, Cancelled> {
+        debug_assert!(
+            self.tracked.is_none(),
+            "a tracked table's entries can be cyclic"
+        );
+        Ok(self
+            .get_or_cycle(snapshot, key, compute)?
+            .expect("only tracked entries are cyclic"))
+    }
+
+    /// As [`DerivedTable::get`], or `None` if the entry is being verified or computed on this
+    /// thread already, so that asking for it is a cycle.
+    pub(crate) fn get_or_cycle(
+        &self,
+        snapshot: &Snapshot,
+        key: &K,
+        compute: impl FnOnce(&mut Reads<'_>) -> Result<V, Cancelled>,
+    ) -> Result<Option<Arc<Memo<V>>>, Cancelled> {
+        let revision = snapshot.revision.0;
+        let old = read(self.shard(key)).get(key).cloned();
+        if let Some(memo) = &old
+            && memo.verified_at.load(Ordering::Acquire) == revision
+        {
+            return Ok(Some(memo.clone()));
+        }
+        let entered = match self.tracked {
+            Some(dep_of) => match enter(&dep_of(key)) {
+                Some(entered) => Some(entered),
+                None => return Ok(None),
+            },
+            None => None,
+        };
         // Verifying an entry verifies what it read first, so chains of entries recurse.
         ferrion_stack::ensure_stack(|| {
-            let revision = snapshot.revision.0;
-            let old = read(self.shard(key)).get(key).cloned();
-            if let Some(memo) = &old {
-                if memo.verified_at.load(Ordering::Acquire) == revision {
-                    return Ok(memo.clone());
-                }
-                if snapshot.unchanged(&memo.deps)? {
-                    memo.verified_at.fetch_max(revision, Ordering::AcqRel);
-                    self.verified.fetch_add(1, Ordering::Relaxed);
-                    return Ok(memo.clone());
-                }
+            if let Some(memo) = &old
+                && snapshot.unchanged(&memo.deps)?
+            {
+                memo.verified_at.fetch_max(revision, Ordering::AcqRel);
+                self.verified.fetch_add(1, Ordering::Relaxed);
+                return Ok(Some(memo.clone()));
+            }
+            // A cycle found while verifying is found again, or not, by computing.
+            if let Some(entered) = &entered {
+                entered.reset();
             }
             let mut reads = Reads {
                 snapshot,
                 deps: Vec::new(),
+                frame: entered.as_ref(),
             };
             let value = compute(&mut reads)?;
             let fingerprint = Fingerprint::of(&value);
@@ -140,7 +293,7 @@ impl<K: Clone + Eq + Hash, V: Hash> DerivedTable<K, V> {
             let memo = Arc::new(Memo {
                 value,
                 fingerprint,
-                deps: reads.deps.into_boxed_slice(),
+                deps: distinct(reads.deps),
                 verified_at: AtomicU64::new(revision),
             });
             // Stored even if the revision has moved meanwhile: its dependencies say what it was
@@ -153,7 +306,7 @@ impl<K: Clone + Eq + Hash, V: Hash> DerivedTable<K, V> {
             if !newer {
                 shard.insert(key.clone(), memo.clone());
             }
-            Ok(memo)
+            Ok(Some(memo))
         })
     }
 
@@ -178,6 +331,23 @@ impl<K: Clone + Eq + Hash, V: Hash> DerivedTable<K, V> {
     fn shard(&self, key: &K) -> &Shard<K, V> {
         &self.shards[self.hasher.hash_one(key) as usize % SHARDS]
     }
+}
+
+/// `deps` without repeats, in the order first read: a computation that resolves many names reads
+/// the same package entries again and again, and one check of each is enough.
+fn distinct(deps: Vec<(Dep, Fingerprint)>) -> Box<[(Dep, Fingerprint)]> {
+    if deps.len() < 2 {
+        return deps.into_boxed_slice();
+    }
+    let mut seen = std::collections::HashSet::with_capacity(deps.len());
+    let mut kept = Vec::with_capacity(deps.len());
+    for dep in deps {
+        if !seen.contains(&dep) {
+            seen.insert(dep.clone());
+            kept.push(dep);
+        }
+    }
+    kept.into_boxed_slice()
 }
 
 impl Snapshot {

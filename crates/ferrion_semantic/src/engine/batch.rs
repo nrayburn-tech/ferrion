@@ -15,8 +15,11 @@ impl Snapshot {
     ///
     /// 1. every file's summary, parsing it;
     /// 2. each source set's package index, then every package entry;
-    /// 3. `each` for every file, last first, so that the trees the first phase left in the cache
-    ///    are used before they are evicted. W4 and W5 add their phases before this one.
+    /// 3. the type entry of every type each file declares, with the supertypes and member types
+    ///    they read;
+    /// 4. for every file, last first, so that the trees the first phase left in the cache are
+    ///    used before they are evicted: its names in declarations, then `each`. W5 adds the
+    ///    names in bodies.
     ///
     /// Stops with `Err(Cancelled)` once the revision moves, or as soon as `each` returns it.
     /// With one thread, everything runs on the calling thread.
@@ -25,6 +28,22 @@ impl Snapshot {
         threads: usize,
         each: impl Fn(FileId) -> Result<(), Cancelled> + Sync,
     ) -> Result<(), Cancelled> {
+        let files = self.run_symbols(threads)?;
+        parallel(self, threads, files.len(), |i| {
+            let file = files[files.len() - 1 - i];
+            self.decl_names(file)?;
+            each(file)?;
+            // Like body results, a file's names are for its rules, and are dropped once they
+            // have run (semantic-incremental.md#body-results); asking again computes them.
+            self.shared().file_names.remove(&file);
+            Ok(())
+        })
+    }
+
+    /// The batch's first three phases: everything project-wide, without any file's names. What
+    /// a language server brings up to date after an edit before it answers for open files.
+    /// Gives every file, in the order the phases took them.
+    pub fn run_symbols(&self, threads: usize) -> Result<Vec<FileId>, Cancelled> {
         let mut files = Vec::new();
         let sets = self.source_sets()?;
         for &set in &sets {
@@ -48,8 +67,16 @@ impl Snapshot {
         })?;
 
         parallel(self, threads, files.len(), |i| {
-            each(files[files.len() - 1 - i])
-        })
+            let file = files[i];
+            let summary = self.summary(file)?;
+            let set = self.file(file)?.set;
+            for index in 0..summary.types.len() {
+                let key = crate::resolve::key_of(set, file, &summary, index, self.names());
+                self.type_entry_memo(key)?;
+            }
+            Ok(())
+        })?;
+        Ok(files)
     }
 }
 

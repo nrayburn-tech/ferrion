@@ -1,0 +1,41 @@
+== main java/lang/Foo.java
+java.lang -> package java.lang
+java -> package java
+# type java/lang/Foo source java/lang/Foo.java
+  superclass type java/lang/Object class platform
+  method Foo()V implicit
+== main u/U.java
+u -> package u
+jdk.internal.misc.Unsafe -> error not-visible jdk.internal.misc jdk.internal.misc.Unsafe
+jdk.internal.misc -> package jdk.internal.misc
+jdk.internal -> package jdk.internal
+jdk -> package jdk
+jdk.internal.misc -> error not-visible jdk.internal.misc jdk.internal.misc
+jdk.internal -> package jdk.internal
+jdk -> package jdk
+nope -> error no-package nope nope
+nope.Missing -> error no-package nope nope.Missing
+nope -> package nope
+java.lang.Foo -> error not-found java.lang.Foo
+java.lang -> package java.lang
+java -> package java
+java.lang.Bar -> error not-found java.lang.Bar
+java.lang -> package java.lang
+java -> package java
+Unsafe -> error not-visible jdk.internal.misc jdk.internal.misc.Unsafe
+Missing -> error no-package nope nope.Missing
+nope.Other -> error no-package nope nope.Other
+nope -> package nope
+# type u/U source u/U.java
+  superclass type java/lang/Object class platform
+  field f Ljava/lang/Object;
+  field b Ljava/lang/Object;
+  field u Ljava/lang/Object;
+  field m Ljava/lang/Object;
+  field o Ljava/lang/Object;
+  method U()V implicit
+  error not-found java.lang.Foo
+  error not-found java.lang.Bar
+  error not-visible jdk.internal.misc jdk.internal.misc.Unsafe
+  error no-package nope nope.Missing
+  error no-package nope nope.Other

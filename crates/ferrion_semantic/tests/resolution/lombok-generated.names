@@ -1,0 +1,59 @@
+== main p/Bean.java
+p -> package p
+lombok.Data -> type lombok/Data class lombok.jar
+lombok -> package lombok
+Data -> type lombok/Data class lombok.jar
+# type p/Bean source p/Bean.java
+  superclass type java/lang/Object class platform
+  incomplete lombok
+  field x I
+  method Bean()V implicit
+== main p/Fields.java
+p -> package p
+lombok.Getter -> type lombok/Getter class lombok.jar
+lombok -> package lombok
+# type p/Fields source p/Fields.java
+  superclass type java/lang/Object class platform
+  incomplete lombok
+  field x I
+  method Fields()V implicit
+== main p/OnDemand.java
+p -> package p
+lombok -> package lombok
+Getter -> type lombok/Getter class lombok.jar
+# type p/OnDemand source p/OnDemand.java
+  superclass type java/lang/Object class platform
+  incomplete lombok
+  method OnDemand()V implicit
+== main p/Spring.java
+p -> package p
+org.spring.Value -> type org/spring/Value class lombok.jar
+org.spring -> package org.spring
+org -> package org
+Value -> type org/spring/Value class lombok.jar
+# type p/Spring source p/Spring.java
+  superclass type java/lang/Object class platform
+  method Spring()V implicit
+== main p/Gen.java
+p -> package p
+javax.annotation.processing.Generated -> type javax/annotation/processing/Generated class platform
+javax.annotation.processing -> package javax.annotation.processing
+javax.annotation -> package javax.annotation
+javax -> package javax
+# type p/Gen source p/Gen.java
+  superclass type java/lang/Object class platform
+  member Member: type p/Gen$Member source p/Gen.java
+  generated
+  method Gen()V implicit
+# type p/Gen$Member source p/Gen.java
+  superclass type java/lang/Object class platform
+  generated
+  method Member()V implicit
+== main p/Unresolved.java
+p -> package p
+Generated -> error not-found Generated
+# type p/Unresolved source p/Unresolved.java
+  superclass type java/lang/Object class platform
+  generated
+  method Unresolved()V implicit
+  error not-found Generated

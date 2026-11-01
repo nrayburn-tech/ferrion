@@ -1,0 +1,115 @@
+== main p/Generic.java
+p -> package p
+java.util.ArrayList<T> -> type java/util/ArrayList class platform
+java.util -> package java.util
+java -> package java
+T -> typevar type p/Generic source p/Generic.java T
+T -> type p/Generic$T source p/Generic.java
+T -> type p/Generic$T source p/Generic.java
+T -> type p/Generic$T source p/Generic.java
+# type p/Generic source p/Generic.java
+  superclass type java/util/ArrayList class platform
+  member T: type p/Generic$T source p/Generic.java
+  field field Lp/Generic$T;
+  method method(Lp/Generic$T;)Lp/Generic$T;
+  method Generic()V implicit
+# type p/Generic$T source p/Generic.java
+  superclass type java/lang/Object class platform
+  method member()V
+  method T()V implicit
+== main p/Base.java
+p -> package p
+# type p/Base source p/Base.java
+  superclass type java/lang/Object class platform
+  member Entry: type p/Base$Entry source p/Base.java
+  member X: type p/Base$X source p/Base.java
+  method Base()V implicit
+# type p/Base$Entry source p/Base.java
+  superclass type java/lang/Object class platform
+  method fromBase()V
+  method Entry()V implicit
+# type p/Base$X source p/Base.java
+  superclass type java/lang/Object class platform
+  method fromBase()V
+  method X()V implicit
+== main q/Sub.java
+q -> package q
+java.util.Map.Entry -> type java/util/Map$Entry class platform
+java.util.Map -> type java/util/Map class platform
+java.util -> package java.util
+java -> package java
+p.Base -> type p/Base source p/Base.java
+p -> package p
+Entry -> type p/Base$Entry source p/Base.java
+# type q/Sub source q/Sub.java
+  superclass type p/Base source p/Base.java
+  member Entry: type p/Base$Entry source p/Base.java
+  member X: type p/Base$X source p/Base.java
+  field e Lp/Base$Entry;
+  method m()V
+  method Sub()V implicit
+== main p/List.java
+p -> package p
+# type p/List source p/List.java
+  superclass type java/lang/Object class platform
+  method mine()V
+  method List()V implicit
+== main p/Imports.java
+p -> package p
+java.util.List -> type java/util/List class platform
+java.util -> package java.util
+java -> package java
+List<String> -> type java/util/List class platform
+String -> type java/lang/String class platform
+# type p/Imports source p/Imports.java
+  superclass type java/lang/Object class platform
+  field l Ljava/util/List;
+  method m()V
+  method Imports()V implicit
+== main p/OnDemand.java
+p -> package p
+java.util -> package java.util
+java -> package java
+List -> type p/List source p/List.java
+# type p/OnDemand source p/OnDemand.java
+  superclass type java/lang/Object class platform
+  field l Lp/List;
+  method m()V
+  method OnDemand()V implicit
+== main q/Outer.java
+q -> package q
+p.Base -> type p/Base source p/Base.java
+p -> package p
+X -> type p/Base$X source p/Base.java
+# type q/Outer source q/Outer.java
+  superclass type java/lang/Object class platform
+  member Inner: type q/Outer$Inner source q/Outer.java
+  member X: type q/Outer$X source q/Outer.java
+  method Outer()V implicit
+# type q/Outer$X source q/Outer.java
+  superclass type java/lang/Object class platform
+  method fromOuter()V
+  method X()V implicit
+# type q/Outer$Inner source q/Outer.java
+  superclass type p/Base source p/Base.java
+  member Entry: type p/Base$Entry source p/Base.java
+  member X: type p/Base$X source p/Base.java
+  field x Lp/Base$X;
+  method m()V
+  method Inner()V implicit
+== main r/A.java
+r -> package r
+B -> type r/B source r/B.java
+# type r/A source r/A.java
+  superclass type r/B source r/B.java
+  member B: type r/A$B source r/A.java
+  method A()V implicit
+# type r/A$B source r/A.java
+  superclass type java/lang/Object class platform
+  method B()V implicit
+== main r/B.java
+r -> package r
+# type r/B source r/B.java
+  superclass type java/lang/Object class platform
+  method top()V
+  method B()V implicit

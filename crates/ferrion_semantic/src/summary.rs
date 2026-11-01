@@ -19,6 +19,7 @@ use std::sync::Arc;
 use crate::{Fingerprint, Interner, Name};
 
 pub use build::summarize;
+pub(crate) use build::{Header, name_text, qualified};
 pub use written::{Primitive, TypeAnnotation, TypePart, TypeRef, WildcardBound};
 
 /// A file's summary.
@@ -412,7 +413,12 @@ impl Summary {
     /// The index of the type at `path` (simple names, outermost first), if the file declares one.
     /// The first if more than one has the path, which is an error javac reports.
     pub fn find(&self, path: &[Name]) -> Option<usize> {
-        let mut outer = None;
+        self.find_in(None, path)
+    }
+
+    /// As [`Summary::find`], with `path` starting at the members of the type at `outer`.
+    pub fn find_in(&self, outer: Option<u32>, path: &[Name]) -> Option<usize> {
+        let mut outer = outer;
         let mut found = None;
         for &name in path {
             let index = self

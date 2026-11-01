@@ -1,0 +1,33 @@
+== main module-info.java
+m -> module m
+java.sql -> module java.sql
+p -> package p
+== main p/U.java
+p -> package p
+java.sql.Connection -> type java/sql/Connection class platform
+java.sql -> package java.sql
+java -> package java
+javax.xml.XMLConstants -> type javax/xml/XMLConstants class platform
+javax.xml -> package javax.xml
+javax -> package javax
+java.util.logging.Logger -> type java/util/logging/Logger class platform
+java.util.logging -> package java.util.logging
+java.util -> package java.util
+java -> package java
+java.awt.List -> error not-visible java.awt java.awt.List
+java.awt -> package java.awt
+java -> package java
+jdk.internal.misc.Unsafe -> error not-visible jdk.internal.misc jdk.internal.misc.Unsafe
+jdk.internal.misc -> package jdk.internal.misc
+jdk.internal -> package jdk.internal
+jdk -> package jdk
+# type p/U source p/U.java
+  superclass type java/lang/Object class platform
+  field c Ljava/sql/Connection;
+  field x Ljavax/xml/XMLConstants;
+  field logger Ljava/util/logging/Logger;
+  field l Ljava/lang/Object;
+  field u Ljava/lang/Object;
+  method U()V implicit
+  error not-visible java.awt java.awt.List
+  error not-visible jdk.internal.misc jdk.internal.misc.Unsafe

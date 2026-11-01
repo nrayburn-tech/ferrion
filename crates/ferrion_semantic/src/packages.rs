@@ -46,6 +46,8 @@ impl TopLevel {
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub struct PackageIndex {
     packages: BTreeMap<Name, PackageFiles>,
+    /// The `module-info.java` files, which are in no package.
+    pub(crate) module_files: Box<[FileId]>,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -161,7 +163,7 @@ impl Snapshot {
 /// The accessors computations read the package table through, recording each read.
 impl Reads<'_> {
     /// `set`'s package index. Records the whole index: for a computation that lists packages.
-    #[allow(dead_code, reason = "for views, which W4 adds")]
+    #[allow(dead_code, reason = "for a computation that lists packages")]
     pub(crate) fn package_index(
         &mut self,
         set: SourceSetId,
@@ -186,8 +188,25 @@ impl Reads<'_> {
         Ok(files.map(|p| p.files.clone()))
     }
 
+    /// The files declaring the top-level type `simple` of package `package` in `set`, if any.
+    /// Records only that type's part of the package entry.
+    pub(crate) fn package_type(
+        &mut self,
+        set: SourceSetId,
+        package: Name,
+        simple: Name,
+    ) -> Result<Option<Box<[FileId]>>, Cancelled> {
+        let memo = self.snapshot.package_memo(set, package)?;
+        let found = memo.value.get(simple).map(|t| t.declarations.clone());
+        self.record(
+            Dep::PackageType(set, package, simple),
+            found.as_ref().map_or(Fingerprint::ABSENT, Fingerprint::of),
+        );
+        Ok(found)
+    }
+
     /// The package entry `name` of `set`. Records it.
-    #[allow(dead_code, reason = "for type entries and views, which W4 adds")]
+    #[allow(dead_code, reason = "for a computation that lists a package's types")]
     pub(crate) fn package(
         &mut self,
         set: SourceSetId,
@@ -201,13 +220,16 @@ impl Reads<'_> {
 
 fn package_index(reads: &mut Reads<'_>, set: SourceSetId) -> Result<PackageIndex, Cancelled> {
     let mut packages: BTreeMap<Name, Vec<FileId>> = BTreeMap::new();
+    let mut module_files = Vec::new();
     for &file in reads.set_files(set)?.iter() {
         reads.check()?;
-        if let Some(package) = reads.top_level(file)?.package {
-            packages.entry(package).or_default().push(file);
+        match reads.top_level(file)?.package {
+            Some(package) => packages.entry(package).or_default().push(file),
+            None => module_files.push(file),
         }
     }
     Ok(PackageIndex {
+        module_files: module_files.into_boxed_slice(),
         packages: packages
             .into_iter()
             .map(|(name, files)| {

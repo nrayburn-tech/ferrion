@@ -1,0 +1,81 @@
+== main p/A.java
+p -> package p
+java.util.List -> type java/util/List class platform
+java.util -> package java.util
+java -> package java
+java.util.Map.Entry -> type java/util/Map$Entry class platform
+java.util.Map -> type java/util/Map class platform
+java.util -> package java.util
+java -> package java
+java.util.function -> package java.util.function
+java.util -> package java.util
+java -> package java
+java.util.Map.Entry -> type java/util/Map$Entry class platform
+java.util.Map -> type java/util/Map class platform
+java.util -> package java.util
+java -> package java
+java.lang.annotation.Retention -> type java/lang/annotation/Retention class platform
+java.lang.annotation -> package java.lang.annotation
+java.lang -> package java.lang
+java -> package java
+java.io.Serializable -> type java/io/Serializable class platform
+java.io -> package java.io
+java -> package java
+Deprecated -> type java/lang/Deprecated class platform
+Comparable<T> -> type java/lang/Comparable class platform
+T -> typevar type p/A source p/A.java T
+B -> type p/B source p/B.java
+Serializable -> type java/io/Serializable class platform
+Supplier<String> -> type java/util/function/Supplier class platform
+String -> type java/lang/String class platform
+List<String> -> type java/util/List class platform
+String -> type java/lang/String class platform
+java.util.Map<String, Entry<String, T>> -> type java/util/Map class platform
+java.util -> package java.util
+java -> package java
+String -> type java/lang/String class platform
+Entry<String, T> -> type java/util/Map$Entry class platform
+String -> type java/lang/String class platform
+T -> typevar type p/A source p/A.java T
+Entry<String, String> -> type java/util/Map$Entry class platform
+String -> type java/lang/String class platform
+String -> type java/lang/String class platform
+B.Inner -> type p/B$Inner source p/B.java
+B -> type p/B source p/B.java
+Inner -> type p/B$Inner source p/B.java
+SuppressWarnings -> type java/lang/SuppressWarnings class platform
+Function<T, ? super Integer> -> type java/util/function/Function class platform
+T -> typevar type p/A source p/A.java T
+Integer -> type java/lang/Integer class platform
+String -> type java/lang/String class platform
+Runnable -> type java/lang/Runnable class platform
+R -> typevar method p/A.run(Ljava/lang/Runnable;[Ljava/lang/Comparable;)Ljava/lang/Runnable; R
+R -> typevar method p/A.run(Ljava/lang/Runnable;[Ljava/lang/Comparable;)Ljava/lang/Runnable; R
+T -> typevar type p/A source p/A.java T
+java.io.IOException -> type java/io/IOException class platform
+java.io -> package java.io
+java -> package java
+RuntimeException -> type java/lang/RuntimeException class platform
+# type p/A source p/A.java
+  superclass type p/B source p/B.java
+  interface type java/io/Serializable class platform
+  interface type java/util/function/Supplier class platform
+  member Inner: type p/B$Inner source p/B.java
+  field names Ljava/util/List;
+  field map Ljava/util/Map;
+  field entry Ljava/util/Map$Entry;
+  field inner Lp/B$Inner;
+  field inherited Lp/B$Inner;
+  field f Ljava/util/function/Function;
+  method get()Ljava/lang/String;
+  method run(Ljava/lang/Runnable;[Ljava/lang/Comparable;)Ljava/lang/Runnable;
+  method A()V implicit
+== main p/B.java
+p -> package p
+# type p/B source p/B.java
+  superclass type java/lang/Object class platform
+  member Inner: type p/B$Inner source p/B.java
+  method B()V implicit
+# type p/B$Inner source p/B.java
+  superclass type java/lang/Object class platform
+  method Inner()V implicit

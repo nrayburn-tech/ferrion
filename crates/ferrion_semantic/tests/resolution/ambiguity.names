@@ -1,0 +1,117 @@
+== main p/TwoOnDemand.java
+p -> package p
+java.util -> package java.util
+java -> package java
+java.awt -> package java.awt
+java -> package java
+List -> error ambiguous 2 List
+# type p/TwoOnDemand source p/TwoOnDemand.java
+  superclass type java/lang/Object class platform
+  field l Ljava/lang/Object;
+  method TwoOnDemand()V implicit
+  error ambiguous 2 List
+== main p/Unused.java
+p -> package p
+java.util -> package java.util
+java -> package java
+java.awt -> package java.awt
+java -> package java
+Map<String, String> -> type java/util/Map class platform
+String -> type java/lang/String class platform
+String -> type java/lang/String class platform
+# type p/Unused source p/Unused.java
+  superclass type java/lang/Object class platform
+  field m Ljava/util/Map;
+  method Unused()V implicit
+== main p/Holder.java
+p -> package p
+# type p/Holder source p/Holder.java
+  superclass type java/lang/Object class platform
+  member List: type p/Holder$List source p/Holder.java
+  method Holder()V implicit
+# type p/Holder$List source p/Holder.java
+  superclass type java/lang/Object class platform
+  method List()V implicit
+== main q/U.java
+q -> package q
+p.Holder -> type p/Holder source p/Holder.java
+p -> package p
+java.util -> package java.util
+java -> package java
+List -> error ambiguous 2 List
+# type q/U source q/U.java
+  superclass type java/lang/Object class platform
+  field l Ljava/lang/Object;
+  method U()V implicit
+  error ambiguous 2 List
+== main s/I.java
+s -> package s
+# type s/I source s/I.java
+  member X: type s/I$X source s/I.java
+# type s/I$X source s/I.java
+  superclass type java/lang/Object class platform
+  method X()V implicit
+== main s/J.java
+s -> package s
+# type s/J source s/J.java
+  member X: type s/J$X source s/J.java
+# type s/J$X source s/J.java
+  superclass type java/lang/Object class platform
+  method X()V implicit
+== main s/K.java
+s -> package s
+I -> type s/I source s/I.java
+# type s/K source s/K.java
+  interface type s/I source s/I.java
+  member X: type s/I$X source s/I.java
+== main s/A.java
+s -> package s
+I -> type s/I source s/I.java
+J -> type s/J source s/J.java
+# type s/A source s/A.java
+  superclass type java/lang/Object class platform
+  interface type s/I source s/I.java
+  interface type s/J source s/J.java
+  member X: ambiguous among 2
+  method A()V implicit
+== main s/B.java
+s -> package s
+I -> type s/I source s/I.java
+J -> type s/J source s/J.java
+X -> error ambiguous 2 X
+# type s/B source s/B.java
+  superclass type java/lang/Object class platform
+  interface type s/I source s/I.java
+  interface type s/J source s/J.java
+  member X: ambiguous among 2
+  field x Ljava/lang/Object;
+  method B()V implicit
+  error ambiguous 2 X
+== main s/C.java
+s -> package s
+I -> type s/I source s/I.java
+K -> type s/K source s/K.java
+X -> type s/I$X source s/I.java
+# type s/C source s/C.java
+  superclass type java/lang/Object class platform
+  interface type s/I source s/I.java
+  interface type s/K source s/K.java
+  member X: type s/I$X source s/I.java
+  field x Ls/I$X;
+  method C()V implicit
+== main d1/D.java
+d -> package d
+# type d/D source ?
+  incomplete
+== main d2/D.java
+d -> package d
+# type d/D source ?
+  incomplete
+== main d/UsesD.java
+d -> package d
+D -> error ambiguous 2 D
+# type d/UsesD source d/UsesD.java
+  superclass type java/lang/Object class platform
+  field d Ljava/lang/Object;
+  method UsesD()V implicit
+  error ambiguous 2 D
