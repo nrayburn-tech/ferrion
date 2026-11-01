@@ -388,7 +388,9 @@ about twice as fast; debug assertions catch arithmetic overflow. Pass the same t
 `cargo fuzz` command, or it rebuilds the targets. Add `-max_total_time=<seconds>` after `--` to stop
 after a while. CI runs every target for 60 seconds (`.github/workflows/fuzz.yml`, called from
 `ci.yml`), and a weekly scheduled run of the same workflow runs each for 30 minutes and keeps its
-corpus in the Actions cache. Crashing inputs are uploaded as the `fuzz-artifacts` artifact.
+corpus in the Actions cache. The targets are split over four jobs, each taking every fourth target
+in `cargo fuzz list` order and running its targets side by side; a new target needs no workflow
+change. Crashing inputs are uploaded as a `fuzz-artifacts-<shard>` artifact.
 
 To turn a failure into a regression test:
 
