@@ -209,3 +209,25 @@ before W4, checks the engine against this design while it is still small.
    formatter reads releases from it.
 7. **Excluding code with javac errors:** whole files (recommended for B2), or only the members that
    contain an error?
+
+## Decisions made in review
+
+The user reviewed this design and accepted every recommendation:
+
+1. **Engine:** the hand-written layered engine of
+   [incremental computation](semantic-incremental.md), not salsa.
+2. **B2's part of names:** packages, types, annotations, simple expression names, names qualified
+   by a package or type, and the type searched for a method. Names qualified by an expression's
+   type, and chosen overloads, are compared from B3.
+3. **Generated sources in the corpus:** the oracle runs the build's annotation processors and
+   writes their output to `target/corpus/generated/`, which the corpus model lists as
+   generated-source roots.
+4. **`@Generated`:** any annotation whose simple name is `Generated` marks a type as generated,
+   resolved or not.
+5. **A single source set's sources** are every file of the run's default file set, even when only
+   some files are passed.
+6. **The project model format** is as in [inputs](project-inputs.md#the-project-model), with source
+   sets as classpath entries.
+7. **Excluding code with javac errors:** whole files, for B2.
+
+The work order stands: W1, W2, and W3 in parallel, with a review stop after W2 before W4.

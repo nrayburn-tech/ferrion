@@ -35,8 +35,8 @@ Without `--project-model`, there is one source set:
 
 - **Sources** are every `.java` file the run's default file set covers, even when only some files
   are passed on the command line, so that a pre-commit hook passing two files still resolves names
-  against the rest (proposed). There are no generated-source roots in this mode; they come from a
-  project model.
+  against the rest (decision 5 in [review](semantic.md#decisions-made-in-review)). There are no
+  generated-source roots in this mode; they come from a project model.
 - **Classpath syntax:** entries separated by the platform's path separator (`:`, or `;` on
   Windows), as javac takes them. In a classpath file, line breaks also separate entries and blank
   lines are ignored, so both `mvn dependency:build-classpath -Dmdep.outputFile=...` output and one
