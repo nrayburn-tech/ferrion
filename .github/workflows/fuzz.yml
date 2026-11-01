@@ -58,6 +58,8 @@ jobs:
             mkdir -p "corpus/$target" "seeds/$target"
             case "$target" in
               javadoc | markdown) dict=doc_comments.dict ;;
+              classfile | signature | zip | jar | jimage | jimage_structured | ctsym)
+                dict=classfile.dict ;;
               *) dict=java.dict ;;
             esac
             cargo fuzz run --sanitizer none --debug-assertions "$target" \

@@ -680,9 +680,319 @@ fn split_descriptor(text: &[u8]) -> Option<Split<'_>> {
     }
 }
 
+/// A class with one of each attribute the reader decodes, written by [`ClassBuilder`].
+pub fn sample_class() -> Vec<u8> {
+    let u2 = |v: u16| v.to_be_bytes();
+    let mut b = ClassBuilder::new("p/Sample");
+    b.interface("java/lang/Runnable");
+    let sig = b.utf8("<T::Ljava/lang/Comparable<-TT;>;>Ljava/lang/Object;Ljava/lang/Runnable;");
+    let attribute = b.attribute("Signature", &u2(sig));
+    b.class_attribute(attribute);
+    let source = b.utf8("Sample.java");
+    let attribute = b.attribute("SourceFile", &u2(source));
+    b.class_attribute(attribute);
+    // InnerClasses, NestMembers, PermittedSubclasses.
+    let inner = b.class("p/Sample$In");
+    let outer = b.class("p/Sample");
+    let name = b.utf8("In");
+    let mut contents = u2(1).to_vec();
+    for v in [inner, outer, name, 0x0018] {
+        contents.extend_from_slice(&u2(v));
+    }
+    let attribute = b.attribute("InnerClasses", &contents);
+    b.class_attribute(attribute);
+    let mut members = u2(1).to_vec();
+    members.extend_from_slice(&u2(inner));
+    for name in ["NestMembers", "PermittedSubclasses"] {
+        let attribute = b.attribute(name, &members);
+        b.class_attribute(attribute);
+    }
+    // Annotations with every kind of element value.
+    let ann = b.utf8("Lp/Ann;");
+    let value = b.utf8("value");
+    let int = b.integer(7);
+    let long = b.long(-1);
+    let float = b.float(0x7fc0_0000);
+    let double = b.double(1.5f64.to_bits());
+    let text = b.utf8("text \0 \u{e9}");
+    let enum_type = b.utf8("Lp/E;");
+    let constant = b.utf8("A");
+    let class_value = b.utf8("[Ljava/lang/String;");
+    let mut array = vec![b'['];
+    array.extend_from_slice(&u2(9));
+    for (tag, index) in [
+        (b'B', int),
+        (b'C', int),
+        (b'I', int),
+        (b'S', int),
+        (b'Z', int),
+        (b'J', long),
+        (b'F', float),
+        (b'D', double),
+        (b's', text),
+    ] {
+        array.push(tag);
+        array.extend_from_slice(&u2(index));
+    }
+    array.push(b'e');
+    array.extend_from_slice(&u2(enum_type));
+    array.extend_from_slice(&u2(constant));
+    array.push(b'c');
+    array.extend_from_slice(&u2(class_value));
+    array.push(b'@');
+    array.extend_from_slice(&u2(ann));
+    array.extend_from_slice(&u2(0));
+    array[1..3].copy_from_slice(&u2(12));
+    let mut annotations = u2(1).to_vec();
+    annotations.extend_from_slice(&u2(ann));
+    annotations.extend_from_slice(&u2(1));
+    annotations.extend_from_slice(&u2(value));
+    annotations.extend_from_slice(&array);
+    let attribute = b.attribute("RuntimeVisibleAnnotations", &annotations);
+    b.class_attribute(attribute);
+    let attribute = b.attribute("RuntimeInvisibleAnnotations", &annotations);
+    b.class_attribute(attribute);
+    // Type annotations: a supertype, with a path.
+    let mut types = u2(1).to_vec();
+    types.extend_from_slice(&[0x10, 0xff, 0xff, 2, 0, 0, 3, 0]);
+    types.extend_from_slice(&u2(ann));
+    types.extend_from_slice(&u2(0));
+    let attribute = b.attribute("RuntimeInvisibleTypeAnnotations", &types);
+    b.class_attribute(attribute);
+    // A record component.
+    let x = b.utf8("x");
+    let list = b.utf8("Ljava/util/List;");
+    let list_sig = b.utf8("Ljava/util/List<+Ljava/lang/Number;>;");
+    let component_sig = b.attribute("Signature", &u2(list_sig));
+    let mut record = u2(1).to_vec();
+    record.extend_from_slice(&u2(x));
+    record.extend_from_slice(&u2(list));
+    record.extend_from_slice(&u2(1));
+    record.extend_from_slice(&component_sig);
+    let attribute = b.attribute("Record", &record);
+    b.class_attribute(attribute);
+    // A field with a constant, and methods with the method attributes.
+    let constant = b.string("constant");
+    let constant = b.attribute("ConstantValue", &u2(constant));
+    let deprecated = b.attribute("Deprecated", &[]);
+    b.field(0x0019, "C", "Ljava/lang/String;", &[constant, deprecated]);
+    let exception = b.class("java/io/IOException");
+    let mut exceptions = u2(1).to_vec();
+    exceptions.extend_from_slice(&u2(exception));
+    let exceptions = b.attribute("Exceptions", &exceptions);
+    let parameter = b.utf8("p");
+    let mut parameters = vec![1];
+    parameters.extend_from_slice(&u2(parameter));
+    parameters.extend_from_slice(&u2(0x0010));
+    let parameters = b.attribute("MethodParameters", &parameters);
+    let mut parameter_annotations = vec![1];
+    parameter_annotations.extend_from_slice(&u2(1));
+    parameter_annotations.extend_from_slice(&u2(ann));
+    parameter_annotations.extend_from_slice(&u2(0));
+    let parameter_annotations =
+        b.attribute("RuntimeVisibleParameterAnnotations", &parameter_annotations);
+    let method_sig = b.utf8("<U:Ljava/lang/Object;>(TU;)TU;^Ljava/io/IOException;");
+    let method_sig = b.attribute("Signature", &u2(method_sig));
+    let code = b.attribute("Code", &[0, 1, 0, 1, 0, 0, 0, 1, 0xb1, 0, 0, 0, 0]);
+    b.method(
+        0x0001,
+        "m",
+        "(Ljava/lang/Object;)Ljava/lang/Object;",
+        &[
+            code,
+            exceptions,
+            parameters,
+            parameter_annotations,
+            method_sig,
+        ],
+    );
+    let default = b.attribute("AnnotationDefault", &[b's', 0, 0]);
+    let mut default_bytes = default.clone();
+    let len = default_bytes.len();
+    default_bytes[len - 2..].copy_from_slice(&u2(text));
+    b.method(0x0401, "v", "()Ljava/lang/String;", &[default_bytes]);
+    b.finish()
+}
+
+/// A `module-info` class with every part of the `Module` attribute.
+pub fn sample_module_info() -> Vec<u8> {
+    let u2 = |v: u16| v.to_be_bytes();
+    let mut b = ClassBuilder::new("module-info");
+    b.set_super(None);
+    b.access = 0x8000;
+    let module = b.module("m");
+    let base = b.module("java.base");
+    let version = b.utf8("1.0");
+    let api = b.package("m/api");
+    let other = b.module("m.other");
+    let service = b.class("m/api/S");
+    let implementation = b.class("m/api/I");
+    let mut c = Vec::new();
+    for v in [
+        module,
+        0x0020,
+        version,
+        1,
+        base,
+        0x8000,
+        0,
+        1,
+        api,
+        0,
+        1,
+        other,
+        1,
+        api,
+        0,
+        0,
+        1,
+        service,
+        1,
+        service,
+        1,
+        implementation,
+    ] {
+        c.extend_from_slice(&u2(v));
+    }
+    let attribute = b.attribute("Module", &c);
+    b.class_attribute(attribute);
+    let mut packages = u2(1).to_vec();
+    packages.extend_from_slice(&u2(api));
+    let attribute = b.attribute("ModulePackages", &packages);
+    b.class_attribute(attribute);
+    let attribute = b.attribute("ModuleMainClass", &u2(implementation));
+    b.class_attribute(attribute);
+    let attribute = b.attribute("ModuleResolution", &u2(9));
+    b.class_attribute(attribute);
+    b.finish()
+}
+
+/// The fuzz targets' seeds, written by `cargo test` into `fuzz/seeds/<target>/` (see
+/// tests/fuzz_seeds.rs): (target, file name, bytes). Every seed is written here, never copied
+/// from a JDK.
+pub fn fuzz_seeds() -> Vec<(&'static str, String, Vec<u8>)> {
+    let mut seeds = Vec::new();
+    let class = sample_class();
+    let module_info = sample_module_info();
+    seeds.push(("classfile", "sample.class".to_owned(), class.clone()));
+    seeds.push((
+        "classfile",
+        "module-info.class".to_owned(),
+        module_info.clone(),
+    ));
+    seeds.push((
+        "classfile",
+        "minimal.class".to_owned(),
+        ClassBuilder::new("A").finish(),
+    ));
+    for (name, text) in [
+        (
+            "class.txt",
+            "<T::Ljava/lang/Comparable<-TT;>;>Ljava/lang/Object;Ljava/lang/Runnable;",
+        ),
+        (
+            "method.txt",
+            "<U:Ljava/lang/Object;>([[ITU;Ljava/util/Map<TK;*>.Entry<+[J>;)TU;^TX;",
+        ),
+        ("field.txt", "Ljava/util/List<-Ljava/lang/Number;>;"),
+        ("descriptor.txt", "(IJ[Ljava/lang/String;)V"),
+    ] {
+        seeds.push(("signature", name.to_owned(), text.as_bytes().to_vec()));
+    }
+    let mut jar = ZipBuilder::new();
+    jar.stored(
+        "META-INF/MANIFEST.MF",
+        b"Manifest-Version: 1.0\r\nMulti-Release: true\r\nClass-Path: a.jar\r\n b.jar\r\n\r\n",
+    )
+    .deflated("p/Sample.class", &class)
+    .deflated("META-INF/versions/9/p/Sample.class", &class)
+    .deflated("META-INF/versions/11/module-info.class", &module_info)
+    .stored("p/", b"");
+    seeds.push(("zip", "jar.zip".to_owned(), jar.finish()));
+    seeds.push(("jar", "multi-release.jar".to_owned(), jar.finish()));
+    seeds.push((
+        "jar",
+        "MANIFEST.MF".to_owned(),
+        b"Manifest-Version: 1.0\nMulti-Release: true\n\n".to_vec(),
+    ));
+    let mut zip64 = ZipBuilder::new();
+    zip64.zip64 = true;
+    zip64.data_descriptors = true;
+    zip64.prefix = b"#!/bin/sh\n".to_vec();
+    zip64.comment = b"comment".to_vec();
+    zip64
+        .deflated("a.txt", b"aaaaaaaaaaaaaaaa")
+        .stored("a.txt", b"duplicate");
+    seeds.push(("zip", "zip64.zip".to_owned(), zip64.finish()));
+    for (big_endian, compression, name) in [
+        (false, ImageCompression::None, "plain"),
+        (true, ImageCompression::None, "big-endian"),
+        (false, ImageCompression::Zip, "zip"),
+        (false, ImageCompression::CompactCp, "compact-cp"),
+    ] {
+        let mut image = ImageBuilder::new();
+        image.big_endian = big_endian;
+        image.compression = compression;
+        image
+            .add("java.base", "module-info.class", &module_info)
+            .add("java.base", "p/Sample.class", &class)
+            .add("m", "a/b.txt", b"text");
+        seeds.push(("jimage", format!("{name}.jimage"), image.finish()));
+    }
+    for (name, bytes) in [
+        ("empty", vec![]),
+        ("zip", vec![2, 3, 0, 1, 0, 0, 1]),
+        ("compact-cp", vec![4, 4, 1, 2, 0, 3, 0, 1]),
+    ] {
+        seeds.push(("jimage_structured", format!("{name}.bin"), bytes));
+    }
+    let mut flat = ZipBuilder::new();
+    flat.deflated("879A/p/Sample.sig", &class)
+        .deflated("9A-modules/m/module-info.sig", &module_info)
+        .deflated("B/system-modules", b"m\n");
+    seeds.push(("ctsym", "flat.sym".to_owned(), flat.finish()));
+    let mut modular = ZipBuilder::new();
+    modular
+        .deflated("8/m/p/Sample.sig", &class)
+        .deflated("9ABCDEFGHIJKLMNOPQR/m/module-info.sig", &module_info)
+        .deflated("R/m/p/Sample.sig", &class);
+    seeds.push(("ctsym", "modular.sym".to_owned(), modular.finish()));
+    seeds
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn samples_decode_without_errors() {
+        use crate::class::{Attribute, ClassFile};
+        for bytes in [sample_class(), sample_module_info()] {
+            let class = ClassFile::parse(std::sync::Arc::from(bytes)).unwrap();
+            let attributes = class
+                .attributes()
+                .chain(class.fields().flat_map(|f| f.attributes()))
+                .chain(class.methods().flat_map(|m| m.attributes()));
+            for info in attributes {
+                let attribute = info.decode().unwrap();
+                if let Attribute::Annotations { annotations, .. } = attribute {
+                    for annotation in annotations {
+                        for pair in annotation.unwrap().elements() {
+                            pair.unwrap();
+                        }
+                    }
+                }
+            }
+        }
+        sample_module_info_descriptor();
+    }
+
+    fn sample_module_info_descriptor() {
+        let class = crate::ClassFile::parse(std::sync::Arc::from(sample_module_info())).unwrap();
+        let descriptor = class.module_descriptor().unwrap();
+        assert_eq!(descriptor.main_class.as_deref(), Some("m/api/I"));
+        assert_eq!(descriptor.exports[0].to, ["m.other"]);
+    }
 
     #[test]
     fn crc() {

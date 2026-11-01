@@ -323,20 +323,31 @@ rustup toolchain install && cargo install cargo-fuzz --version 0.13.2 --locked
 - `markdown` reads arbitrary bytes as lines of `///` comments (each line gets the `///`) and parses
   the Markdown doc comments they form.
 - `parse` reads arbitrary bytes as a source file and parses its text at each primary release.
+- `classfile` reads arbitrary bytes as a class file and calls every accessor, decoding every
+  attribute, annotation, signature, and descriptor.
+- `signature` parses arbitrary text as class, method, and field signatures and as descriptors.
+- `zip` reads arbitrary bytes as a zip file and reads every entry; `jar` reads them as a manifest,
+  and as a multi-release jar at several releases.
+- `jimage` reads arbitrary bytes as a module image and reads every resource; `jimage_structured`
+  builds a valid image from the input, in either byte order and with each compression, then
+  changes a few bytes, to reach the code random bytes rarely do.
+- `ctsym` reads arbitrary bytes as a zip and then as `ct.sym`, resolving every release.
 
 The lexer targets fail when `ferrion_lexer::invariants` finds that the lexer broke a promise its API
 documents, the doc comment targets when `ferrion_doc_comments::invariants` finds the same of the
-doc comment parsers, and the `parse` target when `ferrion_parser::invariants` finds the same of the
-parser or its tree. All of them fail when the code under test panics, and the parser's debug
-assertions catch a loop that makes no progress and an empty node. Run a target, reading the
-committed seeds in `seeds/` and keeping what it finds in `corpus/` (ignored by git):
+doc comment parsers, the `parse` target when `ferrion_parser::invariants` finds the same of the
+parser or its tree, and the class file targets when `ferrion_classfile::invariants` finds the same
+of the class file, container, and platform readers. All of them fail when the code under test
+panics, and the parser's debug assertions catch a loop that makes no progress and an empty node.
+Run a target, reading the committed seeds in `seeds/` and keeping what it finds in `corpus/`
+(ignored by git):
 
 ```bash
 mkdir -p corpus/lex && cargo fuzz run --sanitizer none --debug-assertions lex corpus/lex seeds/lex -- -dict=java.dict -timeout=10
 ```
 
-The lexer and parser targets use the dictionary `java.dict`, and the doc comment targets
-`doc_comments.dict`:
+The lexer and parser targets use the dictionary `java.dict`, the doc comment targets
+`doc_comments.dict`, and the class file targets `classfile.dict`:
 
 ```bash
 mkdir -p corpus/javadoc && cargo fuzz run --sanitizer none --debug-assertions javadoc corpus/javadoc seeds/javadoc -- -dict=doc_comments.dict -timeout=10
@@ -358,9 +369,10 @@ To turn a failure into a regression test:
    ```
 
 2. Copy it, under a name that says what it covers, to `crates/ferrion_lexer/tests/fuzz-regressions/`
-   for a lexer target, `crates/ferrion_parser/tests/fuzz-regressions/` for `parse`, or
+   for a lexer target, `crates/ferrion_parser/tests/fuzz-regressions/` for `parse`,
    `crates/ferrion_doc_comments/tests/fuzz-regressions/javadoc/` or `.../markdown/` for a doc
-   comment target. A `lex_fragments` input is a list of fragment numbers,
+   comment target, or `crates/ferrion_classfile/tests/fuzz-regressions/<target>/` for a class file
+   target. A `lex_fragments` input is a list of fragment numbers,
    not source text, so write its text there instead:
 
    ```bash
@@ -368,8 +380,12 @@ To turn a failure into a regression test:
    ```
 
 3. Fix the bug. `cargo test --package ferrion_lexer --test fuzz_regressions` (or `--package
-   ferrion_parser` or `--package ferrion_doc_comments`) runs every file there through the same
-   checks, on the stable toolchain.
+   ferrion_parser`, `--package ferrion_doc_comments`, or `--package ferrion_classfile --test
+   fuzz_seeds`) runs every file there through the same checks, on the stable toolchain.
+
+The class file targets' seeds in `fuzz/seeds/` are written by test code, never copied from a JDK:
+`cargo test --package ferrion_classfile --test fuzz_seeds` checks that the committed seeds are what
+`ferrion_classfile::testing::fuzz_seeds` writes, and `FERRION_WRITE_FUZZ_SEEDS=1` rewrites them.
 
 ## Pull requests
 

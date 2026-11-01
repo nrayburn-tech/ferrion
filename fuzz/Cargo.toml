@@ -9,6 +9,7 @@ publish = false
 cargo-fuzz = true
 
 [dependencies]
+ferrion_classfile = { path = "../crates/ferrion_classfile" }
 ferrion_doc_comments = { path = "../crates/ferrion_doc_comments" }
 ferrion_lexer = { path = "../crates/ferrion_lexer" }
 ferrion_parser = { path = "../crates/ferrion_parser" }
@@ -52,6 +53,55 @@ bench = false
 [[bin]]
 name = "parse"
 path = "fuzz_targets/parse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "classfile"
+path = "fuzz_targets/classfile.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "signature"
+path = "fuzz_targets/signature.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "zip"
+path = "fuzz_targets/zip.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "jar"
+path = "fuzz_targets/jar.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "jimage"
+path = "fuzz_targets/jimage.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "jimage_structured"
+path = "fuzz_targets/jimage_structured.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "ctsym"
+path = "fuzz_targets/ctsym.rs"
 test = false
 doc = false
 bench = false
