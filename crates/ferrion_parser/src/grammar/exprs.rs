@@ -109,12 +109,13 @@ pub(crate) fn conditional_expr(p: &mut Parser<'_>) -> Option<CompletedMarker> {
     p.nested(conditional)
 }
 
-/// A case constant or a guard's condition: a conditional expression (JLS 14.11.1) in which `->`
-/// ends the expression instead of starting a lambda, so that `case A ->` and `when (a) ->` read
-/// as javac reads them. Lambdas nested in parentheses or arguments are still lambdas. `None`,
+/// A case constant or a guard's condition, in which `->` ends the expression instead of starting
+/// a lambda, so that `case A ->` and `when (a) ->` read as javac reads them. Lambdas nested in
+/// parentheses or arguments are still lambdas. javac parses an assignment there too (`when b =
+/// true`), though JLS 14.11.1 has a conditional expression, and rejects it later. `None`,
 /// consuming nothing, if no expression starts here.
 pub(crate) fn case_label_expr(p: &mut Parser<'_>) -> Option<CompletedMarker> {
-    p.without_lambdas(conditional)
+    p.without_lambdas(assignment)
 }
 
 /// Whether an expression can start at the current token.
@@ -359,11 +360,15 @@ fn binary_operator(p: &Parser<'_>) -> Option<(u8, usize)> {
 
 /// After `instanceof`: a type, or a pattern (`T t`, `final T t`, `R(...)`).
 fn instanceof_rest(p: &mut Parser<'_>) {
-    let pattern = p.nth(types::annotations_end(p, 0)) == FinalKw
-        || types::scan_type_info(p, 0, usize::MAX)
-            .is_some_and(|scan| p.nth_at_set(scan.end, IDENT) || p.nth(scan.end) == LParen);
-    let parsed = if pattern {
+    let modifiers = patterns::scan_modifiers(p, 0);
+    let keywords = modifiers.final_kw || modifiers.not_final;
+    let ty = types::scan_type_info(p, modifiers.end, usize::MAX);
+    let named = ty.is_some_and(|scan| p.nth_at_set(scan.end, IDENT) || p.nth(scan.end) == LParen);
+    let parsed = if named || keywords && ty.is_none() {
         patterns::pattern(p)
+    } else if keywords {
+        // `final String`, a type with modifiers.
+        patterns::modified_type(p)
     } else {
         types::type_(p)
     };
@@ -635,7 +640,13 @@ fn primary(p: &mut Parser<'_>, negated: bool) -> Option<CompletedMarker> {
     }
     if p.at_set(PRIMITIVE) {
         let annotated = types::scan_type(p, 0).is_some_and(|end| annotated_before(p, end));
+        let statement = p.at_statement_expr_start();
         let ty = types::type_(p)?;
+        if statement && p.at_eof() {
+            // `int` as a statement at the end of the file: javac reports `not.stmt` at the type,
+            // as the statement does.
+            return Some(ty);
+        }
         return Some(type_qualifier_rest(p, ty, annotated));
     }
     if types::at_annotation(p) {

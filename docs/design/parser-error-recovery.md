@@ -218,6 +218,10 @@ javac 27:
 | `void[] a;`, `void m(void[] a)` | `expected` (`<identifier> expected`) | end of `void` |
 | `a.<T>b;`, `a.<T>b.c()`, `a.<T>b[0];` | `illegal.start.of.expr` | the `;`; `c`; the `;` after `]` |
 | `yield(1, 2);`, `yield();` as statements | `invalid.yield` | `yield` |
+| `case 0 when b` | `guard.not.allowed` | the `when` |
+| `o instanceof final String`, `static String s` | `mod.not.allowed.here` | the type |
+| `case final R(var x)` | `mod.not.allowed.here` | the `final` |
+| `case (String s)` | `illegal.start.of.type` | the `(` |
 | a `;` before an import | `extraneous.semicolon` (a warning before 21) | the first `;` of a run |
 | a feature too new for the release | `feature.not.supported.in.source(.plural)` | the feature's anchor (see [language versions](parser-language-versions.md#the-feature-table)) |
 | `class var {}`, `<var>` | `restricted.type.not.allowed` (a warning before the release) | the name |

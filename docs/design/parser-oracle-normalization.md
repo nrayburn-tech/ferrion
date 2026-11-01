@@ -595,7 +595,6 @@ doesn't. Category: javac error recovery, unless noted.
 | [`syntax-compact-constructor-throws.java`](../../tools/oracle-check/differences/syntax-compact-constructor-throws.java) | `R throws Exception {}` in a record | `invalid.canonical.constructor.in.record` | `expected` |
 | [`syntax-parenthesized-comparison-before-name.java`](../../tools/oracle-check/differences/syntax-parenthesized-comparison-before-name.java) | `(a < b) c` | `expected2` | `expected`, one token later |
 | [`syntax-lambda-parameter-annotated-after-type.java`](../../tools/oracle-check/differences/syntax-lambda-parameter-annotated-after-type.java) | `(int @A x) -> 1` | `expected` | `illegal.start.of.type` |
-| [`syntax-final-record-pattern.java`](../../tools/oracle-check/differences/syntax-final-record-pattern.java) | `case final R(var x)` | `mod.not.allowed.here` | none |
 | [`syntax-var-and-inferred-lambda-parameters.java`](../../tools/oracle-check/differences/syntax-var-and-inferred-lambda-parameters.java) | `(var a, b) -> a` at 10 | `feature.not.supported.in.source.plural` at `a`: `var` lambda parameters need 11 | `invalid.lambda.parameter.declaration` at the `(`, which javac reports from 11 and at 8 and 9 |
 
 The token check's two known differences in javac's tests are listed in `known-files.txt`:

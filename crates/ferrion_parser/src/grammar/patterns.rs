@@ -21,7 +21,10 @@ pub(crate) fn pattern(p: &mut Parser<'_>) -> Option<CompletedMarker> {
             return Some(m.complete(p, UnnamedPattern));
         }
         let annotation = record_pattern_annotation(p);
+        let found = scan_modifiers(p, 0);
+        let modifiers_start = p.nth_span(0);
         let modifiers = decls::modifiers(p).is_some();
+        let type_start = p.nth_span(0);
         if types::type_(p).is_none() {
             if !modifiers {
                 m.abandon(p);
@@ -37,15 +40,35 @@ pub(crate) fn pattern(p: &mut Parser<'_>) -> Option<CompletedMarker> {
             return Some(m.complete(p, TypePattern));
         }
         if p.at(LParen) {
+            // javac takes `final` on type patterns only, and annotations on neither.
             if let Some(span) = annotation {
                 p.error(
                     ParseDiagnosticKind::RecordPatternAnnotations,
                     span,
                     span.start,
                 );
+            } else if found.not_final {
+                p.error(
+                    ParseDiagnosticKind::ModifierNotAllowed,
+                    type_start,
+                    type_start.start,
+                );
+            } else if found.final_kw {
+                p.error(
+                    ParseDiagnosticKind::FinalRecordPattern,
+                    modifiers_start,
+                    modifiers_start.start,
+                );
             }
             record_components(p);
             return Some(m.complete(p, RecordPattern));
+        }
+        if found.not_final {
+            p.error(
+                ParseDiagnosticKind::ModifierNotAllowed,
+                type_start,
+                type_start.start,
+            );
         }
         if p.at_set(IDENT) {
             p.bump();
@@ -87,6 +110,72 @@ fn record_pattern_annotation(p: &Parser<'_>) -> Option<Span> {
         }
     }
     None
+}
+
+/// After `instanceof`, at modifiers followed by a type and no name or `(`: `final String`. javac
+/// reads a type with modifiers, which it reports at the type, so it is a `TypePattern` without
+/// a name.
+pub(crate) fn modified_type(p: &mut Parser<'_>) -> Option<CompletedMarker> {
+    let m = p.start();
+    decls::modifiers(p);
+    let type_start = p.nth_span(0);
+    p.error(
+        ParseDiagnosticKind::ModifierNotAllowed,
+        type_start,
+        type_start.start,
+    );
+    if types::type_(p).is_none() {
+        types::type_expected(p);
+    }
+    Some(m.complete(p, TypePattern))
+}
+
+/// Modifier keywords a pattern can be written with, though only `final` is allowed.
+const MODIFIER_KEYWORDS: TokenSet = TokenSet::new(&[
+    PublicKw,
+    ProtectedKw,
+    PrivateKw,
+    AbstractKw,
+    StaticKw,
+    FinalKw,
+    TransientKw,
+    VolatileKw,
+    NativeKw,
+    StrictfpKw,
+]);
+
+/// What [`scan_modifiers`] found.
+pub(crate) struct ModifierScan {
+    /// The index of the token after the modifiers.
+    pub end: usize,
+    pub final_kw: bool,
+    /// A modifier keyword other than `final`.
+    pub not_final: bool,
+}
+
+/// Scans the annotations and modifier keywords at the `n`th token ahead, without consuming them.
+pub(crate) fn scan_modifiers(p: &Parser<'_>, mut n: usize) -> ModifierScan {
+    let mut scan = ModifierScan {
+        end: n,
+        final_kw: false,
+        not_final: false,
+    };
+    loop {
+        let after = types::annotations_end(p, n);
+        if after > n {
+            n = after;
+        } else if p.nth_at_set(n, MODIFIER_KEYWORDS) {
+            if p.nth(n) == FinalKw {
+                scan.final_kw = true;
+            } else {
+                scan.not_final = true;
+            }
+            n += 1;
+        } else {
+            scan.end = n;
+            return scan;
+        }
+    }
 }
 
 /// A record pattern's `(...)`: nested patterns, each `_` an `UnnamedPattern`.
@@ -138,23 +227,29 @@ fn record_components(p: &mut Parser<'_>) {
 ///   `:`, `,`, or `when`. So `Foo()` and `Foo(x, _)` are patterns, but `foo(1)`, `Foo(x)`, and
 ///   `Foo(var x) y` are constants;
 /// - `_` followed by `when` is an unnamed pattern with a guard;
+/// - parentheses around a pattern, or around `_`, make a pattern too, which javac reports at the
+///   `(`: Java no longer has parenthesized patterns. `(a)` and `(String) s` are constants;
 /// - anything else, `_` alone included, is a constant.
 pub(crate) fn at_case_pattern(p: &Parser<'_>) -> bool {
-    if p.at(FinalKw) || p.at(At) {
+    let mut n = 0;
+    while p.nth(n) == LParen {
+        n += 1;
+    }
+    if p.nth_at_set(n, MODIFIER_KEYWORDS) || p.nth(n) == At || n > 0 && p.nth(n) == Underscore {
         return true;
     }
-    let Some(after) = types::scan_type(p, 0) else {
+    let Some(after) = types::scan_type(p, n) else {
         return false;
     };
     if p.nth_at_set(after, IDENT) {
         return true;
     }
-    p.nth(after) == LParen && scan_record_pattern(p, after)
+    p.nth(after) == LParen && scan_record_pattern(p, after, n > 0)
 }
 
 /// At the `(` of a possible record pattern, the `n`th token ahead: see [`at_case_pattern`].
 /// A loop over the tokens, so nested record patterns cost no stack.
-fn scan_record_pattern(p: &Parser<'_>, mut n: usize) -> bool {
+fn scan_record_pattern(p: &Parser<'_>, mut n: usize, parenthesized: bool) -> bool {
     const FOLLOW: TokenSet = TokenSet::new(&[Arrow, Colon, Comma, WhenKw]);
     // Open record patterns' parentheses.
     let mut depth = 1usize;
@@ -207,7 +302,7 @@ fn scan_record_pattern(p: &Parser<'_>, mut n: usize) -> bool {
         n += 1;
         depth -= 1;
         if depth == 0 {
-            return found && p.nth_at_set(n, FOLLOW);
+            return found && (p.nth_at_set(n, FOLLOW) || parenthesized && p.nth(n) == RParen);
         }
         at_component = false;
     }

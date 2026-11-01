@@ -991,20 +991,21 @@ fn switch_label(p: &mut Parser<'_>) -> CompletedMarker {
     }
     p.expect(CaseKw);
     let mut patterns = false;
-    let mut null_default = false;
     let mut elements = 0;
     let mut after_null = false;
     let mut progress = p.progress();
     loop {
         if p.at(DefaultKw) {
-            if after_null && elements == 1 {
-                null_default = true;
-            } else {
+            if !(after_null && elements == 1) {
                 report_here(p, ParseDiagnosticKind::DefaultNotAllowed);
             }
             p.bump();
         } else if patterns::at_case_pattern(p) {
-            patterns::pattern(p);
+            if patterns::pattern(p).is_none() {
+                // A parenthesized pattern, `case (String s)`: javac expects a type at the `(`.
+                type_expected(p);
+                p.error_and_bump();
+            }
             patterns = true;
         } else {
             after_null = elements == 0 && p.at(NullKw) && p.nth(1) == Comma;
@@ -1021,13 +1022,14 @@ fn switch_label(p: &mut Parser<'_>) -> CompletedMarker {
             break;
         }
     }
-    if p.at(WhenKw) && (patterns || null_default) {
+    if p.at(WhenKw) {
         guard(p, !patterns);
     }
     m.complete(p, SwitchLabel)
 }
 
-/// `when condition`, at `when`. A guard on a label without a pattern is reported.
+/// `when condition`, at `when`. A guard on a label without a pattern (constants, `null`, or
+/// `null, default`) is reported.
 fn guard(p: &mut Parser<'_>, not_allowed: bool) {
     let m = p.start();
     let keyword = p.nth_span(0);
