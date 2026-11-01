@@ -157,8 +157,8 @@ Files under generated-source roots are summarized and resolved like any other, a
 generated, so the linter and formatter skip them. A type is also generated when it is annotated
 with an annotation whose simple name is `Generated`, resolved or not, so that it works without a
 classpath: `javax.annotation.Generated`, `javax.annotation.processing.Generated`, and the
-`Generated` annotations of code generators and Lombok all qualify (proposed; question 4 in the
-[overview](semantic.md#questions-for-review)).
+`Generated` annotations of code generators and Lombok all qualify (decision 4 in the
+[overview](semantic.md#decisions-made-in-review)).
 
 ## Modules
 
