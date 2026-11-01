@@ -1,0 +1,6 @@
+# javac's parse errors, then Ferrion's in javac's terms, at each release. Regenerate with `cargo oracle differences --bless`.
+at 27:
+javac   error compiler.err.no.annotations.on.dot.class at 39
+ferrion error compiler.err.restricted.type.not.allowed.here at 23
+ferrion error compiler.err.no.annotations.on.dot.class at 39
+first errors: differ
