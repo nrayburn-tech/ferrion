@@ -11,6 +11,7 @@ use ferrion_syntax::ast::{AstNode, ClassType};
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
 
 use super::generic;
+use super::variables::type_then_name;
 use crate::document::IndentKind;
 use crate::format::Formatter;
 
@@ -135,17 +136,13 @@ fn type_parameter<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     }
 }
 
-/// Items separated by `separator` tokens, the first where it is and the rest filled at +4: each
-/// separator starts a new line only if it and its item don't fit on the current one.
+/// Items separated by `separator` tokens, filled at +4: each separator starts a new line only if
+/// it and its item don't fit on the current one.
 fn filled<'t>(
     f: &mut Formatter<'t>,
     children: impl Iterator<Item = NodeOrToken<'t>>,
     separator: K,
 ) {
-    let mut children = children.peekable();
-    if let Some(first) = children.next_if(|c| c.kind() != separator) {
-        emit(f, first);
-    }
     f.indent(IndentKind::Continuation, |f| {
         f.fill(|f| {
             for child in children {
@@ -163,23 +160,48 @@ fn filled<'t>(
 
 /// `A & B` in a cast: filled, breaking before `&` at +4.
 fn intersection_type<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
+    f.comments_before(node.first_token().id());
     filled(f, children(node), K::Amp);
 }
 
 /// `A | B` in a `catch`: on one line if it fits, otherwise one alternative per line at +4, each
 /// starting with its `|`.
 fn union_type<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
-    let mut children = children(node);
+    union_with(f, node, None::<fn(&mut Formatter<'t>)>);
+}
+
+/// `A | B e`, a `catch` parameter's union type, `node`, and what `name` emits: laid out as
+/// [`union_type`], with the last alternative and the name a type and its name, which breaks
+/// before the name (observed in GJF: the last alternative's breaks are at +4 from the others'
+/// when the name breaks, and the name is at +8).
+pub(crate) fn union_then_name<'t>(
+    f: &mut Formatter<'t>,
+    node: SyntaxNode<'t>,
+    name: impl FnOnce(&mut Formatter<'t>),
+) {
+    union_with(f, node, Some(name));
+}
+
+fn union_with<'t>(
+    f: &mut Formatter<'t>,
+    node: SyntaxNode<'t>,
+    name: Option<impl FnOnce(&mut Formatter<'t>)>,
+) {
+    f.comments_before(node.first_token().id());
+    let mut children = children(node).peekable();
     f.group(|f| {
-        if let Some(first) = children.next() {
-            emit(f, first);
-        }
         f.indent(IndentKind::Continuation, |f| {
-            for child in children {
+            while let Some(child) = children.next() {
                 if child.kind() == K::Pipe {
                     f.line();
                     emit(f, child);
                     f.space();
+                } else if children.peek().is_none()
+                    && let Some(name) = name
+                {
+                    f.comments_before(first_token(child).id());
+                    f.group(|f| type_then_name(f, child, name));
+                    return;
                 } else {
                     emit(f, child);
                 }
@@ -309,17 +331,17 @@ fn class_type<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         }
     };
     let has_arguments = ClassType::cast(last).is_some_and(|c| c.type_arguments().is_some());
+    // The type's leading comments go before its group and indents.
+    f.comments_before(node.first_token().id());
     if has_arguments {
-        // The group the arguments break with; the type's leading comments go before it.
-        f.comments_before(node.first_token().id());
+        // The group the arguments break with.
         f.start_group();
     }
-    // The first segment goes before the indents, which apply from the first line break on.
-    segment_after_dot(f, segments[0]);
     f.start_indent(IndentKind::Continuation);
     if has_arguments {
         f.start_indent(IndentKind::Continuation);
     }
+    segment_after_dot(f, segments[0]);
     let mut rest = segments[1..].iter().copied();
     let after_dot = |f: &mut Formatter<'t>, segment: SyntaxNode<'t>| {
         dot(f, segment);

@@ -59,6 +59,20 @@ class Try {
       c();
     }
     try {
+      b();
+    } catch (
+        SomeVeryLongExceptionNameAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+            eeeeeeeeeeeeeeeeeee) {
+      c();
+    }
+    try {
+      b();
+    } catch (A
+        | SomeVeryLongExceptionNameAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+            eeeeeeeeeeeeeeeeeee) {
+      c();
+    }
+    try {
       a();
     } catch (E e) {
       b();

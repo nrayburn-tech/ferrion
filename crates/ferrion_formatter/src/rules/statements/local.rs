@@ -1,91 +1,63 @@
 //! Local variable declarations, as statements and in `for` headers and `try` resources.
 
-use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
+use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
 use super::elements;
 use crate::document::IndentKind;
 use crate::format::Formatter;
+use crate::rules::variables::single_declarator;
 
 /// A local variable declaration: modifiers, the type, the declarators, and the `;` of a
 /// statement. What is inside a declarator, such as the break after its `=`, is the declarator's.
 ///
-/// - **Annotations:** the modifiers are followed by a line break when they are only annotations
-///   and [`annotations_break`] says so (`@SuppressWarnings("unchecked")` above the type), and by
-///   a space otherwise.
-/// - **Declarators:** when there are several and they don't fit, they go one to a line at +4,
-///   after their commas.
-/// - **After the type:** in a statement, a line break at +4 between the type and the first
-///   declarator, taken when the type and the declarator up to its first possible break don't fit
-///   on the line (`=`, or the `;` without an initializer), or, with several declarators, when the
-///   type and the whole first declarator up to its comma don't. Not in `for` and `try` headers.
+/// - **Modifiers:** their rule puts the annotations on lines of their own or keeps them on the
+///   line (docs/style.md, "Annotations on declarations"); a space follows them.
+/// - **One declarator,** in a statement: `Type name` breaks before the name at +4 when it doesn't
+///   fit with the rest of its line, up to the `=` or the `;`, as a field's does.
+/// - **Several declarators** go one to a line at +4, after their commas, when they don't fit. In
+///   a statement, a line break at +4 comes first between the type and the first declarator, when
+///   the type and the whole first declarator up to its comma don't fit.
+///
+/// The breaks after the type aren't made in `for` and `try` headers.
 pub fn local_var_decl<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     let statement = node.last_token().kind() == K::Semi;
-    let declarators = node
-        .children()
-        .filter(|c| c.kind() == K::VariableDeclarator)
-        .count();
-    let mut elements = elements(node).peekable();
-    let mut typed = false;
-    while let Some(element) = elements.next() {
-        match element {
-            NodeOrToken::Node(modifiers) if modifiers.kind() == K::Modifiers => {
-                f.node(modifiers);
-                if only_annotations(modifiers) && annotations_break(modifiers) {
-                    f.hard_line();
-                } else {
-                    f.space();
-                }
-            }
-            NodeOrToken::Node(ty) if !typed => {
-                typed = true;
-                f.node(ty);
-                let mut rest = Vec::new();
-                while let Some(&element) = elements.peek()
-                    && element.kind() != K::Semi
-                {
-                    elements.next();
-                    rest.push(element);
-                }
-                declarators_after_type(f, &rest, statement, declarators);
-            }
-            _ => super::emit(f, element),
+    let elements: Vec<_> = elements(node).collect();
+    let mut rest = elements.as_slice();
+    if let [NodeOrToken::Node(modifiers), tail @ ..] = rest
+        && modifiers.kind() == K::Modifiers
+    {
+        f.node(*modifiers);
+        f.space();
+        rest = tail;
+    }
+    let (declaration, semi) = match rest {
+        [declaration @ .., semi] if semi.kind() == K::Semi => (declaration, Some(*semi)),
+        _ => (rest, None),
+    };
+    match declaration {
+        [ty, NodeOrToken::Node(declarator)]
+            if statement && declarator.kind() == K::VariableDeclarator =>
+        {
+            single_declarator(f, *ty, *declarator);
         }
+        [ty, declarators @ ..] => {
+            super::emit(f, *ty);
+            declarators_after_type(f, declarators, statement);
+        }
+        [] => {}
+    }
+    if let Some(semi) = semi {
+        super::emit(f, semi);
     }
 }
 
-/// The declarators after the type, with the commas between them: `rest`.
-fn declarators_after_type<'t>(
-    f: &mut Formatter<'t>,
-    rest: &[NodeOrToken<'t>],
-    statement: bool,
-    declarators: usize,
-) {
-    if declarators <= 1 {
-        if statement && let Some(&first) = rest.first() {
-            // Comments before the declarator go before the break, which then measures only
-            // code. A comment that ends its line takes the break, so formatting the output
-            // again indents the declarator as the first time did.
-            let first = first_token(first);
-            let broken = comment_ends_line_before(first);
-            f.comments_before(first.id());
-            let emit_rest = |f: &mut Formatter<'t>| {
-                for &element in rest {
-                    super::emit(f, element);
-                }
-            };
-            if broken {
-                f.indent(IndentKind::Continuation, emit_rest);
-            } else {
-                let after_type = f.start_group();
-                f.indent_if_broken(after_type, |f| f.line());
-                f.end();
-                f.indent_if_broken(after_type, emit_rest);
-            }
-        } else {
-            f.space();
-            for &element in rest {
-                super::emit(f, element);
-            }
+/// The declarators after the type, with the commas between them, when there are several or the
+/// declaration is in a `for` or `try` header.
+fn declarators_after_type<'t>(f: &mut Formatter<'t>, rest: &[NodeOrToken<'t>], statement: bool) {
+    if rest.len() <= 1 {
+        f.space();
+        for &element in rest {
+            super::emit(f, element);
         }
         return;
     }
@@ -112,55 +84,4 @@ fn declarators_after_type<'t>(
             }
         });
     });
-}
-
-/// Whether `modifiers`, a `Modifiers` node, holds only annotations.
-fn only_annotations(modifiers: SyntaxNode<'_>) -> bool {
-    !modifiers.direct_tokens().any(|t| !t.is_trivia())
-}
-
-/// Whether the annotations at the start of a local declaration's modifiers go on lines of their
-/// own, rather than staying on the line with the rest: when there are two or
-/// more annotations in the modifiers, or one with arguments (observed in GJF: `@Nullable String
-/// s` stays together, `@SuppressWarnings("unchecked")` goes above).
-pub(crate) fn annotations_break(modifiers: SyntaxNode<'_>) -> bool {
-    let mut annotations = 0;
-    for child in modifiers.children() {
-        if child.kind() == K::Annotation {
-            annotations += 1;
-            // Empty parentheses aren't arguments: `@A() int x` stays on one line (observed).
-            let arguments = child
-                .children()
-                .any(|c| c.kind() == K::AnnotationArguments && c.children().next().is_some());
-            if annotations > 1 || arguments {
-                return true;
-            }
-        }
-    }
-    false
-}
-
-/// Whether a comment followed by a line break comes between `token` and the code before it.
-fn comment_ends_line_before(token: SyntaxToken<'_>) -> bool {
-    let mut previous = token.prev_token();
-    let mut line_break = false;
-    while let Some(t) = previous
-        && t.is_trivia()
-    {
-        match t.kind() {
-            K::LineTerminator => line_break = true,
-            kind if ferrion_syntax::comments::is_comment(kind) && line_break => return true,
-            K::LineComment | K::DocLineComment => return true,
-            _ => {}
-        }
-        previous = t.prev_token();
-    }
-    false
-}
-
-fn first_token(element: NodeOrToken<'_>) -> SyntaxToken<'_> {
-    match element {
-        NodeOrToken::Token(token) => token,
-        NodeOrToken::Node(node) => node.first_token(),
-    }
 }

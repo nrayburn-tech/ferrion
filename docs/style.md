@@ -483,7 +483,16 @@ try (InputStream in = open();
 }
 ```
 
-A `catch` parameter is its modifiers, type, and name after spaces; how `A | B` breaks is the type's.
+A `catch` parameter is its modifiers, type, and name after spaces. When it doesn't fit, it breaks
+after the `(` first, at +4, and then before the name, at +4 from the type, as a variable does. A
+union type stays on the `(`'s line instead and breaks before its `|`s (see
+[Union types](#union-types)).
+
+```java
+} catch (
+    SomeVeryLongExceptionNameThatTakesUpTheWholeLineAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        exception) {
+```
 
 ### `switch`
 
@@ -923,7 +932,8 @@ void m(String... args) {}
 
 ### Intersection types
 
-`A & B` in a cast fills its lines, breaking before an `&` at +4.
+`A & B` in a cast fills its lines, breaking before an `&` at +4. The type is in the cast's own
++4, so those lines are at +8 from the `(`'s, as are a cast type's other breaks.
 
 ```java
 Object p = (Runnable & java.io.Serializable) () -> {};
@@ -932,7 +942,9 @@ Object p = (Runnable & java.io.Serializable) () -> {};
 ### Union types
 
 `A | B` in a `catch` is on one line if it fits, and otherwise has one alternative per line at +4,
-each starting with its `|`.
+each starting with its `|`. The last alternative and the parameter's name break as a variable's
+type and name do: the name on a line of its own at +8, and the alternative's own breaks at +4
+from the others'.
 
 ```java
 } catch (FirstVeryLongExceptionName

@@ -126,9 +126,11 @@ pub fn assign<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     f.end();
 }
 
-/// `(Type) value`: on one line, or a line break after the `)` and the value at +4.
+/// `(Type) value`: on one line, or a line break after the `)` and the value at +4. The type is
+/// in the indent too, so its own breaks are at +4 from the `(`'s line and more.
 pub fn cast<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     f.start_group();
+    let indentation = Indentation::start(f, IndentKind::Continuation);
     let mut closed = false;
     for element in elements(node) {
         match element {
@@ -137,14 +139,13 @@ pub fn cast<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                 closed = true;
             }
             NodeOrToken::Node(value) if closed => {
-                let indentation = Indentation::start(f, IndentKind::Continuation);
                 f.line();
                 f.node(value);
-                indentation.end(f);
             }
             _ => emit(f, element),
         }
     }
+    indentation.end(f);
     f.end();
 }
 

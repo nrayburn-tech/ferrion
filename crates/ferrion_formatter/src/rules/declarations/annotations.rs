@@ -24,6 +24,7 @@ use super::{
 use crate::document::IndentKind;
 use crate::format::Formatter;
 use crate::modifiers::{self, Item};
+use crate::rules::variables::value_after_eq;
 
 /// How a declaration's modifiers are laid out; see the module's documentation.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -155,23 +156,18 @@ pub(super) fn modifiers<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, layout:
                 _ => f.space(),
             }
         }
+        // A parameter's annotations after the first are at +4, and so is the rest of the
+        // parameter.
         if parameter && i == 0 {
             f.start_group();
+            f.start_indent(IndentKind::Continuation);
         }
         match item {
             Item::Annotation(annotation) => f.node(*annotation),
             Item::Run(run) => modifiers::run(f, run, reorder),
         }
-        // A parameter's annotations after the first are at +4, and so is the rest of the
-        // parameter. Each indent starts after text, since the printer indents a line by the
-        // indent its first text is in.
-        if parameter && i == 0 && leading > 1 {
-            f.start_indent(IndentKind::Continuation);
-        }
         if parameter && i + 1 == leading {
-            if leading > 1 {
-                f.end();
-            }
+            f.end();
             f.end();
             f.start_indent(IndentKind::Continuation);
         }
@@ -353,23 +349,6 @@ pub(super) fn pair<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         }
         emit(f, part);
         after_eq = part.kind() == K::Eq;
-    }
-}
-
-/// Emits the value after an `=`, in a variable declarator or an element-value pair: on the line
-/// if it's an array initializer, whose braces break instead, and otherwise in a group that breaks
-/// before it, at +4.
-pub(super) fn value_after_eq<'t>(f: &mut Formatter<'t>, value: ferrion_syntax::NodeOrToken<'t>) {
-    if matches!(value.kind(), K::ArrayInitializer | K::ElementValueArray) {
-        f.space();
-        emit(f, value);
-    } else {
-        f.group(|f| {
-            f.indent(IndentKind::Continuation, |f| {
-                f.line();
-                emit(f, value);
-            });
-        });
     }
 }
 
