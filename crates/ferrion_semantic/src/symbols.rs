@@ -251,7 +251,7 @@ pub struct Supertypes {
     pub interfaces: Box<[Result<TypeKey, ErrorSymbol>]>,
     /// For a type in a cycle of supertypes, the source types in it, sorted: every supertype
     /// above is then an error with [`Cause::Cycle`]. Empty otherwise.
-    pub cycle: Box<[TypeKey]>,
+    pub cycle: Arc<[TypeKey]>,
 }
 
 impl Supertypes {

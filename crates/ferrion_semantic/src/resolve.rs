@@ -221,7 +221,7 @@ impl Reads<'_> {
             return Ok(Some(Arc::new(Supertypes {
                 superclass: None,
                 interfaces: Box::default(),
-                cycle: Box::default(),
+                cycle: Arc::from([]),
             })));
         };
         let resolve = |reads: &mut Self, binary: Name| -> Result<_, Cancelled> {
@@ -241,7 +241,7 @@ impl Reads<'_> {
         Ok(Some(Arc::new(Supertypes {
             superclass,
             interfaces: interfaces.into_boxed_slice(),
-            cycle: Box::default(),
+            cycle: Arc::from([]),
         })))
     }
 
@@ -1094,7 +1094,7 @@ fn compute_supertypes(reads: &mut Reads<'_>, key: TypeKey) -> Result<Supertypes,
         return Ok(Supertypes {
             superclass: None,
             interfaces: Box::default(),
-            cycle: Box::default(),
+            cycle: Arc::from([]),
         });
     };
     let file_scope = reads.file_scope(located.file)?;
@@ -1151,24 +1151,31 @@ fn compute_supertypes(reads: &mut Reads<'_>, key: TypeKey) -> Result<Supertypes,
     // read any member types, so the source supertypes' own supertypes are read to find it. A
     // supertype found in a cycle with this type, made earlier, says so: the cycle is the same
     // whichever of its types was asked for first.
-    let mut cycle: Vec<TypeKey> = Vec::new();
+    // The sets are shared where they are the same, so a long cycle's types are kept once.
+    let mut cycle: Option<Arc<[TypeKey]>> = None;
+    let mut add = |set: Arc<[TypeKey]>| match &cycle {
+        None => cycle = Some(set),
+        Some(current) if set.iter().all(|k| current.binary_search(k).is_ok()) => {}
+        Some(current) => {
+            let mut merged: Vec<TypeKey> = current.iter().chain(set.iter()).copied().collect();
+            merged.sort();
+            merged.dedup();
+            cycle = Some(Arc::from(merged));
+        }
+    };
     for supertype in superclass.iter().chain(&interfaces) {
         if let Ok(supertype) = supertype
             && supertype.is_source()
             && let Some(theirs) = reads.supertypes(set, *supertype)?
-            && theirs.cycle.contains(&key)
+            && theirs.cycle.binary_search(&key).is_ok()
         {
-            cycle.extend(theirs.cycle.iter());
+            add(theirs.cycle.clone());
         }
     }
-    for dep in reads.cycle() {
-        if let Dep::Supertypes(member) = dep {
-            cycle.push(member);
-        }
+    for found in reads.cycles() {
+        add(found.source_types());
     }
-    cycle.sort();
-    cycle.dedup();
-    if !cycle.is_empty() {
+    if let Some(cycle) = cycle.filter(|c| !c.is_empty()) {
         let error = |r: &Result<TypeKey, ErrorSymbol>| -> Result<TypeKey, ErrorSymbol> {
             Err(ErrorSymbol {
                 name: match r {
@@ -1185,13 +1192,13 @@ fn compute_supertypes(reads: &mut Reads<'_>, key: TypeKey) -> Result<Supertypes,
         return Ok(Supertypes {
             superclass: superclass.as_ref().map(error),
             interfaces: interfaces.iter().map(error).collect(),
-            cycle: cycle.into_boxed_slice(),
+            cycle,
         });
     }
     Ok(Supertypes {
         superclass,
         interfaces: interfaces.into_boxed_slice(),
-        cycle: Box::default(),
+        cycle: Arc::from([]),
     })
 }
 
