@@ -29,6 +29,11 @@ class Chains {
     x = foo.bar(argumentNumberOneAAAAAAAAAAA).baz(argumentNumberTwoBBBBBBBBBBBBB, argumentNumberCCCCCC);
     foo(aaaaaaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb().ccccccccccccccccccccccccccccccccc());
     a.b()[0].c(argumentNumberOneAAAAAAAAAAA).d(argumentNumberTwoBBBBBBBBBBBBB).e(ccccccccccccccccccc);
+    when(remoteClient.dispatch(anyString(), eq(TaskStatus.DONE), any(JobRequest.class), eq(String.class))).thenReturn(cannedResponse);
+    assertThat(someObject.someMethod(argumentNumberOneAAAAAAAAAAAAAAAA, argumentNumberTwoBBBBBBBBBBBBBBB)).isEqualTo(expected);
+    when(remoteClient.dispatch(anyString(), eq(TaskStatus.DONE), any(JobRequest.class), eq(String.class)).foo()).thenReturn(cannedResponse);
+    it.map(String::trim) // trailing a call
+        .filter(Predicate.not(String::isBlank));
     builder
         .a() // trailing a link
         .b();

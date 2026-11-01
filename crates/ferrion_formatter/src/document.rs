@@ -94,11 +94,13 @@ pub enum Element {
     Hug,
     /// Ends the innermost container.
     End,
-    /// Right after a group's start, an alternative to breaking the group, for a lambda hugged
-    /// as a call's only argument (`foo(x ->` then the body at +4). When the group doesn't fit on
-    /// the line, and what follows its first line break, `tail` wide, doesn't fit on a line of its
-    /// own at +4 either, the group stays flat if its first `head` columns fit, and the groups in
-    /// the hug inside it break instead. Elsewhere it prints nothing.
+    /// Right after a group's start, an alternative to breaking the group, for an item hugged as
+    /// a call's only argument (`foo(x ->` then the body at +4). The group's mark, after its
+    /// first line break, splits it in two: `tail`, the width from the mark to the group's end
+    /// and the rest of the line, and `head`, the width from the group's start to the first line
+    /// element after the mark. When the group doesn't fit on the line, and the tail doesn't fit
+    /// on a line of its own at +4 either, the group stays flat if its head fits, and the groups
+    /// in the hug inside it break instead. Elsewhere it prints nothing.
     Alternative { head: u32, tail: u32 },
     /// Text copied rather than laid out, by its index in [`Document::verbatims`].
     Verbatim(u32),
@@ -185,8 +187,9 @@ pub struct DocumentBuilder {
     verbatims: Vec<Verbatim>,
     open: Vec<Open>,
     position: u64,
-    /// The indices of the `Alternative` elements, whose tails [`DocumentBuilder::finish`] sets.
-    alternatives: Vec<u32>,
+    /// The `Alternative` elements' indices and the indices of their marks, whose widths
+    /// [`DocumentBuilder::finish`] sets.
+    alternatives: Vec<(u32, u32)>,
 }
 
 impl DocumentBuilder {
@@ -249,29 +252,33 @@ impl DocumentBuilder {
         )
     }
 
-    /// Starts a group with an [`Element::Alternative`], whose head and tail are marked with
-    /// [`DocumentBuilder::alternative_head`] and [`DocumentBuilder::alternative_tail`].
+    /// Starts a group with an [`Element::Alternative`], whose mark is set with
+    /// [`DocumentBuilder::alternative_mark`].
     pub fn start_group_with_alternative(&mut self) -> u32 {
         let group = self.start_group();
-        self.alternatives.push(self.elements.len() as u32);
+        let index = self.elements.len() as u32;
+        self.alternatives.push((index, index + 1));
         self.elements
             .push(Element::Alternative { head: 0, tail: 0 });
         group
     }
 
-    /// Marks the end of the head of `group`'s alternative: here.
-    pub fn alternative_head(&mut self, group: u32) {
+    /// Sets the mark of `group`'s alternative here. Until [`DocumentBuilder::finish`], the
+    /// alternative's `tail` holds the mark's offset from the group's start.
+    pub fn alternative_mark(&mut self, group: u32) {
         let offset = self.offset_in(group);
-        if let Element::Alternative { head, .. } = &mut self.elements[group as usize + 1] {
-            *head = offset;
-        }
-    }
-
-    /// Marks the start of the tail of `group`'s alternative: here.
-    pub fn alternative_tail(&mut self, group: u32) {
-        let offset = self.offset_in(group);
-        if let Element::Alternative { tail, .. } = &mut self.elements[group as usize + 1] {
+        let mark = self.elements.len() as u32;
+        let index = group + 1;
+        if let Element::Alternative { tail, .. } = &mut self.elements[index as usize] {
             *tail = offset;
+        }
+        if let Some(entry) = self
+            .alternatives
+            .iter_mut()
+            .rev()
+            .find(|(i, _)| *i == index)
+        {
+            entry.1 = mark;
         }
     }
 
@@ -442,6 +449,11 @@ impl DocumentBuilder {
         // separator directly inside its container.
         let mut rest: u64 = 0;
         let mut after_end: Vec<(u64, Option<usize>)> = Vec::new();
+        // The alternatives by their marks, last first, and the rest of the line at each mark.
+        self.alternatives
+            .sort_unstable_by_key(|&(_, mark)| std::cmp::Reverse(mark));
+        let mut at_marks = vec![0u64; self.alternatives.len()];
+        let mut next_mark = 0;
         for index in (0..self.elements.len()).rev() {
             match &mut self.elements[index] {
                 Element::Token { width, .. } => rest += u64::from(*width),
@@ -486,15 +498,23 @@ impl DocumentBuilder {
                 }
                 Element::Alternative { .. } => {}
             }
+            while let Some(&(_, mark)) = self.alternatives.get(next_mark)
+                && mark as usize >= index
+            {
+                at_marks[next_mark] = rest;
+                next_mark += 1;
+            }
         }
-        // Each alternative's tail runs from its mark to where its group's width ends.
-        for &index in &self.alternatives {
-            let group = match self.elements[index as usize - 1] {
-                Element::Group { width, .. } => width,
-                _ => continue,
+        // The head runs from the group's start to the first line element after the mark, and
+        // the tail from the mark to where the group's width ends.
+        for (&(index, _), &at_mark) in self.alternatives.iter().zip(&at_marks) {
+            let Element::Group { width, .. } = self.elements[index as usize - 1] else {
+                continue;
             };
-            if let Element::Alternative { tail, .. } = &mut self.elements[index as usize] {
-                *tail = group.saturating_sub(*tail);
+            if let Element::Alternative { head, tail } = &mut self.elements[index as usize] {
+                let offset = *tail;
+                *head = (u64::from(offset) + at_mark).min(u64::from(u32::MAX)) as u32;
+                *tail = width.saturating_sub(offset);
             }
         }
         Document {

@@ -31,7 +31,7 @@ pub fn format<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         K::CastExpr => operators::cast(f, node),
         K::InstanceofExpr => operators::instanceof(f, node),
         K::MethodCallExpr | K::FieldAccessExpr => calls::chain(f, node),
-        K::Arguments => calls::arguments(f, node, calls::Hugs::All),
+        K::Arguments => calls::arguments(f, node, calls::Hugs::Lambdas),
         K::NewExpr => calls::new(f, node),
         K::MethodRefExpr => calls::method_ref(f, node),
         K::LambdaExpr => lambdas::lambda(f, node),

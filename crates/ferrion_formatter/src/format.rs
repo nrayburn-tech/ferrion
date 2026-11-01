@@ -36,9 +36,9 @@ pub struct Formatter<'t> {
     last_token: Option<TokenId>,
     /// The region being copied, if any.
     in_region: Option<Region>,
-    /// Whether a line comment trailing a token ended, and the line break after it is still to
-    /// come (see [`Formatter::doc`]).
-    line_owed: bool,
+    /// The line breaks after the last comment that are still to come (see [`Formatter::doc`]):
+    /// 0, 1 for a line break, or 2 for a blank line.
+    line_owed: u8,
 }
 
 impl<'t> Formatter<'t> {
@@ -54,7 +54,7 @@ impl<'t> Formatter<'t> {
             next_comment: 0,
             last_token: None,
             in_region: None,
-            line_owed: false,
+            line_owed: 0,
         }
     }
 
@@ -234,17 +234,10 @@ impl<'t> Formatter<'t> {
         self.doc().start_group_with_alternative()
     }
 
-    /// Marks the end of the head of `group`'s alternative.
-    pub fn alternative_head(&mut self, group: u32) {
+    /// Sets the mark of `group`'s alternative here, after its first line break.
+    pub fn alternative_mark(&mut self, group: u32) {
         if self.in_region.is_none() {
-            self.doc().alternative_head(group);
-        }
-    }
-
-    /// Marks the start of the tail of `group`'s alternative.
-    pub fn alternative_tail(&mut self, group: u32) {
-        if self.in_region.is_none() {
-            self.doc().alternative_tail(group);
+            self.doc().alternative_mark(group);
         }
     }
 
@@ -307,15 +300,18 @@ impl<'t> Formatter<'t> {
         self.doc.end();
     }
 
-    /// The document, after the line break owed to a line comment, if any. That break comes
-    /// before whatever is emitted next, so it lands after the containers that end at the
-    /// comment: `a == b / 2 // c` then `|| d` breaks the `||` but not the `==` or the `/`, as
-    /// in GJF. Only ending a container doesn't pay it.
+    /// The document, after the line breaks owed to the last comment, if any. They come before
+    /// whatever is emitted next, so they land after the containers that end at the comment:
+    /// `a == b / 2 // c` then `|| d` breaks the `||` but not the `==` or the `/`, as in GJF, and
+    /// a comment on its own line before an expression goes before the expression's groups.
+    /// Only ending a container doesn't pay them.
     fn doc(&mut self) -> &mut DocumentBuilder {
-        if self.line_owed {
-            self.line_owed = false;
-            if self.in_region.is_none() {
+        let owed = std::mem::take(&mut self.line_owed);
+        if owed > 0 && self.in_region.is_none() {
+            if owed == 1 {
                 self.doc.hard_line();
+            } else {
+                self.doc.blank_line();
             }
         }
         &mut self.doc
@@ -406,7 +402,7 @@ impl<'t> Formatter<'t> {
             SyntaxKind::LineComment | SyntaxKind::DocLineComment
         );
         match comment.line_breaks_after {
-            0 if line_comment => self.line_owed = true,
+            0 if line_comment => self.line_owed = 1,
             0 => {
                 if token
                     .next_token()
@@ -415,8 +411,8 @@ impl<'t> Formatter<'t> {
                     self.space();
                 }
             }
-            1 => self.hard_line(),
-            _ => self.blank_line(),
+            1 => self.line_owed = self.line_owed.max(1),
+            _ => self.line_owed = 2,
         }
     }
 
