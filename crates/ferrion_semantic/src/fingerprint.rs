@@ -16,6 +16,10 @@ use ferrion_syntax::SyntaxNode;
 pub struct Fingerprint(u64);
 
 impl Fingerprint {
+    /// What a dependency that no longer exists reads as: a removed file, or a package no file
+    /// declares. Never an input's version, and in practice never a value's hash.
+    pub(crate) const ABSENT: Fingerprint = Fingerprint(0);
+
     pub fn of<T: Hash + ?Sized>(value: &T) -> Fingerprint {
         let mut hasher = DefaultHasher::new();
         value.hash(&mut hasher);
@@ -37,6 +41,11 @@ impl Fingerprint {
             ferrion_lexer::cooked_text(tree.text(), lexed).hash(&mut hasher);
         }
         Fingerprint(hasher.finish())
+    }
+
+    /// A fingerprint that is already unique to what it stands for: an input's version.
+    pub(crate) fn from_version(version: u64) -> Fingerprint {
+        Fingerprint(version)
     }
 
     pub fn as_u64(self) -> u64 {
