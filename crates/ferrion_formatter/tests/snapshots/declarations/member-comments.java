@@ -28,6 +28,14 @@ class MemberComments {
   class Other { // A line comment on the line of the brace.
     void f() {} }
   class Empty { /* Alone in the body. */ }
+  @A // A line comment, then a blank line.
+
+  void p() {}
   class EmptyWithLineComment { // Alone in the body.
+  }
+  class Last {
+    int x; // A trailing comment, then blank lines before the brace.
+
+
   }
 }

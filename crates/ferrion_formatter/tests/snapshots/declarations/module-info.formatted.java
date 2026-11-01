@@ -5,7 +5,7 @@ import a.B;
 @SuppressWarnings("x")
 open module a.b {
   requires transitive static c.d;
-  requires e; // trailing
+  requires e; // trailing, then blank lines
   requires f;
 
   exports e.f to

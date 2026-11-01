@@ -213,6 +213,8 @@ fn block_comment_after(token: SyntaxToken<'_>) -> bool {
 
 /// Ends a body's indent before `close`, its `}`, with the comments before it inside.
 fn close_body<'t>(f: &mut Formatter<'t>, close: SyntaxToken<'t>) {
+    // A blank line after the last member's trailing comment is removed too.
+    f.no_blank_line();
     f.comments_before(close.id());
     f.end();
     f.hard_line();

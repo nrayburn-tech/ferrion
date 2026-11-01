@@ -95,7 +95,10 @@ pub(super) fn module<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         if is_directive(kind) {
             match previous_directive {
                 None => f.hard_line(),
-                Some(k) if k == kind => f.hard_line(),
+                Some(k) if k == kind => {
+                    f.no_blank_line();
+                    f.hard_line();
+                }
                 Some(_) => f.blank_line(),
             }
             previous_directive = Some(kind);
