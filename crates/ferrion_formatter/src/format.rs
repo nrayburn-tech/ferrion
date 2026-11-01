@@ -224,6 +224,26 @@ impl<'t> Formatter<'t> {
         self.doc.start_group()
     }
 
+    /// Starts a group with an alternative to breaking (see
+    /// [`crate::document::Element::Alternative`]), which the caller ends with [`Formatter::end`].
+    pub fn start_group_with_alternative(&mut self) -> u32 {
+        self.doc.start_group_with_alternative()
+    }
+
+    /// Marks the end of the head of `group`'s alternative.
+    pub fn alternative_head(&mut self, group: u32) {
+        if self.in_region.is_none() {
+            self.doc.alternative_head(group);
+        }
+    }
+
+    /// Marks the start of the tail of `group`'s alternative.
+    pub fn alternative_tail(&mut self, group: u32) {
+        if self.in_region.is_none() {
+            self.doc.alternative_tail(group);
+        }
+    }
+
     /// Ends the innermost container started with a `start_` method.
     pub fn end(&mut self) {
         self.doc.end();
@@ -238,6 +258,12 @@ impl<'t> Formatter<'t> {
 
     pub fn start_indent(&mut self, kind: IndentKind) {
         self.doc.start_indent(kind);
+    }
+
+    /// Starts a hanging indent (see [`crate::document::Element::Hanging`]), which the caller
+    /// ends with [`Formatter::end`].
+    pub fn start_hanging(&mut self, kind: IndentKind) {
+        self.doc.start_hanging(kind);
     }
 
     #[allow(dead_code, reason = "for the construct rules still to come")]

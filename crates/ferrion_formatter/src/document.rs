@@ -68,6 +68,12 @@ pub enum Element {
     },
     /// Its contents, with the line breaks in them indented by the kind's width.
     Indent(IndentKind),
+    /// An indent that keeps a line break from before it out: like [`Element::Indent`], except
+    /// that text starting right after a line break that came before the indent starts its line
+    /// at the indentation outside it. An `Indent` indents the line text starts, wherever the
+    /// break was; a hanging indent lets an expression whose continuation lines are indented,
+    /// `a` then `+ b` at +4, start on a line of its own without indenting its first line.
+    Hanging(IndentKind),
     /// Its contents, indented by +4 only if the group starting at index `group` is broken.
     IndentIfBroken { group: u32 },
     /// Items and [`FillBreak`](Element::FillBreak)s: flat if it all fits, like a group, and
@@ -88,6 +94,12 @@ pub enum Element {
     Hug,
     /// Ends the innermost container.
     End,
+    /// Right after a group's start, an alternative to breaking the group, for a lambda hugged
+    /// as a call's only argument (`foo(x ->` then the body at +4). When the group doesn't fit on
+    /// the line, and what follows its first line break, `tail` wide, doesn't fit on a line of its
+    /// own at +4 either, the group stays flat if its first `head` columns fit, and the groups in
+    /// the hug inside it break instead. Elsewhere it prints nothing.
+    Alternative { head: u32, tail: u32 },
     /// Text copied rather than laid out, by its index in [`Document::verbatims`].
     Verbatim(u32),
 }
@@ -173,6 +185,8 @@ pub struct DocumentBuilder {
     verbatims: Vec<Verbatim>,
     open: Vec<Open>,
     position: u64,
+    /// The indices of the `Alternative` elements, whose tails [`DocumentBuilder::finish`] sets.
+    alternatives: Vec<u32>,
 }
 
 impl DocumentBuilder {
@@ -235,8 +249,49 @@ impl DocumentBuilder {
         )
     }
 
+    /// Starts a group with an [`Element::Alternative`], whose head and tail are marked with
+    /// [`DocumentBuilder::alternative_head`] and [`DocumentBuilder::alternative_tail`].
+    pub fn start_group_with_alternative(&mut self) -> u32 {
+        let group = self.start_group();
+        self.alternatives.push(self.elements.len() as u32);
+        self.elements
+            .push(Element::Alternative { head: 0, tail: 0 });
+        group
+    }
+
+    /// Marks the end of the head of `group`'s alternative: here.
+    pub fn alternative_head(&mut self, group: u32) {
+        let offset = self.offset_in(group);
+        if let Element::Alternative { head, .. } = &mut self.elements[group as usize + 1] {
+            *head = offset;
+        }
+    }
+
+    /// Marks the start of the tail of `group`'s alternative: here.
+    pub fn alternative_tail(&mut self, group: u32) {
+        let offset = self.offset_in(group);
+        if let Element::Alternative { tail, .. } = &mut self.elements[group as usize + 1] {
+            *tail = offset;
+        }
+    }
+
+    /// The flat width from the start of `group`, which is open, to here.
+    fn offset_in(&self, group: u32) -> u32 {
+        let open = self
+            .open
+            .iter()
+            .rev()
+            .find(|open| open.index == group)
+            .expect("an alternative's group is open");
+        (self.position - open.start).min(u64::from(u32::MAX)) as u32
+    }
+
     pub fn start_indent(&mut self, kind: IndentKind) {
         self.start(Element::Indent(kind), None);
+    }
+
+    pub fn start_hanging(&mut self, kind: IndentKind) {
+        self.start(Element::Hanging(kind), None);
     }
 
     #[allow(dead_code, reason = "for the construct rules still to come")]
@@ -423,9 +478,23 @@ impl DocumentBuilder {
                         *next = (u64::from(*next) + after).min(u64::from(u32::MAX)) as u32;
                     }
                 }
-                Element::Indent(_) | Element::IndentIfBroken { .. } | Element::Hug => {
+                Element::Indent(_)
+                | Element::Hanging(_)
+                | Element::IndentIfBroken { .. }
+                | Element::Hug => {
                     after_end.pop().expect("a container without an End");
                 }
+                Element::Alternative { .. } => {}
+            }
+        }
+        // Each alternative's tail runs from its mark to where its group's width ends.
+        for &index in &self.alternatives {
+            let group = match self.elements[index as usize - 1] {
+                Element::Group { width, .. } => width,
+                _ => continue,
+            };
+            if let Element::Alternative { tail, .. } = &mut self.elements[index as usize] {
+                *tail = group.saturating_sub(*tail);
             }
         }
         Document {
