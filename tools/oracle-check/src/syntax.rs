@@ -147,6 +147,23 @@ fn summarize(output: &Output) -> Summary {
 /// depends on the file's name, which the parser never sees.
 const LEFT_OUT: &[&str] = &["compiler.err.bad.file.name"];
 
+/// javac's code for an error as it reports it in a file of any name. In a file named
+/// `module-info.java`, javac reports what can't start a module declaration as
+/// `expected.module.or.open`; the parser never sees file names, so the error is compared as
+/// javac reports it in other files: `expected3` (class, interface, or enum) before 16,
+/// `expected4` (or record) from 16 to 24, and `class.method.or.field.expected` from 25.
+fn by_any_name(code: &str, release: u32) -> String {
+    if code != "compiler.err.expected.module.or.open" {
+        return code.to_owned();
+    }
+    match release {
+        ..16 => "compiler.err.expected3",
+        16..25 => "compiler.err.expected4",
+        _ => "compiler.err.class.method.or.field.expected",
+    }
+    .to_owned()
+}
+
 /// javac's errors, in the order it reported them. Warnings don't count, nor errors in
 /// [`LEFT_OUT`].
 pub fn javac_errors(output: &Output) -> Vec<&Diagnostic> {
@@ -217,7 +234,7 @@ impl<P: Parser> Check for Syntax<P> {
             .collect();
         let javac: Vec<(String, i64)> = javac_errors(output)
             .into_iter()
-            .map(|diagnostic| (diagnostic.code.clone(), diagnostic.position))
+            .map(|diagnostic| (by_any_name(&diagnostic.code, release), diagnostic.position))
             .collect();
         outcome.status = compare_errors(prepared, &ours, &javac);
         outcome

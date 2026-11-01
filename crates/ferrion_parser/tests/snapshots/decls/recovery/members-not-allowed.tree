@@ -1,0 +1,152 @@
+CompilationUnit 0..168 [error]
+  InterfaceDecl 0..57 [error]
+    InterfaceKw 0..9 "interface"
+    Whitespace 9..10 " "
+    Identifier 10..11 "I"
+    Whitespace 11..12 " "
+    ClassBody 12..57 [error]
+      LBrace 12..13 "{"
+      LineTerminator 13..14 "\n"
+      Whitespace 14..16 "  "
+      Initializer 16..18 [error]
+        Block 16..18
+          LBrace 16..17 "{"
+          RBrace 17..18 "}"
+      LineTerminator 18..19 "\n"
+      Whitespace 19..21 "  "
+      Initializer 21..30 [error]
+        StaticKw 21..27 "static"
+        Whitespace 27..28 " "
+        Block 28..30
+          LBrace 28..29 "{"
+          RBrace 29..30 "}"
+      LineTerminator 30..31 "\n"
+      Whitespace 31..33 "  "
+      FieldDecl 33..39 [error]
+        PrimitiveType 33..36
+          IntKw 33..36 "int"
+        Whitespace 36..37 " "
+        VariableDeclarator 37..38 [error]
+          Identifier 37..38 "x"
+        Semi 38..39 ";"
+      LineTerminator 39..40 "\n"
+      Whitespace 40..42 "  "
+      FieldDecl 42..55 [error]
+        PrimitiveType 42..45
+          IntKw 42..45 "int"
+        Whitespace 45..46 " "
+        VariableDeclarator 46..51
+          Identifier 46..47 "y"
+          Whitespace 47..48 " "
+          Eq 48..49 "="
+          Whitespace 49..50 " "
+          LiteralExpr 50..51
+            IntLiteral 50..51 "1"
+        Comma 51..52 ","
+        Whitespace 52..53 " "
+        VariableDeclarator 53..54 [error]
+          Identifier 53..54 "z"
+        Semi 54..55 ";"
+      LineTerminator 55..56 "\n"
+      RBrace 56..57 "}"
+  LineTerminator 57..58 "\n"
+  AnnotationTypeDecl 58..79 [error]
+    At 58..59 "@"
+    InterfaceKw 59..68 "interface"
+    Whitespace 68..69 " "
+    Identifier 69..70 "J"
+    Whitespace 70..71 " "
+    ClassBody 71..79 [error]
+      LBrace 71..72 "{"
+      LineTerminator 72..73 "\n"
+      Whitespace 73..75 "  "
+      Initializer 75..77 [error]
+        Block 75..77
+          LBrace 75..76 "{"
+          RBrace 76..77 "}"
+      LineTerminator 77..78 "\n"
+      RBrace 78..79 "}"
+  LineTerminator 79..80 "\n"
+  RecordDecl 80..111 [error]
+    RecordKw 80..86 "record"
+    Whitespace 86..87 " "
+    Identifier 87..88 "R"
+    RecordHeader 88..90
+      LParen 88..89 "("
+      RParen 89..90 ")"
+    Whitespace 90..91 " "
+    ClassBody 91..111 [error]
+      LBrace 91..92 "{"
+      LineTerminator 92..93 "\n"
+      Whitespace 93..95 "  "
+      Initializer 95..97 [error]
+        Block 95..97
+          LBrace 95..96 "{"
+          RBrace 96..97 "}"
+      LineTerminator 97..98 "\n"
+      Whitespace 98..100 "  "
+      Initializer 100..109
+        StaticKw 100..106 "static"
+        Whitespace 106..107 " "
+        Block 107..109
+          LBrace 107..108 "{"
+          RBrace 108..109 "}"
+      LineTerminator 109..110 "\n"
+      RBrace 110..111 "}"
+  LineTerminator 111..112 "\n"
+  ClassDecl 112..167 [error]
+    ClassKw 112..117 "class"
+    Whitespace 117..118 " "
+    Identifier 118..119 "C"
+    Whitespace 119..120 " "
+    ClassBody 120..167 [error]
+      LBrace 120..121 "{"
+      LineTerminator 121..122 "\n"
+      Whitespace 122..124 "  "
+      Error 124..131 [error]
+        ReturnStmt 124..131
+          ReturnKw 124..130 "return"
+          Semi 130..131 ";"
+      LineTerminator 131..132 "\n"
+      Whitespace 132..134 "  "
+      Error 134..146 [error]
+        IfStmt 134..146
+          IfKw 134..136 "if"
+          Whitespace 136..137 " "
+          LParen 137..138 "("
+          LiteralExpr 138..142
+            TrueKw 138..142 "true"
+          RParen 142..143 ")"
+          Whitespace 143..144 " "
+          Block 144..146
+            LBrace 144..145 "{"
+            RBrace 145..146 "}"
+      LineTerminator 146..147 "\n"
+      Whitespace 147..149 "  "
+      MethodDecl 149..156 [error]
+        VoidType 149..153
+          VoidKw 149..153 "void"
+        Whitespace 153..154 " "
+        Identifier 154..155 "x"
+        Semi 155..156 ";"
+      LineTerminator 156..157 "\n"
+      Whitespace 157..159 "  "
+      MethodDecl 159..165 [error]
+        VoidType 159..163
+          VoidKw 159..163 "void"
+        Whitespace 163..164 " "
+        Identifier 164..165 "y"
+      LineTerminator 165..166 "\n"
+      RBrace 166..167 "}"
+  LineTerminator 167..168 "\n"
+  Eof 168..168 ""
+error 16..17 @16 InitializerNotAllowed: an interface can't have an initializer
+error 28..29 @28 InitializerNotAllowed: an interface can't have an initializer
+error 38..38 @38 Expected(Token(Eq)): '=' expected
+error 54..54 @54 Expected(Token(Eq)): '=' expected
+error 75..76 @75 InitializerNotAllowed: an interface can't have an initializer
+error 95..96 @95 InstanceInitializerInRecord: a record can't have an instance initializer
+error 124..130 @124 StatementNotExpected: a statement can't be here; put it in a method or an initializer
+error 134..136 @134 StatementNotExpected: a statement can't be here; put it in a method or an initializer
+error 155..155 @155 Expected(Token(LParen)): '(' expected
+error 166..166 @166 Expected(Token(LParen)): '(' expected

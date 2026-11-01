@@ -19,8 +19,9 @@ mod stmts;
 mod types;
 
 use crate::SyntaxKind::*;
-use crate::diagnostic::Expected;
+use crate::diagnostic::{Expected, ParseDiagnosticKind};
 use crate::parser::{CompletedMarker, Parser, TokenSet};
+use ferrion_diagnostics::Span;
 use ferrion_syntax::token_sets;
 
 /// An identifier, or `_` (an identifier at Java 8).
@@ -29,9 +30,11 @@ pub(crate) const IDENT: TokenSet = TokenSet::new(token_sets::IDENT);
 /// Parses a whole file.
 pub(crate) fn compilation_unit(p: &mut Parser<'_>) {
     let m = p.start();
-    if p.at(PackageKw) || p.at(At) && at_annotated_package(p) {
-        package_decl(p);
-    }
+    let package = if p.at(PackageKw) || p.at(At) && at_annotated_package(p) {
+        Some(package_decl(p))
+    } else {
+        None
+    };
     let mut progress = p.progress();
     loop {
         if p.at(ImportKw) {
@@ -46,7 +49,11 @@ pub(crate) fn compilation_unit(p: &mut Parser<'_>) {
             break;
         }
     }
-    decls::compilation_unit_items(p);
+    let implicit_class = decls::compilation_unit_items(p);
+    if implicit_class && let Some((decl, keyword)) = package {
+        // javac reports it once the file is parsed, after any other error.
+        p.error(ParseDiagnosticKind::ImplicitClassPackage, decl, keyword);
+    }
     // Whatever the items left, such as unmatched closing delimiters.
     let mut progress = p.progress();
     while !p.at_eof() {
@@ -91,8 +98,9 @@ fn at_annotated_package(p: &Parser<'_>) -> bool {
     p.nth(n) == PackageKw
 }
 
-/// `@A package a.b;`
-fn package_decl(p: &mut Parser<'_>) {
+/// `@A package a.b;`. Returns its span and where its `package` starts.
+fn package_decl(p: &mut Parser<'_>) -> (Span, u32) {
+    let start = p.nth_span(0).start;
     let m = p.start();
     let mut progress = p.progress();
     while p.at(At) {
@@ -101,12 +109,14 @@ fn package_decl(p: &mut Parser<'_>) {
             break;
         }
     }
+    let keyword = p.nth_span(0).start;
     p.expect(PackageKw);
     if name(p).is_none() {
         p.error_expected(Expected::Identifier);
     }
     p.expect(Semi);
     m.complete(p, PackageDecl);
+    (Span::new(start, p.previous_end()), keyword)
 }
 
 /// `import a.b.C;`, `import static a.b.C.m;`, `import a.b.*;`, `import module m;`

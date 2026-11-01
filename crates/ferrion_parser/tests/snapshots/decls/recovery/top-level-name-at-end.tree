@@ -1,0 +1,16 @@
+CompilationUnit 0..15 [error]
+  ClassDecl 0..10
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..10
+      LBrace 8..9 "{"
+      RBrace 9..10 "}"
+  LineTerminator 10..11 "\n"
+  Error 11..14 [error]
+    Error 11..14 [error]
+      Identifier 11..14 "foo"
+  LineTerminator 14..15 "\n"
+  Eof 15..15 ""
+error 11..14 @11 ExpectedDeclaration(Eof): unexpected end of file: expected a declaration

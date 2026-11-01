@@ -4,3 +4,5 @@
 @G({1,,}) class H {}
 @I(,) class J {}
 @ class K {}
+@L({,0}) class M {}
+@N({0 1}) class O {}

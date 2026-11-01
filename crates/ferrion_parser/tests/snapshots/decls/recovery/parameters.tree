@@ -1,4 +1,4 @@
-CompilationUnit 0..237 [error]
+CompilationUnit 0..338 [error]
   ClassDecl 0..236 [error]
     ClassKw 0..5 "class"
     Whitespace 5..6 " "
@@ -225,7 +225,104 @@ CompilationUnit 0..237 [error]
       LineTerminator 234..235 "\n"
       RBrace 235..236 "}"
   LineTerminator 236..237 "\n"
-  Eof 237..237 ""
+  ClassDecl 237..337 [error]
+    ClassKw 237..242 "class"
+    Whitespace 242..243 " "
+    Identifier 243..244 "B"
+    Whitespace 244..245 " "
+    ClassBody 245..337 [error]
+      LBrace 245..246 "{"
+      LineTerminator 246..247 "\n"
+      Whitespace 247..249 "  "
+      MethodDecl 249..265 [error]
+        VoidType 249..253
+          VoidKw 249..253 "void"
+        Whitespace 253..254 " "
+        Identifier 254..255 "a"
+        FormalParameters 255..262 [error]
+          LParen 255..256 "("
+          ReceiverParameter 256..261 [error]
+            ClassType 256..257
+              Identifier 256..257 "A"
+            Whitespace 257..258 " "
+            Identifier 258..259 "a"
+            Dot 259..260 "."
+            Identifier 260..261 "b"
+          RParen 261..262 ")"
+        Whitespace 262..263 " "
+        Block 263..265
+          LBrace 263..264 "{"
+          RBrace 264..265 "}"
+      LineTerminator 265..266 "\n"
+      Whitespace 266..268 "  "
+      MethodDecl 268..287 [error]
+        VoidType 268..272
+          VoidKw 268..272 "void"
+        Whitespace 272..273 " "
+        Identifier 273..274 "b"
+        FormalParameters 274..284 [error]
+          LParen 274..275 "("
+          ReceiverParameter 275..283 [error]
+            ClassType 275..276
+              Identifier 275..276 "A"
+            Whitespace 276..277 " "
+            ThisKw 277..281 "this"
+            Dot 281..282 "."
+            Identifier 282..283 "x"
+          RParen 283..284 ")"
+        Whitespace 284..285 " "
+        Block 285..287
+          LBrace 285..286 "{"
+          RBrace 286..287 "}"
+      LineTerminator 287..288 "\n"
+      Whitespace 288..290 "  "
+      MethodDecl 290..310 [error]
+        VoidType 290..294
+          VoidKw 290..294 "void"
+        Whitespace 294..295 " "
+        Identifier 295..296 "c"
+        FormalParameters 296..307 [error]
+          LParen 296..297 "("
+          ReceiverParameter 297..306 [error]
+            ClassType 297..298
+              Identifier 297..298 "A"
+            Varargs 298..301
+              Ellipsis 298..301 "..."
+            Whitespace 301..302 " "
+            ThisKw 302..306 "this"
+          RParen 306..307 ")"
+        Whitespace 307..308 " "
+        Block 308..310
+          LBrace 308..309 "{"
+          RBrace 309..310 "}"
+      LineTerminator 310..311 "\n"
+      Whitespace 311..313 "  "
+      MethodDecl 313..335 [error]
+        VoidType 313..317
+          VoidKw 313..317 "void"
+        Whitespace 317..318 " "
+        Identifier 318..319 "d"
+        FormalParameters 319..332 [error]
+          LParen 319..320 "("
+          ReceiverParameter 320..331 [error]
+            ClassType 320..321
+              Identifier 320..321 "A"
+            Varargs 321..324
+              Ellipsis 321..324 "..."
+            Whitespace 324..325 " "
+            ThisKw 325..329 "this"
+            Dim 329..331
+              LBracket 329..330 "["
+              RBracket 330..331 "]"
+          RParen 331..332 ")"
+        Whitespace 332..333 " "
+        Block 333..335
+          LBrace 333..334 "{"
+          RBrace 334..335 "}"
+      LineTerminator 335..336 "\n"
+      RBrace 336..337 "}"
+  LineTerminator 337..338 "\n"
+  Eof 338..338 ""
 error 22..22 @22 Expected(Identifier): name expected
 error 42..43 @42 TypeExpected(RParen): expected a type, found ')'
 error 61..61 @61 Expected(OneOf([Comma, RParen, LBracket])): ',', ')', or '[' expected
@@ -236,3 +333,7 @@ error 163..164 @163 ReceiverWithDims: a receiver parameter can't have array dime
 error 186..189 @186 ModifierNotAllowed: modifiers aren't allowed here
 error 210..210 @210 Expected(OneOf([Comma, RParen, LBracket])): ',', ')', or '[' expected
 error 231..231 @231 Expected(Identifier): name expected
+error 261..262 @261 WrongReceiverName: a receiver parameter's name must be 'this' or end with '.this'
+error 283..284 @283 WrongReceiverName: a receiver parameter's name must be 'this' or end with '.this'
+error 306..307 @306 VarargsReceiver: a receiver parameter can't be variable arity
+error 329..330 @329 VarargsReceiver: a receiver parameter can't be variable arity

@@ -10,3 +10,9 @@ class A {
   void i(int x {}
   void j() throws {}
 }
+class B {
+  void a(A a.b) {}
+  void b(A this.x) {}
+  void c(A... this) {}
+  void d(A... this[]) {}
+}

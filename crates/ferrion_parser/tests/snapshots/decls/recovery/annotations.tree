@@ -1,4 +1,4 @@
-CompilationUnit 0..113 [error]
+CompilationUnit 0..154 [error]
   ClassDecl 0..14 [error]
     Modifiers 0..3 [error]
       Annotation 0..3 [error]
@@ -131,10 +131,68 @@ CompilationUnit 0..113 [error]
       LBrace 110..111 "{"
       RBrace 111..112 "}"
   LineTerminator 112..113 "\n"
-  Eof 113..113 ""
+  Error 113..119 [error]
+    Modifiers 113..119 [error]
+      Annotation 113..119 [error]
+        At 113..114 "@"
+        Name 114..115
+          Identifier 114..115 "L"
+        AnnotationArguments 115..119 [error]
+          LParen 115..116 "("
+          ElementValueArray 116..118 [error]
+            LBrace 116..117 "{"
+            Comma 117..118 ","
+          Error 118..119 [error]
+            IntLiteral 118..119 "0"
+  Error 119..120 [error]
+    RBrace 119..120 "}"
+  Error 120..121 [error]
+    RParen 120..121 ")"
+  Whitespace 121..122 " "
+  ClassDecl 122..132
+    ClassKw 122..127 "class"
+    Whitespace 127..128 " "
+    Identifier 128..129 "M"
+    Whitespace 129..130 " "
+    ClassBody 130..132
+      LBrace 130..131 "{"
+      RBrace 131..132 "}"
+  LineTerminator 132..133 "\n"
+  Error 133..140 [error]
+    Modifiers 133..140 [error]
+      Annotation 133..140 [error]
+        At 133..134 "@"
+        Name 134..135
+          Identifier 134..135 "N"
+        AnnotationArguments 135..140 [error]
+          LParen 135..136 "("
+          ElementValueArray 136..138 [error]
+            LBrace 136..137 "{"
+            LiteralExpr 137..138
+              IntLiteral 137..138 "0"
+          Whitespace 138..139 " "
+          Error 139..140 [error]
+            IntLiteral 139..140 "1"
+  Error 140..141 [error]
+    RBrace 140..141 "}"
+  Error 141..142 [error]
+    RParen 141..142 ")"
+  Whitespace 142..143 " "
+  ClassDecl 143..153
+    ClassKw 143..148 "class"
+    Whitespace 148..149 " "
+    Identifier 149..150 "O"
+    Whitespace 150..151 " "
+    ClassBody 151..153
+      LBrace 151..152 "{"
+      RBrace 152..153 "}"
+  LineTerminator 153..154 "\n"
+  Eof 154..154 ""
 error 4..9 @4 ExpressionExpected(ClassKw): expected an expression, found 'class'
 error 22..23 @22 ExpressionExpected(RParen): expected an expression, found ')'
 error 43..43 @43 Expected(Token(RParen)): ')' expected
 error 68..69 @68 ExpressionExpected(Comma): expected an expression, found ','
 error 86..87 @86 ExpressionExpected(Comma): expected an expression, found ','
 error 101..101 @101 Expected(Identifier): name expected
+error 118..118 @118 MissingElementValue: an element value or '}' expected
+error 138..138 @138 MissingElementValue: an element value or '}' expected

@@ -1,0 +1,54 @@
+CompilationUnit 0..50 [error]
+  Error 0..14 [error]
+    Error 0..14 [error]
+      Identifier 0..4 "clas"
+      Whitespace 4..5 " "
+      Identifier 5..6 "X"
+      Whitespace 6..7 " "
+      LBrace 7..8 "{"
+      Whitespace 8..9 " "
+      RBrace 9..10 "}"
+      LineTerminator 10..11 "\n"
+      Identifier 11..14 "foo"
+  Semi 14..15 ";"
+  LineTerminator 15..16 "\n"
+  Error 16..19 [error]
+    Error 16..19 [error]
+      IntKw 16..19 "int"
+  Whitespace 19..20 " "
+  Error 20..21 [error]
+    Error 20..21 [error]
+      Identifier 20..21 "x"
+  LineTerminator 21..22 "\n"
+  Error 22..26 [error]
+    Error 22..26 [error]
+      VoidKw 22..26 "void"
+  Whitespace 26..27 " "
+  Error 27..28 [error]
+    Error 27..28 [error]
+      Identifier 27..28 "m"
+  Whitespace 28..29 " "
+  Error 29..30 [error]
+    RBrace 29..30 "}"
+  LineTerminator 30..31 "\n"
+  Error 31..38 [error]
+    ReturnStmt 31..38
+      ReturnKw 31..37 "return"
+      Semi 37..38 ";"
+  LineTerminator 38..39 "\n"
+  FieldDecl 39..49
+    PrimitiveType 39..42
+      IntKw 39..42 "int"
+    Whitespace 42..43 " "
+    VariableDeclarator 43..48
+      Identifier 43..44 "y"
+      Whitespace 44..45 " "
+      Eq 45..46 "="
+      Whitespace 46..47 " "
+      LiteralExpr 47..48
+        IntLiteral 47..48 "1"
+    Semi 48..49 ";"
+  LineTerminator 49..50 "\n"
+  Eof 50..50 ""
+error 0..4 @0 ExpectedDeclaration(Identifier): unexpected name: expected a declaration
+error 16..19 @16 ExpectedDeclaration(IntKw): unexpected 'int': expected a declaration
