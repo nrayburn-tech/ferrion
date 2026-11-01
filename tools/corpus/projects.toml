@@ -22,6 +22,15 @@ jdk = 21
 notes = "Java 8, multi-module, formatted with Google Java Format"
 
 [[project]]
+name = "caffeine"
+repository = "https://github.com/ben-manes/caffeine"
+tag = "v3.3.1"
+commit = "aabb24230296101f179e425b71bb64d62ded3189"
+build = "gradle"
+jdk = 26
+notes = "Java 11, Gradle, `var` throughout, its simulator at Java 26"
+
+[[project]]
 name = "spring-data-jpa"
 repository = "https://github.com/spring-projects/spring-data-jpa"
 tag = "4.0.8"

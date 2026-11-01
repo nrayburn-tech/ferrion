@@ -1,0 +1,3032 @@
+{
+  "formatVersion": 1,
+  "commit": "aabb24230296101f179e425b71bb64d62ded3189",
+  "jdk": 26,
+  "modules": [
+    {
+      "path": ".",
+      "sourceSets": []
+    },
+    {
+      "path": "caffeine",
+      "sourceSets": [
+        {
+          "name": "apacheTest",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/apacheTest/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "testFixtures"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "com/google/guava/guava-testlib/33.7.2-jre/guava-testlib-33.7.2-jre.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-jdk-platform-logging/2.0.20/slf4j-jdk-platform-logging-2.0.20.jar"
+            },
+            {
+              "jar": "org/slf4j/jul-to-slf4j/2.0.20/jul-to-slf4j-2.0.20.jar"
+            },
+            {
+              "jar": "com/github/valfirst/slf4j-test/3.0.3/slf4j-test-3.0.3.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-collections4/4.6.0/commons-collections4-4.6.0.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-collections4/4.6.0/commons-collections4-4.6.0-tests.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "org/awaitility/awaitility/4.3.0/awaitility-4.3.0.jar"
+            },
+            {
+              "jar": "com/facebook/infer/annotation/infer-annotation/0.18.0/infer-annotation-0.18.0.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.1/hamcrest-2.1.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            }
+          ]
+        },
+        {
+          "name": "codeGen",
+          "javaRelease": 11,
+          "sourceRoots": [],
+          "classpath": []
+        },
+        {
+          "name": "eclipseTest",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/eclipseTest/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "testFixtures"
+            },
+            {
+              "jar": "org/eclipse/collections/eclipse-collections-testutils/12.0.0/eclipse-collections-testutils-12.0.0.jar"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "com/google/guava/guava-testlib/33.7.2-jre/guava-testlib-33.7.2-jre.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-jdk-platform-logging/2.0.20/slf4j-jdk-platform-logging-2.0.20.jar"
+            },
+            {
+              "jar": "org/slf4j/jul-to-slf4j/2.0.20/jul-to-slf4j-2.0.20.jar"
+            },
+            {
+              "jar": "com/github/valfirst/slf4j-test/3.0.3/slf4j-test-3.0.3.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "org/awaitility/awaitility/4.3.0/awaitility-4.3.0.jar"
+            },
+            {
+              "jar": "com/facebook/infer/annotation/infer-annotation/0.18.0/infer-annotation-0.18.0.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "org/eclipse/collections/eclipse-collections/12.0.0/eclipse-collections-12.0.0.jar"
+            },
+            {
+              "jar": "org/eclipse/collections/eclipse-collections-api/12.0.0/eclipse-collections-api-12.0.0.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.1/hamcrest-2.1.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            }
+          ]
+        },
+        {
+          "name": "frayTest",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/frayTest/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "testFixtures"
+            },
+            {
+              "jar": "org/pastalab/fray/instrumentation/fray-instrumentation-jdk/0.9.0/fray-instrumentation-jdk-0.9.0.jar"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "com/google/guava/guava-testlib/33.7.2-jre/guava-testlib-33.7.2-jre.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-jdk-platform-logging/2.0.20/slf4j-jdk-platform-logging-2.0.20.jar"
+            },
+            {
+              "jar": "org/slf4j/jul-to-slf4j/2.0.20/jul-to-slf4j-2.0.20.jar"
+            },
+            {
+              "jar": "com/github/valfirst/slf4j-test/3.0.3/slf4j-test-3.0.3.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/fray-junit/0.9.0/fray-junit-0.9.0.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/fray-jvmti-macos-aarch64/0.9.0/fray-jvmti-macos-aarch64-0.9.0.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/instrumentation/fray-instrumentation-agent/0.9.0/fray-instrumentation-agent-0.9.0.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/fray-core/0.9.0/fray-core-0.9.0.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/fray-runtime/0.9.0/fray-runtime-0.9.0.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/fray-rmi/0.9.0/fray-rmi-0.9.0.jar"
+            },
+            {
+              "jar": "com/github/ajalt/clikt/clikt-jvm/5.0.3/clikt-jvm-5.0.3.jar"
+            },
+            {
+              "jar": "com/github/ajalt/clikt/clikt-core-jvm/5.0.3/clikt-core-jvm-5.0.3.jar"
+            },
+            {
+              "jar": "com/github/ajalt/mordant/mordant-jvm/3.0.1/mordant-jvm-3.0.1.jar"
+            },
+            {
+              "jar": "com/github/ajalt/mordant/mordant-core-jvm/3.0.1/mordant-core-jvm-3.0.1.jar"
+            },
+            {
+              "jar": "com/github/ajalt/colormath/colormath-jvm/3.6.0/colormath-jvm-3.6.0.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-stdlib/2.4.21/kotlin-stdlib-2.4.21.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "org/awaitility/awaitility/4.3.0/awaitility-4.3.0.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/3.0/hamcrest-3.0.jar"
+            },
+            {
+              "jar": "com/facebook/infer/annotation/infer-annotation/0.18.0/infer-annotation-0.18.0.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/annotations/13.0/annotations-13.0.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            }
+          ]
+        },
+        {
+          "name": "fuzzTest",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/fuzzTest/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "testFixtures"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "com/google/guava/guava-testlib/33.7.2-jre/guava-testlib-33.7.2-jre.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "com/code-intelligence/jazzer-junit/0.30.0/jazzer-junit-0.30.0.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-launcher/1.14.3/junit-platform-launcher-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-engine/1.14.3/junit-platform-engine-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-jdk-platform-logging/2.0.20/slf4j-jdk-platform-logging-2.0.20.jar"
+            },
+            {
+              "jar": "org/slf4j/jul-to-slf4j/2.0.20/jul-to-slf4j-2.0.20.jar"
+            },
+            {
+              "jar": "com/github/valfirst/slf4j-test/3.0.3/slf4j-test-3.0.3.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            },
+            {
+              "jar": "com/code-intelligence/jazzer-api/0.30.0/jazzer-api-0.30.0.jar"
+            },
+            {
+              "jar": "com/code-intelligence/jazzer/0.30.0/jazzer-0.30.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/awaitility/awaitility/4.3.0/awaitility-4.3.0.jar"
+            },
+            {
+              "jar": "com/facebook/infer/annotation/infer-annotation/0.18.0/infer-annotation-0.18.0.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.1/hamcrest-2.1.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar"
+            }
+          ]
+        },
+        {
+          "name": "googleTest",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/googleTest/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "testFixtures"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "com/google/guava/guava-testlib/33.7.2-jre/guava-testlib-33.7.2-jre.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-jdk-platform-logging/2.0.20/slf4j-jdk-platform-logging-2.0.20.jar"
+            },
+            {
+              "jar": "org/slf4j/jul-to-slf4j/2.0.20/jul-to-slf4j-2.0.20.jar"
+            },
+            {
+              "jar": "com/github/valfirst/slf4j-test/3.0.3/slf4j-test-3.0.3.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            },
+            {
+              "jar": "org/awaitility/awaitility/4.3.0/awaitility-4.3.0.jar"
+            },
+            {
+              "jar": "com/facebook/infer/annotation/infer-annotation/0.18.0/infer-annotation-0.18.0.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.1/hamcrest-2.1.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar"
+            }
+          ]
+        },
+        {
+          "name": "javaPoet",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/javaPoet/java"
+          ],
+          "classpath": [
+            {
+              "jar": "org/apache/commons/commons-lang3/3.21.0/commons-lang3-3.21.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "com/palantir/javapoet/javapoet/0.20.0/javapoet-0.20.0.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            }
+          ]
+        },
+        {
+          "name": "jcstress",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/jcstress/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/openjdk/jcstress/jcstress-core/0.16/jcstress-core-0.16.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "net/sf/jopt-simple/jopt-simple/4.6/jopt-simple-4.6.jar"
+            },
+            {
+              "jar": "net/java/dev/jna/jna-platform/5.8.0/jna-platform-5.8.0.jar"
+            },
+            {
+              "jar": "net/java/dev/jna/jna/5.8.0/jna-5.8.0.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            }
+          ]
+        },
+        {
+          "name": "jctoolsTest",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/jctoolsTest/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "org/jctools/jctools-core-jdk11/4.0.7/jctools-core-jdk11-4.0.7.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.4.3-jre/guava-33.4.3-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            },
+            {
+              "jar": "org/jctools/jctools-core/4.0.7/jctools-core-4.0.7.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+            }
+          ]
+        },
+        {
+          "name": "jmh",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/jmh/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "codeGen"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "test"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "testFixtures"
+            },
+            {
+              "jar": "org/apache/jackrabbit/oak-core/2.6.0/oak-core-2.6.0.jar"
+            },
+            {
+              "jar": "org/apache/jackrabbit/oak-security-spi/2.6.0/oak-security-spi-2.6.0.jar"
+            },
+            {
+              "jar": "org/apache/jackrabbit/oak-query-spi/2.6.0/oak-query-spi-2.6.0.jar"
+            },
+            {
+              "jar": "org/apache/jackrabbit/oak-blob-plugins/2.6.0/oak-blob-plugins-2.6.0.jar"
+            },
+            {
+              "jar": "org/apache/jackrabbit/oak-store-spi/2.6.0/oak-store-spi-2.6.0.jar"
+            },
+            {
+              "jar": "org/apache/jackrabbit/oak-blob/2.6.0/oak-blob-2.6.0.jar"
+            },
+            {
+              "jar": "org/apache/jackrabbit/oak-core-spi/2.6.0/oak-core-spi-2.6.0.jar"
+            },
+            {
+              "jar": "com/github/freva/ascii-table/1.13.0/ascii-table-1.13.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava-testlib/33.7.2-jre/guava-testlib-33.7.2-jre.jar"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "org/apache/jackrabbit/oak-commons/2.6.0/oak-commons-2.6.0.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-lang3/3.21.0/commons-lang3-3.21.0.jar"
+            },
+            {
+              "jar": "org/eclipse/collections/eclipse-collections-testutils/12.0.0/eclipse-collections-testutils-12.0.0.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/exam/pax-exam-junit4/4.14.0/pax-exam-junit4-4.14.0.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/testng/testng/7.12.0/testng-7.12.0.jar"
+            },
+            {
+              "jar": "org/openjdk/jmh/jmh-generator-bytecode/1.37/jmh-generator-bytecode-1.37.jar"
+            },
+            {
+              "jar": "org/openjdk/jmh/jmh-generator-asm/1.37/jmh-generator-asm-1.37.jar"
+            },
+            {
+              "jar": "org/openjdk/jmh/jmh-generator-reflection/1.37/jmh-generator-reflection-1.37.jar"
+            },
+            {
+              "jar": "org/openjdk/jmh/jmh-core/1.37/jmh-core-1.37.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-nop/2.0.20/slf4j-nop-2.0.20.jar"
+            },
+            {
+              "jar": "org/slf4j/jul-to-slf4j/2.0.20/jul-to-slf4j-2.0.20.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/exam/pax-exam-spi/4.14.0/pax-exam-spi-4.14.0.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/exam/pax-exam/4.14.0/pax-exam-4.14.0.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-exec/1.5.1/ops4j-base-exec-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-store/1.5.1/ops4j-base-store-1.5.1.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-jdk-platform-logging/2.0.20/slf4j-jdk-platform-logging-2.0.20.jar"
+            },
+            {
+              "jar": "com/fasterxml/jackson/core/jackson-databind/2.22.3/jackson-databind-2.22.3.jar"
+            },
+            {
+              "jar": "com/fasterxml/jackson/core/jackson-core/2.22.3/jackson-core-2.22.3.jar"
+            },
+            {
+              "jar": "com/github/jbellis/jamm/0.4.0/jamm-0.4.0.jar"
+            },
+            {
+              "jar": "com/trivago/triava/2.0.1/triava-2.0.1.jar"
+            },
+            {
+              "jar": "org/cache2k/cache2k-core/2.6.1.Final/cache2k-core-2.6.1.Final.jar"
+            },
+            {
+              "jar": "org/ehcache/ehcache/3.11.1/ehcache-3.11.1.jar"
+            },
+            {
+              "jar": "com/hazelcast/hazelcast/5.7.0/hazelcast-5.7.0.jar"
+            },
+            {
+              "jar": "net/jodah/expiringmap/0.5.11/expiringmap-0.5.11.jar"
+            },
+            {
+              "jar": "com/oracle/coherence/ce/coherence/26.07/coherence-26.07.jar"
+            },
+            {
+              "jar": "javax/json/bind/javax.json.bind-api/1.0/javax.json.bind-api-1.0.jar"
+            },
+            {
+              "jar": "org/openjdk/jol/jol-cli/0.17/jol-cli-0.17.jar"
+            },
+            {
+              "jar": "com/googlecode/concurrentlinkedhashmap/concurrentlinkedhashmap-lru/1.4.2/concurrentlinkedhashmap-lru-1.4.2.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/jetbrains/lincheck/lincheck/3.7/lincheck-3.7.jar"
+            },
+            {
+              "jar": "org/jetbrains/lincheck/lincheck-common/3.7/lincheck-common-3.7.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.10.1/asm-commons-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-util/9.10.1/asm-util-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-analysis/9.10.1/asm-analysis-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "site/ycsb/core/0.17.0/core-0.17.0.jar"
+            },
+            {
+              "jar": "org/jctools/jctools-core-jdk11/4.0.7/jctools-core-jdk11-4.0.7.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "info/picocli/picocli/4.7.7/picocli-4.7.7.jar"
+            },
+            {
+              "jar": "org/awaitility/awaitility/4.3.0/awaitility-4.3.0.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-collections4/4.6.0/commons-collections4-4.6.0.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-collections4/4.6.0/commons-collections4-4.6.0-tests.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/fray-jvmti-macos-aarch64/0.9.0/fray-jvmti-macos-aarch64-0.9.0.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/instrumentation/fray-instrumentation-agent/0.9.0/fray-instrumentation-agent-0.9.0.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/fray-core/0.9.0/fray-core-0.9.0.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/fray-junit/0.9.0/fray-junit-0.9.0.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/fray-runtime/0.9.0/fray-runtime-0.9.0.jar"
+            },
+            {
+              "jar": "net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar"
+            },
+            {
+              "jar": "com/fasterxml/jackson/core/jackson-annotations/2.22/jackson-annotations-2.22.jar"
+            },
+            {
+              "jar": "javax/cache/cache-api/1.1.0/cache-api-1.1.0.jar"
+            },
+            {
+              "jar": "org/cache2k/cache2k-api/2.6.1.Final/cache2k-api-2.6.1.Final.jar"
+            },
+            {
+              "jar": "org/apache/jackrabbit/oak-jackrabbit-api/2.6.0/oak-jackrabbit-api-2.6.0.jar"
+            },
+            {
+              "jar": "org/apache/jackrabbit/oak-api/2.6.0/oak-api-2.6.0.jar"
+            },
+            {
+              "jar": "commons-io/commons-io/2.21.0/commons-io-2.21.0.jar"
+            },
+            {
+              "jar": "javax/jcr/jcr/2.0/jcr-2.0.jar"
+            },
+            {
+              "jar": "org/apache/jackrabbit/jackrabbit-jcr-commons/2.22.4/jackrabbit-jcr-commons-2.22.4.jar"
+            },
+            {
+              "jar": "jakarta/el/jakarta.el-api/5.0.1/jakarta.el-api-5.0.1.jar"
+            },
+            {
+              "jar": "org/openjdk/jol/jol-core/0.17/jol-core-0.17.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-reflect/2.4.21/kotlin-reflect-2.4.21.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/fray-rmi/0.9.0/fray-rmi-0.9.0.jar"
+            },
+            {
+              "jar": "com/github/ajalt/clikt/clikt-jvm/5.0.3/clikt-jvm-5.0.3.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.7.3/kotlinx-coroutines-core-jvm-1.7.3.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-stdlib-jdk8/2.4.21/kotlin-stdlib-jdk8-2.4.21.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-stdlib-jdk7/2.4.21/kotlin-stdlib-jdk7-2.4.21.jar"
+            },
+            {
+              "jar": "com/github/ajalt/clikt/clikt-core-jvm/5.0.3/clikt-core-jvm-5.0.3.jar"
+            },
+            {
+              "jar": "com/github/ajalt/mordant/mordant-jvm/3.0.1/mordant-jvm-3.0.1.jar"
+            },
+            {
+              "jar": "com/github/ajalt/mordant/mordant-core-jvm/3.0.1/mordant-core-jvm-3.0.1.jar"
+            },
+            {
+              "jar": "com/github/ajalt/colormath/colormath-jvm/3.6.0/colormath-jvm-3.6.0.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-stdlib/2.4.21/kotlin-stdlib-2.4.21.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "org/jcommander/jcommander/1.83/jcommander-1.83.jar"
+            },
+            {
+              "jar": "org/jctools/jctools-core/4.0.7/jctools-core-4.0.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/3.0/hamcrest-3.0.jar"
+            },
+            {
+              "jar": "org/eclipse/collections/eclipse-collections/12.0.0/eclipse-collections-12.0.0.jar"
+            },
+            {
+              "jar": "org/eclipse/collections/eclipse-collections-api/12.0.0/eclipse-collections-api-12.0.0.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-io/1.5.1/ops4j-base-io-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-lang/1.5.1/ops4j-base-lang-1.5.1.jar"
+            },
+            {
+              "jar": "com/facebook/infer/annotation/infer-annotation/0.18.0/infer-annotation-0.18.0.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.service.component.annotations/1.4.0/org.osgi.service.component.annotations-1.4.0.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.service.metatype.annotations/1.4.0/org.osgi.service.metatype.annotations-1.4.0.jar"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.21.0/commons-codec-1.21.0.jar"
+            },
+            {
+              "jar": "org/apache/jackrabbit/oak-shaded-guava/2.6.0/oak-shaded-guava-2.6.0.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlinx/atomicfu-jvm/0.27.0/atomicfu-jvm-0.27.0.jar"
+            },
+            {
+              "jar": "org/jetbrains/annotations/23.0.0/annotations-23.0.0.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-spi/1.5.1/ops4j-base-spi-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/tinybundles/tinybundles/4.0.0/tinybundles-4.0.0.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-util-property/1.5.1/ops4j-base-util-property-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-monitors/1.5.1/ops4j-base-monitors-1.5.1.jar"
+            }
+          ]
+        },
+        {
+          "name": "jsr166Test",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/jsr166Test/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "com/facebook/infer/annotation/infer-annotation/0.18.0/infer-annotation-0.18.0.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            }
+          ]
+        },
+        {
+          "name": "lincheckTest",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/lincheckTest/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/jetbrains/lincheck/lincheck/3.7/lincheck-3.7.jar"
+            },
+            {
+              "jar": "org/jetbrains/lincheck/lincheck-common/3.7/lincheck-common-3.7.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.10.1/asm-commons-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-util/9.10.1/asm-util-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-analysis/9.10.1/asm-analysis-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-reflect/2.4.21/kotlin-reflect-2.4.21.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.7.3/kotlinx-coroutines-core-jvm-1.7.3.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-stdlib-jdk8/2.4.21/kotlin-stdlib-jdk8-2.4.21.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-stdlib-jdk7/2.4.21/kotlin-stdlib-jdk7-2.4.21.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-stdlib/2.4.21/kotlin-stdlib-2.4.21.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.14.12/byte-buddy-1.14.12.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.14.12/byte-buddy-agent-1.14.12.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlinx/atomicfu-jvm/0.27.0/atomicfu-jvm-0.27.0.jar"
+            },
+            {
+              "jar": "org/jetbrains/annotations/23.0.0/annotations-23.0.0.jar"
+            }
+          ]
+        },
+        {
+          "name": "main",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/main/java"
+          ],
+          "classpath": [
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            }
+          ]
+        },
+        {
+          "name": "moduleTest",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/moduleTest/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            }
+          ]
+        },
+        {
+          "name": "openjdkTest",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/openjdkTest/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/testng/testng/7.12.0/testng-7.12.0.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "com/facebook/infer/annotation/infer-annotation/0.18.0/infer-annotation-0.18.0.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.4.3-jre/guava-33.4.3-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            },
+            {
+              "jar": "org/jcommander/jcommander/1.83/jcommander-1.83.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+            }
+          ]
+        },
+        {
+          "name": "osgiTest",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/osgiTest/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/ops4j/pax/exam/pax-exam-junit4/4.14.0/pax-exam-junit4-4.14.0.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/exam/pax-exam-spi/4.14.0/pax-exam-spi-4.14.0.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/exam/pax-exam/4.14.0/pax-exam-4.14.0.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-exec/1.5.1/ops4j-base-exec-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-store/1.5.1/ops4j-base-store-1.5.1.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-io/1.5.1/ops4j-base-io-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-lang/1.5.1/ops4j-base-lang-1.5.1.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-spi/1.5.1/ops4j-base-spi-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/tinybundles/tinybundles/4.0.0/tinybundles-4.0.0.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-util-property/1.5.1/ops4j-base-util-property-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-monitors/1.5.1/ops4j-base-monitors-1.5.1.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/test/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "codeGen"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "testFixtures"
+            },
+            {
+              "jar": "com/google/guava/guava-testlib/33.7.2-jre/guava-testlib-33.7.2-jre.jar"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/instrumentation/fray-instrumentation-jdk/0.9.0/fray-instrumentation-jdk-0.9.0.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-lang3/3.21.0/commons-lang3-3.21.0.jar"
+            },
+            {
+              "jar": "org/eclipse/collections/eclipse-collections-testutils/12.0.0/eclipse-collections-testutils-12.0.0.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/exam/pax-exam-junit4/4.14.0/pax-exam-junit4-4.14.0.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/testng/testng/7.12.0/testng-7.12.0.jar"
+            },
+            {
+              "jar": "com/code-intelligence/jazzer-junit/0.30.0/jazzer-junit-0.30.0.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-launcher/1.14.3/junit-platform-launcher-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-engine/1.14.3/junit-platform-engine-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/jetbrains/lincheck/lincheck/3.7/lincheck-3.7.jar"
+            },
+            {
+              "jar": "org/jetbrains/lincheck/lincheck-common/3.7/lincheck-common-3.7.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.10.1/asm-commons-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-util/9.10.1/asm-util-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-analysis/9.10.1/asm-analysis-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-jdk-platform-logging/2.0.20/slf4j-jdk-platform-logging-2.0.20.jar"
+            },
+            {
+              "jar": "org/slf4j/jul-to-slf4j/2.0.20/jul-to-slf4j-2.0.20.jar"
+            },
+            {
+              "jar": "com/github/valfirst/slf4j-test/3.0.3/slf4j-test-3.0.3.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/exam/pax-exam-spi/4.14.0/pax-exam-spi-4.14.0.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/exam/pax-exam/4.14.0/pax-exam-4.14.0.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-exec/1.5.1/ops4j-base-exec-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-store/1.5.1/ops4j-base-store-1.5.1.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "site/ycsb/core/0.17.0/core-0.17.0.jar"
+            },
+            {
+              "jar": "org/jctools/jctools-core-jdk11/4.0.7/jctools-core-jdk11-4.0.7.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "info/picocli/picocli/4.7.7/picocli-4.7.7.jar"
+            },
+            {
+              "jar": "org/awaitility/awaitility/4.3.0/awaitility-4.3.0.jar"
+            },
+            {
+              "jar": "org/openjdk/jol/jol-cli/0.17/jol-cli-0.17.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-collections4/4.6.0/commons-collections4-4.6.0.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-collections4/4.6.0/commons-collections4-4.6.0-tests.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/fray-jvmti-macos-aarch64/0.9.0/fray-jvmti-macos-aarch64-0.9.0.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/instrumentation/fray-instrumentation-agent/0.9.0/fray-instrumentation-agent-0.9.0.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/fray-core/0.9.0/fray-core-0.9.0.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/fray-junit/0.9.0/fray-junit-0.9.0.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/fray-runtime/0.9.0/fray-runtime-0.9.0.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-reflect/2.4.21/kotlin-reflect-2.4.21.jar"
+            },
+            {
+              "jar": "org/pastalab/fray/fray-rmi/0.9.0/fray-rmi-0.9.0.jar"
+            },
+            {
+              "jar": "com/github/ajalt/clikt/clikt-jvm/5.0.3/clikt-jvm-5.0.3.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.7.3/kotlinx-coroutines-core-jvm-1.7.3.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-stdlib-jdk8/2.4.21/kotlin-stdlib-jdk8-2.4.21.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-stdlib-jdk7/2.4.21/kotlin-stdlib-jdk7-2.4.21.jar"
+            },
+            {
+              "jar": "com/github/ajalt/clikt/clikt-core-jvm/5.0.3/clikt-core-jvm-5.0.3.jar"
+            },
+            {
+              "jar": "com/github/ajalt/mordant/mordant-jvm/3.0.1/mordant-jvm-3.0.1.jar"
+            },
+            {
+              "jar": "com/github/ajalt/mordant/mordant-core-jvm/3.0.1/mordant-core-jvm-3.0.1.jar"
+            },
+            {
+              "jar": "com/github/ajalt/colormath/colormath-jvm/3.6.0/colormath-jvm-3.6.0.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-stdlib/2.4.21/kotlin-stdlib-2.4.21.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "com/code-intelligence/jazzer-api/0.30.0/jazzer-api-0.30.0.jar"
+            },
+            {
+              "jar": "com/code-intelligence/jazzer/0.30.0/jazzer-0.30.0.jar"
+            },
+            {
+              "jar": "org/jcommander/jcommander/1.83/jcommander-1.83.jar"
+            },
+            {
+              "jar": "org/jctools/jctools-core/4.0.7/jctools-core-4.0.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/3.0/hamcrest-3.0.jar"
+            },
+            {
+              "jar": "org/openjdk/jol/jol-core/0.17/jol-core-0.17.jar"
+            },
+            {
+              "jar": "net/sf/jopt-simple/jopt-simple/4.6/jopt-simple-4.6.jar"
+            },
+            {
+              "jar": "org/eclipse/collections/eclipse-collections/12.0.0/eclipse-collections-12.0.0.jar"
+            },
+            {
+              "jar": "org/eclipse/collections/eclipse-collections-api/12.0.0/eclipse-collections-api-12.0.0.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-io/1.5.1/ops4j-base-io-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-lang/1.5.1/ops4j-base-lang-1.5.1.jar"
+            },
+            {
+              "jar": "com/facebook/infer/annotation/infer-annotation/0.18.0/infer-annotation-0.18.0.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/annotations/23.0.0/annotations-23.0.0.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlinx/atomicfu-jvm/0.27.0/atomicfu-jvm-0.27.0.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-spi/1.5.1/ops4j-base-spi-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/tinybundles/tinybundles/4.0.0/tinybundles-4.0.0.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-util-property/1.5.1/ops4j-base-util-property-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-monitors/1.5.1/ops4j-base-monitors-1.5.1.jar"
+            }
+          ]
+        },
+        {
+          "name": "testFixtures",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "caffeine/src/testFixtures/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "org/awaitility/awaitility/4.3.0/awaitility-4.3.0.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-launcher/1.14.3/junit-platform-launcher-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-engine/1.14.3/junit-platform-engine-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "com/google/guava/guava-testlib/33.7.2-jre/guava-testlib-33.7.2-jre.jar"
+            },
+            {
+              "jar": "com/facebook/infer/annotation/infer-annotation/0.18.0/infer-annotation-0.18.0.jar"
+            },
+            {
+              "jar": "org/slf4j/jul-to-slf4j/2.0.20/jul-to-slf4j-2.0.20.jar"
+            },
+            {
+              "jar": "com/github/valfirst/slf4j-test/3.0.3/slf4j-test-3.0.3.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-jdk-platform-logging/2.0.20/slf4j-jdk-platform-logging-2.0.20.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-lang3/3.21.0/commons-lang3-3.21.0.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/jctools/jctools-core-jdk11/4.0.7/jctools-core-jdk11-4.0.7.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.8/asm-9.8.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.1/hamcrest-2.1.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar"
+            },
+            {
+              "jar": "org/jctools/jctools-core/4.0.7/jctools-core-4.0.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "guava",
+      "sourceSets": [
+        {
+          "name": "compatibilityTest",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "guava/src/compatibilityTest/java"
+          ],
+          "classpath": [
+            {
+              "module": "guava",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "com/google/guava/guava-testlib/33.7.2-jre/guava-testlib-33.7.2-jre.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+            }
+          ]
+        },
+        {
+          "name": "main",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "guava/src/main/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            }
+          ]
+        },
+        {
+          "name": "moduleTest",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "guava/src/moduleTest/java"
+          ],
+          "classpath": [
+            {
+              "module": "guava",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            }
+          ]
+        },
+        {
+          "name": "osgiTest",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "guava/src/osgiTest/java"
+          ],
+          "classpath": [
+            {
+              "module": "guava",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/ops4j/pax/exam/pax-exam-junit4/4.14.0/pax-exam-junit4-4.14.0.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/exam/pax-exam-spi/4.14.0/pax-exam-spi-4.14.0.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/exam/pax-exam/4.14.0/pax-exam-4.14.0.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-exec/1.5.1/ops4j-base-exec-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-store/1.5.1/ops4j-base-store-1.5.1.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-io/1.5.1/ops4j-base-io-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-lang/1.5.1/ops4j-base-lang-1.5.1.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-spi/1.5.1/ops4j-base-spi-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/tinybundles/tinybundles/4.0.0/tinybundles-4.0.0.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-util-property/1.5.1/ops4j-base-util-property-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-monitors/1.5.1/ops4j-base-monitors-1.5.1.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "guava/src/test/java"
+          ],
+          "classpath": [
+            {
+              "module": "guava",
+              "sourceSet": "main"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "com/google/guava/guava-testlib/33.7.2-jre/guava-testlib-33.7.2-jre.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-lang3/3.21.0/commons-lang3-3.21.0.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "jcache",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "jcache/src/main/java"
+          ],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/osgi/org.osgi.service.component.annotations/1.5.1/org.osgi.service.component.annotations-1.5.1.jar"
+            },
+            {
+              "jar": "jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar"
+            },
+            {
+              "jar": "javax/cache/cache-api/1.1.1/cache-api-1.1.1.jar"
+            },
+            {
+              "jar": "com/typesafe/config/1.4.9/config-1.4.9.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "org/osgi/osgi.annotation/8.1.0/osgi.annotation-8.1.0.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.namespace.extender/1.0.1/org.osgi.namespace.extender-1.0.1.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.util.function/1.0.0/org.osgi.util.function-1.0.0.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.util.promise/1.0.0/org.osgi.util.promise-1.0.0.jar"
+            }
+          ]
+        },
+        {
+          "name": "osgiTest",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "jcache/src/osgiTest/java"
+          ],
+          "classpath": [
+            {
+              "module": "jcache",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/ops4j/pax/exam/pax-exam-junit4/4.14.0/pax-exam-junit4-4.14.0.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/exam/pax-exam-spi/4.14.0/pax-exam-spi-4.14.0.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/exam/pax-exam/4.14.0/pax-exam-4.14.0.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-exec/1.5.1/ops4j-base-exec-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-store/1.5.1/ops4j-base-store-1.5.1.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/osgi/org.osgi.service.component.annotations/1.5.1/org.osgi.service.component.annotations-1.5.1.jar"
+            },
+            {
+              "jar": "jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar"
+            },
+            {
+              "jar": "javax/cache/cache-api/1.1.1/cache-api-1.1.1.jar"
+            },
+            {
+              "jar": "com/typesafe/config/1.4.9/config-1.4.9.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-io/1.5.1/ops4j-base-io-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-lang/1.5.1/ops4j-base-lang-1.5.1.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "org/osgi/osgi.annotation/8.1.0/osgi.annotation-8.1.0.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.namespace.extender/1.0.1/org.osgi.namespace.extender-1.0.1.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.util.function/1.0.0/org.osgi.util.function-1.0.0.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.util.promise/1.0.0/org.osgi.util.promise-1.0.0.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-spi/1.5.1/ops4j-base-spi-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/pax/tinybundles/tinybundles/4.0.0/tinybundles-4.0.0.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-util-property/1.5.1/ops4j-base-util-property-1.5.1.jar"
+            },
+            {
+              "jar": "org/ops4j/base/ops4j-base-monitors/1.5.1/ops4j-base-monitors-1.5.1.jar"
+            }
+          ]
+        },
+        {
+          "name": "tckTest",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "jcache/src/tckTest/java"
+          ],
+          "classpath": [
+            {
+              "module": "jcache",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/osgi/org.osgi.service.component.annotations/1.5.1/org.osgi.service.component.annotations-1.5.1.jar"
+            },
+            {
+              "jar": "jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar"
+            },
+            {
+              "jar": "javax/cache/cache-api/1.1.1/cache-api-1.1.1.jar"
+            },
+            {
+              "jar": "com/typesafe/config/1.4.9/config-1.4.9.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "org/osgi/osgi.annotation/8.1.0/osgi.annotation-8.1.0.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.namespace.extender/1.0.1/org.osgi.namespace.extender-1.0.1.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.util.function/1.0.0/org.osgi.util.function-1.0.0.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.util.promise/1.0.0/org.osgi.util.promise-1.0.0.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 11,
+          "sourceRoots": [
+            "jcache/src/test/java"
+          ],
+          "classpath": [
+            {
+              "module": "jcache",
+              "sourceSet": "main"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/osgi/org.osgi.service.component.annotations/1.5.1/org.osgi.service.component.annotations-1.5.1.jar"
+            },
+            {
+              "jar": "org/jsr107/ri/cache-annotations-ri-guice/1.1.1/cache-annotations-ri-guice-1.1.1.jar"
+            },
+            {
+              "jar": "com/google/inject/guice/7.0.0/guice-7.0.0.jar"
+            },
+            {
+              "jar": "jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar"
+            },
+            {
+              "jar": "org/jsr107/ri/cache-annotations-ri-common/1.1.1/cache-annotations-ri-common-1.1.1.jar"
+            },
+            {
+              "jar": "javax/cache/cache-api/1.1.1/cache-api-1.1.1.jar"
+            },
+            {
+              "jar": "com/typesafe/config/1.4.9/config-1.4.9.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-lang3/3.21.0/commons-lang3-3.21.0.jar"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "com/google/guava/guava-testlib/33.7.2-jre/guava-testlib-33.7.2-jre.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-jdk-platform-logging/2.0.20/slf4j-jdk-platform-logging-2.0.20.jar"
+            },
+            {
+              "jar": "org/slf4j/jul-to-slf4j/2.0.20/jul-to-slf4j-2.0.20.jar"
+            },
+            {
+              "jar": "com/github/valfirst/slf4j-test/3.0.3/slf4j-test-3.0.3.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "org/awaitility/awaitility/4.3.0/awaitility-4.3.0.jar"
+            },
+            {
+              "jar": "com/facebook/infer/annotation/infer-annotation/0.18.0/infer-annotation-0.18.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway-annotations/0.14.2/nullaway-annotations-0.14.2.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "org/osgi/osgi.annotation/8.1.0/osgi.annotation-8.1.0.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.namespace.extender/1.0.1/org.osgi.namespace.extender-1.0.1.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.util.function/1.0.0/org.osgi.util.function-1.0.0.jar"
+            },
+            {
+              "jar": "org/osgi/org.osgi.util.promise/1.0.0/org.osgi.util.promise-1.0.0.jar"
+            },
+            {
+              "jar": "aopalliance/aopalliance/1.0/aopalliance-1.0.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.1/hamcrest-2.1.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            }
+          ]
+        },
+        {
+          "name": "testResources",
+          "javaRelease": 11,
+          "sourceRoots": [],
+          "classpath": []
+        }
+      ]
+    },
+    {
+      "path": "simulator",
+      "sourceSets": [
+        {
+          "name": "main",
+          "javaRelease": 26,
+          "sourceRoots": [
+            "simulator/src/main/java"
+          ],
+          "classpath": [
+            {
+              "jar": "org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-lang3/3.21.0/commons-lang3-3.21.0.jar"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/tukaani/xz/1.12/xz-1.12.jar"
+            },
+            {
+              "jar": "site/ycsb/core/0.17.0/core-0.17.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "com/typesafe/config/1.4.9/config-1.4.9.jar"
+            },
+            {
+              "jar": "com/clearspring/analytics/stream/2.9.8/stream-2.9.8.jar"
+            },
+            {
+              "jar": "com/trivago/triava/2.0.1/triava-2.0.1.jar"
+            },
+            {
+              "jar": "org/cache2k/cache2k-core/2.6.1.Final/cache2k-core-2.6.1.Final.jar"
+            },
+            {
+              "jar": "de/siegmar/fastcsv/4.4.0/fastcsv-4.4.0.jar"
+            },
+            {
+              "jar": "info/picocli/picocli/4.7.7/picocli-4.7.7.jar"
+            },
+            {
+              "jar": "org/ehcache/ehcache/3.12.0/ehcache-3.12.0.jar"
+            },
+            {
+              "jar": "it/unimi/dsi/fastutil-core/8.5.19/fastutil-core-8.5.19.jar"
+            },
+            {
+              "jar": "com/hazelcast/hazelcast/5.7.0/hazelcast-5.7.0.jar"
+            },
+            {
+              "jar": "org/jfree/jfreechart/1.5.6/jfreechart-1.5.6.jar"
+            },
+            {
+              "jar": "io/github/fastfilter/fastfilter/1.0.2/fastfilter-1.0.2.jar"
+            },
+            {
+              "jar": "com/github/freva/ascii-table/1.13.0/ascii-table-1.13.0.jar"
+            },
+            {
+              "jar": "net/jodah/expiringmap/0.5.11/expiringmap-0.5.11.jar"
+            },
+            {
+              "jar": "com/fasterxml/jackson/core/jackson-core/2.22.3/jackson-core-2.22.3.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar"
+            },
+            {
+              "jar": "com/oracle/coherence/ce/coherence/26.07/coherence-26.07.jar"
+            },
+            {
+              "jar": "javax/json/bind/javax.json.bind-api/1.0/javax.json.bind-api-1.0.jar"
+            },
+            {
+              "jar": "com/facebook/infer/annotation/infer-annotation/0.18.0/infer-annotation-0.18.0.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "net/openhft/zero-allocation-hashing/2026.0/zero-allocation-hashing-2026.0.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "javax/cache/cache-api/1.1.0/cache-api-1.1.0.jar"
+            },
+            {
+              "jar": "org/cache2k/cache2k-api/2.6.1.Final/cache2k-api-2.6.1.Final.jar"
+            },
+            {
+              "jar": "jakarta/el/jakarta.el-api/5.0.1/jakarta.el-api-5.0.1.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.19.0/commons-codec-1.19.0.jar"
+            },
+            {
+              "jar": "commons-io/commons-io/2.20.0/commons-io-2.20.0.jar"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "javaRelease": 26,
+          "sourceRoots": [
+            "simulator/src/test/java"
+          ],
+          "classpath": [
+            {
+              "module": "simulator",
+              "sourceSet": "main"
+            },
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/tukaani/xz/1.12/xz-1.12.jar"
+            },
+            {
+              "jar": "site/ycsb/core/0.17.0/core-0.17.0.jar"
+            },
+            {
+              "jar": "com/google/truth/truth/1.4.5/truth-1.4.5.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar"
+            },
+            {
+              "jar": "com/typesafe/config/1.4.9/config-1.4.9.jar"
+            },
+            {
+              "jar": "com/clearspring/analytics/stream/2.9.8/stream-2.9.8.jar"
+            },
+            {
+              "jar": "com/trivago/triava/2.0.1/triava-2.0.1.jar"
+            },
+            {
+              "jar": "org/cache2k/cache2k-core/2.6.1.Final/cache2k-core-2.6.1.Final.jar"
+            },
+            {
+              "jar": "de/siegmar/fastcsv/4.4.0/fastcsv-4.4.0.jar"
+            },
+            {
+              "jar": "info/picocli/picocli/4.7.7/picocli-4.7.7.jar"
+            },
+            {
+              "jar": "org/ehcache/ehcache/3.12.0/ehcache-3.12.0.jar"
+            },
+            {
+              "jar": "it/unimi/dsi/fastutil-core/8.5.19/fastutil-core-8.5.19.jar"
+            },
+            {
+              "jar": "com/hazelcast/hazelcast/5.7.0/hazelcast-5.7.0.jar"
+            },
+            {
+              "jar": "org/jfree/jfreechart/1.5.6/jfreechart-1.5.6.jar"
+            },
+            {
+              "jar": "io/github/fastfilter/fastfilter/1.0.2/fastfilter-1.0.2.jar"
+            },
+            {
+              "jar": "com/github/freva/ascii-table/1.13.0/ascii-table-1.13.0.jar"
+            },
+            {
+              "jar": "net/jodah/expiringmap/0.5.11/expiringmap-0.5.11.jar"
+            },
+            {
+              "jar": "com/fasterxml/jackson/core/jackson-core/2.22.3/jackson-core-2.22.3.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-lang3/3.21.0/commons-lang3-3.21.0.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar"
+            },
+            {
+              "jar": "com/oracle/coherence/ce/coherence/26.07/coherence-26.07.jar"
+            },
+            {
+              "jar": "javax/json/bind/javax.json.bind-api/1.0/javax.json.bind-api-1.0.jar"
+            },
+            {
+              "jar": "com/facebook/infer/annotation/infer-annotation/0.18.0/infer-annotation-0.18.0.jar"
+            },
+            {
+              "jar": "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar"
+            },
+            {
+              "jar": "net/openhft/zero-allocation-hashing/2026.0/zero-allocation-hashing-2026.0.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.2/junit-4.13.2.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-params/6.1.3/junit-jupiter-params-6.1.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter-api/6.1.3/junit-jupiter-api-6.1.3.jar"
+            },
+            {
+              "jar": "org/junit/platform/junit-platform-commons/6.1.3/junit-platform-commons-6.1.3.jar"
+            },
+            {
+              "jar": "org/junit/jupiter/junit-jupiter/6.1.3/junit-jupiter-6.1.3.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "javax/cache/cache-api/1.1.0/cache-api-1.1.0.jar"
+            },
+            {
+              "jar": "org/cache2k/cache2k-api/2.6.1.Final/cache2k-api-2.6.1.Final.jar"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.19.0/commons-codec-1.19.0.jar"
+            },
+            {
+              "jar": "commons-io/commons-io/2.20.0/commons-io-2.20.0.jar"
+            },
+            {
+              "jar": "jakarta/el/jakarta.el-api/5.0.1/jakarta.el-api-5.0.1.jar"
+            },
+            {
+              "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            },
+            {
+              "jar": "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
+            },
+            {
+              "jar": "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar"
+            },
+            {
+              "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "jars": {
+    "aopalliance/aopalliance/1.0/aopalliance-1.0.jar": "0addec670fedcd3f113c5c8091d783280d23f75e3acb841b61a9cdb079376a08",
+    "com/clearspring/analytics/stream/2.9.8/stream-2.9.8.jar": "d18bf0abbc2f84f879172a50efd1e11b4fc0fa0b88e672c43fcc9e5501fd1c8b",
+    "com/code-intelligence/jazzer-api/0.30.0/jazzer-api-0.30.0.jar": "d36a725cfedcb7f3590206866cc2836f84d12afccf7c98912f5c720e4d2208d7",
+    "com/code-intelligence/jazzer-junit/0.30.0/jazzer-junit-0.30.0.jar": "1b1ae8658216031c50e989e6008193c04c2ad63c4c9b9876d4c66e23ecb75312",
+    "com/code-intelligence/jazzer/0.30.0/jazzer-0.30.0.jar": "8bdeac017bcd3d9473c9772fac62111c4df830188571def1d001a1b743a62b2f",
+    "com/facebook/infer/annotation/infer-annotation/0.18.0/infer-annotation-0.18.0.jar": "caefba935643dc962758a760f1627a402215af034d96c0f484d63b7fddca992f",
+    "com/fasterxml/jackson/core/jackson-annotations/2.22/jackson-annotations-2.22.jar": "21ddb598807d3a51a876704eb979d9296e1c6a6f47ab1826ff88c6d6a127a2d0",
+    "com/fasterxml/jackson/core/jackson-core/2.22.3/jackson-core-2.22.3.jar": "8a501126a385b25841915d839508f8a66e2a0dbc8a6709d055ef3b3e852b094c",
+    "com/fasterxml/jackson/core/jackson-databind/2.22.3/jackson-databind-2.22.3.jar": "556db5439e206114346043f68d200497dc96a0bca62a360a81784092ebd0e0a9",
+    "com/github/ajalt/clikt/clikt-core-jvm/5.0.3/clikt-core-jvm-5.0.3.jar": "69cba94a2291f74b78c88239cd8b67eaf3f08e0dad297749abe6477b3e9b81b1",
+    "com/github/ajalt/clikt/clikt-jvm/5.0.3/clikt-jvm-5.0.3.jar": "9cd19e04782f461dffeb183d17e576984febb7934932cb406646ac41e428863b",
+    "com/github/ajalt/colormath/colormath-jvm/3.6.0/colormath-jvm-3.6.0.jar": "59f741adfe62053066782d8b1a45afd06685a4bc64b33277e54876b993ed885c",
+    "com/github/ajalt/mordant/mordant-core-jvm/3.0.1/mordant-core-jvm-3.0.1.jar": "9cf9b46d1f49f2d6cf2635462b29dc59e0c29b1fb2f085b3312888bbe9c7cd31",
+    "com/github/ajalt/mordant/mordant-jvm/3.0.1/mordant-jvm-3.0.1.jar": "9ed3b976fcccc78da746d49866fa8ebb8f10530a93c544ea0420259a607dd95e",
+    "com/github/freva/ascii-table/1.13.0/ascii-table-1.13.0.jar": "84273a4d89df969e7b5624477196507b36018b1cd3dedd20ac0b4c4153cce01b",
+    "com/github/jbellis/jamm/0.4.0/jamm-0.4.0.jar": "f8f0457e388c4d0f69a4510c89fce8b2a79129e726b46a756ab840fd7ba82387",
+    "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar": "2f28af17ad61a7daad0f3df070198c4a5807d3ffd98a5408f670cd19fc2dce84",
+    "com/github/valfirst/slf4j-test/3.0.3/slf4j-test-3.0.3.jar": "3f96dd4785d7e9b7e20aa45943043b71d9ce2a666e873ae99d2402890703b8ad",
+    "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar": "5a055ce4255333b3346e1a8703da5bf8ff049532286fdcd31712d624abe111dd",
+    "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar": "766ad2a0783f2687962c8ad74ceecc38a28b9f72a2d085ee438b7813e928d0c7",
+    "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar": "4667724877f1d37a689202da191e23efa7657c62eef93ccdac406eccfe5cdd0a",
+    "com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar": "8a8f81cf9b359e3f6dfa691a1e776985c061ef2f223c9b2c80753e1b458e8064",
+    "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar": "cbfc3906b19b8f55dd7cfd6dfe0aa4532e834250d7f080bd8d211a3e246b59cb",
+    "com/google/guava/guava-testlib/33.7.2-jre/guava-testlib-33.7.2-jre.jar": "87684af5e41c7883aaa76c1c531e7ab98e620735bdb652cc97ceccd8e534c115",
+    "com/google/guava/guava/33.4.3-jre/guava-33.4.3-jre.jar": "74532716f8eaa06d4947ffa6b740bfc671050bc9e0da46ad1dc07c4aa14f8c62",
+    "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar": "b530942257fb935f8b2cfaa5f8eb5bd59c555fd8e8d01b8ce98912e077ea606c",
+    "com/google/inject/guice/7.0.0/guice-7.0.0.jar": "de5b0e359bd7b03ca42806b368846efd95484380fe05ae2a4ea71bc338c59c00",
+    "com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.jar": "88241573467ddca44ffd4d74aa04c2bbfd11bf7c17e0c342c94c9de7a70a7c64",
+    "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar": "84d3a150518485f8140ea99b8a985656749629f6433c92b80c75b36aba3b099b",
+    "com/google/truth/truth/1.4.5/truth-1.4.5.jar": "a6409e90fdd6b31f239b0c02065c43b53e1b09c72f2e08c3a86d04fe5910cf4b",
+    "com/googlecode/concurrentlinkedhashmap/concurrentlinkedhashmap-lru/1.4.2/concurrentlinkedhashmap-lru-1.4.2.jar": "56a95fb5b54c661a7efde073b8792f63a8c317e389102673d8d976c7c8f36945",
+    "com/hazelcast/hazelcast/5.7.0/hazelcast-5.7.0.jar": "241ec66cea8491787f68c3336f069ac463877af50bdb7676cd9d538f1940dc33",
+    "com/oracle/coherence/ce/coherence/26.07/coherence-26.07.jar": "1e8a3d11329112cf87384ed0ab095ab5b2310c0913200ffde9a8fd228f166986",
+    "com/palantir/javapoet/javapoet/0.20.0/javapoet-0.20.0.jar": "fbdda0f45e41cc17c3606e2ba9ca20c76fd90c5a735230fb091c1e2240e4965c",
+    "com/trivago/triava/2.0.1/triava-2.0.1.jar": "6e7eae7d11d8b7a3db311dcc2df031cd0397b64aea4716597a295a10a454ca73",
+    "com/typesafe/config/1.4.9/config-1.4.9.jar": "47d13e3196c84f2a8ccd014ae563738c3da5b7406b38e03505ec0601a2f4fc37",
+    "com/uber/nullaway/nullaway-annotations/0.14.2/nullaway-annotations-0.14.2.jar": "fa1e10073c63668a4fdef6e569d46348ec799b6714c379c55669ce605dd2fb27",
+    "commons-codec/commons-codec/1.19.0/commons-codec-1.19.0.jar": "5c3881e4f556855e9c532927ee0c9dfde94cc66760d5805c031a59887070af5f",
+    "commons-codec/commons-codec/1.21.0/commons-codec-1.21.0.jar": "4da851cb6abfb98bfe9eb77c5e5fc47f5414fa28b94e21b7fd9a646705dc167f",
+    "commons-io/commons-io/2.20.0/commons-io-2.20.0.jar": "df90bba0fe3cb586b7f164e78fe8f8f4da3f2dd5c27fa645f888100ccc25dd72",
+    "commons-io/commons-io/2.21.0/commons-io-2.21.0.jar": "7d643a2afea8b058b762aa6fb90e5b256f6c729739f8b3784c3370ddc609e88d",
+    "de/siegmar/fastcsv/4.4.0/fastcsv-4.4.0.jar": "8525df9d35d19e822bce252504bbdec7efab23c109060d4cc8835e47b6872934",
+    "info/picocli/picocli/4.7.7/picocli-4.7.7.jar": "f86e30fffd10d2b13b8caa8d4b237a7ee61f2ffccf5b1941de718b765d235bf8",
+    "io/github/fastfilter/fastfilter/1.0.2/fastfilter-1.0.2.jar": "38f8824d07c8c932fa50cc0175f32c0fff2fafb3913cd2f9571ac349c9631149",
+    "it/unimi/dsi/fastutil-core/8.5.19/fastutil-core-8.5.19.jar": "57ad7ac9f7aef23317446e996732236b18e1eaf07638c4325b6f464cf69c18ab",
+    "jakarta/el/jakarta.el-api/5.0.1/jakarta.el-api-5.0.1.jar": "90432d18281717b363b819978c6a172433a2654b77eb87c863c22fc19c20eced",
+    "jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar": "f7dc98062fccf14126abb751b64fab12c312566e8cbdc8483598bffcea93af7c",
+    "javax/cache/cache-api/1.1.0/cache-api-1.1.0.jar": "6c980ad1ae4a6dda3bdb62986c3ef5b41ccf766e12353587ee4e4307e27e155a",
+    "javax/cache/cache-api/1.1.1/cache-api-1.1.1.jar": "9f34e007edfa82a7b2a2e1b969477dcf5099ce7f4f926fb54ce7e27c4a0cd54b",
+    "javax/inject/javax.inject/1/javax.inject-1.jar": "91c77044a50c481636c32d916fd89c9118a72195390452c81065080f957de7ff",
+    "javax/jcr/jcr/2.0/jcr-2.0.jar": "cbf083bc58cb88a0c19112187a4c52d3115f525b5bb7f2913635f5679e6e9743",
+    "javax/json/bind/javax.json.bind-api/1.0/javax.json.bind-api-1.0.jar": "cd3be391f599d4bef59bfb155257ad6b91e4521d19b8e972b0dfb52dfb0c5fc1",
+    "junit/junit/4.13.2/junit-4.13.2.jar": "8e495b634469d64fb8acfa3495a065cbacc8a0fff55ce1e31007be4c16dc57d3",
+    "net/bytebuddy/byte-buddy-agent/1.14.12/byte-buddy-agent-1.14.12.jar": "2b309a9300092e0b696f7c471fd51d9969001df784c8ab9f07997437d757ad6d",
+    "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar": "a9ba887dca252ad61b7d5153294f34e6f3bdf4b2736b04373d13615a695fc0ff",
+    "net/bytebuddy/byte-buddy/1.14.12/byte-buddy-1.14.12.jar": "970636134d61c183b19f8f58fa631e30d2f2abca344b37848a393cac7863dd70",
+    "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar": "3575dcb8a98faf943d3c1595c47a16047c4fce8a83ebbb26262f1a2f67546357",
+    "net/java/dev/jna/jna-platform/5.8.0/jna-platform-5.8.0.jar": "ffd93fe1bc07de6f33eabf3d051c3636e01a01c17cb0da8448c53a2ac5e3bf7a",
+    "net/java/dev/jna/jna/5.8.0/jna-5.8.0.jar": "930273cc1c492f25661ea62413a6da3fd7f6e01bf1c4dcc0817fc8696a7b07ac",
+    "net/jodah/expiringmap/0.5.11/expiringmap-0.5.11.jar": "c0e5a06f21eceec2d73f6574f0bbfd448853d07cb5bb0bdab587322d1a0b72ea",
+    "net/openhft/zero-allocation-hashing/2026.0/zero-allocation-hashing-2026.0.jar": "22b4328b4cd751790ba3222320c7aae3f7927e6cdd064cd8a60d2a179be4ada3",
+    "net/sf/jopt-simple/jopt-simple/4.6/jopt-simple-4.6.jar": "3fcfbe3203c2ea521bf7640484fd35d6303186ea2e08e72f032d640ca067ffda",
+    "net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar": "df26cc58f235f477db07f753ba5a3ab243ebe5789d9f89ecf68dd62ea9a66c28",
+    "org/apache/commons/commons-collections4/4.6.0/commons-collections4-4.6.0-tests.jar": "fc627acafaa29b5fa317a919d3184d7b6a9cfc1eef1b8079887d54cbbd32ca66",
+    "org/apache/commons/commons-collections4/4.6.0/commons-collections4-4.6.0.jar": "4e0d0896bac5356cead277bac0283f09813e14417e3e84e0c86b573b54d218a3",
+    "org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar": "e1522945218456f3649a39bc4afd70ce4bd466221519dba7d378f2141a4642ca",
+    "org/apache/commons/commons-lang3/3.21.0/commons-lang3-3.21.0.jar": "a2af247ec4db6eb8947e18e23e0433e4871a7c5d0a40e1f92e46ede54ae1defe",
+    "org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar": "1e56d7b058d28b65abd256b8458e3885b674c1d588fa43cd7d1cbb9c7ef2b308",
+    "org/apache/jackrabbit/jackrabbit-jcr-commons/2.22.4/jackrabbit-jcr-commons-2.22.4.jar": "3049c38a17a397371292bef43233b199e5173c1a4ed0c7820a1e1b3f6a48590f",
+    "org/apache/jackrabbit/oak-api/2.6.0/oak-api-2.6.0.jar": "12505d7274cc8530036849e3cb237183647b92065326335cf65aa06c3be59235",
+    "org/apache/jackrabbit/oak-blob-plugins/2.6.0/oak-blob-plugins-2.6.0.jar": "2771765cfbfa16ad3324388637676729b5ddafda8e3bcdd4354d742a6d1fd0d0",
+    "org/apache/jackrabbit/oak-blob/2.6.0/oak-blob-2.6.0.jar": "7fd9ab80d9e57a0eac554bfbdbc09b4b7e301a9a0bab2ef2e271c9ff30728407",
+    "org/apache/jackrabbit/oak-commons/2.6.0/oak-commons-2.6.0.jar": "425a14f4341805240e5001451603e11ec47645393c1a7459af44db1b42cc65d3",
+    "org/apache/jackrabbit/oak-core-spi/2.6.0/oak-core-spi-2.6.0.jar": "e90de8ec24ee4520819c195eca8adfcec6921bf1a8ae8ecc96ed666b12e49e94",
+    "org/apache/jackrabbit/oak-core/2.6.0/oak-core-2.6.0.jar": "79a74969d7a848eac5428b4d50e8a52f532095d2b22d71d174475677418a36a2",
+    "org/apache/jackrabbit/oak-jackrabbit-api/2.6.0/oak-jackrabbit-api-2.6.0.jar": "784d326c48e11c8b1359f8ca6d2902defcaee2d477367a1aa33e8424058c1088",
+    "org/apache/jackrabbit/oak-query-spi/2.6.0/oak-query-spi-2.6.0.jar": "ca8aa52ec0bb95854af460f59e9ac023898d5a87dbc997f2170a466e1d6506be",
+    "org/apache/jackrabbit/oak-security-spi/2.6.0/oak-security-spi-2.6.0.jar": "caee84686eb7d534f7719e253b04767b925f24a5e796d5c91f95f20d16bb0d32",
+    "org/apache/jackrabbit/oak-shaded-guava/2.6.0/oak-shaded-guava-2.6.0.jar": "1f8e39faadb3d8cc21dcdf39a299f5a532158540cb7923f6e1d2637e159281e4",
+    "org/apache/jackrabbit/oak-store-spi/2.6.0/oak-store-spi-2.6.0.jar": "5f49ae54010723960fdcec2d3506b9763af4efa37862063ca82923df681d33bf",
+    "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar": "b509448ac506d607319f182537f0b35d71007582ec741832a1f111e5b5b70b38",
+    "org/awaitility/awaitility/4.3.0/awaitility-4.3.0.jar": "ee58568ea5945dcf988551501655183dc184e23e45a8e013fdfd9036194e6f7b",
+    "org/cache2k/cache2k-api/2.6.1.Final/cache2k-api-2.6.1.Final.jar": "375a608a9a0d2220a2d33239c746fc8657a319bf61aa1c2ae599a31c9277cbc2",
+    "org/cache2k/cache2k-core/2.6.1.Final/cache2k-core-2.6.1.Final.jar": "2d3ad9ef3a7461625859f53ef3d1b3087bf78dac30a2053ef1f39a313a36c2fa",
+    "org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.jar": "3fbc2e98f05854c3df16df9abaa955b91b15b3ecac33623208ed6424640ef0f6",
+    "org/eclipse/collections/eclipse-collections-api/12.0.0/eclipse-collections-api-12.0.0.jar": "f3691d2d77bb58fe3c548815d8f16e541419acde0f7763edec8f6ea4fc7c371b",
+    "org/eclipse/collections/eclipse-collections-testutils/12.0.0/eclipse-collections-testutils-12.0.0.jar": "111b82ad5367043240eecded9ae585b39b7aeb59dd62b9295e5c8c42e5f6b502",
+    "org/eclipse/collections/eclipse-collections/12.0.0/eclipse-collections-12.0.0.jar": "1d862622d7a3afa81f37c9ef408a123d21c107a424229904747839ed1baf5a4b",
+    "org/ehcache/ehcache/3.11.1/ehcache-3.11.1.jar": "8fcfc71f6d718a9be0c156ba581cc460b23a33d174ea9577228844a898d9fc00",
+    "org/ehcache/ehcache/3.12.0/ehcache-3.12.0.jar": "b8313aeff14294dac6cd0f7d18d2797afb23b1cc7fba452fa2e30369bd9791cf",
+    "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar": "66fdef91e9739348df7a096aa384a5685f4e875584cce89386a7a47251c4d8e9",
+    "org/hamcrest/hamcrest/2.1/hamcrest-2.1.jar": "ba93b2e3a562322ba432f0a1b53addcc55cb188253319a020ed77f824e692050",
+    "org/hamcrest/hamcrest/3.0/hamcrest-3.0.jar": "5d66b6a4a680755cb6ed7cb104fa7835ef644667586ff0737adeb977c39ecdbc",
+    "org/jcommander/jcommander/1.83/jcommander-1.83.jar": "e65f49c2119a1859b9076061e561fb5958a2fa6ffdb49f051ca8d59a0b3f87e4",
+    "org/jctools/jctools-core-jdk11/4.0.7/jctools-core-jdk11-4.0.7.jar": "d9021fb0a7935c7dd480407a1e0dfe760d57771949a2c19faa2fdfa1dd1208f2",
+    "org/jctools/jctools-core/4.0.7/jctools-core-4.0.7.jar": "fab373e48733e00bdf7114edbdb49f54114b0237e088b161c05984a6705fed50",
+    "org/jetbrains/annotations/13.0/annotations-13.0.jar": "ace2a10dc8e2d5fd34925ecac03e4988b2c0f851650c94b8cef49ba1bd111478",
+    "org/jetbrains/annotations/23.0.0/annotations-23.0.0.jar": "7b0f19724082cbfcbc66e5abea2b9bc92cf08a1ea11e191933ed43801eb3cd05",
+    "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar": "3ee3a56dd451e33f8352e0d2803a55ca1b9156d7f8a8e0759bf8e187ff8db24a",
+    "org/jetbrains/kotlin/kotlin-reflect/2.4.21/kotlin-reflect-2.4.21.jar": "7c9e8bda3cafa85b65692065acd22578b2843292b4e4baa8361bdc9175746e88",
+    "org/jetbrains/kotlin/kotlin-stdlib-jdk7/2.4.21/kotlin-stdlib-jdk7-2.4.21.jar": "6fce867d4c24c92a8b64c966317d3ac1d4b787a00e1aa6d2b76b1cedd3a0c082",
+    "org/jetbrains/kotlin/kotlin-stdlib-jdk8/2.4.21/kotlin-stdlib-jdk8-2.4.21.jar": "eb83cbc07ee68fcd5f229b2ed1d66c7a0175c56ac1dca1457cce4b1702004259",
+    "org/jetbrains/kotlin/kotlin-stdlib/2.4.21/kotlin-stdlib-2.4.21.jar": "bd8250210584cb659847dce9cda660f8e9906e5def7fbebcea93dc6dcb6a88a3",
+    "org/jetbrains/kotlinx/atomicfu-jvm/0.27.0/atomicfu-jvm-0.27.0.jar": "2b68464170070a8b085d8a7224c7c002dbd65ea14e1f8b97a9605115a252f7fb",
+    "org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.7.3/kotlinx-coroutines-core-jvm-1.7.3.jar": "1ab3acc38f3e7355c4f9d1ec62107a46fa73c899f3070d055e5d4373dfe67e12",
+    "org/jetbrains/lincheck/lincheck-common/3.7/lincheck-common-3.7.jar": "7ffe193873b802b89df2c1747a218450b59529b3ef43b795036172c611770e33",
+    "org/jetbrains/lincheck/lincheck/3.7/lincheck-3.7.jar": "4aef8ba98d7f6ac5c70ae38ec9000afa45ce122f1dbba8307018c8f28af7c5a7",
+    "org/jfree/jfreechart/1.5.6/jfreechart-1.5.6.jar": "be7ae6310ca005ac98eceb74fa514af88cad098c808845786f762ca08a5b4bb3",
+    "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar": "070d75f261fe4c5b8202508366715f7f2d4660f88c8ef7e6d3575e48c9683b66",
+    "org/jsr107/ri/cache-annotations-ri-common/1.1.1/cache-annotations-ri-common-1.1.1.jar": "7b3dba578e9293b4579785064c06fa083737941280fe96c4de3ed5ea76d9204a",
+    "org/jsr107/ri/cache-annotations-ri-guice/1.1.1/cache-annotations-ri-guice-1.1.1.jar": "0aafdd1b912b4553b6c28019e01e30ffd47b4480424218ed212a05f9df075202",
+    "org/junit/jupiter/junit-jupiter-api/5.14.3/junit-jupiter-api-5.14.3.jar": "a884b46d3cb9daf7adc775538cf2504ff2dcae76d7b9e9a28f9366d15ac2fbed",
+    "org/junit/jupiter/junit-jupiter-api/6.1.3/junit-jupiter-api-6.1.3.jar": "555d6cf20fa1710884dd01b86cc5785397ba73e21ada2d4b784f5f1a14dcafc4",
+    "org/junit/jupiter/junit-jupiter-params/5.14.3/junit-jupiter-params-5.14.3.jar": "324c6c7ab5f1128be25a692f394766f76be9578526ad0ae777a1ee6e42334598",
+    "org/junit/jupiter/junit-jupiter-params/6.1.3/junit-jupiter-params-6.1.3.jar": "05c51cedba2c06a9770707391e006cee825876937dea580b94a265ce145d4939",
+    "org/junit/jupiter/junit-jupiter/5.14.3/junit-jupiter-5.14.3.jar": "74632e3a463e7ba4317971e8c7471b5503909a812fcaea24d65c679b02d08708",
+    "org/junit/jupiter/junit-jupiter/6.1.3/junit-jupiter-6.1.3.jar": "6b0a14075c74221de53047e363860b7d19fce802bebc152df2c35c4089c6c379",
+    "org/junit/platform/junit-platform-commons/1.14.3/junit-platform-commons-1.14.3.jar": "9eb52432baefc7de97dbddf51939456b9c272c6bdcb8fb535e0405c670f96ae8",
+    "org/junit/platform/junit-platform-commons/6.1.3/junit-platform-commons-6.1.3.jar": "a4774ae923c109544034aeae7c762cf017fbcdd1342403ba90e0921984b608c3",
+    "org/junit/platform/junit-platform-engine/1.14.3/junit-platform-engine-1.14.3.jar": "16bbbf7f5c2f531b97c48b1c6f351d738a41d8809c73b1136457ead77da51019",
+    "org/junit/platform/junit-platform-launcher/1.14.3/junit-platform-launcher-1.14.3.jar": "9b2b24b6a8f9c11d5cb9676843da3824271c8e17c8557b5c587040e598989719",
+    "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar": "97a1f835ad84075255aa37809e4379eff541273c02c6201cbad49bd5950932cd",
+    "org/openjdk/jcstress/jcstress-core/0.16/jcstress-core-0.16.jar": "58ee119c227bd02a86ad47f32b6165537e42502ef6cc8140d6454b0cac29f6ac",
+    "org/openjdk/jmh/jmh-core/1.37/jmh-core-1.37.jar": "dc0eaf2bbf0036a70b60798c785d6e03a9daf06b68b8edb0f1ba9eb3421baeb3",
+    "org/openjdk/jmh/jmh-generator-asm/1.37/jmh-generator-asm-1.37.jar": "de29bacc5c3a413215800f57de9017fdda1b3cb6e5359ea0c84ebe13c9610222",
+    "org/openjdk/jmh/jmh-generator-bytecode/1.37/jmh-generator-bytecode-1.37.jar": "619b3d15a5e8bfc4ec49d3b7a64dbed053a0ca8625820a49a4f869d1b8c71d09",
+    "org/openjdk/jmh/jmh-generator-reflection/1.37/jmh-generator-reflection-1.37.jar": "a0421dbbe5e77690df2dfdef98618b62852d816bbb814c5cbd0b4d464bff32b0",
+    "org/openjdk/jol/jol-cli/0.17/jol-cli-0.17.jar": "f3501970b532ae65ee07e47abf48bf13c3a6502f82f7f00bbe3059ab644b6ede",
+    "org/openjdk/jol/jol-core/0.17/jol-core-0.17.jar": "bd73d9ad265d8478ccde06130200877f3a4f0a6e2d44e7fb8cbb2e6f4104cbdc",
+    "org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar": "48e2df636cab6563ced64dcdff8abb2355627cb236ef0bf37598682ddf742f1b",
+    "org/ops4j/base/ops4j-base-exec/1.5.1/ops4j-base-exec-1.5.1.jar": "16bc72d8c3f73468251a7ab1e1627fcff67d33762d1778b220bc096567afecd8",
+    "org/ops4j/base/ops4j-base-io/1.5.1/ops4j-base-io-1.5.1.jar": "b67fad8351012dd0fa18dc171e79a73f67c4558184869a16602487d2be31ca50",
+    "org/ops4j/base/ops4j-base-lang/1.5.1/ops4j-base-lang-1.5.1.jar": "095f44a513ebf63e8b3c587d2c8e73ec075fcb9e4b6cde736e641511ac63bd88",
+    "org/ops4j/base/ops4j-base-monitors/1.5.1/ops4j-base-monitors-1.5.1.jar": "16681cd7f6905c3fe74c3b6c60b97a57f3c4cb16a5401ad8cc821327ec75297a",
+    "org/ops4j/base/ops4j-base-spi/1.5.1/ops4j-base-spi-1.5.1.jar": "42a05f19917dc633126c1c56cd33af811fe17480470d9db5019e6a186b56084f",
+    "org/ops4j/base/ops4j-base-store/1.5.1/ops4j-base-store-1.5.1.jar": "d0448aa19d28df0159362d8643030c0adf86a18ac85da9b797ab0a137bc63d84",
+    "org/ops4j/base/ops4j-base-util-property/1.5.1/ops4j-base-util-property-1.5.1.jar": "d6333bc4b4b3ed9555451e6b6b9f605c0d4309c35f95dcf549ccb81c1b10e1a1",
+    "org/ops4j/pax/exam/pax-exam-junit4/4.14.0/pax-exam-junit4-4.14.0.jar": "02e3b984bb60d19045d66a4cd6e4180220e6f06415872dceaa0b26c14705ecad",
+    "org/ops4j/pax/exam/pax-exam-spi/4.14.0/pax-exam-spi-4.14.0.jar": "f04f3465b28f1ce1d7f1db1ca3184e72203862a5a340993cce74412ad3eab184",
+    "org/ops4j/pax/exam/pax-exam/4.14.0/pax-exam-4.14.0.jar": "47036a6e6dda75aa60cbd228b3a44644cfd9a0fa9dd071f8ed077fd4c6b1a4ca",
+    "org/ops4j/pax/tinybundles/tinybundles/4.0.0/tinybundles-4.0.0.jar": "7ba29183ce48d0ab08e1e6c28c43b1bc25ad7dd16488107324d387e18c092571",
+    "org/osgi/org.osgi.namespace.extender/1.0.1/org.osgi.namespace.extender-1.0.1.jar": "93d798bde7fa760961408c8a10a965ca7ba1dbf98a3a706c86d8290f528ad519",
+    "org/osgi/org.osgi.service.component.annotations/1.4.0/org.osgi.service.component.annotations-1.4.0.jar": "8de7c6753f00edc81df24059dcd2efd67fedcd9b020bbcc6aaa170f4a34c010c",
+    "org/osgi/org.osgi.service.component.annotations/1.5.1/org.osgi.service.component.annotations-1.5.1.jar": "42c080de090896f45d2a4e980a261d5b6addeee07ec4b201f01de95ab562b448",
+    "org/osgi/org.osgi.service.metatype.annotations/1.4.0/org.osgi.service.metatype.annotations-1.4.0.jar": "c768e569389a25ce0ef2ce32ce9de05624ec093f2f275ce430da573aba554bcb",
+    "org/osgi/org.osgi.util.function/1.0.0/org.osgi.util.function-1.0.0.jar": "4ff9329012c01a0c69c05721a6bd0b910d40a0d32108284e59c1a6215cee7a43",
+    "org/osgi/org.osgi.util.promise/1.0.0/org.osgi.util.promise-1.0.0.jar": "7d619c925716f21ae17654529543d00ea56810784040f6ed8c6d6f901526ee67",
+    "org/osgi/osgi.annotation/8.1.0/osgi.annotation-8.1.0.jar": "68afeb86a5322675d4dfe3df5863c7d8a37b34c18e3a8e41553f1ab3ac15d78f",
+    "org/ow2/asm/asm-analysis/9.10.1/asm-analysis-9.10.1.jar": "dede75a21306b65974ecd8f87114ff6970f09fb794157a4ca09ab25c888c2bfc",
+    "org/ow2/asm/asm-commons/9.10.1/asm-commons-9.10.1.jar": "6d0abefb7cbf972ea16edb37ec14835372505063a45f976ab7ea889ed9497895",
+    "org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar": "3dfb0d5b6a106cd40b5b250e39935fbf2f927f4477546a5369a3ac609cf0506b",
+    "org/ow2/asm/asm-util/9.10.1/asm-util-9.10.1.jar": "1bb99d091fba2597dc6d51193e9bbcf0d8447e7ed96bd8f0198b18152f09655c",
+    "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar": "ed825d10ab1399c8c0cb669e688cf0c8c82629b4c8399b58352b68e92ca10fcb",
+    "org/ow2/asm/asm/9.8/asm-9.8.jar": "876eab6a83daecad5ca67eb9fcabb063c97b5aeb8cf1fca7a989ecde17522051",
+    "org/pastalab/fray/fray-core/0.9.0/fray-core-0.9.0.jar": "1d90206afd0f18cefdca5cadca06c3f2ea9a00bc150fededa0e9ad8ae61a8338",
+    "org/pastalab/fray/fray-junit/0.9.0/fray-junit-0.9.0.jar": "510d518e0ba7694e07f67c78e3d10c38acdbfef6b68235febe540934ed5fdbe5",
+    "org/pastalab/fray/fray-jvmti-macos-aarch64/0.9.0/fray-jvmti-macos-aarch64-0.9.0.jar": "ea7d2096ca3a6393a9d012f0c76cd9e3b23118143809f007c3e2bf74cfd7df08",
+    "org/pastalab/fray/fray-rmi/0.9.0/fray-rmi-0.9.0.jar": "9f8b649997dc9c6fcb44898aa4f7f0ca89cc163d3a75eae8754bd47f29acefaf",
+    "org/pastalab/fray/fray-runtime/0.9.0/fray-runtime-0.9.0.jar": "31c771d99ce59fbd0c5a2b1f320aa0ae67200055530cb23150142c9e488fce6b",
+    "org/pastalab/fray/instrumentation/fray-instrumentation-agent/0.9.0/fray-instrumentation-agent-0.9.0.jar": "83f0f7049babdc5c57744d00dea1b6007125abab0106ada06395a2c519970e4e",
+    "org/pastalab/fray/instrumentation/fray-instrumentation-jdk/0.9.0/fray-instrumentation-jdk-0.9.0.jar": "0421010ccee908a3ab17fd811904a2c9c740395b103be9475106c625835f6bc9",
+    "org/slf4j/jul-to-slf4j/2.0.20/jul-to-slf4j-2.0.20.jar": "062249d0677a0e08039120a2292a8db064c69d04282bf562af2e54c53ff06976",
+    "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar": "7e1446499b359675d8aabe6af2de86b85e72ae8a2a932c0b40d0e5ba57097439",
+    "org/slf4j/slf4j-jdk-platform-logging/2.0.20/slf4j-jdk-platform-logging-2.0.20.jar": "2e7e49d4a17561eb19b59ef4d5194b9a2f35dc52a040aa9afbe461c126628cab",
+    "org/slf4j/slf4j-nop/2.0.20/slf4j-nop-2.0.20.jar": "6522080396fb339e99bae40d329a06d18d3190dc864020ac4ca943519d0fd85b",
+    "org/testng/testng/7.12.0/testng-7.12.0.jar": "5147e65e0bf0d0f9c7f18a4b2b182d3e4efb7391195e130a64ca9f755e0a6d33",
+    "org/tukaani/xz/1.12/xz-1.12.jar": "3e158a87bd73d8afb4b6e8239c013b7d049c48563f45860ce99cd2e448cf4a6b",
+    "site/ycsb/core/0.17.0/core-0.17.0.jar": "e1c64d09bfc642715428c2e53ec129b0a98a0e634ee32bf0ae77e5b4eebb3cda"
+  }
+}
