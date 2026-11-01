@@ -381,6 +381,15 @@ new component adds its benchmarks to `tools/bench/src/benchmarks/`.
   FERRION_BLESS=1 cargo test --package ferrion_parser --test snapshots
   ```
 
+- The formatter's snapshot tests format each input in
+  `crates/ferrion_formatter/tests/snapshots/<area>/` and compare it with the `.formatted.java`
+  file next to it, and check the safety properties on it. After an intended change, rewrite the
+  outputs and review the diff:
+
+  ```bash
+  FERRION_BLESS=1 cargo test --package ferrion_formatter --test snapshots
+  ```
+
 - The deep-nesting stress tests in `crates/ferrion_parser/tests/nesting_stress.rs` generate their
   inputs. A pattern whose grammar isn't written yet is listed in `PENDING` there, and its test
   fails once it parses without errors, so that it's moved out of the list.
