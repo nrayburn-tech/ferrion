@@ -424,11 +424,16 @@ fn postfix(p: &mut Parser<'_>, negated: bool) -> Option<CompletedMarker> {
     if matches!(lhs.kind(), SwitchExpr | LambdaExpr) {
         return Some(lhs);
     }
+    // Whether `lhs` is a name, simple or qualified, which `.class` can follow.
+    let mut name = lhs.kind() == NameExpr;
     let mut progress = p.progress();
     loop {
         annotated_names &= matches!(lhs.kind(), NameExpr | FieldAccessExpr);
         match p.current() {
-            Dot => lhs = dot_selector(p, lhs, annotated_names),
+            Dot => {
+                lhs = dot_selector(p, lhs, annotated_names, name);
+                name = name && lhs.kind() == FieldAccessExpr;
+            }
             // javac reads annotations after an expression as an annotated dimension of an array
             // type, which only a type before `.class` or `::` can have (see `type_qualifier`).
             At if p.nth(1) != InterfaceKw => {
@@ -437,8 +442,10 @@ fn postfix(p: &mut Parser<'_>, negated: bool) -> Option<CompletedMarker> {
                 p.error(ParseDiagnosticKind::UnexpectedToken(At), span, span.start);
                 types::annotations(p);
                 lhs = m.complete(p, Error);
+                name = false;
             }
             LBracket => {
+                name = false;
                 let m = lhs.precede(p);
                 p.bump();
                 if expr(p).is_none() {
@@ -471,11 +478,13 @@ fn postfix(p: &mut Parser<'_>, negated: bool) -> Option<CompletedMarker> {
 
 /// At the `.` after `target`: a field access, a call, `.this`, `.super`, `.class`, or `.new`.
 /// With `annotated_names`, a field access's name can be annotated (`a.@A b.c()`, see
-/// [`postfix`]), unless a call follows it.
+/// [`postfix`]), unless a call follows it. `of_name` if `target` is a name, simple or qualified:
+/// `.class` can follow only a type.
 fn dot_selector(
     p: &mut Parser<'_>,
     target: CompletedMarker,
     annotated_names: bool,
+    of_name: bool,
 ) -> CompletedMarker {
     let m = target.precede(p);
     p.bump();
@@ -500,14 +509,17 @@ fn dot_selector(
             types::type_arguments(p);
             if p.at_set(IDENT) {
                 p.bump();
-                // javac reports a missing argument list at the token after the name.
-                if arguments(p).is_none() {
-                    expression_expected(p);
-                }
-                m.complete(p, MethodCallExpr)
+                generic_call_rest(p, m)
             } else if (p.at(ThisKw) || p.at(SuperKw)) && p.nth(1) == LParen {
                 p.bump();
                 arguments(p);
+                m.complete(p, ConstructorCallExpr)
+            } else if p.at(ThisKw) || p.at(NewKw) {
+                expression_expected(p);
+                m.complete(p, MethodCallExpr)
+            } else if p.at(SuperKw) {
+                p.bump();
+                p.error_expected(Expected::Token(LParen));
                 m.complete(p, ConstructorCallExpr)
             } else {
                 p.error_expected(Expected::Identifier);
@@ -530,6 +542,10 @@ fn dot_selector(
             m.complete(p, SuperExpr)
         }
         ClassKw => {
+            if !of_name {
+                // `this.class`, `a().class`: javac expects a member's name.
+                p.error_expected(Expected::Identifier);
+            }
             p.bump();
             m.complete(p, ClassLiteralExpr)
         }
@@ -537,6 +553,42 @@ fn dot_selector(
         _ => {
             p.error_expected(Expected::Identifier);
             m.complete(p, FieldAccessExpr)
+        }
+    }
+}
+
+/// After `a.<T>m`, which `m` was started before: the call's arguments. javac reads
+/// `a.<T>m.<U>n()` too, with `a.<T>m` as the qualifier of a generic call, and reports a missing
+/// argument list at the next token, or past a `.` or an array access.
+fn generic_call_rest(p: &mut Parser<'_>, m: Marker) -> CompletedMarker {
+    match p.current() {
+        LParen => {
+            arguments(p);
+            m.complete(p, MethodCallExpr)
+        }
+        Dot if p.nth(1) == Lt => m.complete(p, FieldAccessExpr),
+        Dot => {
+            let span = p.nth_span(1);
+            p.error(
+                ParseDiagnosticKind::ExpressionExpected(p.nth(1)),
+                span,
+                span.start,
+            );
+            m.complete(p, MethodCallExpr)
+        }
+        LBracket => {
+            let access = m.complete(p, FieldAccessExpr).precede(p);
+            p.bump();
+            if expr(p).is_none() {
+                expression_expected(p);
+            }
+            p.expect(RBracket);
+            expression_expected(p);
+            access.complete(p, ArrayAccessExpr)
+        }
+        _ => {
+            expression_expected(p);
+            m.complete(p, MethodCallExpr)
         }
     }
 }
@@ -757,10 +809,12 @@ fn annotated_primary(p: &mut Parser<'_>) -> Option<CompletedMarker> {
 fn new_expr(p: &mut Parser<'_>, m: Marker, qualified: bool) -> CompletedMarker {
     let new_start = p.nth_span(0).start;
     p.bump();
+    // The first type argument, where javac reports type arguments on an array creation.
+    let type_arguments = p.at(Lt).then(|| p.nth_span(1));
     types::type_arguments(p);
     let ty = p.start();
     types::annotations(p);
-    if !qualified && p.at_set(PRIMITIVE) {
+    if !qualified && type_arguments.is_none() && p.at_set(PRIMITIVE) {
         p.bump();
         ty.complete(p, PrimitiveType);
         return array_creation_rest(p, m, new_start);
@@ -774,7 +828,18 @@ fn new_expr(p: &mut Parser<'_>, m: Marker, qualified: bool) -> CompletedMarker {
         p.error_expected(Expected::Identifier);
         return m.complete(p, NewExpr);
     }
-    types::class_type_rest(p, ty, true);
+    // The `<` of a diamond on the type's last segment, if there is one.
+    let diamond = if qualified {
+        // A qualified class instance creation names a member class by its simple name.
+        p.bump();
+        if p.at(Lt) {
+            types::type_arguments_with(p, true);
+        }
+        ty.complete(p, ClassType);
+        None
+    } else {
+        types::class_type_rest(p, ty, true).and_then(|_| last_diamond(p))
+    };
     if p.at(LParen) {
         arguments(p);
         if p.at(LBrace) {
@@ -784,6 +849,15 @@ fn new_expr(p: &mut Parser<'_>, m: Marker, qualified: bool) -> CompletedMarker {
         return m.complete(p, NewExpr);
     }
     if !qualified && p.nth(types::annotations_end(p, 0)) == LBracket {
+        if let Some(lt) = diamond {
+            p.error(ParseDiagnosticKind::ArrayCreationWithDiamond, lt, lt.start);
+        } else if let Some(first) = type_arguments {
+            p.error(
+                ParseDiagnosticKind::ArrayCreationWithTypeArguments,
+                first,
+                first.start,
+            );
+        }
         return array_creation_rest(p, m, new_start);
     }
     if qualified {
@@ -792,6 +866,13 @@ fn new_expr(p: &mut Parser<'_>, m: Marker, qualified: bool) -> CompletedMarker {
         types::expected_at_next(p, Expected::OneOf(&[LParen, LBracket]));
     }
     m.complete(p, NewExpr)
+}
+
+/// After a class type: the `<` of its last type arguments, if they are a diamond, `<>`.
+fn last_diamond(p: &Parser<'_>) -> Option<Span> {
+    let (gt, _) = p.previous(1)?;
+    let (lt, lt_span) = p.previous(2)?;
+    (lt == Lt && gt == Gt).then_some(lt_span)
 }
 
 /// After an array creation's element type: `[n]`s, then `[]`s, then an initializer when there

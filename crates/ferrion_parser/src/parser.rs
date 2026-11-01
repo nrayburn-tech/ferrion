@@ -211,6 +211,13 @@ impl<'t> Parser<'t> {
             && self.nth_text(n + 2) == "sealed"
     }
 
+    /// The kind and span of the `n`th non-trivia token consumed, counting back from the last one
+    /// (1), as the lexer made it. `None` before the start.
+    pub fn previous(&self, n: usize) -> Option<(SyntaxKind, Span)> {
+        let token = self.significant[self.pos.checked_sub(n)?];
+        Some((token.kind, self.tokens[token.raw as usize].span))
+    }
+
     /// The end of the last token consumed, where "expected" errors are anchored.
     pub fn previous_end(&self) -> u32 {
         match self.pos.checked_sub(1) {
