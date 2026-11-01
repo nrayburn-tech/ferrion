@@ -9,6 +9,7 @@ mod classfile;
 mod formatter;
 mod lexer;
 mod parser;
+mod semantic;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -53,6 +54,7 @@ pub fn all() -> Vec<Benchmark> {
     all.extend(parser::benchmarks());
     all.extend(formatter::benchmarks());
     all.extend(classfile::benchmarks());
+    all.extend(semantic::benchmarks());
     all
 }
 
