@@ -4,7 +4,7 @@
 //! `oracle tokens` checks the lexer: its tokens and comments must match javac's after the
 //! normalization in docs/design/lexer-oracle-normalization.md, and must reproduce every file byte
 //! for byte. `oracle syntax` and `oracle tree` are the parser's checks (see [`syntax`] and
-//! [`ferrion`]). Later phases add their own checks (see [`check::Check`]). `oracle differences` checks the known differences the corpus
+//! [`ferrion`]). Later phases add their own checks (see [`Check`]). `oracle differences` checks the known differences the corpus
 //! doesn't exercise (see [`differences`]), and `oracle parser-cases` the snapshots of javac's
 //! parser output (see [`parser_cases`]).
 //!

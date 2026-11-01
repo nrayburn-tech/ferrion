@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use ferrion_syntax::SyntaxKind::{self as K, *};
+use ferrion_syntax::SyntaxKind::*;
 
 use super::*;
 use crate::builder::Builder;
@@ -194,7 +194,7 @@ fn skipping_takes_delimited_groups_whole() {
     let parsed = run("x ( ; [ ] ) ; y } z", |p| {
         let stop = TokenSet::new(&[Semi]);
         let error = p.skip_until(stop).unwrap();
-        assert_eq!(error.kind(), K::Error);
+        assert_eq!(error.kind(), Error);
         // The `;` inside the parentheses didn't stop it.
         assert!(p.at(Semi));
         p.bump();
@@ -205,7 +205,7 @@ fn skipping_takes_delimited_groups_whole() {
     });
     assert_eq!(
         kinds(&parsed),
-        [CompilationUnit, K::Error, K::Error, K::Error, K::Error]
+        [CompilationUnit, Error, Error, Error, Error]
     );
     let first = parsed.tree.root().first_child().unwrap();
     assert_eq!(first.text(), "x ( ; [ ] )");
@@ -284,7 +284,7 @@ fn nesting_too_deep_on_a_small_stack() {
             let error = parsed
                 .tree
                 .node(ferrion_syntax::NodeId::from_index(limit + 1));
-            assert_eq!(error.kind(), K::Error);
+            assert_eq!(error.kind(), Error);
             assert_eq!(error.text().len(), 2 * (depth - limit) + 1);
             assert_eq!(parsed.tree.node_count(), limit + 2);
             // The tree is dropped here, on the small stack.
