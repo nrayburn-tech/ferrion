@@ -416,12 +416,21 @@ impl<'t> Formatter<'t> {
     }
 
     fn after_comment(&mut self, comment: Comment, token: SyntaxToken<'t>) {
-        let line_comment = matches!(
-            token.kind(),
-            SyntaxKind::LineComment | SyntaxKind::DocLineComment
-        );
-        match comment.line_breaks_after {
-            0 if line_comment => self.line_owed = 1,
+        // A doc comment ends its line, as GJF prints it, and stays next to the code after it: a
+        // blank line between them is removed, though not one before another comment (observed).
+        let doc_comment = token.kind() == SyntaxKind::DocComment;
+        let ends_line = doc_comment
+            || matches!(
+                token.kind(),
+                SyntaxKind::LineComment | SyntaxKind::DocLineComment
+            );
+        let breaks = if doc_comment && !comment_follows(token) {
+            comment.line_breaks_after.min(1)
+        } else {
+            comment.line_breaks_after
+        };
+        match breaks {
+            0 if ends_line => self.line_owed = 1,
             0 => {
                 if token
                     .next_token()
@@ -488,6 +497,20 @@ impl<'t> Formatter<'t> {
             _ => self.doc().token(token.id(), text.len() as u32, width(text)),
         }
     }
+}
+
+/// Whether the next token after `token` other than whitespace and line terminators is a comment.
+fn comment_follows(token: SyntaxToken<'_>) -> bool {
+    let mut next = token.next_token();
+    while let Some(t) = next
+        && matches!(
+            t.kind(),
+            SyntaxKind::Whitespace | SyntaxKind::LineTerminator
+        )
+    {
+        next = t.next_token();
+    }
+    next.is_some_and(|t| ferrion_syntax::comments::is_comment(t.kind()))
 }
 
 /// Copied text from `start` to `end` in `text`.
