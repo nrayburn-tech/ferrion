@@ -20,7 +20,9 @@ pub(crate) enum Delimited {
     Arguments,
     /// `(x -> {`: one item, hugged (docs/design/formatter.md, "Hugging"): it stays on the line
     /// if the line up to its first forced break fits, and the item is indented +4 only if it
-    /// doesn't.
+    /// doesn't. An item other than a lambda with a block body can also stay on the line and
+    /// break inside when it doesn't fit on the next line either (see `Element::Alternative`):
+    /// `foo(x ->` then the body at +4, or `when(a.b(` then `b`'s arguments.
     Hug,
     /// `{a, b}`: all on the line; otherwise the items on lines of their own at +2, all on one
     /// line, filled, or one per line, and the `}` on a line of its own. A trailing comma keeps the
@@ -96,15 +98,11 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
         "a list that doesn't end in its closing delimiter"
     );
     let items = elements.take_while(|e| !matches!(e, NodeOrToken::Token(t) if is_close(*t)));
-    // A hugged lambda with an expression body can also stay on the line and break after its
-    // arrow instead (see `Element::Alternative`).
     let alternative = shape == Delimited::Hug
-        && node.children().next().is_some_and(|lambda| {
-            lambda
-                .children()
-                .last()
-                .is_some_and(|b| b.kind() != K::Block)
-        });
+        && node
+            .children()
+            .next()
+            .is_some_and(|item| item.kind() != K::LambdaExpr || !lambdas::has_block_body(item));
     // For arguments, around the group and the `)`, so that a `)` after a line break is at +4
     // too.
     let arguments_indentation = (shape == Delimited::Arguments)
@@ -141,11 +139,10 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
                             }
                         }
                     }
-                    NodeOrToken::Node(item) if alternative => {
-                        f.alternative_tail(outer);
-                        f.hug_in_group(|f| lambdas::hugged(f, item, outer));
-                    }
                     NodeOrToken::Node(item) if shape == Delimited::Hug => {
+                        if alternative {
+                            f.alternative_mark(outer);
+                        }
                         f.hug_in_group(|f| f.node(item));
                     }
                     _ => emit(f, element),
@@ -177,9 +174,10 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
             f.soft_line();
         }
     }
-    f.end();
-    // After the group, so that a comment trailing it doesn't break it.
+    // In the group, so that a line comment before it breaks the group, and one after it,
+    // whose line break comes after the group ends, doesn't.
     f.token(close);
+    f.end();
     if let Some(indentation) = arguments_indentation {
         indentation.end(f);
     }

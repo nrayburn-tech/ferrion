@@ -76,7 +76,11 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         f.start_group();
     }
     if root_is_call {
-        call_link(f, root, Hugs::None);
+        // A short call's only argument is hugged: `when(a.b(` (observed).
+        let short = ast::MethodCallExpr::cast(root)
+            .and_then(|call| call.name())
+            .is_some_and(|name| name.text().chars().count() <= 4);
+        call_link(f, root, if short { Hugs::Sole } else { Hugs::None });
     } else if root.kind() == K::NewExpr {
         f.comments_before(root.first_token().id());
         new_with(f, root, Hugs::None);
@@ -88,7 +92,7 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             f.soft_line();
         }
         let in_prefix = stream.map_or(i < prefix, |s| i <= s);
-        link_after_receiver(f, link, if in_prefix { Hugs::None } else { Hugs::All });
+        link_after_receiver(f, link, if in_prefix { Hugs::None } else { Hugs::Lambdas });
         if stream == Some(i) {
             f.end();
         }
@@ -101,7 +105,7 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
 /// call's arguments.
 fn filled_dots<'t>(f: &mut Formatter<'t>, root: SyntaxNode<'t>, links: &[SyntaxNode<'t>]) {
     let Some((&last, fields)) = links.split_last() else {
-        call_link(f, root, Hugs::All);
+        call_link(f, root, Hugs::Lambdas);
         return;
     };
     let indentation = Indentation::start(f, IndentKind::Continuation, true);
@@ -116,7 +120,7 @@ fn filled_dots<'t>(f: &mut Formatter<'t>, root: SyntaxNode<'t>, links: &[SyntaxN
     });
     indentation.end(f);
     if let Some(list) = ast::MethodCallExpr::cast(last).and_then(|c| c.arguments()) {
-        arguments(f, list.syntax(), Hugs::All);
+        arguments(f, list.syntax(), Hugs::Lambdas);
     }
 }
 
@@ -222,12 +226,17 @@ fn call_link<'t>(f: &mut Formatter<'t>, call: SyntaxNode<'t>, hugs: Hugs) {
     }
 }
 
-/// Whether a call's arguments hug a lambda that is the only argument: they do, except in the
-/// prefix of a chain that breaks before its other links, `foo(x -> {...}).bar()` (observed).
+/// Which only argument a call's arguments hug (observed).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Hugs {
+    /// None: the calls in the prefix of a chain that breaks before its other links,
+    /// `foo(x -> {...}).bar()`.
     None,
-    All,
+    /// A lambda: other calls.
+    Lambdas,
+    /// Anything but a lambda: a call of a short name, up to four characters, at the root of
+    /// such a chain, `when(a.b(...)).then(c)`.
+    Sole,
 }
 
 /// A call's arguments (see [`lists::delimited`]). A lambda that is the only argument is hugged
@@ -236,7 +245,11 @@ pub enum Hugs {
 pub fn arguments<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, hugs: Hugs) {
     let mut children = node.children();
     let hug = match (children.next(), children.next()) {
-        (Some(only), None) => only.kind() == K::LambdaExpr && hugs == Hugs::All,
+        (Some(only), None) => match hugs {
+            Hugs::None => false,
+            Hugs::Lambdas => only.kind() == K::LambdaExpr,
+            Hugs::Sole => only.kind() != K::LambdaExpr,
+        },
         _ => false,
     };
     lists::delimited(
@@ -252,7 +265,7 @@ pub fn arguments<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, hugs: Hugs) {
 
 /// `new Type(arguments)`, then any class body after a space.
 pub fn new<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
-    new_with(f, node, Hugs::All);
+    new_with(f, node, Hugs::Lambdas);
 }
 
 fn new_with<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, hugs: Hugs) {

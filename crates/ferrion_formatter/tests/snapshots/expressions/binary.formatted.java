@@ -62,6 +62,9 @@ class Binary {
     x =
         a // trailing the first operand
             + b;
+    assert entryTotal == (maxEntriesPerBucket + 1) / 2 // usual split
+        || entryTotal == (finalBucketEntries + 1) / 2 // last bucket may be short
+        || entryTotal == 2 * ((maxEntriesPerBucket + 1) / 2); // when an entry sits on a split
     x = ++a + --b - a++ - b-- + - -c + + +d - -e + ~f + (!g ? 1 : 0);
   }
 }

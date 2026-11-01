@@ -427,13 +427,12 @@ fn hugged_lambda(b: &mut DocumentBuilder, emit: &dyn Fn(&mut DocumentBuilder, us
     let group = b.start_group_with_alternative();
     b.start_indent_if_broken(group);
     b.soft_line();
-    b.alternative_tail(group);
+    b.alternative_mark(group);
     b.start_hug_in_group();
     b.start_group();
     emit(b, 2);
     b.space();
     emit(b, 3);
-    b.alternative_head(group);
     b.start_indent(IndentKind::Continuation);
     b.line();
     emit(b, 4);
