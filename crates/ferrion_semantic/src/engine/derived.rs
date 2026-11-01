@@ -24,7 +24,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use super::{Cancelled, Snapshot, TableStats};
-use crate::{FileId, Fingerprint, SourceSetId};
+use crate::{FileId, Fingerprint, Name, SourceSetId};
 
 /// Something a derived entry can read. [`Snapshot::current`] gives each one's fingerprint now.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -41,9 +41,9 @@ pub(crate) enum Dep {
     /// A source set's package index.
     PackageIndex(SourceSetId),
     /// The files of one package in a source set's package index.
-    PackageFiles(SourceSetId, Arc<str>),
+    PackageFiles(SourceSetId, Name),
     /// A package entry.
-    Package(SourceSetId, Arc<str>),
+    Package(SourceSetId, Name),
 }
 
 /// One derived entry.

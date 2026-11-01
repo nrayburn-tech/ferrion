@@ -49,7 +49,7 @@ pub fn check_edits(extra: Option<String>, choices: &[u8], concurrent: bool) -> R
     );
     model.assign_ids(&engine);
     // Every package name seen, so that entries for packages that have gone are asked for too.
-    let mut package_names: BTreeSet<Arc<str>> = BTreeSet::new();
+    let mut package_names: BTreeSet<String> = BTreeSet::new();
     compare(
         &engine,
         &model,
@@ -430,7 +430,7 @@ fn compare(
     engine: &Engine,
     model: &Model,
     choices: &mut Choices<'_>,
-    package_names: &mut BTreeSet<Arc<str>>,
+    package_names: &mut BTreeSet<String>,
 ) -> Result<(), String> {
     let fresh = Engine::new(model.input());
     let (old, new) = (engine.snapshot(), fresh.snapshot());
@@ -464,12 +464,12 @@ fn compare(
                 return Err(format!("{}'s summary has a stale fingerprint", file.path));
             }
             let expected = new.summary(new_id).map_err(cancelled)?;
-            if *memo.value.summary != *expected {
+            let actual = memo.value.summary.debug_dump(old.names());
+            let expected = expected.debug_dump(new.names());
+            if actual != expected {
                 return Err(format!(
-                    "{}'s summary differs from a fresh engine's:\n{}\nexpected:\n{}",
+                    "{}'s summary differs from a fresh engine's:\n{actual}\nexpected:\n{expected}",
                     file.path,
-                    memo.value.summary.debug_dump(),
-                    expected.debug_dump()
                 ));
             }
         }
@@ -483,13 +483,15 @@ fn compare(
             }
             let expected = new.package_index(set_id).map_err(cancelled)?;
             let describe = |snapshot: &Snapshot, index: &PackageIndex| -> Vec<String> {
-                index
+                let mut described: Vec<String> = index
                     .names()
                     .map(|name| {
                         let files = paths(snapshot, index.files(name).unwrap());
-                        format!("{name:?}: {files:?}")
+                        format!("{:?}: {files:?}", snapshot.names().text(name))
                     })
-                    .collect()
+                    .collect();
+                described.sort();
+                described
             };
             let (actual, expected) = (describe(&old, &memo.value), describe(&new, &expected));
             if actual != expected {
@@ -498,16 +500,17 @@ fn compare(
                     set.name
                 ));
             }
-            package_names.extend(memo.value.names().cloned());
+            package_names.extend(memo.value.names().map(|n| old.names().text(n).to_string()));
         }
-        for name in package_names.iter() {
+        for text in package_names.iter() {
             if !every && !choices.flip() {
                 continue;
             }
+            let name = old.names().intern(text);
             let memo = old.package_memo(set_id, name).map_err(cancelled)?;
             if memo.fingerprint != Fingerprint::of(&*memo.value) {
                 return Err(format!(
-                    "{}'s package {name:?} has a stale fingerprint",
+                    "{}'s package {text:?} has a stale fingerprint",
                     set.name
                 ));
             }
@@ -515,24 +518,30 @@ fn compare(
                 let Some(package) = package.filter(|p| !p.files().is_empty()) else {
                     return "none".to_owned();
                 };
-                let types: Vec<String> = package
+                let mut types: Vec<String> = package
                     .types()
                     .iter()
-                    .map(|t| format!("{} in {:?}", t.name, paths(snapshot, &t.declarations)))
+                    .map(|t| {
+                        let name = snapshot.names().text(t.name);
+                        format!("{name} in {:?}", paths(snapshot, &t.declarations))
+                    })
                     .collect();
+                types.sort();
                 format!(
                     "files {:?}, types {types:?}",
                     paths(snapshot, package.files())
                 )
             };
-            let expected = new.package(set_id, name).map_err(cancelled)?;
+            let expected = new
+                .package(set_id, new.names().intern(text))
+                .map_err(cancelled)?;
             let (actual, expected) = (
                 describe(&old, Some(&memo.value)),
                 describe(&new, expected.as_deref()),
             );
             if actual != expected {
                 return Err(format!(
-                    "{}'s package {name:?} is {actual}, not {expected}",
+                    "{}'s package {text:?} is {actual}, not {expected}",
                     set.name
                 ));
             }

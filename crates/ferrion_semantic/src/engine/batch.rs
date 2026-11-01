@@ -5,11 +5,10 @@
 //! ends when every item is done, and the next phase starts from there: the package tables need
 //! every summary, and bodies need the package tables.
 
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use super::{Cancelled, Snapshot};
-use crate::{FileId, SourceSetId};
+use crate::{FileId, Name, SourceSetId};
 
 impl Snapshot {
     /// Analyzes every file of every source set over `threads` workers, in phases:
@@ -38,14 +37,14 @@ impl Snapshot {
         parallel(self, threads, sets.len(), |i| {
             self.package_index(sets[i]).map(drop)
         })?;
-        let mut packages: Vec<(SourceSetId, Arc<str>)> = Vec::new();
+        let mut packages: Vec<(SourceSetId, Name)> = Vec::new();
         for &set in &sets {
             let index = self.package_index(set)?;
-            packages.extend(index.names().map(|name| (set, name.clone())));
+            packages.extend(index.names().map(|name| (set, name)));
         }
         parallel(self, threads, packages.len(), |i| {
-            let (set, name) = &packages[i];
-            self.package_memo(*set, name).map(drop)
+            let (set, name) = packages[i];
+            self.package_memo(set, name).map(drop)
         })?;
 
         parallel(self, threads, files.len(), |i| {

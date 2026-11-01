@@ -22,22 +22,22 @@ use std::sync::Arc;
 
 use crate::engine::derived::{Dep, Memo, Reads};
 use crate::summary::{Summary, UnitKind};
-use crate::{Cancelled, FileId, Fingerprint, Snapshot, SourceSetId};
+use crate::{Cancelled, FileId, Fingerprint, Name, Snapshot, SourceSetId};
 
 /// What a file contributes to the package table: its package, and the simple names of its
 /// top-level types in order. `package` is `None` for a `module-info.java`, which isn't in a
 /// package; the unnamed package is the empty name.
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub(crate) struct TopLevel {
-    package: Option<Arc<str>>,
-    types: Box<[Box<str>]>,
+    package: Option<Name>,
+    types: Box<[Name]>,
 }
 
 impl TopLevel {
     pub(crate) fn of(summary: &Summary) -> TopLevel {
         TopLevel {
-            package: (summary.kind != UnitKind::ModuleInfo).then(|| summary.package_name().into()),
-            types: summary.top_level_types().map(|t| t.name.clone()).collect(),
+            package: (summary.kind != UnitKind::ModuleInfo).then(|| summary.package_name()),
+            types: summary.top_level_types().map(|t| t.name).collect(),
         }
     }
 }
@@ -45,7 +45,7 @@ impl TopLevel {
 /// A source set's packages, each with the files that declare it.
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub struct PackageIndex {
-    packages: BTreeMap<Arc<str>, PackageFiles>,
+    packages: BTreeMap<Name, PackageFiles>,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -56,14 +56,14 @@ pub(crate) struct PackageFiles {
 }
 
 impl PackageIndex {
-    /// Every package's name, sorted; the unnamed package is the empty name.
-    pub fn names(&self) -> impl Iterator<Item = &Arc<str>> {
-        self.packages.keys()
+    /// Every package's name, in the order of their ids; the unnamed package is the empty name.
+    pub fn names(&self) -> impl Iterator<Item = Name> + '_ {
+        self.packages.keys().copied()
     }
 
     /// The files declaring `package`, in the source set's order.
-    pub fn files(&self, package: &str) -> Option<&[FileId]> {
-        self.packages.get(package).map(|p| &*p.files)
+    pub fn files(&self, package: Name) -> Option<&[FileId]> {
+        self.packages.get(&package).map(|p| &*p.files)
     }
 
     pub fn len(&self) -> usize {
@@ -74,32 +74,32 @@ impl PackageIndex {
         self.packages.is_empty()
     }
 
-    pub(crate) fn package_files(&self, package: &str) -> Option<&PackageFiles> {
-        self.packages.get(package)
+    pub(crate) fn package_files(&self, package: Name) -> Option<&PackageFiles> {
+        self.packages.get(&package)
     }
 }
 
 /// A package of a source set's own sources.
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub struct Package {
-    name: Arc<str>,
+    name: Name,
     files: Arc<[FileId]>,
-    /// Sorted by name.
+    /// Sorted by name id.
     types: Box<[PackageType]>,
 }
 
 /// A top-level type of a package, by simple name.
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub struct PackageType {
-    pub name: Box<str>,
+    pub name: Name,
     /// The files declaring a top-level type of this name, in the source set's order. More than
     /// one makes every use ambiguous (docs/design/semantic-names.md#duplicates).
     pub declarations: Box<[FileId]>,
 }
 
 impl Package {
-    pub fn name(&self) -> &str {
-        &self.name
+    pub fn name(&self) -> Name {
+        self.name
     }
 
     /// The files declaring the package, `package-info.java` and files without types included.
@@ -107,13 +107,13 @@ impl Package {
         &self.files
     }
 
-    /// The top-level types, sorted by name.
+    /// The top-level types, in the order of their names' ids.
     pub fn types(&self) -> &[PackageType] {
         &self.types
     }
 
-    pub fn get(&self, name: &str) -> Option<&PackageType> {
-        let index = self.types.binary_search_by(|t| (*t.name).cmp(name)).ok()?;
+    pub fn get(&self, name: Name) -> Option<&PackageType> {
+        let index = self.types.binary_search_by(|t| t.name.cmp(&name)).ok()?;
         Some(&self.types[index])
     }
 }
@@ -132,9 +132,9 @@ impl Snapshot {
     }
 
     /// The package `name` of `set`'s own sources, or `None` if none of its files declares it.
-    pub fn package(&self, set: SourceSetId, name: &str) -> Result<Option<Arc<Package>>, Cancelled> {
+    pub fn package(&self, set: SourceSetId, name: Name) -> Result<Option<Arc<Package>>, Cancelled> {
         self.check()?;
-        let package = self.package_memo(set, &Arc::from(name))?.value.clone();
+        let package = self.package_memo(set, name)?.value.clone();
         Ok((!package.files.is_empty()).then_some(package))
     }
 
@@ -150,13 +150,11 @@ impl Snapshot {
     pub(crate) fn package_memo(
         &self,
         set: SourceSetId,
-        name: &Arc<str>,
+        name: Name,
     ) -> Result<Arc<Memo<Package>>, Cancelled> {
         self.shared()
             .packages
-            .get(self, &(set, name.clone()), |reads| {
-                package(reads, set, name)
-            })
+            .get(self, &(set, name), |reads| package(reads, set, name))
     }
 }
 
@@ -177,12 +175,12 @@ impl Reads<'_> {
     pub(crate) fn package_files(
         &mut self,
         set: SourceSetId,
-        name: &Arc<str>,
+        name: Name,
     ) -> Result<Option<Arc<[FileId]>>, Cancelled> {
         let index = self.snapshot.package_index_memo(set)?;
         let files = index.value.package_files(name);
         self.record(
-            Dep::PackageFiles(set, name.clone()),
+            Dep::PackageFiles(set, name),
             files.map_or(Fingerprint::ABSENT, |p| p.fingerprint),
         );
         Ok(files.map(|p| p.files.clone()))
@@ -193,20 +191,20 @@ impl Reads<'_> {
     pub(crate) fn package(
         &mut self,
         set: SourceSetId,
-        name: &Arc<str>,
+        name: Name,
     ) -> Result<Arc<Package>, Cancelled> {
         let memo = self.snapshot.package_memo(set, name)?;
-        self.record(Dep::Package(set, name.clone()), memo.fingerprint);
+        self.record(Dep::Package(set, name), memo.fingerprint);
         Ok(memo.value.clone())
     }
 }
 
 fn package_index(reads: &mut Reads<'_>, set: SourceSetId) -> Result<PackageIndex, Cancelled> {
-    let mut packages: BTreeMap<Arc<str>, Vec<FileId>> = BTreeMap::new();
+    let mut packages: BTreeMap<Name, Vec<FileId>> = BTreeMap::new();
     for &file in reads.set_files(set)?.iter() {
         reads.check()?;
-        if let Some(package) = &reads.top_level(file)?.package {
-            packages.entry(package.clone()).or_default().push(file);
+        if let Some(package) = reads.top_level(file)?.package {
+            packages.entry(package).or_default().push(file);
         }
     }
     Ok(PackageIndex {
@@ -224,19 +222,19 @@ fn package_index(reads: &mut Reads<'_>, set: SourceSetId) -> Result<PackageIndex
     })
 }
 
-fn package(reads: &mut Reads<'_>, set: SourceSetId, name: &Arc<str>) -> Result<Package, Cancelled> {
+fn package(reads: &mut Reads<'_>, set: SourceSetId, name: Name) -> Result<Package, Cancelled> {
     let files = reads
         .package_files(set, name)?
         .unwrap_or_else(|| Arc::from([]));
-    let mut types: BTreeMap<Box<str>, Vec<FileId>> = BTreeMap::new();
+    let mut types: BTreeMap<Name, Vec<FileId>> = BTreeMap::new();
     for &file in files.iter() {
         reads.check()?;
-        for ty in &reads.top_level(file)?.types {
-            types.entry(ty.clone()).or_default().push(file);
+        for &ty in reads.top_level(file)?.types.iter() {
+            types.entry(ty).or_default().push(file);
         }
     }
     Ok(Package {
-        name: name.clone(),
+        name,
         files,
         types: types
             .into_iter()

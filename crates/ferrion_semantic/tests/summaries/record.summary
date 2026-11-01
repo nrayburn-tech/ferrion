@@ -11,6 +11,9 @@ record public Point<T>(@Deprecated int x, int y, List<T> tags) implements Compar
   implicit field x
   implicit field y
   implicit field tags
+  implicit equals(Object)
+  implicit hashCode()
+  implicit toString()
 record Point.Pair(String first, String second)
   constructor Pair(String first) {…}
   method public String first() {…}
@@ -18,11 +21,29 @@ record Point.Pair(String first, String second)
   implicit accessor second()
   implicit field first
   implicit field second
+  implicit equals(Object)
+  implicit hashCode()
+  implicit toString()
 record Point.Canonical(int[] values, String... rest)
   constructor Canonical(int values[], String[] rest) {…}
   implicit accessor values()
   implicit accessor rest()
   implicit field values
   implicit field rest
+  implicit equals(Object)
+  implicit hashCode()
+  implicit toString()
 record Point.Empty
   implicit canonical constructor
+  implicit equals(Object)
+  implicit hashCode()
+  implicit toString()
+record Point.Declared(int v)
+  method public boolean equals(java.lang.Object o) {…}
+  method public int hashCode() {…}
+  method public String toString(int radix) {…}
+  method public boolean equals(Declared other) {…}
+  implicit canonical constructor
+  implicit accessor v()
+  implicit field v
+  implicit toString()

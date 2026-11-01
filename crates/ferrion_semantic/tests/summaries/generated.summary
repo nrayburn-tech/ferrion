@@ -14,10 +14,10 @@ class Made.Deeper.Deepest [generated]
   implicit default constructor
 class @javax.annotation.Generated(…) AlsoMade [generated]
   implicit default constructor
-class @Data Bean [lombok]
+class @Data Bean
   field int x
   implicit default constructor
-class Fields [lombok]
+class Fields
   field @lombok.Getter int x
   field @Builder.Default int y
   implicit default constructor

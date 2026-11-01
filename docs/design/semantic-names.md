@@ -97,10 +97,11 @@ jumping to their `subtree_end`.
     annotation interface element, as a fingerprint);
   - enum constants (with whether each has a class body), and record components;
   - the implicit members: the default constructor (JLS 8.8.9), an enum's `values` and `valueOf`
-    (8.9.3), and a record's canonical constructor, accessors, and fields (8.10.3) when they aren't
-    declared;
-  - whether the type is `@Generated` or Lombok-annotated by an annotation's simple name (resolved
-    later, see [Generated sources](#generated-sources)).
+    (8.9.3), and a record's canonical constructor, accessors, fields, `equals`, `hashCode`, and
+    `toString` (8.10.3) when they aren't declared;
+  - whether the type is `@Generated`, by an annotation's simple name (see
+    [Generated sources](#generated-sources)). Whether it is Lombok-annotated is decided by its
+    type entry, from the resolved annotations.
 - **Module declaration:** name, `open`, and each directive with its names as written.
 - **Diagnostic positions** aren't stored. A diagnostic about a declaration finds the declaration
   again in the current tree by its path.
@@ -110,6 +111,14 @@ annotations, as a small owned structure rather than tree nodes, so a summary out
 is flat, its parts in pre-order each with a count of children, so a type nested ten thousand deep
 is built, compared, hashed, and dropped without recursion. Names have their Unicode escapes
 translated, so `\u0041` and `A` declare the same type.
+
+Every name in a summary (identifiers, dotted names, and later binary names) is interned by the
+engine: a summary holds 32-bit ids, and the engine's interner holds each distinct text once. Ids
+follow the order names were first seen, so they are compared only within one engine; the
+differential check compares summaries across engines as text. A part of a type as written is 12
+bytes, with the few annotations on types kept beside the parts. On lucene this took the summaries
+and package tables from 49 MB to 36 MB (see
+[the engine as built](semantic-incremental.md#the-engine-as-built)).
 
 Details of `ferrion_semantic::summary` as built:
 
@@ -122,13 +131,11 @@ Details of `ferrion_semantic::summary` as built:
   `valueOf`, canonical constructor, accessor and field per component), not as signatures. A
   declared constructor is canonical when its parameters have the components' shapes as written:
   the same types without annotations, with `T...` and C-style dimensions counted as array
-  dimensions. Resolution can refine that. A record's `equals`, `hashCode`, and `toString` aren't
-  listed.
+  dimensions. Resolution can refine that. A record's `equals`, `hashCode`, and `toString` are
+  listed unless a method of that name with the same parameters is declared: `equals` with one
+  parameter whose type is written with the simple name `Object` (resolution can refine that), and
+  the others with none.
 - **Generated:** a member type of a generated type is generated too.
-- **Lombok:** recognized from how the file names the annotation, without resolving it: qualified
-  by `lombok.`, or brought in by a single-type import from a `lombok` package (so `@Value` from
-  Spring isn't Lombok's), or, with an on-demand import of a `lombok` package, any simple name no
-  single-type import covers except `java.lang`'s annotations. On the type or any of its fields.
 - **Receiver parameters** aren't recorded: they don't change what other files see.
 - **Fingerprints** of arguments, constants, and defaults hash each token's kind and text, escapes
   translated, without trivia, so comments in them don't change the summary.

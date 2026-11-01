@@ -14,11 +14,12 @@ mod tests;
 mod written;
 
 use std::fmt;
+use std::sync::Arc;
 
-use crate::Fingerprint;
+use crate::{Fingerprint, Interner, Name};
 
 pub use build::summarize;
-pub use written::{Primitive, TypePart, TypeRef, WildcardBound};
+pub use written::{Primitive, TypeAnnotation, TypePart, TypeRef, WildcardBound};
 
 /// A file's summary.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -57,40 +58,40 @@ pub struct PackageDecl {
     pub annotations: Box<[Annotation]>,
 }
 
-/// A dotted name as written (`java.util.Map`), with Unicode escapes in its identifiers
-/// translated, so names compare as javac compares them. A segment the parser found missing is
-/// empty.
-#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
-pub struct QualifiedName(Box<str>);
+/// A dotted name as written (`java.util.Map`), interned whole, with Unicode escapes in its
+/// identifiers translated, so names compare as javac compares them. A segment the parser found
+/// missing is empty.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Debug)]
+pub struct QualifiedName(pub Name);
+
+impl Default for Name {
+    fn default() -> Name {
+        Name::EMPTY
+    }
+}
 
 impl QualifiedName {
-    pub fn as_str(&self) -> &str {
-        &self.0
+    pub fn name(self) -> Name {
+        self.0
     }
 
-    pub fn segments(&self) -> impl DoubleEndedIterator<Item = &str> {
-        self.0.split('.')
+    pub fn text(self, names: &Interner) -> Arc<str> {
+        names.text(self.0)
+    }
+
+    /// The segments, each interned.
+    pub fn segments(self, names: &Interner) -> Vec<Name> {
+        names
+            .text(self.0)
+            .split('.')
+            .map(|segment| names.intern(segment))
+            .collect()
     }
 
     /// The last segment: the simple name.
-    pub fn last(&self) -> &str {
-        self.segments().next_back().unwrap_or_default()
-    }
-
-    pub(crate) fn new(name: String) -> QualifiedName {
-        QualifiedName(name.into_boxed_str())
-    }
-}
-
-impl fmt::Display for QualifiedName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
-    }
-}
-
-impl fmt::Debug for QualifiedName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self.0)
+    pub fn last(self, names: &Interner) -> Name {
+        let text = names.text(self.0);
+        names.intern(text.rsplit('.').next().unwrap_or_default())
     }
 }
 
@@ -125,13 +126,15 @@ pub struct Annotation {
     pub arguments: Option<Fingerprint>,
 }
 
-impl fmt::Display for Annotation {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "@{}", self.name)?;
-        if self.arguments.is_some() {
-            f.write_str("(…)")?;
-        }
-        Ok(())
+impl Annotation {
+    /// `@Name`, or `@Name(…)` with arguments.
+    pub fn display(&self, names: &Interner) -> impl fmt::Display {
+        let ellipsis = if self.arguments.is_some() {
+            "(…)"
+        } else {
+            ""
+        };
+        format!("@{}{ellipsis}", self.name.text(names))
     }
 }
 
@@ -222,7 +225,7 @@ pub enum TypeKind {
 pub struct TypeSummary {
     pub kind: TypeKind,
     /// The simple name; empty for [`TypeKind::Implicit`], or if the parser found it missing.
-    pub name: Box<str>,
+    pub name: Name,
     /// The enclosing type's index in [`Summary::types`]; `None` at the top level.
     pub outer: Option<u32>,
     pub modifiers: Modifiers,
@@ -243,18 +246,12 @@ pub struct TypeSummary {
     /// Annotated with an annotation whose simple name is `Generated`, or a member of such a type
     /// (docs/design/semantic-names.md#generated-sources). Resolved or not.
     pub generated: bool,
-    /// The type or one of its fields has a Lombok annotation, so Lombok may add members the
-    /// summary doesn't have. Recognized from how the file names it, without resolving it: a name
-    /// qualified by `lombok.`; one whose first segment a single-type import brings in from a
-    /// `lombok` package; or, when the file imports a `lombok` package on demand, any simple name
-    /// no single-type import covers, except `java.lang`'s annotations.
-    pub lombok: bool,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct TypeParameter {
     pub annotations: Box<[Annotation]>,
-    pub name: Box<str>,
+    pub name: Name,
     pub bounds: Box<[TypeRef]>,
 }
 
@@ -263,7 +260,7 @@ pub struct Field {
     pub modifiers: Modifiers,
     pub annotations: Box<[Annotation]>,
     pub ty: TypeRef,
-    pub name: Box<str>,
+    pub name: Name,
     /// The declarator's own dimensions: `int a[];`.
     pub dims: Box<[Dim]>,
     /// For a field that is `final` (explicitly, or as a field of an interface) and has an
@@ -289,7 +286,7 @@ pub struct Method {
     pub type_parameters: Box<[TypeParameter]>,
     /// The result type; `None` for constructors.
     pub result: Option<TypeRef>,
-    pub name: Box<str>,
+    pub name: Name,
     /// The formal parameters. A receiver parameter isn't one, and isn't here.
     pub parameters: Box<[Parameter]>,
     /// Dimensions after the parameters: `int m()[]`.
@@ -308,7 +305,7 @@ pub struct Parameter {
     pub ty: TypeRef,
     /// For a variable arity parameter, the annotations on its `...`.
     pub varargs: Option<Box<[Annotation]>>,
-    pub name: Box<str>,
+    pub name: Name,
     /// The parameter's own dimensions: `int x[]`.
     pub dims: Box<[Dim]>,
 }
@@ -316,7 +313,7 @@ pub struct Parameter {
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct EnumConstant {
     pub annotations: Box<[Annotation]>,
-    pub name: Box<str>,
+    pub name: Name,
     /// Whether it has a class body, making it an anonymous subclass.
     pub has_body: bool,
 }
@@ -326,7 +323,7 @@ pub struct RecordComponent {
     pub annotations: Box<[Annotation]>,
     pub ty: TypeRef,
     pub varargs: Option<Box<[Annotation]>>,
-    pub name: Box<str>,
+    pub name: Name,
 }
 
 /// A member the language declares implicitly, because the source doesn't declare it. Their
@@ -347,6 +344,12 @@ pub enum ImplicitMember {
     Accessor(u32),
     /// The private final field of the record component at this index (8.10.3).
     ComponentField(u32),
+    /// A record's `public final boolean equals(Object)`, when not declared (8.10.3).
+    RecordEquals,
+    /// A record's `public final int hashCode()`, when not declared (8.10.3).
+    RecordHashCode,
+    /// A record's `public final String toString()`, when not declared (8.10.3).
+    RecordToString,
 }
 
 /// A `module-info.java`'s module declaration (JLS 7.7).
@@ -386,15 +389,50 @@ impl Summary {
     /// The type at `index`'s path: its enclosing types' names and its own, joined by `.`
     /// (`Outer.Inner`). An implicitly declared class's path is empty, and its members' paths
     /// start with `.`.
-    pub fn path(&self, index: usize) -> String {
-        let mut names = Vec::new();
+    pub fn path(&self, index: usize, names: &Interner) -> String {
+        self.path_names(index)
+            .iter()
+            .map(|&n| names.text(n))
+            .collect::<Vec<_>>()
+            .join(".")
+    }
+
+    /// The names on the type at `index`'s path, outermost first.
+    pub fn path_names(&self, index: usize) -> Vec<Name> {
+        let mut path = Vec::new();
         let mut next = Some(index);
         while let Some(i) = next {
-            names.push(&*self.types[i].name);
+            path.push(self.types[i].name);
             next = self.types[i].outer.map(|o| o as usize);
         }
-        names.reverse();
-        names.join(".")
+        path.reverse();
+        path
+    }
+
+    /// The index of the type at `path` (simple names, outermost first), if the file declares one.
+    /// The first if more than one has the path, which is an error javac reports.
+    pub fn find(&self, path: &[Name]) -> Option<usize> {
+        let mut outer = None;
+        let mut found = None;
+        for &name in path {
+            let index = self
+                .types
+                .iter()
+                .position(|t| t.outer == outer && t.name == name && t.kind != TypeKind::Implicit)?;
+            outer = Some(index as u32);
+            found = Some(index);
+        }
+        found
+    }
+
+    /// The member types of the type at `index`, in order.
+    pub fn members_of(&self, index: usize) -> impl Iterator<Item = (usize, &TypeSummary)> {
+        let outer = Some(index as u32);
+        self.types
+            .iter()
+            .enumerate()
+            .skip(index + 1)
+            .filter(move |(_, t)| t.outer == outer)
     }
 
     /// The types declared at the top level, which other files can name by package: none for a
@@ -406,7 +444,7 @@ impl Summary {
     }
 
     /// The package name, empty for the unnamed package.
-    pub fn package_name(&self) -> &str {
-        self.package.as_ref().map_or("", |p| p.name.as_str())
+    pub fn package_name(&self) -> Name {
+        self.package.as_ref().map_or(Name::EMPTY, |p| p.name.0)
     }
 }

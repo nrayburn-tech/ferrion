@@ -23,4 +23,11 @@ public record Point<T>(@Deprecated int x, int y, List<T> tags) implements Compar
     }
 
     record Empty() {}
+
+    record Declared(int v) {
+        public boolean equals(java.lang.Object o) { return false; }
+        public int hashCode() { return v; }
+        public String toString(int radix) { return ""; }
+        public boolean equals(Declared other) { return true; }
+    }
 }

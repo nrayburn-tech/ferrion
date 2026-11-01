@@ -126,8 +126,17 @@ fn a_new_type_recomputes_its_package_only() {
     assert_eq!(stats.package_indexes, computed(1, 1, 0));
     // Only `a` is computed again; `b` and `c` are verified without computing.
     assert_eq!(stats.packages, computed(1, 0, 2));
-    let package = engine.snapshot().package(MAIN, "a").unwrap().unwrap();
-    let names: Vec<&str> = package.types().iter().map(|t| &*t.name).collect();
+    let package = engine
+        .snapshot()
+        .package(MAIN, engine.names().intern("a"))
+        .unwrap()
+        .unwrap();
+    let mut names: Vec<String> = package
+        .types()
+        .iter()
+        .map(|t| engine.names().text(t.name).to_string())
+        .collect();
+    names.sort();
     assert_eq!(names, ["A", "A2", "Another"]);
 }
 
@@ -169,10 +178,15 @@ fn a_new_file_recomputes_the_index_and_its_package() {
     engine.remove_file(file(&engine, 3));
     let snapshot = engine.snapshot();
     let index = snapshot.package_index(MAIN).unwrap();
-    let names: Vec<&str> = index.names().map(|n| &**n).collect();
+    let mut names: Vec<String> = index
+        .names()
+        .map(|n| engine.names().text(n).to_string())
+        .collect();
+    names.sort();
     assert_eq!(names, ["a", "b", "d"]);
-    assert!(snapshot.package(MAIN, "c").unwrap().is_none());
-    assert!(snapshot.package(MAIN, "d").unwrap().is_some());
+    let name = |n: &str| engine.names().intern(n);
+    assert!(snapshot.package(MAIN, name("c")).unwrap().is_none());
+    assert!(snapshot.package(MAIN, name("d")).unwrap().is_some());
 }
 
 #[test]
@@ -197,10 +211,11 @@ fn duplicate_types_are_ambiguous() {
         ),
     ]));
     let snapshot = engine.snapshot();
-    let package = snapshot.package(MAIN, "p").unwrap().unwrap();
-    assert!(package.get("A").unwrap().is_ambiguous());
-    assert!(!package.get("Only").unwrap().is_ambiguous());
-    assert!(package.get("Missing").is_none());
+    let name = |n: &str| engine.names().intern(n);
+    let package = snapshot.package(MAIN, name("p")).unwrap().unwrap();
+    assert!(package.get(name("A")).unwrap().is_ambiguous());
+    assert!(!package.get(name("Only")).unwrap().is_ambiguous());
+    assert!(package.get(name("Missing")).is_none());
 }
 
 #[test]
