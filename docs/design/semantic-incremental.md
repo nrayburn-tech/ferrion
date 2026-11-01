@@ -281,8 +281,9 @@ Trees are an input-derived cache, not a layer: computed from a file's text, used
 body phases, and kept in a cache with a byte budget (by default 256 MB, a setting for the language
 server), least recently used evicted first. A tree evicted while in use stays alive through its
 `Arc` until its user is done. The budget counts each tree's node and token arrays by their
-lengths; the trees' real memory is about half as much again, from the arrays' spare capacity
-(lucene: 243 MB counted, about 360 MB allocated), until the parser's builder shrinks them.
+lengths, which is what they hold, since `SyntaxTree::new` shrinks them to fit. Before it did,
+their spare capacity made trees about half as large again as counted (lucene: 243 MB counted,
+about 360 MB allocated).
 
 ## Threads
 
