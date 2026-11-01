@@ -90,6 +90,30 @@ fn a_break_in_a_hug_only_stops_the_measure_outside_it() {
 }
 
 #[test]
+fn a_hug_in_a_group_spares_only_that_group() {
+    let mut b = DocumentBuilder::new();
+    let outer = b.start_group();
+    text(&mut b, 10);
+    let arguments = b.start_group();
+    b.start_indent_if_broken(arguments);
+    b.start_hug_in_group();
+    let inside = b.start_group();
+    text(&mut b, 1);
+    b.hard_line();
+    text(&mut b, 80);
+    b.end();
+    b.hard_line();
+    b.end();
+    b.end();
+    b.end();
+    b.end();
+    let document = b.finish();
+    assert_eq!(group_at(&document, arguments), (1, false, true));
+    assert_eq!(group_at(&document, outer), (11, true, true));
+    assert!(group_at(&document, inside).1);
+}
+
+#[test]
 fn copied_text_with_a_line_break_forces_its_groups() {
     let mut b = DocumentBuilder::new();
     let group = b.start_group();

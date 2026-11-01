@@ -269,6 +269,14 @@ impl<'t> Formatter<'t> {
         self.doc.end();
     }
 
+    /// Runs `f` in a hug that keeps only the innermost group around it from breaking (see
+    /// [`DocumentBuilder::start_hug_in_group`]).
+    pub fn hug_in_group(&mut self, f: impl FnOnce(&mut Self)) {
+        self.doc.start_hug_in_group();
+        f(self);
+        self.doc.end();
+    }
+
     /// Asserts, in debug builds, that the tokens from `first` to `last` come next: after the last
     /// token emitted, with only trivia skipped between.
     fn check_next(&self, first: TokenId, last: TokenId) {
