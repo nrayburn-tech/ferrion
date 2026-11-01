@@ -66,6 +66,25 @@ enum Switch {
     Expression,
 }
 
+/// Keywords that start a statement and nothing else. Where a member or a top-level declaration
+/// should be, javac parses the statement and reports it (see [`misplaced_statement`]).
+pub(crate) const STATEMENT_KEYWORDS: TokenSet = TokenSet::new(&[
+    IfKw, ForKw, WhileKw, DoKw, TryKw, SwitchKw, ReturnKw, ThrowKw, BreakKw, ContinueKw, AssertKw,
+]);
+
+/// A statement where a member or a top-level declaration should be, at one of
+/// [`STATEMENT_KEYWORDS`]: reported at the keyword, as javac's `statement.not.expected`, and
+/// parsed into an `Error` node.
+pub(crate) fn misplaced_statement(p: &mut Parser<'_>) {
+    let m = p.start();
+    report_here(p, ParseDiagnosticKind::StatementNotExpected);
+    p.nested(|p| {
+        statement(p, Context::Block);
+        Some(())
+    });
+    m.complete(p, Error);
+}
+
 /// A `Block`, at `{`: a method, constructor, initializer, or lambda body, or a statement.
 /// Reports a missing `{` and returns `None` if the current token isn't one.
 pub(crate) fn block(p: &mut Parser<'_>) -> Option<CompletedMarker> {

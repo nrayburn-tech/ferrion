@@ -1,4 +1,4 @@
-CompilationUnit 0..98 [error]
+CompilationUnit 0..160 [error]
   EnumDecl 0..27 [error]
     EnumKw 0..4 "enum"
     Whitespace 4..5 " "
@@ -100,7 +100,74 @@ CompilationUnit 0..98 [error]
       Whitespace 95..96 " "
       RBrace 96..97 "}"
   LineTerminator 97..98 "\n"
-  Eof 98..98 ""
+  EnumDecl 98..109 [error]
+    EnumKw 98..102 "enum"
+    Whitespace 102..103 " "
+    Identifier 103..104 "F"
+    Error 104..106 [error]
+      Lt 104..105 "<"
+      Gt 105..106 ">"
+    Whitespace 106..107 " "
+    EnumBody 107..109
+      LBrace 107..108 "{"
+      RBrace 108..109 "}"
+  LineTerminator 109..110 "\n"
+  EnumDecl 110..122 [error]
+    EnumKw 110..114 "enum"
+    Whitespace 114..115 " "
+    Identifier 115..116 "G"
+    Error 116..119 [error]
+      TypeParameters 116..119 [error]
+        Lt 116..117 "<"
+        Comma 117..118 ","
+        Gt 118..119 ">"
+    Whitespace 119..120 " "
+    EnumBody 120..122
+      LBrace 120..121 "{"
+      RBrace 121..122 "}"
+  LineTerminator 122..123 "\n"
+  EnumDecl 123..138 [error]
+    EnumKw 123..127 "enum"
+    Whitespace 127..128 " "
+    Identifier 128..129 "H"
+    Whitespace 129..130 " "
+    EnumBody 130..138 [error]
+      LBrace 130..131 "{"
+      Whitespace 131..132 " "
+      Semi 132..133 ";"
+      Whitespace 133..134 " "
+      Error 134..135 [error]
+        EnumConstant 134..135
+          Identifier 134..135 "A"
+      Semi 135..136 ";"
+      Whitespace 136..137 " "
+      RBrace 137..138 "}"
+  LineTerminator 138..139 "\n"
+  EnumDecl 139..159 [error]
+    EnumKw 139..143 "enum"
+    Whitespace 143..144 " "
+    Identifier 144..145 "I"
+    Whitespace 145..146 " "
+    EnumBody 146..159 [error]
+      LBrace 146..147 "{"
+      Whitespace 147..148 " "
+      Semi 148..149 ";"
+      Whitespace 149..150 " "
+      Error 150..157 [error]
+        EnumConstant 150..151
+          Identifier 150..151 "A"
+        Comma 151..152 ","
+        Whitespace 152..153 " "
+        EnumConstant 153..157
+          Identifier 153..154 "B"
+          Whitespace 154..155 " "
+          ClassBody 155..157
+            LBrace 155..156 "{"
+            RBrace 156..157 "}"
+      Whitespace 157..158 " "
+      RBrace 158..159 "}"
+  LineTerminator 159..160 "\n"
+  Eof 160..160 ""
 error 13..13 @13 Expected(OneOf([Comma, RBrace, Semi])): ',', '}', or ';' expected
 error 38..38 @38 Expected(OneOf([Comma, RBrace, Semi])): ',', '}', or ';' expected
 error 40..40 @40 Expected(Identifier): name expected
@@ -108,3 +175,8 @@ error 54..55 @54 ExpectedEnumConstant(Comma): unexpected ',': expected an enum c
 error 69..72 @69 ExpectedEnumConstant(IntKw): unexpected 'int': expected an enum constant
 error 87..93 @87 ExpectedEnumConstant(PublicKw): unexpected 'public': expected an enum constant
 error 95..95 @95 Expected(Identifier): name expected
+error 104..105 @104 GenericEnum: an enum can't have type parameters
+error 117..117 @117 Expected(Identifier): name expected
+error 118..118 @118 Expected(Identifier): name expected
+error 134..135 @134 MisplacedEnumConstant: enum constants come before the enum's ';'; a method needs a result type
+error 150..151 @150 MisplacedEnumConstant: enum constants come before the enum's ';'; a method needs a result type

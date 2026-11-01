@@ -1,0 +1,24 @@
+CompilationUnit 0..27 [error]
+  PackageDecl 0..10
+    PackageKw 0..7 "package"
+    Whitespace 7..8 " "
+    Name 8..9
+      Identifier 8..9 "p"
+    Semi 9..10 ";"
+  LineTerminator 10..11 "\n"
+  LineTerminator 11..12 "\n"
+  MethodDecl 12..26
+    VoidType 12..16
+      VoidKw 12..16 "void"
+    Whitespace 16..17 " "
+    Identifier 17..21 "main"
+    FormalParameters 21..23
+      LParen 21..22 "("
+      RParen 22..23 ")"
+    Whitespace 23..24 " "
+    Block 24..26
+      LBrace 24..25 "{"
+      RBrace 25..26 "}"
+  LineTerminator 26..27 "\n"
+  Eof 27..27 ""
+error 0..10 @0 ImplicitClassPackage: a file with methods or fields at the top level can't have a package declaration

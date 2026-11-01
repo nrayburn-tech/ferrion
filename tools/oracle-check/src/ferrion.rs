@@ -33,7 +33,9 @@ impl Parser for Ferrion {
     }
 
     /// In the order javac would meet them: source order, with `premature.eof` last, since javac
-    /// reports it on reaching the end of the file, after any lexical error in trailing comments.
+    /// reports it on reaching the end of the file, after any lexical error in trailing comments,
+    /// and after it the package declaration of an implicitly declared class, which javac reports
+    /// once the file is parsed.
     fn errors(&self, parsed: &Parsed) -> Vec<SyntaxError> {
         let tree = &parsed.parse.tree;
         let mut errors: Vec<SyntaxError> = parsed
@@ -42,13 +44,11 @@ impl Parser for Ferrion {
             .iter()
             .filter_map(|diagnostic| javac_error(diagnostic, tree, parsed.release))
             .collect();
-        let eof = tree.text().len() as u32;
-        errors.sort_by_key(|error| {
-            if error.code == "compiler.err.premature.eof" {
-                eof
-            } else {
-                error.position
-            }
+        // Errors javac reports at the end keep the order Ferrion reported them in.
+        errors.sort_by_key(|error| match error.code.as_str() {
+            "compiler.err.premature.eof" => (1, 0),
+            "compiler.err.implicit.class.should.not.have.package.declaration" => (2, 0),
+            _ => (0, error.position),
         });
         errors
     }
@@ -70,12 +70,13 @@ pub fn javac_error(
     }
     let (code, position) = match diagnostic.kind {
         Kind::Lexical(kind) => lexical(kind, diagnostic.span, tree),
-        kind => match at_end_of_file(tree, diagnostic.anchor) {
-            // javac reports any syntax error at the end of the file as `premature.eof`, at the end
-            // of the last token.
-            Some(end) => ("premature.eof", end),
-            None => (syntax_code(kind, release), diagnostic.anchor),
-        },
+        // javac reports any syntax error it meets at the end of the file as `premature.eof`, where
+        // it would have reported the error: after the last token for what's missing there, at the
+        // end of the file for a token that can't start what's expected.
+        kind if names_eof(kind) || at_end_of_file(tree, diagnostic.anchor) => {
+            ("premature.eof", diagnostic.anchor)
+        }
+        kind => (syntax_code(kind, release), diagnostic.anchor),
     };
     Some(SyntaxError {
         code: format!("compiler.err.{code}"),
@@ -143,6 +144,13 @@ fn syntax_code(kind: Kind, release: u32) -> &'static str {
         Kind::StatementNotAllowedInRule => "switch.case.unexpected.statement",
         Kind::AnnotatedClassLiteral => "no.annotations.on.dot.class",
         Kind::AnnotatedExpression => "illegal.start.of.expr",
+        Kind::VarargsReceiver => "varargs.and.receiver",
+        Kind::WrongReceiverName => "wrong.receiver",
+        Kind::MissingElementValue => "annotation.missing.element.value",
+        Kind::StatementNotExpected => "statement.not.expected",
+        Kind::InitializerNotAllowed => "initializer.not.allowed",
+        Kind::InstanceInitializerInRecord => "instance.initializer.not.allowed.in.records",
+        Kind::ImplicitClassPackage => "implicit.class.should.not.have.package.declaration",
         Kind::RecordPatternAnnotations => "record.patterns.annotations.not.allowed",
         // Never compared (`JavacPhase::Never`).
         Kind::NestingTooDeep => "nesting.too.deep",
@@ -166,22 +174,20 @@ fn syntax_code(kind: Kind, release: u32) -> &'static str {
     }
 }
 
-/// When the first token at or after `anchor` is the end of the file: the end of the last token
-/// before it, where javac reports `premature.eof` (0 in a file without tokens).
-fn at_end_of_file(tree: &SyntaxTree, anchor: u32) -> Option<u32> {
+/// Whether the first token at or after `anchor` is the end of the file.
+fn at_end_of_file(tree: &SyntaxTree, anchor: u32) -> bool {
     let tokens = tree.lexer_tokens();
     let first = tokens.partition_point(|token| token.span.start < anchor);
-    let next = tokens[first..]
+    tokens[first..]
         .iter()
-        .find(|token| !SyntaxKind::from_token_kind(token.kind).is_trivia())?;
-    if SyntaxKind::from_token_kind(next.kind) != SyntaxKind::Eof {
-        return None;
-    }
-    let last = tokens.iter().rev().find(|token| {
-        let kind = SyntaxKind::from_token_kind(token.kind);
-        !kind.is_trivia() && kind != SyntaxKind::Eof
-    });
-    Some(last.map_or(0, |token| token.span.end))
+        .find(|token| !SyntaxKind::from_token_kind(token.kind).is_trivia())
+        .is_some_and(|next| SyntaxKind::from_token_kind(next.kind) == SyntaxKind::Eof)
+}
+
+/// Whether a diagnostic is about the end of the file as the token that can't come where it is,
+/// whatever its anchor: a top-level type with nothing after it is reported at the type.
+fn names_eof(kind: Kind) -> bool {
+    matches!(kind, Kind::ExpectedDeclaration(SyntaxKind::Eof))
 }
 
 /// javac's code and position for a lexical error. The lexer's spans point at the mistake; javac's

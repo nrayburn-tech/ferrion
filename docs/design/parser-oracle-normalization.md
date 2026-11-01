@@ -509,12 +509,20 @@ messages are Ferrion's own. Each `ParseDiagnosticKind` documents its javac code 
 the position from the anchor, with these rules:
 
 - **The end of the file.** javac reports any syntax error it meets at the end of the file as
-  `premature.eof`, at the end of the last token. Ferrion reports what's missing (`Expected`,
-  `ExpectedDeclaration(Eof)`, `UnexpectedToken(Eof)`, `StatementExpected`, ...), anchored at the
-  end of the previous token or at the end of the file. Any syntax error whose next token is the end
-  of the file becomes `premature.eof` at the end of the last token (0 in a file without tokens).
-  It sorts after Ferrion's other errors, since javac meets it last: after an unclosed comment that
-  ends the file, for example.
+  `premature.eof`, where it would have reported the error: after the last token for what's
+  missing there (`class A {` at its end), and at the end of the file, after any trailing comments
+  and whitespace, for the end of the file where something else must start (`void f(` at its end)
+  ([`void-field-at-end-of-file.java`](../../tools/oracle-check/parser-cases/void-field-at-end-of-file.java)).
+  Ferrion's anchors are the same: `Expected` after the previous token, and the kinds about the
+  current token (`UnexpectedToken(Eof)`, `TypeExpected(Eof)`, ...) at it. So any syntax error
+  whose next token is the end of the file becomes `premature.eof` at its anchor. So does
+  `ExpectedDeclaration(Eof)` wherever it is anchored: a name alone at the top level with nothing
+  after it (`class A {}` then `foo`) is reported at the name
+  ([`name-at-end-of-file.java`](../../tools/oracle-check/parser-cases/name-at-end-of-file.java)).
+  `premature.eof` sorts after Ferrion's other errors, since javac meets it last: after an
+  unclosed comment that ends the file, for example.
+- **Reported last.** javac reports `implicit.class.should.not.have.package.declaration` once the
+  file is parsed, after its other errors, so it sorts after `premature.eof`.
 - **By release.** `ExpectedDeclaration` is `expected3` (class, interface, or enum) before 16,
   `expected4` (or record) from 16 to 24, and `class.method.or.field.expected` from 25.
 - **Several tokens.** `Expected(OneOf(..))` is `expected2`, `expected3`, or `expected4` by how
@@ -548,10 +556,20 @@ the position from the anchor, with these rules:
   ([Reported earlier than javac](parser-error-recovery.md#reported-earlier-than-javac)).
 - **`bad.file.name`**, on javac's side: javac reports it for an implicitly declared class in a file
   whose name isn't an identifier, because the class takes its name from the file. The parser never
-  sees file names, and naming the class is semantic analysis's concern. It's the only error javac
-  reports while parsing that depends on something besides the text and the release
+  sees file names, and naming the class is semantic analysis's concern. With
+  `expected.module.or.open` (below), it's one of the two errors javac reports while parsing that
+  depend on something besides the text and the release
   ([`implicit-classes-and-module-imports.java`](../../tools/oracle-check/parser-cases/implicit-classes-and-module-imports.java),
   [`implicit-class-members.java`](../../tools/oracle-check/parser-cases/implicit-class-members.java)).
+
+#### Errors compared by another code
+
+- **`expected.module.or.open`**, on javac's side: in a file named `module-info.java`, javac
+  reports a top-level declaration that isn't a module declaration (`weak module m {}`) with this
+  code; in a file of any other name, the same declaration gets `class.method.or.field.expected`
+  (`expected3` before 16, `expected4` from 16 to 24) at the same position. The parser never sees
+  file names, so the comparison compares javac's error as that code
+  (`tools/oracle-check/src/syntax.rs`).
 
 ## Known differences
 
@@ -573,7 +591,6 @@ doesn't. Category: javac error recovery, unless noted.
 | [`syntax-annotation-after-constructor-type-parameters.java`](../../tools/oracle-check/differences/syntax-annotation-after-constructor-type-parameters.java) | `<T> @Deprecated A() {}` | `illegal.start.of.type` | none |
 | [`syntax-compact-constructor-type-parameters.java`](../../tools/oracle-check/differences/syntax-compact-constructor-type-parameters.java) | `<T> R {}` in a record | none | `expected` |
 | [`syntax-compact-constructor-throws.java`](../../tools/oracle-check/differences/syntax-compact-constructor-throws.java) | `R throws Exception {}` in a record | `invalid.canonical.constructor.in.record` | `expected` |
-| [`syntax-wrong-receiver.java`](../../tools/oracle-check/differences/syntax-wrong-receiver.java) | `A this.x` as a parameter | `wrong.receiver` | `expected3` |
 | [`syntax-parenthesized-comparison-before-name.java`](../../tools/oracle-check/differences/syntax-parenthesized-comparison-before-name.java) | `(a < b) c` | `expected2` | `expected`, one token later |
 | [`syntax-lambda-parameter-annotated-after-type.java`](../../tools/oracle-check/differences/syntax-lambda-parameter-annotated-after-type.java) | `(int @A x) -> 1` | `expected` | `illegal.start.of.type` |
 | [`syntax-final-record-pattern.java`](../../tools/oracle-check/differences/syntax-final-record-pattern.java) | `case final R(var x)` | `mod.not.allowed.here` | none |

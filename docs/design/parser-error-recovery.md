@@ -183,6 +183,18 @@ javac 27:
 | `open m {}` | `expected.module` | start of `m` |
 | `module m {} class A {}` | `expected` (end of input expected) | end of the module's `}` |
 | an unclosed class at the end of the file | `premature.eof` | end of the last token |
+| `void f(` at the end of the file | `premature.eof` | the end of the file, where a parameter must start |
+| `clas A {}`, `foo;`, `int x` then `int y;` at the top level | as for `}` there | the type's start, or for a name alone at the end of the file, `premature.eof` there |
+| `return x;`, `if (a) {}` in a class body or at the top level | `statement.not.expected` | the keyword |
+| `{}` in an interface, `{}` in a record | `initializer.not.allowed`, `instance.initializer.not.allowed.in.records` | the `{` |
+| `int x;` in an interface | `expected` (`'=' expected`) | start of the token after the declarator |
+| `void x;` as a member | `expected` (`'(' expected`) | start of the token after the name |
+| `enum E { ; A; }` | `enum.constant.not.expected` | `A` |
+| `enum E<T>`, `enum E<>` | `enum.cant.be.generic` | the first type parameter, or the `<` of `<>` |
+| `package p;` in a file with top-level methods or fields | `implicit.class.should.not.have.package.declaration`, after any other error | `package` |
+| `void f(A a.b)` (a first parameter), `void f(A this.x)` | `wrong.receiver` | start of the token after the name |
+| `void f(A... this)` | `varargs.and.receiver` | start of the token after the name |
+| `@A({,0})`, `@A({0 1})` | `annotation.missing.element.value` | end of the previous token |
 | `@A int.class`, `int @A [].class` | `no.annotations.on.dot.class` | start of the token after the class literal |
 | `@A a`, `@A f()`; `@A a.b`; `a @A [1]` | `illegal.start.of.expr` | the `@`; the token after `a.b`; the `@` |
 | `o instanceof @A R(var x)` | `record.patterns.annotations.not.allowed` | the first `@` |

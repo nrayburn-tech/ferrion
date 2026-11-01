@@ -1,0 +1,8 @@
+# javac's parse diagnostics at each release, then its tree at the last. Regenerate with `cargo oracle parser-cases --bless`.
+diagnostics at 27:
+  ERROR compiler.err.premature.eof 12..30 @30 [] reached end of file while parsing
+tree at 27:
+  COMPILATION_UNIT 0..30 @0 "class E {\n  static void error\n"
+    CLASS 0..30 @0 "class E {\n  static void error\n"
+      MODIFIERS -1..-1 @-1
+      ERRONEOUS 12..30 @30 "static void error\n"

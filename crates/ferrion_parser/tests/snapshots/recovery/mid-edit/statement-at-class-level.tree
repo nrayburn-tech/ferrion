@@ -17,11 +17,13 @@ CompilationUnit 0..67 [error]
         Semi 17..18 ";"
       LineTerminator 18..19 "\n"
       Whitespace 19..21 "  "
-      Error 21..29 [error]
-        ReturnKw 21..27 "return"
-        Whitespace 27..28 " "
-        Identifier 28..29 "x"
-      Semi 29..30 ";"
+      Error 21..30 [error]
+        ReturnStmt 21..30
+          ReturnKw 21..27 "return"
+          Whitespace 27..28 " "
+          NameExpr 28..29
+            Identifier 28..29 "x"
+          Semi 29..30 ";"
       LineTerminator 30..31 "\n"
       Whitespace 31..33 "  "
       ConstructorDecl 33..39 [error]
@@ -33,18 +35,23 @@ CompilationUnit 0..67 [error]
       LineTerminator 39..40 "\n"
       Whitespace 40..42 "  "
       Error 42..55 [error]
-        IfKw 42..44 "if"
-        Whitespace 44..45 " "
-        LParen 45..46 "("
-        Identifier 46..47 "x"
-        Whitespace 47..48 " "
-        Gt 48..49 ">"
-        Whitespace 49..50 " "
-        IntLiteral 50..51 "0"
-        RParen 51..52 ")"
-        Whitespace 52..53 " "
-        LBrace 53..54 "{"
-        RBrace 54..55 "}"
+        IfStmt 42..55
+          IfKw 42..44 "if"
+          Whitespace 44..45 " "
+          LParen 45..46 "("
+          BinaryExpr 46..51
+            NameExpr 46..47
+              Identifier 46..47 "x"
+            Whitespace 47..48 " "
+            Gt 48..49 ">"
+            Whitespace 49..50 " "
+            LiteralExpr 50..51
+              IntLiteral 50..51 "0"
+          RParen 51..52 ")"
+          Whitespace 52..53 " "
+          Block 53..55
+            LBrace 53..54 "{"
+            RBrace 54..55 "}"
       LineTerminator 55..56 "\n"
       Whitespace 56..58 "  "
       FieldDecl 58..64
@@ -58,6 +65,6 @@ CompilationUnit 0..67 [error]
       RBrace 65..66 "}"
   LineTerminator 66..67 "\n"
   Eof 67..67 ""
-error 21..27 @21 ExpectedMember(ReturnKw): unexpected 'return': expected a member declaration
+error 21..27 @21 StatementNotExpected: a statement can't be here; put it in a method or an initializer
 error 33..36 @33 MissingReturnType: a method needs a result type; a constructor takes its class's name
-error 42..44 @42 ExpectedMember(IfKw): unexpected 'if': expected a member declaration
+error 42..44 @42 StatementNotExpected: a statement can't be here; put it in a method or an initializer

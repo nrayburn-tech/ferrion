@@ -93,8 +93,9 @@ const LIST_RECOVERY: TokenSet = TokenSet::new(&[Comma, LBrace, Semi, ThrowsKw]);
 
 /// Everything after the imports: a module declaration (`modules::module_decl`), or type
 /// declarations and, for an implicitly declared class, methods and fields. Consumes every token
-/// up to `Eof`.
-pub(crate) fn compilation_unit_items(p: &mut Parser<'_>) {
+/// up to `Eof`. Returns whether there are methods or fields, which make the file an implicitly
+/// declared class.
+pub(crate) fn compilation_unit_items(p: &mut Parser<'_>) -> bool {
     // javac reads `module` or `open` as the start of a module declaration only in the first
     // declaration, after any annotations, however it goes on.
     let (after_modifiers, has_keywords) = scan_modifiers(p, 0);
@@ -120,12 +121,13 @@ pub(crate) fn compilation_unit_items(p: &mut Parser<'_>) {
                 break;
             }
         }
-        return;
+        return false;
     }
     let body = Body {
         kind: BodyKind::TopLevel,
         name: None,
     };
+    let mut implicit_class = false;
     let mut progress = p.progress();
     while !p.at_eof() {
         if p.at(Semi) {
@@ -144,7 +146,20 @@ pub(crate) fn compilation_unit_items(p: &mut Parser<'_>) {
             error_at_current(p, ParseDiagnosticKind::ExpectedDeclaration(p.current()));
             p.bump_as(if tokens == 1 { SealedKw } else { NonSealedKw });
             e.complete(p, Error);
+        } else if p.at_set(stmts::STATEMENT_KEYWORDS) {
+            stmts::misplaced_statement(p);
+        } else if let Some(misplaced) = at_misplaced_member(p) {
+            let e = p.start();
+            modifiers(p);
+            let kind = if misplaced.at_eof {
+                ParseDiagnosticKind::ExpectedDeclaration(Eof)
+            } else {
+                ParseDiagnosticKind::ExpectedDeclaration(p.current())
+            };
+            recover(p, kind, DECLARATION_RECOVERY);
+            e.complete(p, Error);
         } else if at_member_start(p, &body) {
+            implicit_class |= !at_type_decl_after_modifiers(p);
             member(p, &body);
         } else {
             recover(
@@ -156,6 +171,71 @@ pub(crate) fn compilation_unit_items(p: &mut Parser<'_>) {
         if !progress.advanced(p) {
             break;
         }
+    }
+    implicit_class
+}
+
+/// What [`at_misplaced_member`] found.
+struct MisplacedMember {
+    /// The member's type is a name with nothing after it, which javac reports as the end of the
+    /// file, at the name.
+    at_eof: bool,
+}
+
+/// At the top level, a field or method that javac doesn't take as the member of an implicitly
+/// declared class: after its modifiers, a type not followed by a name and `(`, `=`, `;`, or `,`
+/// (`clas A {}`, `foo;`). javac reports it at the type, as it reports a token that can't start a
+/// declaration, or as the end of the file there if nothing follows a name (`foo`).
+fn at_misplaced_member(p: &Parser<'_>) -> Option<MisplacedMember> {
+    if at_type_decl_after_modifiers(p) {
+        return None;
+    }
+    let mut n = scan_modifiers(p, 0).0;
+    // `sealed` and `non-sealed`, when they are modifiers.
+    loop {
+        let tokens = if p.nth_at(n, NonSealedKw) {
+            3
+        } else if p.nth_at(n, SealedKw) {
+            1
+        } else {
+            break;
+        };
+        if !sealed_is_modifier(p, n + tokens) {
+            break;
+        }
+        n = scan_modifiers(p, n + tokens).0;
+    }
+    let end = if p.nth(n) == VoidKw {
+        n + 1
+    } else if p.nth_at_set(n, IDENT) || p.nth_at_set(n, PRIMITIVE_TYPES) {
+        types::scan_type(p, n)?
+    } else {
+        return None;
+    };
+    let misplaced = match p.nth(end) {
+        // javac reports a name alone as the end of the file, but not `int`, `void`, or `a.b`.
+        Eof => {
+            let name = end == n + 1 && p.nth_at_set(n, IDENT);
+            return Some(MisplacedMember { at_eof: name });
+        }
+        // A constructor-like method: `member` reports its missing result type.
+        LParen => false,
+        _ if p.nth_at_set(end, IDENT) => !matches!(p.nth(end + 1), LParen | Eq | Semi | Comma),
+        _ => true,
+    };
+    misplaced.then_some(MisplacedMember { at_eof: false })
+}
+
+/// Whether a type declaration starts after the modifiers at the current token.
+fn at_type_decl_after_modifiers(p: &Parser<'_>) -> bool {
+    let mut n = scan_modifiers(p, 0).0;
+    while p.nth_at(n, SealedKw) || p.nth_at(n, NonSealedKw) {
+        n = scan_modifiers(p, n + if p.nth_at(n, SealedKw) { 1 } else { 3 }).0;
+    }
+    match p.nth(n) {
+        ClassKw | InterfaceKw | EnumKw => true,
+        At => p.nth(n + 1) == InterfaceKw,
+        _ => p.nth_at(n, RecordKw) && p.nth_at_set(n + 1, IDENT),
     }
 }
 
@@ -333,7 +413,8 @@ pub(crate) fn element_value(p: &mut Parser<'_>) -> Option<CompletedMarker> {
     }
 }
 
-/// `{1, 2}`, `{}`, or `{,}`, at `{`.
+/// `{1, 2}`, `{}`, or `{,}`, at `{`. A missing `}`, after `{,` or after a value, is javac's
+/// `annotation.missing.element.value`.
 fn element_value_array(p: &mut Parser<'_>) -> CompletedMarker {
     let m = p.start();
     p.bump();
@@ -348,7 +429,14 @@ fn element_value_array(p: &mut Parser<'_>) -> CompletedMarker {
             }
         }
     }
-    p.expect(RBrace);
+    if !p.eat(RBrace) {
+        let end = p.previous_end();
+        p.error(
+            ParseDiagnosticKind::MissingElementValue,
+            Span::empty(end),
+            end,
+        );
+    }
     m.complete(p, ElementValueArray)
 }
 
@@ -426,10 +514,20 @@ fn type_decl_with(p: &mut Parser<'_>, m: Marker, info: ModifierInfo) -> Option<C
     if p.at(Lt) {
         if kind == EnumDecl {
             let e = p.start();
-            // javac reports it at the first type parameter.
-            let span = p.nth_span(1);
-            p.error(ParseDiagnosticKind::GenericEnum, span, span.start);
-            types::type_parameters(p);
+            // javac reports it at the first type parameter, or at the `<` of `<>`, after any
+            // error in the type parameters.
+            if p.nth(1) == Gt {
+                let span = p.nth_span(0);
+                p.error(ParseDiagnosticKind::GenericEnum, span, span.start);
+                p.bump();
+                p.bump();
+            } else {
+                if p.nth_at_set(1, IDENT) || p.nth(1) == At {
+                    let span = p.nth_span(1);
+                    p.error(ParseDiagnosticKind::GenericEnum, span, span.start);
+                }
+                types::type_parameters(p);
+            }
             complete_or_abandon(p, e, Error);
         } else {
             types::type_parameters(p);
@@ -582,17 +680,32 @@ fn parameter(p: &mut Parser<'_>, first: bool, component: bool) -> Option<Span> {
     if varargs {
         varargs_node(p);
     }
-    if let Some(this) = at_receiver(p) {
+    if let Some(receiver) = at_receiver(p, first && !component) {
         // `A this` or `A Outer.this`. javac accepts any qualified name before `.this`.
-        let span = p.nth_span(this);
-        if !first || component {
+        let span = p.nth_span(receiver.last);
+        let misplaced = receiver.this_kw && (!first || component);
+        if misplaced {
             p.error(ParseDiagnosticKind::MisplacedReceiver, span, span.start);
         }
-        for _ in 0..=this {
+        for _ in 0..=receiver.last {
             p.bump();
         }
+        // javac reports the others at the token after the name, the first that applies.
+        let error = if misplaced {
+            None
+        } else if varargs {
+            Some(ParseDiagnosticKind::VarargsReceiver)
+        } else if at_dims(p) {
+            Some(ParseDiagnosticKind::ReceiverWithDims)
+        } else if !receiver.this_kw {
+            Some(ParseDiagnosticKind::WrongReceiverName)
+        } else {
+            None
+        };
+        if let Some(kind) = error {
+            error_at_current(p, kind);
+        }
         if at_dims(p) {
-            error_at_current(p, ParseDiagnosticKind::ReceiverWithDims);
             types::dims(p);
         }
         m.complete(
@@ -631,14 +744,33 @@ fn parameter(p: &mut Parser<'_>, first: bool, component: bool) -> Option<Span> {
     varargs.then_some(name)
 }
 
-/// If a receiver parameter's `this` follows, possibly qualified (`Outer.this`), how many tokens
-/// ahead it is.
-fn at_receiver(p: &Parser<'_>) -> Option<usize> {
-    let mut n = 0;
-    while p.nth_at_set(n, IDENT) && p.nth(n + 1) == Dot {
-        n += 2;
+/// A receiver parameter's name, after its type.
+struct ReceiverName {
+    /// How many tokens ahead its last token is.
+    last: usize,
+    /// Whether it ends with `this`, as it must.
+    this_kw: bool,
+}
+
+/// If a receiver parameter's name follows, its name: `this`, possibly qualified (`Outer.this`).
+/// javac reads a qualified name with `this` elsewhere (`this.x`) as a receiver parameter with the
+/// wrong name, and with `qualified_names`, for a method's first parameter, any qualified name
+/// (`a.b`).
+fn at_receiver(p: &Parser<'_>, qualified_names: bool) -> Option<ReceiverName> {
+    let segment = |n: usize| p.nth(n) == ThisKw || p.nth_at_set(n, IDENT);
+    if !segment(0) {
+        return None;
     }
-    (p.nth(n) == ThisKw).then_some(n)
+    let mut n = 0;
+    let mut has_this = p.nth(0) == ThisKw;
+    while p.nth(n + 1) == Dot && segment(n + 2) {
+        n += 2;
+        has_this |= p.nth(n) == ThisKw;
+    }
+    (has_this || qualified_names && n > 0).then_some(ReceiverName {
+        last: n,
+        this_kw: p.nth(n) == ThisKw,
+    })
 }
 
 /// Whether `...` follows, perhaps after annotations.
@@ -745,12 +877,30 @@ fn enum_constant(p: &mut Parser<'_>) {
     complete_or_abandon(p, m, EnumConstant);
 }
 
+/// Enum constants after the enum's `;`, at a name followed by `;`, `,`, or `{`: reported at the
+/// first, as javac does, and put in an `Error` node.
+fn misplaced_enum_constants(p: &mut Parser<'_>) {
+    let m = p.start();
+    error_at_current(p, ParseDiagnosticKind::MisplacedEnumConstant);
+    let mut progress = p.progress();
+    loop {
+        enum_constant(p);
+        if !(p.at(Comma) && p.nth_at_set(1, IDENT)) || !progress.advanced(p) {
+            break;
+        }
+        p.bump();
+    }
+    m.complete(p, Error);
+}
+
 /// Members up to the body's `}` or the end of the file.
 fn members(p: &mut Parser<'_>, body: &Body) {
     let mut progress = p.progress();
     while !p.at(RBrace) && !p.at_eof() {
         if p.at(Semi) {
             p.bump();
+        } else if p.at_set(stmts::STATEMENT_KEYWORDS) {
+            stmts::misplaced_statement(p);
         } else if at_member_start(p, body) {
             member(p, body);
         } else {
@@ -777,9 +927,23 @@ fn member(p: &mut Parser<'_>, body: &Body) {
     let top_level = body.kind == BodyKind::TopLevel;
     if !top_level && (p.at(LBrace) || p.at(StaticKw) && p.nth(1) == LBrace) {
         let m = p.start();
-        p.eat(StaticKw);
+        let static_kw = p.eat(StaticKw);
+        // javac reports these while parsing, at the `{`.
+        match body.kind {
+            BodyKind::Interface | BodyKind::Annotation => {
+                error_at_current(p, ParseDiagnosticKind::InitializerNotAllowed);
+            }
+            BodyKind::Record if !static_kw => {
+                error_at_current(p, ParseDiagnosticKind::InstanceInitializerInRecord);
+            }
+            _ => {}
+        }
         stmts::block(p);
         m.complete(p, Initializer);
+        return;
+    }
+    if body.kind == BodyKind::Enum && p.at_set(IDENT) && matches!(p.nth(1), Semi | Comma | LBrace) {
+        misplaced_enum_constants(p);
         return;
     }
     let m = p.start();
@@ -811,9 +975,14 @@ fn member(p: &mut Parser<'_>, body: &Body) {
     } else if at_type_start(p) {
         let ty = types::type_(p);
         let void = ty.is_some_and(|ty| ty.kind() == VoidType);
-        if generic || p.at(LParen) || p.at_set(IDENT) && p.nth(1) == LParen {
+        // javac reads `void x` as a method, missing its parameters.
+        if generic || void || p.at(LParen) || p.at_set(IDENT) && p.nth(1) == LParen {
             if p.at_set(IDENT) {
                 p.bump();
+                if void && !p.at(LParen) {
+                    // javac reports it at the token after the name.
+                    types::expected_at_next(p, Expected::Token(LParen));
+                }
             } else {
                 p.error_expected(Expected::Identifier);
             }
@@ -822,7 +991,9 @@ fn member(p: &mut Parser<'_>, body: &Body) {
             if body.kind == BodyKind::Record && !info.static_kw && p.at_set(IDENT) {
                 error_at_current(p, ParseDiagnosticKind::InstanceFieldInRecord);
             }
-            variable_declarators(p);
+            // An interface's fields are constants: javac's parser wants their initializers.
+            let initialized = matches!(body.kind, BodyKind::Interface | BodyKind::Annotation);
+            declarators(p, initialized);
             p.expect(Semi);
             m.complete(p, FieldDecl);
         }
@@ -942,16 +1113,22 @@ fn throws_type(p: &mut Parser<'_>) -> Option<CompletedMarker> {
 /// `a = 1, b[] = {2}`: one or more `VariableDeclarator`s separated by commas, for fields and
 /// local variables.
 pub(crate) fn variable_declarators(p: &mut Parser<'_>) {
+    declarators(p, false);
+}
+
+/// [`variable_declarators`]; with `initialized`, for an interface's fields, each must have an
+/// initializer, and a missing `=` is reported at the token after the declarator, as javac does.
+fn declarators(p: &mut Parser<'_>, initialized: bool) {
     let mut progress = p.progress();
     loop {
-        variable_declarator(p);
+        variable_declarator(p, initialized);
         if !p.eat(Comma) || !progress.advanced(p) {
             break;
         }
     }
 }
 
-fn variable_declarator(p: &mut Parser<'_>) {
+fn variable_declarator(p: &mut Parser<'_>, initialized: bool) {
     if !p.at_set(IDENT) {
         p.error_expected(Expected::Identifier);
         return;
@@ -959,8 +1136,12 @@ fn variable_declarator(p: &mut Parser<'_>) {
     let m = p.start();
     p.bump();
     types::dims(p);
-    if p.eat(Eq) && exprs::variable_initializer(p).is_none() {
-        error_at_current(p, ParseDiagnosticKind::ExpressionExpected(p.current()));
+    if p.eat(Eq) {
+        if exprs::variable_initializer(p).is_none() {
+            error_at_current(p, ParseDiagnosticKind::ExpressionExpected(p.current()));
+        }
+    } else if initialized {
+        types::expected_at_next(p, Expected::Token(Eq));
     }
     m.complete(p, VariableDeclarator);
 }

@@ -100,11 +100,11 @@ pub enum ParseDiagnosticKind {
     /// A method without a result type: a constructor whose name isn't its class's. Anchor: the
     /// name, as for javac's `invalid.meth.decl.ret.type.req`.
     MissingReturnType,
-    /// The same, among an enum's members: `F() {}` after the enum's `;`. Anchor: the name, as for
-    /// javac's `enum.constant.not.expected`.
+    /// The same, among an enum's members: `F() {}` after the enum's `;`, or an enum constant there
+    /// (`A;`, `A, B;`, `A {}`). Anchor: the name, as for javac's `enum.constant.not.expected`.
     MisplacedEnumConstant,
-    /// Type parameters on an enum. Anchor: the first type parameter, as for javac's
-    /// `enum.cant.be.generic`.
+    /// Type parameters on an enum. Anchor: the first type parameter, or the `<` of `<>`, as for
+    /// javac's `enum.cant.be.generic`.
     GenericEnum,
     /// A `permits` clause on a class or interface that isn't `sealed`. Anchor: `permits`, as for
     /// javac's `invalid.permits.clause`.
@@ -240,6 +240,32 @@ pub enum ParseDiagnosticKind {
     /// `illegal.start.of.expr` for it: the token after a field access or a parenthesized
     /// expression, or after the annotations if no expression follows them, and otherwise the `@`.
     AnnotatedExpression,
+    /// A variable arity receiver parameter: `A... this`. Anchor: the token after its name, as for
+    /// javac's `varargs.and.receiver`.
+    VarargsReceiver,
+    /// A method's first parameter named by a qualified name without `this` (`A a.b`), which javac
+    /// reads as a receiver parameter with the wrong name. Anchor: the token after the name, as for
+    /// javac's `wrong.receiver`.
+    WrongReceiverName,
+    /// In an annotation's `{...}` of element values, a missing `}` where javac wants an element
+    /// value: after `{,` (which can only be `{,}`), or after a value not followed by `,`. Anchor:
+    /// the end of the previous token, as for javac's `annotation.missing.element.value`.
+    MissingElementValue,
+    /// A statement where a member or a top-level declaration should be, at a keyword that only
+    /// starts a statement (`return`, `if`, ...). Anchor: the keyword, as for javac's
+    /// `statement.not.expected`.
+    StatementNotExpected,
+    /// An initializer in an interface or an annotation interface. Anchor: its `{`, as for
+    /// javac's `initializer.not.allowed`.
+    InitializerNotAllowed,
+    /// An instance initializer in a record. Anchor: its `{`, as for javac's
+    /// `instance.initializer.not.allowed.in.records`.
+    InstanceInitializerInRecord,
+    /// A package declaration in an implicitly declared class: a file with methods or fields at
+    /// the top level. Its span covers the declaration. Anchor: `package`, as for javac's
+    /// `implicit.class.should.not.have.package.declaration`, which javac reports once the file
+    /// is parsed, after its other errors.
+    ImplicitClassPackage,
     /// Annotations on a record pattern's type or before it: `@A R(var x)`. Its span covers the
     /// first run of them. Anchor: the first `@`, as for javac's
     /// `record.patterns.annotations.not.allowed`.
@@ -316,6 +342,13 @@ impl ParseDiagnosticKind {
             | ParseDiagnosticKind::ExtraneousSemicolon { .. } => JavacPhase::Parse,
             ParseDiagnosticKind::AnnotatedClassLiteral
             | ParseDiagnosticKind::AnnotatedExpression
+            | ParseDiagnosticKind::VarargsReceiver
+            | ParseDiagnosticKind::WrongReceiverName
+            | ParseDiagnosticKind::MissingElementValue
+            | ParseDiagnosticKind::StatementNotExpected
+            | ParseDiagnosticKind::InitializerNotAllowed
+            | ParseDiagnosticKind::InstanceInitializerInRecord
+            | ParseDiagnosticKind::ImplicitClassPackage
             | ParseDiagnosticKind::RecordPatternAnnotations => JavacPhase::Parse,
             ParseDiagnosticKind::FeatureNotInRelease { feature, .. }
             | ParseDiagnosticKind::PreviewFeature(feature) => feature.javac_phase(),
@@ -385,6 +418,13 @@ impl ParseDiagnosticKind {
             | ParseDiagnosticKind::StatementNotAllowedInRule => false,
             ParseDiagnosticKind::AnnotatedClassLiteral
             | ParseDiagnosticKind::AnnotatedExpression
+            | ParseDiagnosticKind::VarargsReceiver
+            | ParseDiagnosticKind::WrongReceiverName
+            | ParseDiagnosticKind::MissingElementValue
+            | ParseDiagnosticKind::StatementNotExpected
+            | ParseDiagnosticKind::InitializerNotAllowed
+            | ParseDiagnosticKind::InstanceInitializerInRecord
+            | ParseDiagnosticKind::ImplicitClassPackage
             | ParseDiagnosticKind::RecordPatternAnnotations => false,
         }
     }
@@ -577,6 +617,28 @@ impl ParseDiagnostic {
             }
             ParseDiagnosticKind::AnnotatedExpression => {
                 "annotations in an expression can only annotate a method reference's type"
+                    .to_owned()
+            }
+            ParseDiagnosticKind::VarargsReceiver => {
+                "a receiver parameter can't be variable arity".to_owned()
+            }
+            ParseDiagnosticKind::WrongReceiverName => {
+                "a receiver parameter's name must be 'this' or end with '.this'".to_owned()
+            }
+            ParseDiagnosticKind::MissingElementValue => {
+                "an element value or '}' expected".to_owned()
+            }
+            ParseDiagnosticKind::StatementNotExpected => {
+                "a statement can't be here; put it in a method or an initializer".to_owned()
+            }
+            ParseDiagnosticKind::InitializerNotAllowed => {
+                "an interface can't have an initializer".to_owned()
+            }
+            ParseDiagnosticKind::InstanceInitializerInRecord => {
+                "a record can't have an instance initializer".to_owned()
+            }
+            ParseDiagnosticKind::ImplicitClassPackage => {
+                "a file with methods or fields at the top level can't have a package declaration"
                     .to_owned()
             }
             ParseDiagnosticKind::RecordPatternAnnotations => {
