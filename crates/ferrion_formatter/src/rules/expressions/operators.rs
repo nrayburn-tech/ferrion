@@ -25,7 +25,7 @@ pub fn binary<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         leftmost = lhs.first_child();
     }
     f.start_group();
-    let indentation = Indentation::start(f, IndentKind::Continuation, true);
+    let indentation = Indentation::start(f, IndentKind::Continuation);
     let mut first = true;
     for &binary in spine.iter().rev() {
         let mut seen_lhs = false;
@@ -82,7 +82,7 @@ fn precedence(node: SyntaxNode<'_>) -> u8 {
 /// A `?:` in a branch is a group of its own.
 pub fn conditional<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     f.start_group();
-    let indentation = Indentation::start(f, IndentKind::Continuation, true);
+    let indentation = Indentation::start(f, IndentKind::Continuation);
     for element in elements(node) {
         match element {
             NodeOrToken::Token(token) if matches!(token.kind(), K::Question | K::Colon) => {
@@ -116,7 +116,7 @@ pub fn assign<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                 f.token(token);
             }
             NodeOrToken::Node(value) => {
-                let indentation = Indentation::start(f, IndentKind::Continuation, false);
+                let indentation = Indentation::start(f, IndentKind::Continuation);
                 f.line();
                 f.node(value);
                 indentation.end(f);
@@ -137,7 +137,7 @@ pub fn cast<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                 closed = true;
             }
             NodeOrToken::Node(value) if closed => {
-                let indentation = Indentation::start(f, IndentKind::Continuation, false);
+                let indentation = Indentation::start(f, IndentKind::Continuation);
                 f.line();
                 f.node(value);
                 indentation.end(f);
@@ -152,7 +152,7 @@ pub fn cast<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
 /// that doesn't fit after `instanceof` starts a line of its own there.
 pub fn instanceof<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     f.start_group();
-    let indentation = Indentation::start(f, IndentKind::Continuation, true);
+    let indentation = Indentation::start(f, IndentKind::Continuation);
     let mut after_keyword = false;
     for element in elements(node) {
         match element {

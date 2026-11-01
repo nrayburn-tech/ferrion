@@ -50,17 +50,17 @@ pub fn switch_rule<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     // Comments above the rule are placed first, so that they don't break it.
     f.comments_before(node.first_token().id());
     f.group(|f| {
+        // The label's continuation lines are at +4, and so is the `->` when a comment in the
+        // label puts it on a line of its own.
+        f.start_indent(IndentKind::Continuation);
         let mut arrow = false;
         let mut elements = elements(node).peekable();
         while let Some(element) = elements.next() {
             match element.kind() {
                 K::Arrow => {
-                    // At +4, like the label's continuation lines, when a comment in the label
-                    // puts it on a line of its own.
-                    f.indent(IndentKind::Continuation, |f| {
-                        f.space();
-                        emit(f, element);
-                    });
+                    f.space();
+                    emit(f, element);
+                    f.end();
                     arrow = true;
                 }
                 K::Block if arrow => {
@@ -144,26 +144,20 @@ pub fn switch_label<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         return;
     }
     f.space();
-    let items = |f: &mut Formatter<'t>| {
-        f.group(|f| {
-            for element in elements {
-                if element.kind() == K::Guard && in_rule {
-                    f.line();
-                } else if element.kind() == K::Guard {
-                    f.hard_line();
-                }
-                emit(f, element);
-                if element.kind() == K::Comma {
-                    f.line();
-                }
+    // A rule's label is in the indent of the rule (see `switch_rule`).
+    f.group(|f| {
+        for element in elements {
+            if element.kind() == K::Guard && in_rule {
+                f.line();
+            } else if element.kind() == K::Guard {
+                f.hard_line();
             }
-        });
-    };
-    if in_rule {
-        f.indent(IndentKind::Continuation, items);
-    } else {
-        items(f);
-    }
+            emit(f, element);
+            if element.kind() == K::Comma {
+                f.line();
+            }
+        }
+    });
 }
 
 fn last_token(element: NodeOrToken<'_>) -> SyntaxToken<'_> {

@@ -115,7 +115,7 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
             f.token(close);
         } else if shape == Delimited::Initializer {
             // Dangling comments in braces go on lines of their own.
-            let indentation = Indentation::start(f, IndentKind::Block, false);
+            let indentation = Indentation::start(f, IndentKind::Block);
             f.hard_line();
             f.comments_before(close.id());
             indentation.end(f);
@@ -124,7 +124,7 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
         } else {
             // In parentheses they stay on the line, with a space before the `)` (GJF's), unless
             // one is on a line of its own, which puts the `)` on one too, at +4.
-            let indentation = Indentation::start(f, IndentKind::Continuation, false);
+            let indentation = Indentation::start(f, IndentKind::Continuation);
             f.comments_before(close.id());
             f.space();
             f.token(close);
@@ -146,8 +146,8 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
             .is_some_and(|item| item.kind() != K::LambdaExpr || !lambdas::has_block_body(item));
     // For arguments, around the group and the `)`, so that a `)` after a line break is at +4
     // too.
-    let arguments_indentation = (shape == Delimited::Arguments)
-        .then(|| Indentation::start(f, IndentKind::Continuation, false));
+    let arguments_indentation =
+        (shape == Delimited::Arguments).then(|| Indentation::start(f, IndentKind::Continuation));
     let outer = if alternative {
         f.start_group_with_alternative()
     } else {
@@ -177,7 +177,7 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
                                 f.comments_before(next.id());
                             }
                             if pairs && index % 2 == 1 {
-                                pair = Some(Indentation::start(f, IndentKind::Continuation, false));
+                                pair = Some(Indentation::start(f, IndentKind::Continuation));
                                 f.line();
                             } else if pairs {
                                 f.hard_line();
@@ -222,7 +222,7 @@ pub(crate) fn delimited<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, shape: 
         Delimited::Hug => Indentation::if_broken(f, outer, body),
         Delimited::Arguments => body(f),
         Delimited::Initializer => {
-            let indentation = Indentation::start(f, IndentKind::Block, false);
+            let indentation = Indentation::start(f, IndentKind::Block);
             body(f);
             indentation.end(f);
         }

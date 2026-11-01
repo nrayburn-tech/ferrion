@@ -65,14 +65,10 @@ pub enum Element {
         forced: bool,
         stopped: bool,
     },
-    /// Its contents, with the line breaks in them indented by the kind's width.
+    /// Its contents, with the line breaks in them indented by the kind's width. A line starts
+    /// at the indentation in effect at its line break, so a line break before the indent and
+    /// text after its start leave the text's line unindented.
     Indent(IndentKind),
-    /// An indent that keeps a line break from before it out: like [`Element::Indent`], except
-    /// that text starting right after a line break that came before the indent starts its line
-    /// at the indentation outside it. An `Indent` indents the line text starts, wherever the
-    /// break was; a hanging indent lets an expression whose continuation lines are indented,
-    /// `a` then `+ b` at +4, start on a line of its own without indenting its first line.
-    Hanging(IndentKind),
     /// Its contents, indented by +4 only if the group starting at index `group` is broken.
     IndentIfBroken { group: u32 },
     /// Items and [`FillBreak`](Element::FillBreak)s: flat if it all fits, like a group, and
@@ -301,10 +297,6 @@ impl DocumentBuilder {
         self.start(Element::Indent(kind), None);
     }
 
-    pub fn start_hanging(&mut self, kind: IndentKind) {
-        self.start(Element::Hanging(kind), None);
-    }
-
     pub fn start_indent_if_broken(&mut self, group: u32) {
         debug_assert!(
             matches!(self.elements[group as usize], Element::Group { .. }),
@@ -325,12 +317,19 @@ impl DocumentBuilder {
         );
     }
 
-    /// A separator between two items of the innermost container, which must be a fill.
+    /// A separator between two items of the innermost fill, which may be inside indents in the
+    /// fill but no other container, so that an item can be indented from its separator on.
     pub fn fill_break(&mut self, soft: bool) {
-        let open = self.open.last_mut().expect("a fill break outside a fill");
+        let elements = &self.elements;
+        let open = self
+            .open
+            .iter_mut()
+            .rev()
+            .find(|open| !matches!(elements[open.index as usize], Element::Indent(_)))
+            .expect("a fill break outside a fill");
         assert!(
             matches!(self.elements[open.index as usize], Element::Fill { .. }),
-            "a fill break directly inside a container other than a fill"
+            "a fill break inside a container other than a fill or an indent"
         );
         if let Some((index, after)) = open.fill_break {
             set_fill_next(&mut self.elements, index, self.position - after);
@@ -446,7 +445,7 @@ impl DocumentBuilder {
         );
         // The width from the current element to the next line element, scanning backward, and,
         // for each End not yet matched with its start, the width after it and the last fill
-        // separator directly inside its container.
+        // separator inside its container, directly or in indents.
         let mut rest: u64 = 0;
         let mut after_end: Vec<(u64, Option<usize>)> = Vec::new();
         // The alternatives by their marks, last first, and the rest of the line at each mark.
@@ -490,10 +489,16 @@ impl DocumentBuilder {
                         *next = (u64::from(*next) + after).min(u64::from(u32::MAX)) as u32;
                     }
                 }
-                Element::Indent(_)
-                | Element::Hanging(_)
-                | Element::IndentIfBroken { .. }
-                | Element::Hug => {
+                Element::Indent(_) => {
+                    // A fill's last separator may be in an indent in it.
+                    let (_, last) = after_end.pop().expect("a container without an End");
+                    if let Some(last) = last
+                        && let Some((_, outer @ None)) = after_end.last_mut()
+                    {
+                        *outer = Some(last);
+                    }
+                }
+                Element::IndentIfBroken { .. } | Element::Hug => {
                     after_end.pop().expect("a container without an End");
                 }
                 Element::Alternative { .. } => {}

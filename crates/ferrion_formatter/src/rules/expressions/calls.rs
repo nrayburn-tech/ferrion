@@ -71,7 +71,7 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         None => prefix_len(root, &links, calls),
     };
     f.start_group();
-    let indentation = Indentation::start(f, IndentKind::Continuation, true);
+    let indentation = Indentation::start(f, IndentKind::Continuation);
     if stream.is_some() {
         f.start_group();
     }
@@ -108,7 +108,7 @@ fn filled_dots<'t>(f: &mut Formatter<'t>, root: SyntaxNode<'t>, links: &[SyntaxN
         call_link(f, root, Hugs::Lambdas);
         return;
     };
-    let indentation = Indentation::start(f, IndentKind::Continuation, true);
+    let indentation = Indentation::start(f, IndentKind::Continuation);
     f.fill(|f| {
         f.node(root);
         for &link in fields {
@@ -298,7 +298,7 @@ fn new_with<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, hugs: Hugs) {
 /// `qualifier::name`: on one line, or a line break before the `::` at +4.
 pub fn method_ref<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     f.start_group();
-    let indentation = Indentation::start(f, IndentKind::Continuation, true);
+    let indentation = Indentation::start(f, IndentKind::Continuation);
     for element in elements(node) {
         if let NodeOrToken::Token(token) = element
             && token.kind() == K::ColonColon

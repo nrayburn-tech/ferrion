@@ -15,7 +15,7 @@ pub fn access<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             NodeOrToken::Token(token) if token.kind() == K::LBracket && indentation.is_none() => {
                 f.start_group();
                 f.token(token);
-                indentation = Some(Indentation::start(f, IndentKind::Continuation, false));
+                indentation = Some(Indentation::start(f, IndentKind::Continuation));
                 f.soft_line();
             }
             NodeOrToken::Token(token) if token.kind() == K::RBracket && indentation.is_some() => {

@@ -49,11 +49,11 @@ struct Printer<'a> {
     pending_breaks: u8,
     pending_space: bool,
     last: Option<Last>,
+    /// The indentation of the line the pending line breaks start: the indent in effect at the
+    /// last of them, wherever the text after them is.
+    pending_indent: u32,
     /// Whether the last thing written was a region that runs to the end of the file.
     ended_by_region: bool,
-    /// When hanging indents were started with line breaks pending, the stack depth of the first
-    /// of them and the indentation outside it, which the next text starts its line at.
-    hang: Option<(usize, u32)>,
 }
 
 /// Prints `document` and returns the file's bytes: the byte-order mark if there is one, the text
@@ -67,8 +67,8 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
         pending_breaks: 0,
         pending_space: false,
         last: None,
+        pending_indent: 0,
         ended_by_region: false,
-        hang: None,
     };
     if source.bom {
         printer.out.extend_from_slice(UTF8_BOM);
@@ -83,16 +83,12 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
     }];
     for (index, element) in elements.iter().enumerate() {
         let top = *stack.last().expect("the root frame is never popped");
-        // The indentation a line started by the pending line breaks would have.
-        let indent = match printer.hang {
-            Some((depth, indent)) if stack.len() > depth => indent,
-            _ => top.indent,
-        };
+        let indent = top.indent;
         match *element {
             Element::Token { token, len, width } => {
                 let start = source.tree.token(token).span().start as usize;
                 let text = &text[start..start + len as usize];
-                printer.text(text, width, Some(token.index()), indent);
+                printer.text(text, width, Some(token.index()));
                 printer.ended_by_region = false;
             }
             Element::Space => {
@@ -104,28 +100,28 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
                 if top.flat {
                     printer.space();
                 } else {
-                    printer.line_break(1);
+                    printer.line_break(1, indent);
                 }
             }
             Element::SoftLine => {
                 if !top.flat {
-                    printer.line_break(1);
+                    printer.line_break(1, indent);
                 }
             }
-            Element::HardLine => printer.line_break(1),
-            Element::BlankLine => printer.line_break(2),
+            Element::HardLine => printer.line_break(1, indent),
+            Element::BlankLine => printer.line_break(2, indent),
             Element::Group { width, forced, .. } | Element::Fill { width, forced, .. } => {
                 let flat = if top.flat && !top.decide {
                     true
                 } else {
                     !forced
-                        && (printer.fits(width, indent)
+                        && (printer.fits(width)
                             || matches!(
                                 elements.get(index + 1),
                                 Some(&Element::Alternative { head, tail })
-                                    if u64::from(top.indent) + 4 + u64::from(tail)
+                                    if u64::from(indent) + 4 + u64::from(tail)
                                         > u64::from(LINE_WIDTH)
-                                        && printer.fits(head, indent)
+                                        && printer.fits(head)
                             ))
                 };
                 broken[index] = !flat;
@@ -139,27 +135,18 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
                 indent: top.indent + kind.width(),
                 ..top
             }),
-            Element::Hanging(kind) => {
-                if printer.pending_breaks > 0 && printer.hang.is_none() {
-                    printer.hang = Some((stack.len(), top.indent));
-                }
-                stack.push(Frame {
-                    indent: top.indent + kind.width(),
-                    ..top
-                });
-            }
             Element::IndentIfBroken { group } => stack.push(Frame {
                 indent: top.indent + if broken[group as usize] { 4 } else { 0 },
                 ..top
             }),
             Element::FillBreak { soft, next } => {
                 let separator = u32::from(!soft);
-                if top.flat || printer.fits(separator + next, indent) {
+                if top.flat || printer.fits(separator + next) {
                     if !soft {
                         printer.space();
                     }
                 } else {
-                    printer.line_break(1);
+                    printer.line_break(1, indent);
                 }
             }
             Element::Alternative { .. } => {}
@@ -170,20 +157,17 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
             Element::End => {
                 stack.pop();
                 assert!(!stack.is_empty(), "an End without a container");
-                if printer.hang.is_some_and(|(depth, _)| stack.len() <= depth) {
-                    printer.hang = None;
-                }
             }
             Element::Verbatim(verbatim) => {
                 let verbatim = document.verbatims[verbatim as usize];
                 let text = &text[verbatim.start as usize..verbatim.end as usize];
                 match verbatim.kind {
                     VerbatimKind::Copy { to_end } => {
-                        printer.copy(text, verbatim.first_width, indent);
+                        printer.copy(text, verbatim.first_width);
                         printer.ended_by_region = to_end;
                     }
                     VerbatimKind::Comment => {
-                        printer.comment(text, indent);
+                        printer.comment(text);
                         printer.ended_by_region = false;
                     }
                 }
@@ -200,9 +184,9 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
 
 impl Printer<'_> {
     /// Whether `width` more fits on the line, after what is pending.
-    fn fits(&self, width: u32, indent: u32) -> bool {
+    fn fits(&self, width: u32) -> bool {
         let column = if self.pending_breaks > 0 && self.last.is_some() {
-            indent
+            self.pending_indent
         } else {
             self.column + u32::from(self.pending_space && self.last.is_some())
         };
@@ -215,18 +199,19 @@ impl Printer<'_> {
         }
     }
 
-    /// Asks for `breaks` line breaks before the next text; adjacent requests merge into the
-    /// largest.
-    fn line_break(&mut self, breaks: u8) {
+    /// Asks for `breaks` line breaks before the next text, starting a line at `indent`, the
+    /// indent in effect here. Adjacent requests merge into the largest, and the line starts at
+    /// the last one's indent.
+    fn line_break(&mut self, breaks: u8, indent: u32) {
         self.pending_breaks = self.pending_breaks.max(breaks);
+        self.pending_indent = indent;
         self.pending_space = false;
-        self.hang = None;
     }
 
     /// Writes what is pending before text starting with `first`: line breaks and indentation, or
     /// a space. Nothing is written before the first text of the file. A space is added where two
     /// pieces of text side by side would run together into other tokens.
-    fn start_text(&mut self, first: &str, token: Option<usize>, indent: u32) {
+    fn start_text(&mut self, first: &str, token: Option<usize>) {
         let Some(last) = self.last else {
             self.pending_breaks = 0;
             self.pending_space = false;
@@ -237,8 +222,9 @@ impl Printer<'_> {
             for _ in 0..self.pending_breaks {
                 self.out.extend_from_slice(ending);
             }
-            self.out.resize(self.out.len() + indent as usize, b' ');
-            self.column = indent;
+            self.out
+                .resize(self.out.len() + self.pending_indent as usize, b' ');
+            self.column = self.pending_indent;
         } else if self.pending_space
             || (token.is_none() || last.next_token != token) && could_merge(last, first)
         {
@@ -247,7 +233,6 @@ impl Printer<'_> {
         }
         self.pending_breaks = 0;
         self.pending_space = false;
-        self.hang = None;
     }
 
     fn end_text(&mut self, text: &str, token: Option<usize>) {
@@ -260,22 +245,22 @@ impl Printer<'_> {
         }
     }
 
-    fn text(&mut self, text: &str, width: u32, token: Option<usize>, indent: u32) {
+    fn text(&mut self, text: &str, width: u32, token: Option<usize>) {
         if text.is_empty() {
             return;
         }
-        self.start_text(text, token, indent);
+        self.start_text(text, token);
         self.out.extend_from_slice(text.as_bytes());
         self.column += width;
         self.end_text(text, token);
     }
 
     /// Copies `text` as written, with each line terminator replaced by the file's.
-    fn copy(&mut self, text: &str, first_width: u32, indent: u32) {
+    fn copy(&mut self, text: &str, first_width: u32) {
         if text.is_empty() {
             return;
         }
-        self.start_text(text, None, indent);
+        self.start_text(text, None);
         let ending = self.source.line_ending.as_str().as_bytes();
         let mut lines = Lines::new(text);
         let first = lines.next().unwrap_or_default();
@@ -295,8 +280,8 @@ impl Printer<'_> {
     /// puts the least indented of them at the comment's column, keeping their indentation
     /// relative to each other. Trailing whitespace is removed, and lines of only whitespace are
     /// left empty.
-    fn comment(&mut self, text: &str, indent: u32) {
-        self.start_text(text, None, indent);
+    fn comment(&mut self, text: &str) {
+        self.start_text(text, None);
         let column = self.column;
         let ending = self.source.line_ending.as_str().as_bytes();
         let mut lines = Lines::new(text);

@@ -39,6 +39,9 @@ pub struct Formatter<'t> {
     /// The line breaks after the last comment that are still to come (see [`Formatter::doc`]):
     /// 0, 1 for a line break, or 2 for a blank line.
     line_owed: u8,
+    /// Whether a comment's line break was paid since the last text, so that the next line
+    /// element is a line break too (see [`Formatter::line`]).
+    comment_break: bool,
     /// The capped indents open now (see [`Formatter::take_capped_indent`]).
     capped_indents: u32,
 }
@@ -57,6 +60,7 @@ impl<'t> Formatter<'t> {
             last_token: None,
             in_region: None,
             line_owed: 0,
+            comment_break: false,
             capped_indents: 0,
         }
     }
@@ -168,15 +172,30 @@ impl<'t> Formatter<'t> {
         }
     }
 
+    /// A `Line`, or a line break if a comment's line break comes right before it. The groups
+    /// a rule starts after a comment begin after the comment's line break; when one of them
+    /// starts with a line element, that is where the comment's line break goes, as GJF puts it
+    /// (`int x = // why` then `1;` at +4), so the line element breaks and its groups with it.
     pub fn line(&mut self) {
         if self.in_region.is_none() {
-            self.doc().line();
+            self.doc();
+            if self.comment_break {
+                self.doc.hard_line();
+            } else {
+                self.doc.line();
+            }
         }
     }
 
+    /// A `SoftLine`, or a line break after a comment's, as for [`Formatter::line`].
     pub fn soft_line(&mut self) {
         if self.in_region.is_none() {
-            self.doc().soft_line();
+            self.doc();
+            if self.comment_break {
+                self.doc.hard_line();
+            } else {
+                self.doc.soft_line();
+            }
         }
     }
 
@@ -271,12 +290,6 @@ impl<'t> Formatter<'t> {
         self.doc().start_indent(kind);
     }
 
-    /// Starts a hanging indent (see [`crate::document::Element::Hanging`]), which the caller
-    /// ends with [`Formatter::end`].
-    pub fn start_hanging(&mut self, kind: IndentKind) {
-        self.doc().start_hanging(kind);
-    }
-
     pub fn indent_if_broken(&mut self, group: u32, f: impl FnOnce(&mut Self)) {
         self.doc().start_indent_if_broken(group);
         f(self);
@@ -318,6 +331,7 @@ impl<'t> Formatter<'t> {
     fn doc(&mut self) -> &mut DocumentBuilder {
         let owed = std::mem::take(&mut self.line_owed);
         if owed > 0 && self.in_region.is_none() {
+            self.comment_break = true;
             if owed == 1 {
                 self.doc.hard_line();
             } else {
@@ -453,6 +467,7 @@ impl<'t> Formatter<'t> {
                 to_end: region.end.is_none(),
             },
         ));
+        self.comment_break = false;
         self.in_region = Some(region);
     }
 
@@ -486,9 +501,10 @@ impl<'t> Formatter<'t> {
                 self.doc()
                     .token(token.id(), trimmed.len() as u32, width(trimmed));
             }
-            _ if text.is_empty() => {}
+            _ if text.is_empty() => return,
             _ => self.doc().token(token.id(), text.len() as u32, width(text)),
         }
+        self.comment_break = false;
     }
 }
 
