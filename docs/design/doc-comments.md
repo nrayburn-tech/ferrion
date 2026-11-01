@@ -206,8 +206,8 @@ one, and its descriptive content as Markdown. The parser does the same:
 - **Nesting.** Inline tags nest in descriptive content, which is Markdown at every level:
   `{@summary a {@link List *b*}}` has a link whose label has emphasis.
 
-Each case is a unit test in `markdown/tests/tag_content.rs`, named after the javadoc observation it
-records.
+Each case is a unit test in `markdown/tests/tag_content.rs`, observed by running javadoc 27 on a
+comment of the same shape.
 
 **Links to program elements** are reference links (`[List]`, `[List][]`, `[a list][List]`) whose
 label has no link reference definition and reads as a reference. javadoc 27 links `[List]`,
