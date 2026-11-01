@@ -50,10 +50,6 @@ const NOT_GJF: &[(&str, &str)] = &[
         "the first rule's output, until the declarations rules land",
     ),
     (
-        "expressions/baseline",
-        "the first rule's output, until the expressions rules land",
-    ),
-    (
         "types/in-other-constructs",
         "waits for the declarations, statements, and expressions rules",
     ),
