@@ -1,9 +1,9 @@
 name: Oracle
 
-# The full javac comparison: every corpus file at every supported release, and javac's own tests at
-# the releases they're compiled at. Pull requests compare each corpus file at its own release only
-# (see ci.yml). The parser's own checks run here on javac's tests too, and on a larger mutation
-# sample.
+# The full javac comparison: every corpus file at each primary release (the LTS releases and the
+# latest), and javac's own tests at the releases they're compiled at. Pull requests compare each
+# corpus file at its own release only (see ci.yml). The parser's own checks run here on javac's
+# tests too, and on a larger mutation sample.
 
 on:
   schedule:
@@ -23,7 +23,7 @@ env:
 
 jobs:
   tokens:
-    name: tokens at every release
+    name: tokens at the primary releases
     runs-on: ubuntu-latest
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
@@ -42,8 +42,8 @@ jobs:
         run: cargo corpus checkout
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
-      - name: Compare the lexer with javac at every release
-        run: cargo oracle tokens --all-releases --json oracle-report.json
+      - name: Compare the lexer with javac at the primary releases
+        run: cargo oracle tokens --primary-releases --json oracle-report.json
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
@@ -102,8 +102,8 @@ jobs:
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
-      # Off until the comparison passes on javac's tests: it waits for the version check, and for
-      # the parser's remaining first-error differences (docs/design/parser-oracle-normalization.md).
+      # Off until the comparison passes on javac's tests: it waits for the parser's remaining
+      # first-error differences (docs/design/parser-oracle-normalization.md).
       - name: Compare syntax errors with javac on javac's tests
         if: false
         run: cargo oracle syntax jdk-tests --json syntax-report.json

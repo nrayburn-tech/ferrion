@@ -201,11 +201,12 @@ cargo oracle tokens
 ```
 
 By default, each file is compared at its source set's release, as in pull-request CI. Name
-projects to compare only those, `--release <N>` to compare every file at release N, or
-`--all-releases` for every supported release, which a scheduled workflow runs weekly. `--file
-<path>` compares a file of your own, `--json <file>` writes the full report, and `--help` lists the
-other options. Any mismatch fails the run; the normalization and the allowed differences are in
-[docs/design/lexer-oracle-normalization.md](docs/design/lexer-oracle-normalization.md).
+projects to compare only those, `--release <N>` to compare every file at release N,
+`--primary-releases` for each primary release (the LTS releases and the latest; see
+[docs/SCOPE.md](docs/SCOPE.md)), which a scheduled workflow runs weekly, or `--all-releases` for
+every supported release. `--file <path>` compares a file of your own, `--json <file>` writes the
+full report, and `--help` lists the other options. Any mismatch fails the run; the normalization
+and the allowed differences are in [docs/design/lexer-oracle-normalization.md](docs/design/lexer-oracle-normalization.md).
 
 javac's output is cached in `target/oracle`, or in `FERRION_ORACLE_CACHE` if it is set, keyed by
 the oracle jar, the JDK, the release, and each file's content, so a rerun only runs javac for what
@@ -321,8 +322,7 @@ rustup toolchain install && cargo install cargo-fuzz --version 0.13.2 --locked
   comment parser.
 - `markdown` reads arbitrary bytes as lines of `///` comments (each line gets the `///`) and parses
   the Markdown doc comments they form.
-- `parse` reads arbitrary bytes as a source file and parses its text at releases 8, 13, 14, and
-  the latest.
+- `parse` reads arbitrary bytes as a source file and parses its text at each primary release.
 
 The lexer targets fail when `ferrion_lexer::invariants` finds that the lexer broke a promise its API
 documents, the doc comment targets when `ferrion_doc_comments::invariants` finds the same of the
