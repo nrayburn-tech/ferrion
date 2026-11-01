@@ -4,7 +4,7 @@
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
 use super::annotations::{self, After, Layout, value_after_eq};
-use super::{emit, parts, separated};
+use super::{emit, first_token, parts, separated};
 use crate::document::IndentKind;
 use crate::format::Formatter;
 
@@ -81,6 +81,8 @@ fn single_declarator<'t>(
     let parts = parts(declarator);
     let eq = parts.iter().position(|part| part.kind() == K::Eq);
     let (name, value) = parts.split_at(eq.unwrap_or(parts.len()));
+    // Comments before the type go before the group, so that a line comment doesn't break it.
+    f.comments_before(first_token(ty).id());
     let group = f.group(|f| {
         type_then_name(f, ty, inline, |f| {
             for &part in name {
@@ -165,6 +167,7 @@ pub(super) fn method<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         rest = tail;
     }
     let type_parameters = take(&mut rest, |k| k == K::TypeParameters).map(|type_parameters| {
+        f.comments_before(first_token(type_parameters).id());
         let group = f.start_group();
         if space {
             f.space();
@@ -202,7 +205,10 @@ pub(super) fn method<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         return;
     };
     let named = match ty {
-        Some(ty) => Some(f.group(|f| type_then_name(f, ty, space, |f| emit(f, *name)))),
+        Some(ty) => {
+            f.comments_before(first_token(ty).id());
+            Some(f.group(|f| type_then_name(f, ty, space, |f| emit(f, *name))))
+        }
         None => {
             emit(f, *name);
             None
@@ -344,6 +350,7 @@ pub(super) fn parameter<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                 emit(f, varargs);
             }
         };
+        f.comments_before(first_token(*ty).id());
         if rest.is_empty() {
             ty_and_varargs(f);
         } else {
