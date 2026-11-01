@@ -195,6 +195,20 @@ jobs:
         run: cargo parser-check mutate --seed 1 --sample 2000
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Check the formatter's safety properties on the corpus project, and its throughput
+        run: cargo format-check verify jedis
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      # Both download the pinned Google Java Format jar (tools/format-check/gjf.toml) into the
+      # corpus directory, and run it on this job's JDK.
+      - name: Check the departures from Google Java Format
+        run: cargo format-check differences
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Check the diff against Google Java Format
+        run: cargo format-check gjf jedis --check
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
       - name: Build the javap oracle
         working-directory: tools/javap-oracle
         run: mvn --batch-mode --no-transfer-progress package
