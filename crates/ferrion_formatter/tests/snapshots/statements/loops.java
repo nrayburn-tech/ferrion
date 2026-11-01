@@ -13,6 +13,7 @@ class Loops {
     for (;;) ;
     for ( ; i < n ; ) {}
     for (i = 0, j = 1; ; ) {}
+    for (index = 0, otherIndex = 0, yetAnotherIndexWithALongName = 0, oneMoreIndexWithALongName = 0, last = 0; ; ) {}
     for (int i = 0; i < n; i++) b();
     for (int i = 0, j = 0; i < n; i++, j++) { b(); }
     for (int i = 0; i < n; i++) for (int j = 0; j < n; j++) b();
