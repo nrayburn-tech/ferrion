@@ -1,0 +1,15 @@
+unit ordinary
+package p
+enum public Planet implements Comparable<Planet>, Runnable
+  constant @Deprecated MERCURY
+  constant VENUS {…}
+  constant EARTH
+  field private final double mass
+  constructor Planet(double mass) {…}
+  method public void run() {…}
+  implicit values()
+  implicit valueOf(String)
+enum Planet.Empty
+  implicit default constructor
+  implicit values()
+  implicit valueOf(String)

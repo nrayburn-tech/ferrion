@@ -1,0 +1,16 @@
+unit compact
+import single-type java.util.List
+implicit-class
+  field final List<String> NAMES = (…)
+  field int count
+  method void main() {…}
+  method static String greet(String name) {…}
+  implicit default constructor
+record .Pair(int a, int b)
+  implicit canonical constructor
+  implicit accessor a()
+  implicit accessor b()
+  implicit field a
+  implicit field b
+class .Helper
+  implicit default constructor

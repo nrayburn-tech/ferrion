@@ -1,0 +1,28 @@
+unit ordinary
+package p
+import single-type javax.annotation.processing.Generated
+import single-type lombok.Data
+import single-type lombok.Builder
+import single-type org.springframework.beans.factory.annotation.Value
+class @Generated(…) Made [generated]
+  implicit default constructor
+class Made.Inner [generated]
+  implicit default constructor
+class static Made.Deeper [generated]
+  implicit default constructor
+class Made.Deeper.Deepest [generated]
+  implicit default constructor
+class @javax.annotation.Generated(…) AlsoMade [generated]
+  implicit default constructor
+class @Data Bean [lombok]
+  field int x
+  implicit default constructor
+class Fields [lombok]
+  field @lombok.Getter int x
+  field @Builder.Default int y
+  implicit default constructor
+class SpringValue
+  field @Value(…) int x
+  implicit default constructor
+class @Override NotGenerated
+  implicit default constructor

@@ -1,0 +1,11 @@
+unit ordinary
+package p
+import on-demand lombok
+import single-type java.util.List
+class @Deprecated Plain
+  method @Override public String toString() {…}
+  implicit default constructor
+class @Getter Annotated [lombok]
+  implicit default constructor
+class @List SingleImportWins
+  implicit default constructor

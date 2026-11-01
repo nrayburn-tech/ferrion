@@ -1,0 +1,6 @@
+unit ordinary
+package p.q
+class A
+  field int x
+  method @Deprecated void m(A a) {…}
+  implicit default constructor

@@ -1,0 +1,9 @@
+unit ordinary
+package p
+interface public sealed Vehicle<W extends Wheel> extends Comparable<Vehicle<W>>, AutoCloseable permits Car, Truck
+  field int WHEELS = (…)
+  field String NAME = (…)
+  method W wheel();
+  method default void honk() {…}
+  method static Vehicle<Wheel> none() {…}
+  method private void helper() {…}
