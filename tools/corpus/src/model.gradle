@@ -34,7 +34,9 @@ allprojects { p ->
                 configuration.incoming.artifactView { lenient(false) }.artifacts.each { a ->
                     def id = a.id.componentIdentifier
                     if (id instanceof ProjectComponentIdentifier) {
-                        def testFixtures = a.variant.capabilities.any { it.name.endsWith('-test-fixtures') }
+                        // The test fixtures variant's capability is the project's name plus
+                        // `-test-fixtures`; a project whose own name ends that way is still `main`.
+                        def testFixtures = a.variant.capabilities.any { it.name == id.projectName + '-test-fixtures' }
                         classpath << [project: id.projectPath, sourceSet: testFixtures ? 'testFixtures' : 'main']
                     } else if (id instanceof ModuleComponentIdentifier) {
                         classpath << [group: id.group, module: id.module, version: id.version, file: a.file.absolutePath]

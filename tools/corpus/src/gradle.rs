@@ -244,7 +244,7 @@ fn classify(
             [classes, _language, name] if classes == "classes" => return source_set(name),
             [resources, _] if resources == "resources" => return None,
             [libs, jar] if libs == "libs" && jar.ends_with(".jar") => {
-                return source_set(if jar.contains("-test-fixtures") {
+                return source_set(if is_test_fixtures_jar(jar, &module_name(dir)) {
                     "testFixtures"
                 } else {
                     "main"
@@ -254,6 +254,20 @@ fn classify(
         }
     }
     Some(ClasspathEntry::ProjectFile { file: path })
+}
+
+fn module_name(dir: &Path) -> String {
+    dir.file_name()
+        .map_or_else(String::new, |name| name.to_string_lossy().into_owned())
+}
+
+/// Whether a jar in a module's `build/libs` holds its test fixtures, whose classifier is
+/// `test-fixtures`. The module's own jar can end that way too, when the module is named
+/// `*-test-fixtures` (lucene's `spatial-test-fixtures`) and the jar has no version.
+fn is_test_fixtures_jar(jar: &str, module: &str) -> bool {
+    let stem = jar.strip_suffix(".jar").unwrap_or(jar);
+    stem.ends_with("-test-fixtures")
+        && (!stem.ends_with(module) || stem.ends_with(&format!("{module}-test-fixtures")))
 }
 
 fn within(checkout: &Path, path: &Path) -> Result<String> {
@@ -289,6 +303,31 @@ mod tests {
         );
         assert_eq!(metadata_url(METADATA, "other.jar"), None);
         assert_eq!(metadata_url("not json", "guava-33.4.3-jre.jar"), None);
+    }
+
+    #[test]
+    fn test_fixtures_jars() {
+        assert!(is_test_fixtures_jar(
+            "lucene-core-10.5.2-test-fixtures.jar",
+            "core"
+        ));
+        assert!(is_test_fixtures_jar("core-test-fixtures.jar", "core"));
+        assert!(!is_test_fixtures_jar("lucene-core-10.5.2.jar", "core"));
+        // A module named `*-test-fixtures`: its own jar, with and without a version, and its
+        // fixtures.
+        let module = "spatial-test-fixtures";
+        assert!(!is_test_fixtures_jar(
+            "lucene-spatial-test-fixtures-10.5.2.jar",
+            module
+        ));
+        assert!(!is_test_fixtures_jar(
+            "lucene-spatial-test-fixtures.jar",
+            module
+        ));
+        assert!(is_test_fixtures_jar(
+            "lucene-spatial-test-fixtures-test-fixtures.jar",
+            module
+        ));
     }
 
     #[test]
