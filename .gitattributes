@@ -1,0 +1,4 @@
+# Check out text files with LF line endings on every platform. Tests compare files read from disk
+# with snapshots that record byte offsets, so a CRLF checkout on Windows would shift them. Files
+# Git detects as binary, such as fuzz seeds with mixed line endings, are left as they are.
+* text=auto eol=lf
