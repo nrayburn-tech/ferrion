@@ -160,6 +160,7 @@ fn syntax_code(kind: Kind, release: u32) -> &'static str {
         Kind::KeywordAsName(_) => "this.as.identifier",
         Kind::ArrayCreationWithDiamond => "cannot.create.array.with.diamond",
         Kind::ArrayCreationWithTypeArguments => "cannot.create.array.with.type.arguments",
+        Kind::FinalRecordPattern => "mod.not.allowed.here",
         // Never compared (`JavacPhase::Never`).
         Kind::NestingTooDeep => "nesting.too.deep",
         // The version check's kinds, by its own mapping. Only errors get here.

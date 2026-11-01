@@ -181,8 +181,9 @@ pub enum ParseDiagnosticKind {
     /// `default` as a case element anywhere but after `null` (`case null, default`). Anchor: the
     /// `default`, as for javac's `default.label.not.allowed`.
     DefaultNotAllowed,
-    /// A guard (`when`) on a label without a pattern: `default`, or `case null, default`. Its
-    /// span covers the condition. Anchor: the `when`, as for javac's `guard.not.allowed`.
+    /// A guard (`when`) on a label without a pattern: `default`, `case null, default`, or
+    /// constants (`case 0 when b`). Its span covers the condition. Anchor: the `when`, as for
+    /// javac's `guard.not.allowed`.
     GuardNotAllowed,
     /// A statement other than an expression statement, a block, or `throw` as the body of a
     /// switch rule in a switch statement. Anchor: the start of the statement, as for javac's
@@ -208,6 +209,9 @@ pub enum ParseDiagnosticKind {
     /// Type arguments after `new` in an array creation: `new <T> A[1]`. Anchor: the first type
     /// argument, as for javac's `cannot.create.array.with.type.arguments`.
     ArrayCreationWithTypeArguments,
+    /// `final` on a record pattern: `case final R(var x)`. Anchor: the `final`, as for javac's
+    /// `mod.not.allowed.here`.
+    FinalRecordPattern,
     /// A language feature the release doesn't have (the version check). Anchor: the feature's,
     /// documented on [`Feature`]. javac's code and phase are in the feature's row: usually
     /// `feature.not.supported.in.source.plural`, with the feature's name and the release.
@@ -357,6 +361,7 @@ impl ParseDiagnosticKind {
             | ParseDiagnosticKind::KeywordAsName(_)
             | ParseDiagnosticKind::ArrayCreationWithDiamond
             | ParseDiagnosticKind::ArrayCreationWithTypeArguments
+            | ParseDiagnosticKind::FinalRecordPattern
             | ParseDiagnosticKind::RestrictedTypeName { .. }
             | ParseDiagnosticKind::RestrictedType { .. }
             | ParseDiagnosticKind::VarArray
@@ -458,7 +463,8 @@ impl ParseDiagnosticKind {
             | ParseDiagnosticKind::FloatTooSmall
             | ParseDiagnosticKind::KeywordAsName(_)
             | ParseDiagnosticKind::ArrayCreationWithDiamond
-            | ParseDiagnosticKind::ArrayCreationWithTypeArguments => false,
+            | ParseDiagnosticKind::ArrayCreationWithTypeArguments
+            | ParseDiagnosticKind::FinalRecordPattern => false,
         }
     }
 }
@@ -619,6 +625,9 @@ impl ParseDiagnostic {
             }
             ParseDiagnosticKind::ArrayCreationWithTypeArguments => {
                 "an array creation can't have type arguments after 'new'".to_owned()
+            }
+            ParseDiagnosticKind::FinalRecordPattern => {
+                "a record pattern can't be 'final'".to_owned()
             }
             ParseDiagnosticKind::FeatureNotInRelease { feature, release } => {
                 feature.message(release)

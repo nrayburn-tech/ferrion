@@ -1,0 +1,27 @@
+CompilationUnit 0..25 [error]
+  ClassDecl 0..24 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "E"
+    Whitespace 7..8 " "
+    ClassBody 8..24 [error]
+      LBrace 8..9 "{"
+      Whitespace 9..10 " "
+      MethodDecl 10..24 [error]
+        VoidType 10..14
+          VoidKw 10..14 "void"
+        Whitespace 14..15 " "
+        Identifier 15..16 "m"
+        FormalParameters 16..18
+          LParen 16..17 "("
+          RParen 17..18 ")"
+        Whitespace 18..19 " "
+        Block 19..24 [error]
+          LBrace 19..20 "{"
+          Whitespace 20..21 " "
+          ExprStmt 21..24 [error]
+            PrimitiveType 21..24
+              IntKw 21..24 "int"
+  LineTerminator 24..25 "\n"
+  Eof 25..25 ""
+error 21..24 @21 NotAStatement: this expression can't be used as a statement
