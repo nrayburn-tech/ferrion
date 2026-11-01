@@ -1,0 +1,15 @@
+@A x;
+@A a.b;
+@A f();
+@A (x);
+@A;
+@A int.class;
+@A Object.class + 1;
+@A int.class.getName();
+int @A [].class;
+@A int;
+(@A) x;
+(@A a.b);
+x @A [1];
+x @A;
+a.@A b;

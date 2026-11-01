@@ -183,6 +183,9 @@ javac 27:
 | `open m {}` | `expected.module` | start of `m` |
 | `module m {} class A {}` | `expected` (end of input expected) | end of the module's `}` |
 | an unclosed class at the end of the file | `premature.eof` | end of the last token |
+| `@A int.class`, `int @A [].class` | `no.annotations.on.dot.class` | start of the token after the class literal |
+| `@A a`, `@A f()`; `@A a.b`; `a @A [1]` | `illegal.start.of.expr` | the `@`; the token after `a.b`; the `@` |
+| `o instanceof @A R(var x)` | `record.patterns.annotations.not.allowed` | the first `@` |
 | a `;` before an import | `extraneous.semicolon` (a warning before 21) | the first `;` of a run |
 | a feature too new for the release | `feature.not.supported.in.source(.plural)` | the feature's anchor (see [language versions](parser-language-versions.md#the-feature-table)) |
 | `class var {}`, `<var>` | `restricted.type.not.allowed` (a warning before the release) | the name |

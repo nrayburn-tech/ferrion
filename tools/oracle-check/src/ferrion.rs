@@ -141,6 +141,9 @@ fn syntax_code(kind: Kind, release: u32) -> &'static str {
         Kind::DefaultNotAllowed => "default.label.not.allowed",
         Kind::GuardNotAllowed => "guard.not.allowed",
         Kind::StatementNotAllowedInRule => "switch.case.unexpected.statement",
+        Kind::AnnotatedClassLiteral => "no.annotations.on.dot.class",
+        Kind::AnnotatedExpression => "illegal.start.of.expr",
+        Kind::RecordPatternAnnotations => "record.patterns.annotations.not.allowed",
         // Never compared (`JavacPhase::Never`).
         Kind::NestingTooDeep => "nesting.too.deep",
         // The version check's kinds, by its own mapping. Only errors get here.

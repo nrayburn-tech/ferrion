@@ -1,0 +1,194 @@
+CompilationUnit 0..228 [error]
+  ClassDecl 0..227 [error]
+    ClassKw 0..5 "class"
+    Whitespace 5..6 " "
+    Identifier 6..7 "A"
+    Whitespace 7..8 " "
+    ClassBody 8..227 [error]
+      LBrace 8..9 "{"
+      LineTerminator 9..10 "\n"
+      Whitespace 10..12 "  "
+      MethodDecl 12..225 [error]
+        VoidType 12..16
+          VoidKw 12..16 "void"
+        Whitespace 16..17 " "
+        Identifier 17..18 "m"
+        FormalParameters 18..28
+          LParen 18..19 "("
+          FormalParameter 19..27
+            ClassType 19..25
+              Identifier 19..25 "Object"
+            Whitespace 25..26 " "
+            Identifier 26..27 "o"
+          RParen 27..28 ")"
+        Whitespace 28..29 " "
+        Block 29..225 [error]
+          LBrace 29..30 "{"
+          LineTerminator 30..31 "\n"
+          Whitespace 31..35 "    "
+          IfStmt 35..67 [error]
+            IfKw 35..37 "if"
+            Whitespace 37..38 " "
+            LParen 38..39 "("
+            InstanceofExpr 39..63 [error]
+              NameExpr 39..40
+                Identifier 39..40 "o"
+              Whitespace 40..41 " "
+              InstanceofKw 41..51 "instanceof"
+              Whitespace 51..52 " "
+              RecordPattern 52..63 [error]
+                Modifiers 52..54
+                  Annotation 52..54
+                    At 52..53 "@"
+                    Name 53..54
+                      Identifier 53..54 "A"
+                Whitespace 54..55 " "
+                ClassType 55..56
+                  Identifier 55..56 "R"
+                LParen 56..57 "("
+                TypePattern 57..62
+                  ClassType 57..60
+                    Identifier 57..60 "var"
+                  Whitespace 60..61 " "
+                  Identifier 61..62 "s"
+                RParen 62..63 ")"
+            RParen 63..64 ")"
+            Whitespace 64..65 " "
+            Block 65..67
+              LBrace 65..66 "{"
+              RBrace 66..67 "}"
+          LineTerminator 67..68 "\n"
+          Whitespace 68..72 "    "
+          IfStmt 72..114 [error]
+            IfKw 72..74 "if"
+            Whitespace 74..75 " "
+            LParen 75..76 "("
+            InstanceofExpr 76..110 [error]
+              NameExpr 76..77
+                Identifier 76..77 "o"
+              Whitespace 77..78 " "
+              InstanceofKw 78..88 "instanceof"
+              Whitespace 88..89 " "
+              RecordPattern 89..110 [error]
+                ClassType 89..103
+                  ClassType 89..98
+                    ClassType 89..93
+                      Identifier 89..93 "java"
+                    Dot 93..94 "."
+                    Identifier 94..98 "lang"
+                  Dot 98..99 "."
+                  Annotation 99..101
+                    At 99..100 "@"
+                    Name 100..101
+                      Identifier 100..101 "A"
+                  Whitespace 101..102 " "
+                  Identifier 102..103 "R"
+                LParen 103..104 "("
+                TypePattern 104..109
+                  ClassType 104..107
+                    Identifier 104..107 "var"
+                  Whitespace 107..108 " "
+                  Identifier 108..109 "s"
+                RParen 109..110 ")"
+            RParen 110..111 ")"
+            Whitespace 111..112 " "
+            Block 112..114
+              LBrace 112..113 "{"
+              RBrace 113..114 "}"
+          LineTerminator 114..115 "\n"
+          Whitespace 115..119 "    "
+          SwitchStmt 119..189 [error]
+            SwitchKw 119..125 "switch"
+            Whitespace 125..126 " "
+            LParen 126..127 "("
+            NameExpr 127..128
+              Identifier 127..128 "o"
+            RParen 128..129 ")"
+            Whitespace 129..130 " "
+            SwitchBlock 130..189 [error]
+              LBrace 130..131 "{"
+              LineTerminator 131..132 "\n"
+              Whitespace 132..138 "      "
+              SwitchRule 138..163 [error]
+                SwitchLabel 138..157 [error]
+                  CaseKw 138..142 "case"
+                  Whitespace 142..143 " "
+                  RecordPattern 143..157 [error]
+                    ClassType 143..144
+                      Identifier 143..144 "R"
+                    LParen 144..145 "("
+                    RecordPattern 145..156 [error]
+                      Modifiers 145..147
+                        Annotation 145..147
+                          At 145..146 "@"
+                          Name 146..147
+                            Identifier 146..147 "A"
+                      Whitespace 147..148 " "
+                      ClassType 148..149
+                        Identifier 148..149 "Q"
+                      LParen 149..150 "("
+                      TypePattern 150..155
+                        ClassType 150..153
+                          Identifier 150..153 "var"
+                        Whitespace 153..154 " "
+                        Identifier 154..155 "s"
+                      RParen 155..156 ")"
+                    RParen 156..157 ")"
+                Whitespace 157..158 " "
+                Arrow 158..160 "->"
+                Whitespace 160..161 " "
+                Block 161..163
+                  LBrace 161..162 "{"
+                  RBrace 162..163 "}"
+              LineTerminator 163..164 "\n"
+              Whitespace 164..170 "      "
+              SwitchRule 170..183
+                SwitchLabel 170..177
+                  DefaultKw 170..177 "default"
+                Whitespace 177..178 " "
+                Arrow 178..180 "->"
+                Whitespace 180..181 " "
+                Block 181..183
+                  LBrace 181..182 "{"
+                  RBrace 182..183 "}"
+              LineTerminator 183..184 "\n"
+              Whitespace 184..188 "    "
+              RBrace 188..189 "}"
+          LineTerminator 189..190 "\n"
+          Whitespace 190..194 "    "
+          IfStmt 194..221
+            IfKw 194..196 "if"
+            Whitespace 196..197 " "
+            LParen 197..198 "("
+            InstanceofExpr 198..217
+              NameExpr 198..199
+                Identifier 198..199 "o"
+              Whitespace 199..200 " "
+              InstanceofKw 200..210 "instanceof"
+              Whitespace 210..211 " "
+              TypePattern 211..217
+                Modifiers 211..213
+                  Annotation 211..213
+                    At 211..212 "@"
+                    Name 212..213
+                      Identifier 212..213 "A"
+                Whitespace 213..214 " "
+                ClassType 214..215
+                  Identifier 214..215 "R"
+                Whitespace 215..216 " "
+                Identifier 216..217 "r"
+            RParen 217..218 ")"
+            Whitespace 218..219 " "
+            Block 219..221
+              LBrace 219..220 "{"
+              RBrace 220..221 "}"
+          LineTerminator 221..222 "\n"
+          Whitespace 222..224 "  "
+          RBrace 224..225 "}"
+      LineTerminator 225..226 "\n"
+      RBrace 226..227 "}"
+  LineTerminator 227..228 "\n"
+  Eof 228..228 ""
+error 52..54 @52 RecordPatternAnnotations: a record pattern can't be annotated
+error 99..101 @99 RecordPatternAnnotations: a record pattern can't be annotated
+error 145..147 @145 RecordPatternAnnotations: a record pattern can't be annotated

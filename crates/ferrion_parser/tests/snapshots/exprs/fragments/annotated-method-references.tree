@@ -1,0 +1,115 @@
+CompilationUnit 0..119
+  MethodRefExpr 0..14
+    ClassType 0..9
+      Annotation 0..2
+        At 0..1 "@"
+        Name 1..2
+          Identifier 1..2 "A"
+      Whitespace 2..3 " "
+      Identifier 3..9 "Object"
+    ColonColon 9..11 "::"
+    NewKw 11..14 "new"
+  Semi 14..15 ";"
+  LineTerminator 15..16 "\n"
+  MethodRefExpr 16..61
+    ClassType 16..44
+      ClassType 16..28
+        ClassType 16..23
+          Annotation 16..18
+            At 16..17 "@"
+            Name 17..18
+              Identifier 17..18 "A"
+          Whitespace 18..19 " "
+          Identifier 19..23 "java"
+        Dot 23..24 "."
+        Identifier 24..28 "util"
+      Dot 28..29 "."
+      Identifier 29..33 "List"
+      TypeArguments 33..44
+        Lt 33..34 "<"
+        ClassType 34..43
+          Annotation 34..36
+            At 34..35 "@"
+            Name 35..36
+              Identifier 35..36 "B"
+          Whitespace 36..37 " "
+          Identifier 37..43 "String"
+        Gt 43..44 ">"
+    ColonColon 44..46 "::"
+    TypeArguments 46..58
+      Lt 46..47 "<"
+      ClassType 47..57
+        Annotation 47..49
+          At 47..48 "@"
+          Name 48..49
+            Identifier 48..49 "C"
+        Whitespace 49..50 " "
+        Identifier 50..57 "Integer"
+      Gt 57..58 ">"
+    NewKw 58..61 "new"
+  Semi 61..62 ";"
+  LineTerminator 62..63 "\n"
+  MethodRefExpr 63..78
+    ArrayType 63..71
+      PrimitiveType 63..69
+        Annotation 63..65
+          At 63..64 "@"
+          Name 64..65
+            Identifier 64..65 "A"
+        Whitespace 65..66 " "
+        IntKw 66..69 "int"
+      Dim 69..71
+        LBracket 69..70 "["
+        RBracket 70..71 "]"
+    ColonColon 71..73 "::"
+    Identifier 73..78 "clone"
+  Semi 78..79 ";"
+  LineTerminator 79..80 "\n"
+  MethodRefExpr 80..92
+    ArrayType 80..87
+      ClassType 80..81
+        Identifier 80..81 "x"
+      Whitespace 81..82 " "
+      Dim 82..87
+        Annotation 82..84
+          At 82..83 "@"
+          Name 83..84
+            Identifier 83..84 "A"
+        Whitespace 84..85 " "
+        LBracket 85..86 "["
+        RBracket 86..87 "]"
+    ColonColon 87..89 "::"
+    NewKw 89..92 "new"
+  Semi 92..93 ";"
+  LineTerminator 93..94 "\n"
+  CastExpr 94..107
+    LParen 94..95 "("
+    ClassType 95..104
+      Annotation 95..97
+        At 95..96 "@"
+        Name 96..97
+          Identifier 96..97 "A"
+      Whitespace 97..98 " "
+      Identifier 98..104 "String"
+    RParen 104..105 ")"
+    Whitespace 105..106 " "
+    NameExpr 106..107
+      Identifier 106..107 "x"
+  Semi 107..108 ";"
+  LineTerminator 108..109 "\n"
+  CastExpr 109..117
+    LParen 109..110 "("
+    ClassType 110..114
+      Annotation 110..112
+        At 110..111 "@"
+        Name 111..112
+          Identifier 111..112 "A"
+      Whitespace 112..113 " "
+      Identifier 113..114 "a"
+    RParen 114..115 ")"
+    Whitespace 115..116 " "
+    NameExpr 116..117
+      Identifier 116..117 "x"
+  Semi 117..118 ";"
+  LineTerminator 118..119 "\n"
+  Eof 119..119 ""

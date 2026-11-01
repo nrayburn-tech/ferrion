@@ -410,6 +410,10 @@ fn unary(p: &mut Parser<'_>) -> Option<CompletedMarker> {
 /// A primary, then member access, calls, array access, method references, and postfix `++`
 /// and `--`, in a loop.
 fn postfix(p: &mut Parser<'_>) -> Option<CompletedMarker> {
+    // At the start of a statement expression, javac reads a leading name as a type or an
+    // expression, so its segments after the first can be annotated: `java.util.@A
+    // Arrays.stream(a);`. Elsewhere, an annotation after a `.` is an error.
+    let mut annotated_names = p.at_statement_expr_start() && p.at_set(IDENT);
     let mut lhs = primary(p)?;
     // javac takes nothing after a switch expression or a lambda but binary operators.
     if matches!(lhs.kind(), SwitchExpr | LambdaExpr) {
@@ -417,8 +421,18 @@ fn postfix(p: &mut Parser<'_>) -> Option<CompletedMarker> {
     }
     let mut progress = p.progress();
     loop {
+        annotated_names &= matches!(lhs.kind(), NameExpr | FieldAccessExpr);
         match p.current() {
-            Dot => lhs = dot_selector(p, lhs),
+            Dot => lhs = dot_selector(p, lhs, annotated_names),
+            // javac reads annotations after an expression as an annotated dimension of an array
+            // type, which only a type before `.class` or `::` can have (see `type_qualifier`).
+            At if p.nth(1) != InterfaceKw => {
+                let m = lhs.precede(p);
+                let span = annotations_span(p);
+                p.error(ParseDiagnosticKind::UnexpectedToken(At), span, span.start);
+                types::annotations(p);
+                lhs = m.complete(p, Error);
+            }
             LBracket => {
                 let m = lhs.precede(p);
                 p.bump();
@@ -451,9 +465,23 @@ fn postfix(p: &mut Parser<'_>) -> Option<CompletedMarker> {
 }
 
 /// At the `.` after `target`: a field access, a call, `.this`, `.super`, `.class`, or `.new`.
-fn dot_selector(p: &mut Parser<'_>, target: CompletedMarker) -> CompletedMarker {
+/// With `annotated_names`, a field access's name can be annotated (`a.@A b.c()`, see
+/// [`postfix`]), unless a call follows it.
+fn dot_selector(
+    p: &mut Parser<'_>,
+    target: CompletedMarker,
+    annotated_names: bool,
+) -> CompletedMarker {
     let m = target.precede(p);
     p.bump();
+    if annotated_names && types::at_annotation(p) {
+        let name = types::annotations_end(p, 0);
+        if p.nth_at_set(name, IDENT) && p.nth(name + 1) != LParen {
+            types::annotations(p);
+            p.bump();
+            return m.complete(p, FieldAccessExpr);
+        }
+    }
     if p.at_set(IDENT) {
         p.bump();
         if p.at(LParen) {
@@ -545,8 +573,12 @@ fn primary(p: &mut Parser<'_>) -> Option<CompletedMarker> {
         return Some(m.complete(p, NameExpr));
     }
     if p.at_set(PRIMITIVE) {
+        let annotated = types::scan_type(p, 0).is_some_and(|end| annotated_before(p, end));
         let ty = types::type_(p)?;
-        return Some(type_qualifier_rest(p, ty));
+        return Some(type_qualifier_rest(p, ty, annotated));
+    }
+    if types::at_annotation(p) {
+        return annotated_primary(p);
     }
     Some(match p.current() {
         LParen if p.lambdas_allowed() && classify_paren(p) == ParenKind::Lambda => lambda(p),
@@ -623,25 +655,92 @@ fn type_qualifier(p: &mut Parser<'_>) -> Option<CompletedMarker> {
     if !is_type {
         return None;
     }
+    let annotated = annotated_before(p, scan.end);
     let ty = types::type_(p)?;
-    Some(type_qualifier_rest(p, ty))
+    Some(type_qualifier_rest(p, ty, annotated))
 }
 
 /// After a type in an expression: `::` and a method reference, or `.class`. Anything else is
-/// reported after the type.
-fn type_qualifier_rest(p: &mut Parser<'_>, ty: CompletedMarker) -> CompletedMarker {
+/// reported after the type. A class literal's type can't be `annotated` (`int @A [].class`):
+/// javac reports that at the token after `class`.
+fn type_qualifier_rest(
+    p: &mut Parser<'_>,
+    ty: CompletedMarker,
+    annotated: bool,
+) -> CompletedMarker {
     if p.at(ColonColon) {
         return method_reference(p, ty);
     }
     if p.at(Dot) {
+        let start = p.last_node_anchors(ty).start.start;
         let m = ty.precede(p);
         p.bump();
-        p.expect(ClassKw);
+        if p.expect(ClassKw) && annotated {
+            annotated_class_literal(p, start);
+        }
         return m.complete(p, ClassLiteralExpr);
     }
     let span = p.nth_span(0);
     p.error(ParseDiagnosticKind::ClassLiteralExpected, span, span.start);
     ty
+}
+
+/// Reports a class literal, from `start` to the previous token, whose type is annotated, at
+/// the token after it, as javac does.
+fn annotated_class_literal(p: &mut Parser<'_>, start: u32) {
+    let span = Span::new(start, p.previous_end());
+    let next = p.nth_span(0).start;
+    p.error(ParseDiagnosticKind::AnnotatedClassLiteral, span, next);
+}
+
+/// Whether there is an annotation among the next `end` tokens.
+fn annotated_before(p: &Parser<'_>, end: usize) -> bool {
+    (0..end).any(|n| p.nth(n) == At)
+}
+
+/// The span of the annotations at the current token, or of its `@` if they don't parse.
+fn annotations_span(p: &Parser<'_>) -> Span {
+    let first = p.nth_span(0);
+    let end = types::annotations_end(p, 0);
+    let last = if end == 0 { first } else { p.nth_span(end - 1) };
+    Span::new(first.start, last.end)
+}
+
+/// At annotations in an expression. javac takes them only on the type that qualifies a method
+/// reference: `@A Object::new`. Before anything else, it parses the expression after them and
+/// reports them, where the oracle shows it doing so: `no.annotations.on.dot.class` after a class
+/// literal (`@A int.class`), and otherwise `illegal.start.of.expr`, after a field access or a
+/// parenthesized expression (`@A a.b`), and at the `@` before anything else (`@A a`,
+/// `@A f()`). The annotations and the expression go in an `Error` node.
+fn annotated_primary(p: &mut Parser<'_>) -> Option<CompletedMarker> {
+    if let Some(scan) = types::scan_type_info(p, 0, TYPE_ARGUMENTS_BUDGET)
+        && p.nth(scan.end) == ColonColon
+    {
+        let ty = types::type_(p)?;
+        return Some(method_reference(p, ty));
+    }
+    let at = p.nth_span(0);
+    let m = p.start();
+    types::annotations(p);
+    let first = p.current();
+    let reported = p.diagnostic_count();
+    let expr = postfix(p);
+    // An error inside the expression was reported first.
+    if p.diagnostic_count() == reported {
+        let span = Span::new(at.start, p.previous_end());
+        let next = p.nth_span(0).start;
+        match expr.map(|expr| expr.kind()) {
+            Some(ClassLiteralExpr) => annotated_class_literal(p, at.start),
+            None | Some(FieldAccessExpr | ParenExpr) => {
+                p.error(ParseDiagnosticKind::AnnotatedExpression, span, next);
+            }
+            Some(ThisExpr | SuperExpr) if !matches!(first, ThisKw | SuperKw) => {
+                p.error(ParseDiagnosticKind::AnnotatedExpression, span, next);
+            }
+            Some(_) => p.error(ParseDiagnosticKind::AnnotatedExpression, span, at.start),
+        }
+    }
+    Some(m.complete(p, Error))
 }
 
 /// At `new`, with `m` started before it, or for `outer.new`, before the outer expression
@@ -787,8 +886,24 @@ fn classify_paren(p: &Parser<'_>) -> ParenKind {
             _ => {}
         }
     }
-    if p.nth(types::annotations_end(p, 1)) == FinalKw {
+    let annotated = types::annotations_end(p, 1);
+    if p.nth(annotated) == FinalKw {
         return Lambda;
+    }
+    // javac reads `(@A)` as a cast missing its type, and `(@A a.b)` as it reads `(a.b)`.
+    if annotated > 1 {
+        if p.nth(annotated) == RParen {
+            return Cast;
+        }
+        if let Some(scan) = types::scan_type_info(p, annotated, usize::MAX)
+            && scan.name_only
+            && p.nth(scan.end) == RParen
+        {
+            if p.nth(scan.end + 1) == Arrow {
+                return Lambda;
+            }
+            return cast_if_operand(p, scan.end + 1);
+        }
     }
     let Some(scan) = types::scan_type_info(p, 1, usize::MAX) else {
         return Parenthesized;

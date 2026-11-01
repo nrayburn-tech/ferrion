@@ -232,6 +232,18 @@ pub enum ParseDiagnosticKind {
     /// A `;` before an import (the first of several in a row): a warning before 21, and an error
     /// from it. Anchor: the `;`, as for javac's `extraneous.semicolon` (and its warning).
     ExtraneousSemicolon { release: u32 },
+    /// A class literal whose type is annotated: `@A int.class`, `int @A [].class`. Its span covers
+    /// the class literal. Anchor: the token after it, as for javac's `no.annotations.on.dot.class`.
+    AnnotatedClassLiteral,
+    /// Annotations before an expression that isn't a type qualifying a method reference: `@A a`,
+    /// `@A f()`. Its span covers the annotations and the expression. Anchor: where javac reports
+    /// `illegal.start.of.expr` for it: the token after a field access or a parenthesized
+    /// expression, or after the annotations if no expression follows them, and otherwise the `@`.
+    AnnotatedExpression,
+    /// Annotations on a record pattern's type or before it: `@A R(var x)`. Its span covers the
+    /// first run of them. Anchor: the first `@`, as for javac's
+    /// `record.patterns.annotations.not.allowed`.
+    RecordPatternAnnotations,
 }
 
 /// What an [`Expected`](ParseDiagnosticKind::Expected) error expected.
@@ -302,6 +314,9 @@ impl ParseDiagnosticKind {
             | ParseDiagnosticKind::UnderscoreWithBrackets
             | ParseDiagnosticKind::YieldCall { .. }
             | ParseDiagnosticKind::ExtraneousSemicolon { .. } => JavacPhase::Parse,
+            ParseDiagnosticKind::AnnotatedClassLiteral
+            | ParseDiagnosticKind::AnnotatedExpression
+            | ParseDiagnosticKind::RecordPatternAnnotations => JavacPhase::Parse,
             ParseDiagnosticKind::FeatureNotInRelease { feature, .. }
             | ParseDiagnosticKind::PreviewFeature(feature) => feature.javac_phase(),
             ParseDiagnosticKind::NestingTooDeep => JavacPhase::Never,
@@ -368,6 +383,9 @@ impl ParseDiagnosticKind {
             | ParseDiagnosticKind::DefaultNotAllowed
             | ParseDiagnosticKind::GuardNotAllowed
             | ParseDiagnosticKind::StatementNotAllowedInRule => false,
+            ParseDiagnosticKind::AnnotatedClassLiteral
+            | ParseDiagnosticKind::AnnotatedExpression
+            | ParseDiagnosticKind::RecordPatternAnnotations => false,
         }
     }
 }
@@ -553,6 +571,16 @@ impl ParseDiagnostic {
             }
             ParseDiagnosticKind::ExtraneousSemicolon { .. } => {
                 "a ';' can't come before an import from Java 21".to_owned()
+            }
+            ParseDiagnosticKind::AnnotatedClassLiteral => {
+                "a class literal's type can't be annotated".to_owned()
+            }
+            ParseDiagnosticKind::AnnotatedExpression => {
+                "annotations in an expression can only annotate a method reference's type"
+                    .to_owned()
+            }
+            ParseDiagnosticKind::RecordPatternAnnotations => {
+                "a record pattern can't be annotated".to_owned()
             }
             ParseDiagnosticKind::NestingTooDeep => format!(
                 "too deeply nested: more than {} levels",

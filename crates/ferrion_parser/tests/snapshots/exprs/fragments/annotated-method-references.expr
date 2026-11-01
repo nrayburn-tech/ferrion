@@ -1,0 +1,6 @@
+@A Object::new;
+@A java.util.List<@B String>::<@C Integer>new;
+@A int[]::clone;
+x @A []::new;
+(@A String) x;
+(@A a) x;

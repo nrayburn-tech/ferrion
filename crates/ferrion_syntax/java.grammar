@@ -67,9 +67,11 @@
 //    parser can't tell declaration annotations from type annotations; javac's `MODIFIERS` has them
 //    too. Every other annotation belongs to the type construct it precedes: a `ClassType` segment
 //    (`java.util.@A List`), a `PrimitiveType`, a `Dim`, a `DimExpr`, `Varargs` (`String @A ...`), a
-//    `Wildcard`, or a `TypeParameter`. Annotations between a method's type parameters and its
-//    result type (`<T> @A String m()`) are direct children of the method, as in JLS 8.4's
-//    MethodHeader; javac puts them in the method's `MODIFIERS`, outside its span.
+//    `Wildcard`, or a `TypeParameter`; or, at the start of a statement expression, where javac
+//    reads a qualified name as a type, a `FieldAccessExpr`'s name (`a.@A B.m();`). Annotations
+//    between a method's type parameters and its result type (`<T> @A String m()`) are direct
+//    children of the method, as in JLS 8.4's MethodHeader; javac puts them in the method's
+//    `MODIFIERS`, outside its span.
 // 6. **Receiver parameters and varargs.** `void m(@A Foo this)` has a `ReceiverParameter` first in
 //    `FormalParameters`; javac lists it as a `VARIABLE` after the other parameters, with `this`
 //    (or `Outer.this`) as its name expression. `String... a` is a `FormalParameter` with a
@@ -642,7 +644,11 @@ node ParenExpr = '(' expr:Expr ')'
 /// `Foo.class`, `int[].class`, `void.class`.
 node ClassLiteralExpr = target:ExprOrType '.' 'class'
 
-node FieldAccessExpr = target:Expr '.' name:Ident
+/// `a.b`. At the start of a statement expression, javac reads a leading qualified name as a type
+/// or an expression, so a segment can be annotated: `java.util.@A Arrays` in
+/// `java.util.@A Arrays.stream(a);`. javac's tree makes the name up to the annotated segment an
+/// annotated type.
+node FieldAccessExpr = target:Expr '.' annotations:Annotation* name:Ident
 
 node ArrayAccessExpr = array:Expr '[' index:Expr ']'
 

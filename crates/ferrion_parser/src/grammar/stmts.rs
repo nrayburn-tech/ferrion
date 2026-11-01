@@ -324,6 +324,7 @@ fn expr_stmt(p: &mut Parser<'_>) {
 /// `None`, consuming and reporting nothing, if no expression starts here.
 fn statement_expr(p: &mut Parser<'_>) -> Option<CompletedMarker> {
     let increment = p.at(PlusPlus) || p.at(MinusMinus);
+    p.mark_statement_expr_start();
     let expr = exprs::expr(p)?;
     let allowed = match expr.kind() {
         AssignExpr | PostfixExpr | MethodCallExpr | ConstructorCallExpr | NewExpr | Error => true,

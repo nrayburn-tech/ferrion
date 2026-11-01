@@ -206,7 +206,7 @@ pub(super) fn annotations(p: &mut Parser<'_>) -> bool {
     any
 }
 
-fn at_annotation(p: &Parser<'_>) -> bool {
+pub(super) fn at_annotation(p: &Parser<'_>) -> bool {
     p.at(At) && p.nth(1) != InterfaceKw
 }
 

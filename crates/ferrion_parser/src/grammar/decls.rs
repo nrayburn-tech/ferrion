@@ -925,9 +925,11 @@ fn throws_type(p: &mut Parser<'_>) -> Option<CompletedMarker> {
     }
     let mut ty = m.complete(p, ClassType);
     let mut progress = p.progress();
-    while p.at(Dot) && p.nth_at_set(1, IDENT) {
+    // Each segment can be annotated: `throws a.@A E`.
+    while p.at(Dot) && p.nth_at_set(types::annotations_end(p, 1), IDENT) {
         let m = ty.precede(p);
         p.bump();
+        types::annotations(p);
         p.bump();
         ty = m.complete(p, ClassType);
         if !progress.advanced(p) {
