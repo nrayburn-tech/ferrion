@@ -161,8 +161,11 @@ const STUB_MODULES: &[StubModule] = &[
             "jdk/internal/misc>java.desktop",
         ],
         &[
-            "class java/lang/Object",
-            "final java/lang/String implements java/lang/CharSequence,java/lang/Comparable,java/io/Serializable",
+            "class java/lang/Object method toString ()Ljava/lang/String; method hashCode ()I method equals (Ljava/lang/Object;)Z method getClass ()Ljava/lang/Class;",
+            "final java/lang/String implements java/lang/CharSequence,java/lang/Comparable,java/io/Serializable method length ()I method isEmpty ()Z",
+            "final java/lang/Math method abs (I)I method max (II)I",
+            "final java/util/Objects method requireNonNull (Ljava/lang/Object;)Ljava/lang/Object;",
+            "class java/io/PrintStream method println ()V method println (Ljava/lang/String;)V",
             "interface java/lang/CharSequence",
             "interface java/lang/Comparable signature <T:Ljava/lang/Object;>Ljava/lang/Object;",
             "interface java/lang/Iterable",
@@ -170,7 +173,7 @@ const STUB_MODULES: &[StubModule] = &[
             "interface java/lang/AutoCloseable",
             "interface java/lang/Cloneable",
             "abstract java/lang/Number implements java/io/Serializable",
-            "final java/lang/Integer extends java/lang/Number implements java/lang/Comparable",
+            "final java/lang/Integer extends java/lang/Number implements java/lang/Comparable field MAX_VALUE I",
             "abstract java/lang/Enum implements java/lang/Comparable,java/io/Serializable",
             "abstract java/lang/Record",
             "class java/lang/Throwable implements java/io/Serializable",
@@ -178,7 +181,7 @@ const STUB_MODULES: &[StubModule] = &[
             "class java/lang/RuntimeException extends java/lang/Exception",
             "class java/lang/Error extends java/lang/Throwable",
             "final java/lang/Class",
-            "final java/lang/System",
+            "final java/lang/System field out Ljava/io/PrintStream;",
             "class java/lang/Thread implements java/lang/Runnable",
             "annotation java/lang/Deprecated implements java/lang/annotation/Annotation",
             "annotation java/lang/Override implements java/lang/annotation/Annotation",
@@ -461,13 +464,14 @@ pub fn dump_snapshot(snapshot: &Snapshot) -> String {
     out
 }
 
-/// One file's part of [`dump`]: its names in declarations, then its types.
+/// One file's part of [`dump`]: its names, in declarations and bodies, then its types, then the
+/// local and anonymous classes its bodies declare.
 pub fn dump_file(snapshot: &Snapshot, file: crate::FileId) -> String {
     let mut out = String::new();
     let set = snapshot.file(file).unwrap().set;
     let text = snapshot.text(file).unwrap();
-    let decl_names = snapshot.decl_names(file).unwrap();
-    for name in decl_names.names.iter() {
+    let names = snapshot.file_names(file).unwrap();
+    for name in names.names.iter() {
         let written = &text[name.start as usize..name.end as usize];
         let key = snapshot.symbol_key(&name.symbol).unwrap();
         writeln!(out, "{written} -> {key}").unwrap();
@@ -475,6 +479,11 @@ pub fn dump_file(snapshot: &Snapshot, file: crate::FileId) -> String {
     let summary = snapshot.summary(file).unwrap();
     for index in 0..summary.types.len() {
         let key = snapshot.type_key(file, index).unwrap();
+        out.push_str(&describe_type(snapshot, set, key));
+    }
+    let locals = snapshot.body_names(file).unwrap().local_types.len();
+    for index in 0..locals as u32 {
+        let key = TypeKey::Local { file, index };
         out.push_str(&describe_type(snapshot, set, key));
     }
     out

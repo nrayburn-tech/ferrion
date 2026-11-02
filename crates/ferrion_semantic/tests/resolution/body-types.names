@@ -1,0 +1,125 @@
+== main p/Types.java
+p -> package p
+java.util.List -> type java/util/List class platform
+java.util -> package java.util
+java -> package java
+new Member().fromMember -> b3 method-of-expression
+Member -> type p/Types$Member source p/Types.java
+Base -> type p/Base source p/Base.java
+own -> field local p/Types.java:219.own
+inherited -> field p/Base.inherited
+own -> field local p/Types.java:219.own
+new Member().fromLocal -> b3 method-of-expression
+Member -> type local p/Types.java:219
+Member -> type local p/Types.java:219
+Member -> type local p/Types.java:219
+m.own -> field local p/Types.java:219.own
+m -> local p/Types.java:345
+m.inherited -> field p/Base.inherited
+m -> local p/Types.java:345
+List -> type p/Types$List source p/Types.java
+List -> type p/Types$List source p/Types.java
+l.fromMemberList -> b3 method-of-expression
+l -> local p/Types.java:405
+T -> typevar method p/Types.generic(Ljava/lang/Object;)Ljava/lang/Object; T
+T -> typevar method p/Types.generic(Ljava/lang/Object;)Ljava/lang/Object; T
+T -> typevar method p/Types.generic(Ljava/lang/Object;)Ljava/lang/Object; T
+U -> typevar type local p/Types.java:495 U
+Box<String> -> type local p/Types.java:495
+String -> type java/lang/String class platform
+Box<> -> type local p/Types.java:495
+box.held -> field local p/Types.java:495.held
+box -> local p/Types.java:543
+Base -> type p/Base source p/Base.java
+Base -> type p/Base source p/Base.java
+value -> local p/Types.java:656
+inherited -> field p/Base.inherited
+own -> field local p/Types.java:707.own
+other -> local p/Types.java:679
+Runnable -> type java/lang/Runnable class platform
+Runnable -> type java/lang/Runnable class platform
+value -> local p/Types.java:656
+Inner -> type local p/Types.java:951
+Inner -> type local p/Types.java:951
+Outer.Inner -> type local p/Types.java:951
+Outer -> type local p/Types.java:937
+new Outer().make -> b3 method-of-expression
+Outer -> type local p/Types.java:937
+inner.deep -> field local p/Types.java:951.deep
+inner -> local p/Types.java:1030
+# type p/Types source p/Types.java
+  superclass type java/lang/Object class platform
+  member List: type p/Types$List source p/Types.java
+  member Member: type p/Types$Member source p/Types.java
+  method local()V
+  method generic(Ljava/lang/Object;)Ljava/lang/Object;
+  method anonymous()V
+  method nested()V
+  method Types()V implicit
+# type p/Types$Member source p/Types.java
+  superclass type java/lang/Object class platform
+  method fromMember()V
+  method Member()V implicit
+# type p/Types$List source p/Types.java
+  superclass type java/lang/Object class platform
+  method fromMemberList()V
+  method List()V implicit
+# type local p/Types.java:219
+  superclass type p/Base source p/Base.java
+  field own I
+  method fromLocal()V
+  method Member()V implicit
+# type local p/Types.java:495
+  superclass type java/lang/Object class platform
+  field held Ljava/lang/Object;
+  field other Ljava/lang/Object;
+  method Box()V implicit
+# type local p/Types.java:707
+  superclass type p/Base source p/Base.java
+  field own I
+  method get()I
+# type local p/Types.java:839
+  superclass type java/lang/Object class platform
+  interface type java/lang/Runnable class platform
+  method run()V
+# type local p/Types.java:937
+  superclass type java/lang/Object class platform
+  member Inner: type local p/Types.java:951
+  method make()Llocal p/Types.java:951;
+  method Outer()V implicit
+# type local p/Types.java:951
+  superclass type java/lang/Object class platform
+  field deep I
+  method Inner()V implicit
+== main p/Base.java
+p -> package p
+# type p/Base source p/Base.java
+  superclass type java/lang/Object class platform
+  field inherited I
+  method Base()V implicit
+== records p/Records.java
+p -> package p
+x -> local p/Records.java:78
+y -> field local p/Records.java:100.y
+x -> local p/Records.java:78
+# type p/Records source p/Records.java
+  superclass type java/lang/Object class platform
+  field x I
+  method m()V
+  method Records()V implicit
+# type local p/Records.java:100
+  superclass type java/lang/Record class platform
+  field y I
+  method f()I
+  method R(I)V implicit
+  method y()I implicit
+  method equals(Ljava/lang/Object;)Z implicit
+  method hashCode()I implicit
+  method toString()Ljava/lang/String; implicit
+# type local p/Records.java:152
+  superclass type java/lang/Enum class platform
+  field A Llocal p/Records.java:152;
+  method g()I
+  method E()V implicit
+  method values()[Llocal p/Records.java:152; implicit
+  method valueOf(Ljava/lang/String;)Llocal p/Records.java:152; implicit

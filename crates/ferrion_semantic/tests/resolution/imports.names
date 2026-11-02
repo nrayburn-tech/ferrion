@@ -56,6 +56,7 @@ java.io.IOException -> type java/io/IOException class platform
 java.io -> package java.io
 java -> package java
 RuntimeException -> type java/lang/RuntimeException class platform
+r -> local p/A.java:602
 # type p/A source p/A.java
   superclass type p/B source p/B.java
   interface type java/io/Serializable class platform

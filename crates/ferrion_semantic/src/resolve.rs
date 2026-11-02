@@ -55,6 +55,9 @@ impl Snapshot {
     /// entry in a view.
     pub fn supertypes(&self, key: TypeKey) -> Result<Option<Arc<Supertypes>>, Cancelled> {
         self.check()?;
+        if let TypeKey::Local { .. } = key {
+            return Ok(self.local_type(key)?.map(|t| t.supertypes.clone()));
+        }
         if !key.is_source() {
             return Ok(None);
         }
@@ -69,14 +72,23 @@ impl Snapshot {
         key: TypeKey,
     ) -> Result<Arc<MemberTypes>, Cancelled> {
         self.check()?;
+        if let TypeKey::Local { .. } = key {
+            return Ok(self
+                .local_type(key)?
+                .map_or_else(Default::default, |t| t.member_types.clone()));
+        }
         Ok(self
             .member_types_memo(view, key)?
             .map_or_else(Default::default, |m| m.value.clone()))
     }
 
-    /// A source type's entry; `None` for a class file, whose [`Snapshot::class_entry`] it has.
+    /// A source type's entry, or a local or anonymous class's from its file's body result;
+    /// `None` for a class file, whose [`Snapshot::class_entry`] it has.
     pub fn type_entry(&self, key: TypeKey) -> Result<Option<Arc<TypeEntry>>, Cancelled> {
         self.check()?;
+        if let TypeKey::Local { .. } = key {
+            return Ok(self.local_type(key)?.map(|t| t.entry.clone()));
+        }
         if !key.is_source() {
             return Ok(None);
         }
@@ -192,7 +204,7 @@ impl Reads<'_> {
                 }
                 file
             }
-            TypeKey::Class { .. } => return Ok(None),
+            TypeKey::Class { .. } | TypeKey::Local { .. } => return Ok(None),
         };
         let scope = self.file_scope(file)?;
         Ok(scope.indexes.get(&key).map(|&index| Located {
@@ -260,7 +272,6 @@ impl Reads<'_> {
     }
 
     /// A source type's entry. Records it.
-    #[allow(dead_code, reason = "for body results, which W5 adds")]
     pub(crate) fn type_entry(&mut self, key: TypeKey) -> Result<Arc<TypeEntry>, Cancelled> {
         let memo = self.snapshot.type_entry_memo(key)?;
         self.record(Dep::TypeEntry(key), memo.fingerprint);
@@ -424,6 +435,28 @@ pub(crate) struct Scope<'f> {
     pub(crate) header: bool,
     /// The type parameters of the method whose signature the name is in.
     pub(crate) method: Option<(TypeVarOwner, Vec<Name>)>,
+    /// For a name in a body, what the body declares around it, which is innermost.
+    pub(crate) body: Option<&'f dyn BodyTypes>,
+}
+
+/// The types a body declares around a name in it: local and anonymous classes, their member
+/// types and type parameters, and the type parameters of the methods around it. A scope in a
+/// body asks it first, then its enclosing class's scope (implemented by [`crate::body`]).
+pub(crate) trait BodyTypes {
+    /// The innermost type `name` declared in the body around the name, if any.
+    fn simple(
+        &self,
+        r: &mut Resolver<'_, '_>,
+        name: Name,
+    ) -> Result<Option<TypeResolution>, Cancelled>;
+
+    /// The member type `name` of the local or anonymous class `owner`, declared or inherited.
+    fn member_type(
+        &self,
+        r: &mut Resolver<'_, '_>,
+        owner: TypeKey,
+        name: Name,
+    ) -> Result<MemberLookup, Cancelled>;
 }
 
 impl<'f> Scope<'f> {
@@ -434,6 +467,7 @@ impl<'f> Scope<'f> {
             innermost: None,
             header: false,
             method: None,
+            body: None,
         }
     }
 
@@ -445,6 +479,7 @@ impl<'f> Scope<'f> {
             innermost: Some(index),
             header: !body,
             method: None,
+            body: None,
         }
     }
 
@@ -458,11 +493,12 @@ impl<'f> Scope<'f> {
             innermost: outer,
             header: false,
             method: None,
+            body: self.body,
         }
     }
 }
 
-enum MemberLookup {
+pub(crate) enum MemberLookup {
     Found(TypeKey),
     Ambiguous(Box<[TypeKey]>),
     Cycle,
@@ -478,7 +514,7 @@ pub(crate) struct Resolver<'r, 's> {
     /// Imports resolved so far, by name as written.
     canonical: HashMap<Name, Vec<TypeResolution>>,
     module_packages: HashMap<Name, Result<Vec<Name>, Cause>>,
-    java_lang: Name,
+    pub(crate) java_lang: Name,
     java_base: Name,
 }
 
@@ -497,7 +533,7 @@ impl<'r, 's> Resolver<'r, 's> {
         }
     }
 
-    fn error(name: Name, cause: Cause) -> TypeResolution {
+    pub(crate) fn error(name: Name, cause: Cause) -> TypeResolution {
         TypeResolution::Error(ErrorSymbol { name, cause })
     }
 
@@ -513,7 +549,19 @@ impl<'r, 's> Resolver<'r, 's> {
         ))
     }
 
-    fn member_type(&mut self, owner: TypeKey, name: Name) -> Result<MemberLookup, Cancelled> {
+    /// The member type `name` of `owner`, a local or anonymous class's from `body`.
+    pub(crate) fn member_type(
+        &mut self,
+        owner: TypeKey,
+        name: Name,
+        body: Option<&dyn BodyTypes>,
+    ) -> Result<MemberLookup, Cancelled> {
+        if let TypeKey::Local { .. } = owner {
+            return match body {
+                Some(body) => body.member_type(self, owner, name),
+                None => Ok(MemberLookup::None { incomplete: true }),
+            };
+        }
         let Some(members) = self.reads.member_types(self.set, owner)? else {
             return Ok(MemberLookup::Cycle);
         };
@@ -527,7 +575,12 @@ impl<'r, 's> Resolver<'r, 's> {
     }
 
     /// The type a lookup by package found, as a resolution.
-    fn found(&mut self, found: Found, name: Name, package: Name) -> Option<TypeResolution> {
+    pub(crate) fn found(
+        &mut self,
+        found: Found,
+        name: Name,
+        package: Name,
+    ) -> Option<TypeResolution> {
         match found {
             Found::Type(key) => Some(TypeResolution::Type(key)),
             Found::Ambiguous(keys) => Some(Self::error(name, Cause::Ambiguous(keys))),
@@ -553,6 +606,11 @@ impl<'r, 's> Resolver<'r, 's> {
         if name.is_empty() {
             return Ok(Self::error(name, Cause::Syntax));
         }
+        if let Some(body) = scope.body
+            && let Some(found) = body.simple(self, name)?
+        {
+            return Ok(found);
+        }
         if let Some((owner, params)) = &scope.method
             && let Some(index) = params.iter().position(|&p| p == name)
         {
@@ -567,7 +625,7 @@ impl<'r, 's> Resolver<'r, 's> {
             let key = file.keys[index];
             let ty = &file.summary.types[index];
             if members {
-                match self.member_type(key, name)? {
+                match self.member_type(key, name, None)? {
                     MemberLookup::Found(key) => return Ok(TypeResolution::Type(key)),
                     MemberLookup::Ambiguous(keys) => {
                         return Ok(Self::error(name, Cause::Ambiguous(keys)));
@@ -601,7 +659,7 @@ impl<'r, 's> Resolver<'r, 's> {
                 let owner_name = self.owner_of(import.name);
                 if let Some(TypeResolution::Type(owner)) =
                     self.canonical(QualifiedName(owner_name))?.last().cloned()
-                    && let MemberLookup::Found(key) = self.member_type(owner, name)?
+                    && let MemberLookup::Found(key) = self.member_type(owner, name, None)?
                 {
                     return Ok(TypeResolution::Type(key));
                 }
@@ -636,7 +694,7 @@ impl<'r, 's> Resolver<'r, 's> {
                         None => {}
                     }
                 }
-                TypeResolution::Type(owner) => match self.member_type(owner, name)? {
+                TypeResolution::Type(owner) => match self.member_type(owner, name, None)? {
                     MemberLookup::Found(key) => candidates.push(key),
                     MemberLookup::Ambiguous(keys) => {
                         first_error.get_or_insert(Self::error(name, Cause::Ambiguous(keys)));
@@ -734,7 +792,7 @@ impl<'r, 's> Resolver<'r, 's> {
     }
 
     /// `a.B` for `a.B.m`.
-    fn owner_of(&self, name: QualifiedName) -> Name {
+    pub(crate) fn owner_of(&self, name: QualifiedName) -> Name {
         let text = self.names.text(name.0);
         self.names
             .intern(text.rsplit_once('.').map_or("", |(owner, _)| owner))
@@ -770,7 +828,7 @@ impl<'r, 's> Resolver<'r, 's> {
         }
         let segments = name.segments(&self.names);
         let first = TypeResolution::Package(segments[0]);
-        let resolved = self.steps(first, &segments)?;
+        let resolved = self.steps(first, &segments, None)?;
         self.canonical.insert(name.0, resolved.clone());
         Ok(resolved)
     }
@@ -797,14 +855,16 @@ impl<'r, 's> Resolver<'r, 's> {
         {
             start = TypeResolution::Package(first);
         }
-        self.steps(start, segments)
+        self.steps(start, segments, scope.body)
     }
 
-    /// The resolutions of each segment after the first, from the first's.
-    fn steps(
+    /// The resolutions of each segment after the first, from the first's, with the member
+    /// types of local and anonymous classes from `body`.
+    pub(crate) fn steps(
         &mut self,
         first: TypeResolution,
         segments: &[Name],
+        body: Option<&dyn BodyTypes>,
     ) -> Result<Vec<TypeResolution>, Cancelled> {
         let mut resolved = Vec::with_capacity(segments.len());
         resolved.push(first);
@@ -827,7 +887,7 @@ impl<'r, 's> Resolver<'r, 's> {
                         None => TypeResolution::Package(self.join(package, segment)),
                     }
                 }
-                TypeResolution::Type(owner) => match self.member_type(owner, segment)? {
+                TypeResolution::Type(owner) => match self.member_type(owner, segment, body)? {
                     MemberLookup::Found(key) => TypeResolution::Type(key),
                     MemberLookup::Ambiguous(keys) => Self::error(written, Cause::Ambiguous(keys)),
                     MemberLookup::Cycle => Self::error(written, Cause::Cycle),
@@ -898,7 +958,7 @@ impl<'r, 's> Resolver<'r, 's> {
         })
     }
 
-    fn written(&self, segments: &[Name]) -> Name {
+    pub(crate) fn written(&self, segments: &[Name]) -> Name {
         let texts: Vec<Arc<str>> = segments.iter().map(|&n| self.names.text(n)).collect();
         self.names.intern(&texts.join("."))
     }
@@ -1184,6 +1244,7 @@ fn compute_supertypes(reads: &mut Reads<'_>, key: TypeKey) -> Result<Supertypes,
                         path.map_or(Name::EMPTY, |p| names.path_last(p))
                     }
                     Ok(TypeKey::Class { binary, .. }) => *binary,
+                    Ok(TypeKey::Local { .. }) => Name::EMPTY,
                     Err(e) => e.name,
                 },
                 cause: Cause::Cycle,
@@ -1203,10 +1264,10 @@ fn compute_supertypes(reads: &mut Reads<'_>, key: TypeKey) -> Result<Supertypes,
 }
 
 /// The package of a type, for package access.
-fn package_of(key: TypeKey, names: &Interner) -> Name {
+pub(crate) fn package_of(key: TypeKey, names: &Interner) -> Name {
     match key {
         TypeKey::Source { package, .. } => package,
-        TypeKey::Compact { .. } => Name::EMPTY,
+        TypeKey::Compact { .. } | TypeKey::Local { .. } => Name::EMPTY,
         TypeKey::Class { binary, .. } => {
             let text = names.text(binary);
             names.intern(
@@ -1410,14 +1471,48 @@ fn compute_type_entry(reads: &mut Reads<'_>, key: TypeKey) -> Result<TypeEntry, 
         permits.push(r.ty(&header, written, 0)?);
     }
 
+    let (fields, methods) = members_of(&mut r, key, ty, &body, &mut lombok)?;
+    let errors = std::mem::take(&mut r.errors);
+    let cyclic = supertypes.as_ref().is_none_or(|s| s.cyclic());
+    let incomplete = member_types.as_ref().is_none_or(|m| m.incomplete) || cyclic || lombok;
+    Ok(TypeEntry {
+        key,
+        kind: ty.kind,
+        modifiers: ty.modifiers,
+        annotations: annotations.into_boxed_slice(),
+        type_parameters,
+        superclass,
+        interfaces: interfaces.into_boxed_slice(),
+        permits: permits.into_boxed_slice(),
+        fields: fields.into_boxed_slice(),
+        methods: methods.into_boxed_slice(),
+        incomplete,
+        lombok,
+        generated,
+        errors: errors.into_boxed_slice(),
+    })
+}
+
+/// A type's fields and methods, declared and implicit, resolved in `body`, the scope of its
+/// body: what its entry lists after its header. For source types, and for local and anonymous
+/// classes, whose summaries the body walk makes.
+pub(crate) fn members_of(
+    r: &mut Resolver<'_, '_>,
+    key: TypeKey,
+    ty: &crate::summary::TypeSummary,
+    body: &Scope<'_>,
+    lombok: &mut bool,
+) -> Result<(Vec<FieldEntry>, Vec<MethodEntry>), Cancelled> {
+    let names = r.names.clone();
+    let set = r.set;
     let mut fields = Vec::new();
     for field in &ty.fields {
         for annotation in field.annotations.iter() {
-            lombok |= is_lombok(&r.annotation(&body, annotation)?, &names);
+            *lombok |= is_lombok(&r.annotation(body, annotation)?, &names);
         }
         fields.push(FieldEntry {
             name: field.name,
-            ty: r.ty(&body, &field.ty, field.dims.len() as u32)?,
+            ty: r.ty(body, &field.ty, field.dims.len() as u32)?,
             modifiers: field.modifiers,
             kind: FieldKind::Field,
         });
@@ -1444,7 +1539,7 @@ fn compute_type_entry(reads: &mut Reads<'_>, key: TypeKey) -> Result<TypeEntry, 
     }
     let mut components = Vec::new();
     for component in &ty.record_components {
-        components.push(r.ty(&body, &component.ty, u32::from(component.varargs.is_some()))?);
+        components.push(r.ty(body, &component.ty, u32::from(component.varargs.is_some()))?);
     }
     for (component, ty) in ty.record_components.iter().zip(&components) {
         fields.push(FieldEntry {
@@ -1463,7 +1558,7 @@ fn compute_type_entry(reads: &mut Reads<'_>, key: TypeKey) -> Result<TypeEntry, 
             owner,
             method.type_parameters.iter().map(|p| p.name).collect(),
         ));
-        let type_parameters = type_params(&mut r, &scope, &method.type_parameters)?;
+        let type_parameters = type_params(r, &scope, &method.type_parameters)?;
         let mut parameters = Vec::new();
         let varargs = method
             .parameters
@@ -1545,7 +1640,7 @@ fn compute_type_entry(reads: &mut Reads<'_>, key: TypeKey) -> Result<TypeEntry, 
             }
             ImplicitMember::EnumValues => method("values", Vec::new(), Some(own(1)), public),
             ImplicitMember::EnumValueOf => {
-                let string = lang(&mut r, "String")?;
+                let string = lang(r, "String")?;
                 method("valueOf", vec![string], Some(own(0)), public)
             }
             ImplicitMember::CanonicalConstructor => {
@@ -1566,7 +1661,7 @@ fn compute_type_entry(reads: &mut Reads<'_>, key: TypeKey) -> Result<TypeEntry, 
             // The component fields are with the fields.
             ImplicitMember::ComponentField(_) => continue,
             ImplicitMember::RecordEquals => {
-                let object = lang(&mut r, "Object")?;
+                let object = lang(r, "Object")?;
                 method(
                     "equals",
                     vec![object],
@@ -1581,33 +1676,15 @@ fn compute_type_entry(reads: &mut Reads<'_>, key: TypeKey) -> Result<TypeEntry, 
                 public,
             ),
             ImplicitMember::RecordToString => {
-                let string = lang(&mut r, "String")?;
+                let string = lang(r, "String")?;
                 method("toString", Vec::new(), Some(string), public)
             }
         });
     }
-    let errors = std::mem::take(&mut r.errors);
-    let cyclic = supertypes.as_ref().is_none_or(|s| s.cyclic());
-    let incomplete = member_types.as_ref().is_none_or(|m| m.incomplete) || cyclic || lombok;
-    Ok(TypeEntry {
-        key,
-        kind: ty.kind,
-        modifiers: ty.modifiers,
-        annotations: annotations.into_boxed_slice(),
-        type_parameters,
-        superclass,
-        interfaces: interfaces.into_boxed_slice(),
-        permits: permits.into_boxed_slice(),
-        fields: fields.into_boxed_slice(),
-        methods: methods.into_boxed_slice(),
-        incomplete,
-        lombok,
-        generated,
-        errors: errors.into_boxed_slice(),
-    })
+    Ok((fields, methods))
 }
 
-fn type_params(
+pub(crate) fn type_params(
     r: &mut Resolver<'_, '_>,
     scope: &Scope<'_>,
     params: &[crate::summary::TypeParameter],

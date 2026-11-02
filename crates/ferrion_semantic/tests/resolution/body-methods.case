@@ -1,0 +1,51 @@
+// Method names (JLS 15.12.1): the type to search and the candidates by name, for a simple
+// name (the innermost enclosing class with a member method of the name, declared or
+// inherited, else static imports), `Q.m()`, `super.m()`, `Q.super.m()`, and method references
+// qualified by a type. Overloads aren't chosen, and calls on an expression are left to B3.
+// Enum constants in `case` labels are the selector's when its type is known. javac compiles
+// every file.
+//- set main 27
+//- file main p/Methods.java
+package p;
+
+import static java.util.Objects.requireNonNull;
+
+interface Greeter { default String greet() { return "hi"; } }
+
+class Parent {
+    void m() {}
+    void m(int x) {}
+    static String s() { return ""; }
+}
+
+enum Color { RED, GREEN }
+
+class Methods extends Parent implements Greeter {
+    void m(String s) {}
+
+    void calls(Color c) {
+        m();
+        m(1);
+        s();
+        Parent.s();
+        super.m();
+        this.m("x");
+        Greeter.super.greet();
+        requireNonNull(c);
+        Runnable r = Parent::s;
+        java.util.function.Supplier<String> g = this::greet;
+        toString().length();
+        switch (c) {
+            case RED -> m();
+            case GREEN -> m(2);
+        }
+    }
+
+    class Inner {
+        void n() {
+            m();
+            greet();
+            Methods.this.m();
+        }
+    }
+}

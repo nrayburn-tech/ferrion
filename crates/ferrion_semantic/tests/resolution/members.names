@@ -11,6 +11,10 @@ p -> package p
 # type p/E$In source p/E.java
   superclass type java/lang/Object class platform
   method In()V implicit
+# type local p/E.java:24
+  superclass type p/E source p/E.java
+  member In: type p/E$In source p/E.java
+  method x()V
 == main p/R.java
 p -> package p
 String -> type java/lang/String class platform

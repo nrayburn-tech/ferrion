@@ -15,7 +15,8 @@
 //! 3. project symbols: each source set's package index and package entries
 //!    ([`crate::packages`]) and module ([`crate::view`]), and each type's supertypes, member
 //!    types, and entry ([`crate::symbols`]);
-//! 4. each file's names in declarations ([`crate::decl_names`]).
+//! 4. each file's names in declarations ([`crate::decl_names`]) and in bodies
+//!    ([`crate::body`]).
 //!
 //! Class sources (platforms and classpath entries) are fixed when the engine is made, and what is
 //! read from them is cached without dependencies ([`crate::classes`]).
@@ -37,6 +38,7 @@ use ferrion_syntax::SyntaxTree;
 
 use self::derived::{Dep, DerivedTable, Memo, Reads, read, write};
 use self::trees::TreeCache;
+use crate::body::BodyNames;
 use crate::classes::{Cache, ClassSource, ClassSources};
 use crate::decl_names::FileNames;
 use crate::input::ClassPathInput;
@@ -100,6 +102,7 @@ pub(crate) struct Shared {
     pub(crate) member_types: DerivedTable<(SourceSetId, TypeKey), MemberTypes>,
     pub(crate) type_entries: DerivedTable<TypeKey, TypeEntry>,
     pub(crate) file_names: DerivedTable<FileId, FileNames>,
+    pub(crate) body_names: DerivedTable<FileId, BodyNames>,
     pub(crate) names: Arc<Interner>,
     /// Each source set's classpath and platform, by its index.
     pub(crate) configs: Box<[SetConfig]>,
@@ -162,6 +165,7 @@ pub struct Stats {
     pub member_types: TableStats,
     pub type_entries: TableStats,
     pub file_names: TableStats,
+    pub body_names: TableStats,
 }
 
 /// What one table's entries did.
@@ -190,6 +194,7 @@ impl std::ops::Sub for Stats {
             member_types: self.member_types - earlier.member_types,
             type_entries: self.type_entries - earlier.type_entries,
             file_names: self.file_names - earlier.file_names,
+            body_names: self.body_names - earlier.body_names,
         }
     }
 }
@@ -219,6 +224,7 @@ pub struct Sizes {
     pub member_types: usize,
     pub type_entries: usize,
     pub file_names: usize,
+    pub body_names: usize,
     pub class_entries: usize,
     pub names: usize,
 }
@@ -294,6 +300,7 @@ impl Engine {
                 member_types: DerivedTable::tracked(|(view, key)| Dep::MemberTypes(*view, *key)),
                 type_entries: DerivedTable::new(),
                 file_names: DerivedTable::new(),
+                body_names: DerivedTable::new(),
                 names: Arc::new(Interner::new()),
                 configs: configs.into_boxed_slice(),
                 classes: ClassSources::with_sources(sources),
@@ -397,6 +404,7 @@ impl Engine {
             member_types: self.shared.member_types.stats(),
             type_entries: self.shared.type_entries.stats(),
             file_names: self.shared.file_names.stats(),
+            body_names: self.shared.body_names.stats(),
         }
     }
 
@@ -416,6 +424,7 @@ impl Engine {
             member_types: self.shared.member_types.len(),
             type_entries: self.shared.type_entries.len(),
             file_names: self.shared.file_names.len(),
+            body_names: self.shared.body_names.len(),
             class_entries: self.shared.classes.entries_read(),
             names: self.shared.names.len(),
         }

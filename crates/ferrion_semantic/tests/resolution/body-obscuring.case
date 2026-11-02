@@ -1,0 +1,36 @@
+// Ambiguous names in bodies (JLS 6.5.2, 6.4.2): a variable obscures a type, and a type a
+// package, in a qualified name; in a type context only types and packages are looked for
+// (observation "obscuring"). javac compiles every file.
+//- set main 27
+//- file main p/q.java
+package p;
+
+public class q {
+    public static int Z = 1;
+    public static class In { public static int W = 3; }
+}
+//- file main q/Z.java
+package q;
+
+public class Z { public static int Y = 2; }
+//- file main p/U.java
+package p;
+
+class U {
+    int typeObscuresPackage() { return q.Z; }
+
+    int memberTypeField() { return q.In.W; }
+
+    int variableObscuresType() {
+        String Math = "x";
+        return Math.length() + java.lang.Math.abs(-1);
+    }
+
+    Object typeContext() {
+        String q = "variable";
+        q.In in = null;
+        return q.In.class;
+    }
+
+    int packageQualified() { return java.lang.Integer.MAX_VALUE; }
+}

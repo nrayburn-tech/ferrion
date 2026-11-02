@@ -1,0 +1,79 @@
+// Simple and qualified expression names (JLS 6.5.6): locals shadow fields; a field of an
+// enclosing class, declared or inherited, innermost class first; then a single-static import,
+// then a static-import-on-demand. An inherited field wins over a single-static import of the
+// same name, and a single-static import over an on-demand one (observation
+// "static-import-and-inherited-field"). A superclass's private field isn't inherited, even in
+// the same top-level class: `x` in p/Outer.java is `Outer.x` ("private-members"). `e.f` is
+// looked up in `e`'s declared type; what needs an expression's type is left to B3. javac
+// compiles every file.
+//- set main 27
+//- file main q/C.java
+package q;
+
+public class C {
+    public static int X = 1;
+    public static int Y = 2;
+    public static int W = 5;
+    public static void m() {}
+    public static void only() {}
+}
+//- file main q/D.java
+package q;
+
+public class D { public static int W = 6; public static int V = 7; }
+//- file main p/Base.java
+package p;
+
+public class Base {
+    public static int X = 10;
+    public int count;
+    public Base next;
+    protected void m() {}
+}
+//- file main p/Sub.java
+package p;
+
+import static q.C.X;
+import static q.C.W;
+import static q.C.only;
+import static q.C.*;
+import static q.D.*;
+
+class Sub extends Base {
+    int count = 3;
+
+    int inherited() { return X; }
+
+    int onDemand() { return Y + V; }
+
+    int singleOverOnDemand() { return W; }
+
+    void calls() { m(); only(); }
+
+    int shadow(int count) { return count + this.count + super.count; }
+
+    int qualified(Base b) { return b.count + b.next.count + Base.X + Sub.X; }
+
+    int local() {
+        int count = 4;
+        Sub s = new Sub();
+        return count + s.count;
+    }
+
+    int deferred() { return make().count + new Sub().count; }
+
+    Sub make() { return this; }
+
+    class Inner {
+        int count = 8;
+        int outer() { return count + Sub.this.count; }
+    }
+}
+//- file main p/Outer.java
+package p;
+
+class Outer {
+    int x = 1;
+    static class A { private int x = 2; }
+    class B extends A { int f() { return x; } }
+}

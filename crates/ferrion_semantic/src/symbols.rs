@@ -51,19 +51,59 @@ pub enum TypeKey {
     /// A class file, by where it came from and its binary name in internal form
     /// (`java/util/Map$Entry`).
     Class { source: ClassSourceId, binary: Name },
+    /// A local or anonymous class declared in a body of `file`, or a member type of one: the
+    /// `index`th of the file's body result ([`crate::body::BodyNames::local_types`]). Valid for
+    /// one tree of the file, like a `NodeId`, and never held by project-wide data.
+    Local { file: FileId, index: u32 },
 }
 
 impl TypeKey {
+    /// Declared in a summary: a source type that other files can see, whose entries are
+    /// project symbols.
     pub fn is_source(self) -> bool {
-        !matches!(self, TypeKey::Class { .. })
+        matches!(self, TypeKey::Source { .. } | TypeKey::Compact { .. })
     }
 
     /// The source set whose view resolves the type's own names: its declaring set for a source
-    /// type, and `view` for a class file.
+    /// type, and `view` for a class file or a local type.
     pub(crate) fn home(self, view: SourceSetId) -> SourceSetId {
         match self {
             TypeKey::Source { set, .. } | TypeKey::Compact { set, .. } => set,
-            TypeKey::Class { .. } => view,
+            TypeKey::Class { .. } | TypeKey::Local { .. } => view,
+        }
+    }
+}
+
+/// A method or constructor of a type: the `index`th of its source entry's, local entry's, or
+/// class entry's methods.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+pub struct MethodRef {
+    pub owner: TypeKey,
+    pub index: u32,
+}
+
+/// Why a name in a body is left for type attribution (B3) rather than resolved or an error
+/// (docs/design/semantic-names.md#what-b2-leaves-to-b3).
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum LeftToB3 {
+    /// A member of an expression whose type needs attribution: a call's result, `var`, an
+    /// implicitly typed lambda parameter, an array element, a parenthesized or created value.
+    ExpressionType,
+    /// A member of a type variable, found through its bounds.
+    TypeVariable,
+    /// A member of an array type (`length`, `clone`).
+    Array,
+    /// The method a call on an expression (`x.m()`), or a constructor reference, chooses.
+    MethodOfExpression,
+}
+
+impl LeftToB3 {
+    pub fn describe(self) -> &'static str {
+        match self {
+            LeftToB3::ExpressionType => "expression-type",
+            LeftToB3::TypeVariable => "type-variable",
+            LeftToB3::Array => "array",
+            LeftToB3::MethodOfExpression => "method-of-expression",
         }
     }
 }
