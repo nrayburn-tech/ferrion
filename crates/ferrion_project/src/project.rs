@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use crate::error::{InputError, Origin, dedup};
-use crate::model::{self, ProjectModel};
+use crate::model::{self, ModelEntry, ModelSourceSet, PlatformKind, ProjectModel};
 use crate::paths::{PATH_SEPARATOR, absolute, split_list};
 use crate::{Environment, InputFlags};
 
@@ -54,6 +54,62 @@ pub struct SourceSet {
     /// the code has no dependencies beyond the platform.
     pub classpath: Option<Vec<ClassPathItem>>,
     pub module_path: Vec<Given<PathBuf>>,
+    /// How it is compiled, where that changes what its code sees. The default for the source
+    /// set of flags.
+    pub compile: CompileOptions,
+    /// The annotation processor path the build gives javac, or `None` when processors are found
+    /// on the classpath. Ferrion runs no processors; it's for tools that compare with javac.
+    pub processor_path: Option<Vec<ClassPathItem>>,
+}
+
+/// How a source set is compiled: javac's options that change which names its code sees.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct CompileOptions {
+    /// The release's API alone (`--release`), or the JDK's whole API (`-source` and `-target`).
+    pub platform: PlatformKind,
+    /// `--enable-preview`.
+    pub enable_preview: bool,
+    /// `--add-modules`: module names, or `ALL-DEFAULT`, `ALL-SYSTEM`, or `ALL-MODULE-PATH`.
+    pub add_modules: Vec<String>,
+    /// `--add-exports`, in order.
+    pub add_exports: Vec<AddExports>,
+    /// `--add-reads`, in order.
+    pub add_reads: Vec<AddReads>,
+    /// `--patch-module`, by module name.
+    pub patch_modules: Vec<PatchModule>,
+}
+
+/// `--add-exports <module>/<package>=<target>(,<target>)*`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AddExports {
+    pub module: String,
+    /// Dotted, as written.
+    pub package: String,
+    /// Module names, or `ALL-UNNAMED`.
+    pub targets: Vec<String>,
+}
+
+impl AddExports {
+    /// Whether code in the unnamed module gets the package.
+    pub fn to_unnamed(&self) -> bool {
+        self.targets.iter().any(|t| t == "ALL-UNNAMED")
+    }
+}
+
+/// `--add-reads <module>=<target>(,<target>)*`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AddReads {
+    pub module: String,
+    pub targets: Vec<String>,
+}
+
+/// `--patch-module <module>=<path>(:<path>)*`: jars and directories whose classes are put in the
+/// module, before its own.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PatchModule {
+    pub module: String,
+    /// Absolute.
+    pub paths: Vec<Given<PathBuf>>,
 }
 
 impl SourceSet {
@@ -301,6 +357,8 @@ fn from_flags(
         jdk,
         classpath,
         module_path,
+        compile: CompileOptions::default(),
+        processor_path: None,
     }]
 }
 
@@ -401,36 +459,12 @@ fn load_model(
             "generated-source root",
             problems,
         );
-        let mut classpath = Vec::with_capacity(set.classpath.len());
-        for entry in &set.classpath {
-            match (&entry.path, &entry.source_set) {
-                (Some(path), None) => classpath.push(ClassPathItem::Path(Given {
-                    value: absolute(base, path),
-                    origin: here.clone(),
-                })),
-                (None, Some(other)) => match ids.get(other.as_str()) {
-                    Some(&id) => classpath.push(ClassPathItem::SourceSet(Given {
-                        value: id,
-                        origin: here.clone(),
-                    })),
-                    None => problems.push(InputError::error(
-                        format!(
-                            "source set `{}` depends on `{other}`, which isn't in the project model",
-                            set.id
-                        ),
-                        here.clone(),
-                    )),
-                },
-                _ => problems.push(InputError::error(
-                    format!(
-                        "a classpath entry of source set `{}` has both or neither of `path` and \
-                         `sourceSet`",
-                        set.id
-                    ),
-                    here.clone(),
-                )),
-            }
-        }
+        let classpath = entries(set, &set.classpath, &ids, base, &here, problems);
+        let processor_path = set
+            .processor_path
+            .as_ref()
+            .map(|path| entries(set, path, &ids, base, &here, problems));
+        let compile = compile_options(set, base, &here, problems);
         let jdk = match &set.jdk {
             Some(home) => Some(Given {
                 value: absolute(base, home),
@@ -454,6 +488,8 @@ fn load_model(
                     origin: here.clone(),
                 })
                 .collect(),
+            compile,
+            processor_path,
         });
     }
     for cycle in cycles(&source_sets) {
@@ -473,6 +509,168 @@ fn load_model(
         problems.push(InputError::error(message, whole.clone()));
     }
     source_sets
+}
+
+/// A classpath (or processor path) of the model as items, reporting entries with both or neither
+/// of `path` and `sourceSet`, and references to source sets the model doesn't have.
+fn entries(
+    set: &ModelSourceSet,
+    given: &[ModelEntry],
+    ids: &HashMap<&str, SourceSetId>,
+    base: &Path,
+    here: &Origin,
+    problems: &mut Vec<InputError>,
+) -> Vec<ClassPathItem> {
+    let mut items = Vec::with_capacity(given.len());
+    for entry in given {
+        match (&entry.path, &entry.source_set) {
+            (Some(path), None) => items.push(ClassPathItem::Path(Given {
+                value: absolute(base, path),
+                origin: here.clone(),
+            })),
+            (None, Some(other)) => match ids.get(other.as_str()) {
+                Some(&id) => items.push(ClassPathItem::SourceSet(Given {
+                    value: id,
+                    origin: here.clone(),
+                })),
+                None => problems.push(InputError::error(
+                    format!(
+                        "source set `{}` depends on `{other}`, which isn't in the project model",
+                        set.id
+                    ),
+                    here.clone(),
+                )),
+            },
+            _ => problems.push(InputError::error(
+                format!(
+                    "a classpath entry of source set `{}` has both or neither of `path` and \
+                     `sourceSet`",
+                    set.id
+                ),
+                here.clone(),
+            )),
+        }
+    }
+    items
+}
+
+/// A source set's compile options, checked: module names, and the forms of `addExports` and
+/// `addReads`. Paths are made absolute against `base`; whether they exist is checked when type
+/// inputs are opened.
+fn compile_options(
+    set: &ModelSourceSet,
+    base: &Path,
+    here: &Origin,
+    problems: &mut Vec<InputError>,
+) -> CompileOptions {
+    let mut bad = |field: &str, flag: &str, value: &str, form: &str| {
+        problems.push(
+            InputError::error(
+                format!(
+                    "`{field}` entry `{value}` of source set `{}` isn't {form}",
+                    set.id
+                ),
+                here.clone(),
+            )
+            .with_help(format!("write it as javac's {flag} takes it")),
+        );
+    };
+    let mut add_modules = Vec::new();
+    for module in &set.add_modules {
+        if is_module_name(module) || ALL_MODULES.contains(&module.as_str()) {
+            add_modules.push(module.clone());
+        } else {
+            bad("addModules", "--add-modules", module, "a module name");
+        }
+    }
+    let mut add_exports = Vec::new();
+    for export in &set.add_exports {
+        match parse_add_exports(export) {
+            Some(parsed) => add_exports.push(parsed),
+            None => bad(
+                "addExports",
+                "--add-exports",
+                export,
+                "`<module>/<package>=<target>(,<target>)*`",
+            ),
+        }
+    }
+    let mut add_reads = Vec::new();
+    for reads in &set.add_reads {
+        match parse_targets(reads) {
+            Some((module, targets)) if is_module_name(module) => add_reads.push(AddReads {
+                module: module.to_owned(),
+                targets,
+            }),
+            _ => bad(
+                "addReads",
+                "--add-reads",
+                reads,
+                "`<module>=<target>(,<target>)*`",
+            ),
+        }
+    }
+    let mut patch_modules = Vec::new();
+    for (module, paths) in &set.patch_modules {
+        if !is_module_name(module) {
+            bad("patchModules", "--patch-module", module, "a module name");
+            continue;
+        }
+        patch_modules.push(PatchModule {
+            module: module.clone(),
+            paths: paths
+                .iter()
+                .map(|path| Given {
+                    value: absolute(base, path),
+                    origin: here.clone(),
+                })
+                .collect(),
+        });
+    }
+    CompileOptions {
+        platform: set.platform,
+        enable_preview: set.enable_preview,
+        add_modules,
+        add_exports,
+        add_reads,
+        patch_modules,
+    }
+}
+
+/// The values of `--add-modules` that aren't module names.
+const ALL_MODULES: [&str; 3] = ["ALL-DEFAULT", "ALL-SYSTEM", "ALL-MODULE-PATH"];
+
+/// Whether `name` is a module or package name as javac takes one: identifiers separated by dots
+/// (JLS 7.7). Keywords aren't checked.
+fn is_module_name(name: &str) -> bool {
+    !name.is_empty()
+        && name.split('.').all(|part| {
+            let mut chars = part.chars();
+            chars
+                .next()
+                .is_some_and(|c| c.is_alphabetic() || c == '_' || c == '$')
+                && chars.all(|c| c.is_alphanumeric() || c == '_' || c == '$')
+        })
+}
+
+/// `<module>=<target>(,<target>)*`, the targets module names or `ALL-UNNAMED`.
+fn parse_targets(text: &str) -> Option<(&str, Vec<String>)> {
+    let (module, targets) = text.split_once('=')?;
+    let targets: Vec<String> = targets.split(',').map(str::to_owned).collect();
+    targets
+        .iter()
+        .all(|t| t == "ALL-UNNAMED" || is_module_name(t))
+        .then_some((module, targets))
+}
+
+fn parse_add_exports(text: &str) -> Option<AddExports> {
+    let (source, targets) = parse_targets(text)?;
+    let (module, package) = source.split_once('/')?;
+    (is_module_name(module) && is_module_name(package)).then(|| AddExports {
+        module: module.to_owned(),
+        package: package.to_owned(),
+        targets,
+    })
 }
 
 /// Parses the model, checking the format version before the fields, since a newer format may
@@ -504,7 +702,7 @@ fn parse_model(text: &str, whole: &Origin, problems: &mut Vec<InputError>) -> Op
                 InputError::error(
                     format!(
                         "the project model has format version {version}, and this Ferrion reads \
-                         only version {}",
+                         versions up to {}",
                         model::FORMAT_VERSION
                     ),
                     whole.clone(),

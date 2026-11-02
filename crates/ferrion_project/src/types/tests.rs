@@ -415,3 +415,51 @@ fn source_sets_in_a_model() {
         &test.platform
     ));
 }
+
+#[test]
+fn patched_modules_and_the_jdks_own_api() {
+    let scratch = Scratch::new("patches");
+    let jdk = scratch.jdk8("jdk8");
+    scratch.jar("api.jar", &["java/lang/foreign/Arena"], "");
+    scratch.dir("main");
+    let model = |patch: &str| {
+        format!(
+            r#"{{"formatVersion": 2, "sourceSets": [{{"id": "main", "javaRelease": 8,
+                "platform": "jdk", "jdk": "{jdk}", "sourceRoots": ["main"],
+                "patchModules": {{"java.base": ["{patch}"]}}}}]}}"#,
+            jdk = jdk.display()
+        )
+    };
+    let flags = InputFlags {
+        project_model: Some("model.json".into()),
+        ..InputFlags::default()
+    };
+    scratch.write("model.json", model("api.jar").as_bytes());
+    let (types, warnings) = open(&flags, &scratch).unwrap();
+    assert_eq!(warnings, []);
+    let set = &types.source_sets()[0];
+    // `-source` and `-target` see the JDK's own API: JDK 8's here.
+    assert_eq!(set.platform.release(), 8);
+    let [(module, patches)] = set.patches.as_slice() else {
+        panic!("one patched module");
+    };
+    assert_eq!(module, "java.base");
+    assert_eq!(patches[0].path, scratch.path("api.jar"));
+    assert_eq!(patches[0].module.as_deref(), Some("java.base"));
+    assert!(
+        patches[0]
+            .entry
+            .find(&ClassName::new("java/lang/foreign/Arena"))
+            .unwrap()
+            .is_some()
+    );
+    // Patches aren't classpath entries.
+    assert!(set.entries.is_empty());
+
+    scratch.write("model.json", model("gone.jar").as_bytes());
+    assert_eq!(
+        open(&flags, &scratch).unwrap_err(),
+        "error: patch-module entry `$DIR/gone.jar` doesn't exist\n  from: project model \
+         `model.json`, source set `main`"
+    );
+}

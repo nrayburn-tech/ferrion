@@ -13,6 +13,7 @@ use ferrion_classfile::{
 };
 
 use crate::error::{InputError, Origin, dedup};
+use crate::model::PlatformKind;
 use crate::paths::{absolute, has_archive_extension};
 use crate::project::{ClassPathItem, Given, Project, SourceSet, SourceSetId};
 
@@ -26,7 +27,13 @@ pub struct TypeInputs {
 #[derive(Debug)]
 pub struct SourceSetTypes {
     pub jdk: Arc<Jdk>,
+    /// The platform API at the source set's release, or, for [`PlatformKind::Jdk`], the JDK's
+    /// own whole API. Which packages code sees in it is the module graph's, which the source
+    /// set's compile options change (`ferrion_semantic` applies them).
     pub platform: Arc<PlatformApi>,
+    /// The `--patch-module` entries, by module, in the model's order: jars and directories whose
+    /// classes are in the module, before its own.
+    pub patches: Vec<(String, Vec<ClassesEntry>)>,
     /// The classpath in order, with each jar's manifest `Class-Path` inserted after it, then the
     /// module path. An entry already on the classpath is left out where it repeats.
     pub entries: Vec<TypeEntry>,
@@ -90,6 +97,29 @@ impl TypeInputs {
                 opener.module_path(path);
             }
             let entries = opener.entries;
+            let mut patches = Vec::new();
+            for patch in &set.compile.patch_modules {
+                // Apart from the classpath's, so an entry on both is opened in both.
+                let mut opener = Opener {
+                    cache,
+                    release: set.release.value,
+                    seen: HashSet::new(),
+                    entries: Vec::new(),
+                    problems: &mut problems,
+                };
+                for path in &patch.paths {
+                    opener.patch(&patch.module, path);
+                }
+                let opened = opener
+                    .entries
+                    .into_iter()
+                    .filter_map(|entry| match entry {
+                        TypeEntry::Classes(classes) => Some(classes),
+                        TypeEntry::SourceSet(_) => None,
+                    })
+                    .collect();
+                patches.push((patch.module.clone(), opened));
+            }
             if let Some((jdk, platform)) = platform {
                 let class_path = ClassPath::new(
                     entries
@@ -103,6 +133,7 @@ impl TypeInputs {
                 source_sets.push(SourceSetTypes {
                     jdk,
                     platform,
+                    patches,
                     entries,
                     class_path,
                 });
@@ -184,7 +215,12 @@ fn open_platform(
         );
         return None;
     }
-    match jdk.platform(release) {
+    // `-source` and `-target` see the JDK's own API, whatever the release.
+    let api = match set.compile.platform {
+        PlatformKind::Release => release,
+        PlatformKind::Jdk => jdk.feature_version(),
+    };
+    match jdk.platform(api) {
         Ok(platform) => Some((jdk, platform)),
         Err(e) => {
             problems.push(InputError::error(e.to_string(), home.origin.clone()));
@@ -366,6 +402,34 @@ impl Opener<'_> {
             }
         }
         listed
+    }
+
+    /// A `--patch-module` entry of `module`: a jar or a directory of classes. Manifests'
+    /// `Class-Path` aren't followed.
+    fn patch(&mut self, module: &str, given: &Given<PathBuf>) {
+        let path = &given.value;
+        if !self.first_time(path) {
+            return;
+        }
+        if !path.exists() {
+            self.missing(path, given.origin.clone(), "patch-module");
+            return;
+        }
+        let entry = if path.is_dir() {
+            ClassPathEntry::directory(path)
+        } else {
+            match self.jar(path, &given.origin, false, "patch-module") {
+                Some(jar) => ClassPathEntry::jar(jar),
+                None => return,
+            }
+        };
+        self.push(
+            entry,
+            path.clone(),
+            given.origin.clone(),
+            false,
+            Some(module.to_owned()),
+        );
     }
 
     /// A module path entry: a jar, an exploded module (a directory with `module-info.class`), or
