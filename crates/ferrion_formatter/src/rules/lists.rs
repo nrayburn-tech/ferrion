@@ -35,8 +35,9 @@ pub(crate) const FILL_WIDTH: u32 = 9;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Shape {
     /// `(a, b)` of a call or a record pattern: all on the line; otherwise all on the next line
-    /// at +4; otherwise one per line, or filled. The `)` follows the last item, in the list's
-    /// group, so a line comment before it breaks the list.
+    /// at +4; otherwise one per line, or filled. After a format string, the arguments break as a
+    /// list of their own. The `)` follows the last item, in the list's group, so a line comment
+    /// before it breaks the list.
     Arguments,
     /// `(x -> {`: one item, hugged (docs/design/formatter.md, "Hugging"): it stays on the line
     /// if the line up to its first forced break fits, and the item is indented +4 only if it
@@ -85,6 +86,10 @@ pub(crate) fn delimited<'t>(
     let mut trailing_comma = false;
     let mut opened = false;
     let mut rows = Rows::new(shape);
+    // Whether the arguments start with a format string, and whether the ones after it are all
+    // narrow.
+    let mut format = false;
+    let mut narrow_rest = true;
     for element in children(node) {
         match element {
             NodeOrToken::Token(token) if is_open(token) => opened = true,
@@ -92,10 +97,17 @@ pub(crate) fn delimited<'t>(
                 items += 1;
                 // A comment before an item on its line counts toward its width, as GJF
                 // measures it.
-                narrow = narrow
-                    && shape.fills()
-                    && !comment_on_line_before(child.first_token())
-                    && fits_in(child, FILL_WIDTH);
+                let narrow_item = |child: SyntaxNode<'_>| {
+                    !comment_on_line_before(child.first_token()) && fits_in(child, FILL_WIDTH)
+                };
+                narrow = narrow && shape.fills() && narrow_item(child);
+                if shape == Shape::Arguments {
+                    if items == 1 {
+                        format = is_format_string(child);
+                    } else {
+                        narrow_rest = narrow_rest && (narrow || narrow_item(child));
+                    }
+                }
                 trailing_comma = false;
                 rows.item(child);
             }
@@ -104,6 +116,10 @@ pub(crate) fn delimited<'t>(
         }
     }
     let rows = rows.finish(node);
+    // GJF puts a format string on a line of its own when the arguments break, and the arguments
+    // after it on the next as arguments of their own: all on one line, filled, or one per line
+    // (observed).
+    let format = format && items >= 2 && rows.is_none();
     let mut elements = children(node).peekable();
     // Whatever comes before the opening delimiter.
     while let Some(&element) = elements.peek() {
@@ -157,7 +173,8 @@ pub(crate) fn delimited<'t>(
         }
         return None;
     }
-    let fill = narrow && items > 1 && rows.is_none();
+    let fill = narrow && items > 1 && rows.is_none() && !format;
+    let fill_rest = narrow_rest && items > 2;
     let items =
         elements.take_while(|e| !matches!(e, NodeOrToken::Token(t) if t.id() == close.id()));
     let alternative = shape == Shape::Hug
@@ -221,6 +238,28 @@ pub(crate) fn delimited<'t>(
             let mut items = items;
             if let Some(n) = rows {
                 in_rows(f, items, n, close, capped);
+            } else if format {
+                // The format string and its comma, then the rest in a group or fill of their
+                // own.
+                for element in items.by_ref() {
+                    emit(f, element);
+                    if let NodeOrToken::Token(comma) = element
+                        && comma.kind() == K::Comma
+                    {
+                        if comment_on_line_after(comma)
+                            && let Some(next) = next_item(comma, close)
+                        {
+                            f.comments_before(next.id());
+                        }
+                        break;
+                    }
+                }
+                f.line();
+                if fill_rest {
+                    f.fill(|f| separated(f, &mut items, true));
+                } else {
+                    f.group(|f| separated(f, &mut items, false));
+                }
             } else {
                 separated(f, &mut items, fill);
             }
@@ -294,6 +333,34 @@ pub(crate) fn delimited<'t>(
         }
     }
     items_group
+}
+
+/// Whether `item`, an argument, is a format string to GJF (observed): a string literal or text
+/// block with a `%` in it, or a concatenation of only such literals, one of which has a `%`.
+/// Neither `"%s" + x` nor `("%s")` is one.
+fn is_format_string(item: SyntaxNode<'_>) -> bool {
+    let literal = |node: SyntaxNode<'_>| {
+        let token = node.first_token();
+        (node.kind() == K::LiteralExpr && matches!(token.kind(), K::StringLiteral | K::TextBlock))
+            .then(|| token.text().contains('%') || token.text().contains("u0025"))
+    };
+    // A concatenation nests to the left: its right operands are literals.
+    let mut node = item;
+    let mut percent = false;
+    while node.kind() == K::BinaryExpr {
+        let mut operands = node.children();
+        let (Some(left), Some(right), None) = (operands.next(), operands.next(), operands.next())
+        else {
+            return false;
+        };
+        let plus = children(node).any(|child| child.kind() == K::Plus);
+        match literal(right) {
+            Some(has) if plus => percent |= has,
+            _ => return false,
+        }
+        node = left;
+    }
+    literal(node).is_some_and(|has| has || percent)
 }
 
 /// Whether the input has a list's items in rows that GJF keeps (observed), read one item at a
