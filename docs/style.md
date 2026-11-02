@@ -671,6 +671,15 @@ if (firstConditionIsTrueAAAAAAA && secondConditionIsTrueBBBBBBBBB
     || thirdConditionIsTrueCCCCCCC && fourthDDDD) {}
 ```
 
+When every operand of the run is at most 9 wide, as for arguments, the operands fill instead:
+as many on a line as fit, each line after the first at +4.
+
+```java
+String label =
+    (p.text() + " " + p.text() + " " + p.text() + " " + p.text() + " " + p.text() + "-b "
+        + p.text() + "-b " + p.text() + "-b " + p.text() + "-b");
+```
+
 ### `?:`
 
 On one line, or the condition, then `? a` and `: b` on lines of their own at +4. A `?:` in a
