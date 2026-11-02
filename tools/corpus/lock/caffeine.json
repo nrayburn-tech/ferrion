@@ -1,5 +1,5 @@
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "commit": "aabb24230296101f179e425b71bb64d62ded3189",
   "jdk": 26,
   "modules": [
@@ -109,13 +109,207 @@
             {
               "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
           ]
         },
         {
           "name": "codeGen",
           "javaRelease": 11,
           "sourceRoots": [],
-          "classpath": []
+          "generatedSourceRoots": [
+            "caffeine/build/generated/sources/node",
+            "caffeine/build/generated/sources/local-cache"
+          ],
+          "classpath": [],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
+          ]
         },
         {
           "name": "eclipseTest",
@@ -218,6 +412,101 @@
             },
             {
               "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
             }
           ]
         },
@@ -356,6 +645,101 @@
             {
               "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
           ]
         },
         {
@@ -475,6 +859,101 @@
             {
               "jar": "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
           ]
         },
         {
@@ -570,6 +1049,101 @@
             {
               "jar": "org/jetbrains/kotlin/kotlin-annotations-jvm/1.3.72/kotlin-annotations-jvm-1.3.72.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
           ]
         },
         {
@@ -605,6 +1179,101 @@
             },
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
             }
           ]
         },
@@ -642,6 +1311,113 @@
             },
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/openjdk/jcstress/jcstress-core/0.16/jcstress-core-0.16.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "net/sf/jopt-simple/jopt-simple/4.6/jopt-simple-4.6.jar"
+            },
+            {
+              "jar": "net/java/dev/jna/jna-platform/5.8.0/jna-platform-5.8.0.jar"
+            },
+            {
+              "jar": "net/java/dev/jna/jna/5.8.0/jna-5.8.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
             }
           ]
         },
@@ -718,6 +1494,101 @@
             },
             {
               "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+            }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
             }
           ]
         },
@@ -1098,6 +1969,101 @@
             {
               "jar": "org/ops4j/base/ops4j-base-monitors/1.5.1/ops4j-base-monitors-1.5.1.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
           ]
         },
         {
@@ -1152,6 +2118,101 @@
             },
             {
               "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
             }
           ]
         },
@@ -1238,6 +2299,101 @@
             {
               "jar": "org/jetbrains/annotations/23.0.0/annotations-23.0.0.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
           ]
         },
         {
@@ -1252,6 +2408,101 @@
             },
             {
               "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
             }
           ]
         },
@@ -1298,6 +2549,101 @@
             },
             {
               "jar": "org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar"
+            }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
             }
           ]
         },
@@ -1384,6 +2730,101 @@
             {
               "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
           ]
         },
         {
@@ -1465,6 +2906,101 @@
             },
             {
               "jar": "org/ops4j/base/ops4j-base-monitors/1.5.1/ops4j-base-monitors-1.5.1.jar"
+            }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
             }
           ]
         },
@@ -1745,6 +3281,101 @@
             {
               "jar": "org/ops4j/base/ops4j-base-monitors/1.5.1/ops4j-base-monitors-1.5.1.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
           ]
         },
         {
@@ -1860,6 +3491,101 @@
             {
               "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
           ]
         }
       ]
@@ -1939,6 +3665,101 @@
             {
               "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "file": "guava/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
           ]
         },
         {
@@ -1966,6 +3787,101 @@
             },
             {
               "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            }
+          ],
+          "processorPath": [
+            {
+              "file": "guava/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
             }
           ]
         },
@@ -2016,6 +3932,101 @@
             },
             {
               "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            }
+          ],
+          "processorPath": [
+            {
+              "file": "guava/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
             }
           ]
         },
@@ -2112,6 +4123,101 @@
             {
               "jar": "org/ops4j/base/ops4j-base-monitors/1.5.1/ops4j-base-monitors-1.5.1.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "file": "guava/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
           ]
         },
         {
@@ -2189,6 +4295,101 @@
             {
               "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "file": "guava/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
           ]
         }
       ]
@@ -2236,6 +4437,101 @@
             },
             {
               "jar": "org/osgi/org.osgi.util.promise/1.0.0/org.osgi.util.promise-1.0.0.jar"
+            }
+          ],
+          "processorPath": [
+            {
+              "file": "jcache/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
             }
           ]
         },
@@ -2347,6 +4643,101 @@
             {
               "jar": "org/ops4j/base/ops4j-base-monitors/1.5.1/ops4j-base-monitors-1.5.1.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "file": "jcache/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
           ]
         },
         {
@@ -2411,6 +4802,101 @@
             },
             {
               "jar": "org/osgi/org.osgi.util.promise/1.0.0/org.osgi.util.promise-1.0.0.jar"
+            }
+          ],
+          "processorPath": [
+            {
+              "file": "jcache/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
             }
           ]
         },
@@ -2558,13 +5044,203 @@
             {
               "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "file": "jcache/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
           ]
         },
         {
           "name": "testResources",
           "javaRelease": 11,
           "sourceRoots": [],
-          "classpath": []
+          "classpath": [],
+          "processorPath": [
+            {
+              "file": "jcache/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
+          ]
         }
       ]
     },
@@ -2692,6 +5368,101 @@
             },
             {
               "jar": "commons-io/commons-io/2.20.0/commons-io-2.20.0.jar"
+            }
+          ],
+          "processorPath": [
+            {
+              "file": "simulator/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
             }
           ]
         },
@@ -2854,6 +5625,101 @@
             {
               "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "file": "simulator/build/errorprone/caffeine-3.3.0.jar"
+            },
+            {
+              "jar": "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar"
+            },
+            {
+              "jar": "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            },
+            {
+              "jar": "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar"
+            },
+            {
+              "jar": "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.jar"
+            },
+            {
+              "jar": "net/bytebuddy/byte-buddy-agent/1.17.7/byte-buddy-agent-1.17.7.jar"
+            },
+            {
+              "jar": "org/objenesis/objenesis/3.3/objenesis-3.3.jar"
+            }
           ]
         }
       ]
@@ -2876,19 +5742,29 @@
     "com/github/ajalt/mordant/mordant-jvm/3.0.1/mordant-jvm-3.0.1.jar": "9ed3b976fcccc78da746d49866fa8ebb8f10530a93c544ea0420259a607dd95e",
     "com/github/freva/ascii-table/1.13.0/ascii-table-1.13.0.jar": "84273a4d89df969e7b5624477196507b36018b1cd3dedd20ac0b4c4153cce01b",
     "com/github/jbellis/jamm/0.4.0/jamm-0.4.0.jar": "f8f0457e388c4d0f69a4510c89fce8b2a79129e726b46a756ab840fd7ba82387",
+    "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar": "61ab82439cef37343b14f53154c461619375373a56b9338e895709fb54e0864c",
     "com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar": "2f28af17ad61a7daad0f3df070198c4a5807d3ffd98a5408f670cd19fc2dce84",
     "com/github/valfirst/slf4j-test/3.0.3/slf4j-test-3.0.3.jar": "3f96dd4785d7e9b7e20aa45943043b71d9ce2a666e873ae99d2402890703b8ad",
+    "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar": "f50b1ce8a41fad31a8a819c052f8ffa362ea0a3dbe9ef8f7c7dc9a36d4738a59",
+    "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar": "c7bec54b7b5588b5967e870341091c5691181d954cf2039f1bf0a6eeb837473b",
     "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar": "5a055ce4255333b3346e1a8703da5bf8ff049532286fdcd31712d624abe111dd",
+    "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar": "fa5469f4c44ee598a2d8f033ab0a9dcbc6498a0c5e0c998dfa0c2adf51358044",
     "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar": "766ad2a0783f2687962c8ad74ceecc38a28b9f72a2d085ee438b7813e928d0c7",
+    "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar": "aa9b67a3aa3418b366e26594e1ae35d100ad3369cd1010ae7d4782d984ea9aaf",
     "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar": "4667724877f1d37a689202da191e23efa7657c62eef93ccdac406eccfe5cdd0a",
+    "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar": "ee935a4f42ac409fb0a471affea938c3050c6887dbaadb106868936d83d8c8f1",
+    "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar": "40a88d3ea732fac3a57ae0e2b27f1729ce76cc41857bcd63d5845e79eae5f72e",
+    "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar": "b2a52e363d51dd86b3b38d1a8dd51538541b42ff1048769684681c676550f043",
     "com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar": "8a8f81cf9b359e3f6dfa691a1e776985c061ef2f223c9b2c80753e1b458e8064",
     "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar": "cbfc3906b19b8f55dd7cfd6dfe0aa4532e834250d7f080bd8d211a3e246b59cb",
     "com/google/guava/guava-testlib/33.7.2-jre/guava-testlib-33.7.2-jre.jar": "87684af5e41c7883aaa76c1c531e7ab98e620735bdb652cc97ceccd8e534c115",
     "com/google/guava/guava/33.4.3-jre/guava-33.4.3-jre.jar": "74532716f8eaa06d4947ffa6b740bfc671050bc9e0da46ad1dc07c4aa14f8c62",
+    "com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar": "dc573e1fca4fd5454f4a5fd3d7da2df03002876a4175bafc14a95980dd7713b3",
     "com/google/guava/guava/33.7.2-jre/guava-33.7.2-jre.jar": "b530942257fb935f8b2cfaa5f8eb5bd59c555fd8e8d01b8ce98912e077ea606c",
     "com/google/inject/guice/7.0.0/guice-7.0.0.jar": "de5b0e359bd7b03ca42806b368846efd95484380fe05ae2a4ea71bc338c59c00",
     "com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.jar": "88241573467ddca44ffd4d74aa04c2bbfd11bf7c17e0c342c94c9de7a70a7c64",
     "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar": "84d3a150518485f8140ea99b8a985656749629f6433c92b80c75b36aba3b099b",
+    "com/google/protobuf/protobuf-java/4.36.2/protobuf-java-4.36.2.jar": "0773e72eaf375e1285df330575bfec5bda5da674d544d0e142a17f89c8f754da",
     "com/google/truth/truth/1.4.5/truth-1.4.5.jar": "a6409e90fdd6b31f239b0c02065c43b53e1b09c72f2e08c3a86d04fe5910cf4b",
     "com/googlecode/concurrentlinkedhashmap/concurrentlinkedhashmap-lru/1.4.2/concurrentlinkedhashmap-lru-1.4.2.jar": "56a95fb5b54c661a7efde073b8792f63a8c317e389102673d8d976c7c8f36945",
     "com/hazelcast/hazelcast/5.7.0/hazelcast-5.7.0.jar": "241ec66cea8491787f68c3336f069ac463877af50bdb7676cd9d538f1940dc33",
@@ -2897,13 +5773,16 @@
     "com/trivago/triava/2.0.1/triava-2.0.1.jar": "6e7eae7d11d8b7a3db311dcc2df031cd0397b64aea4716597a295a10a454ca73",
     "com/typesafe/config/1.4.9/config-1.4.9.jar": "47d13e3196c84f2a8ccd014ae563738c3da5b7406b38e03505ec0601a2f4fc37",
     "com/uber/nullaway/nullaway-annotations/0.14.2/nullaway-annotations-0.14.2.jar": "fa1e10073c63668a4fdef6e569d46348ec799b6714c379c55669ce605dd2fb27",
+    "com/uber/nullaway/nullaway/0.14.2/nullaway-0.14.2.jar": "eb02eb2da5ee30bcac4621a259a84153b20690078dc47ef920589b8371f456ed",
     "commons-codec/commons-codec/1.19.0/commons-codec-1.19.0.jar": "5c3881e4f556855e9c532927ee0c9dfde94cc66760d5805c031a59887070af5f",
     "commons-codec/commons-codec/1.21.0/commons-codec-1.21.0.jar": "4da851cb6abfb98bfe9eb77c5e5fc47f5414fa28b94e21b7fd9a646705dc167f",
     "commons-io/commons-io/2.20.0/commons-io-2.20.0.jar": "df90bba0fe3cb586b7f164e78fe8f8f4da3f2dd5c27fa645f888100ccc25dd72",
     "commons-io/commons-io/2.21.0/commons-io-2.21.0.jar": "7d643a2afea8b058b762aa6fb90e5b256f6c729739f8b3784c3370ddc609e88d",
     "de/siegmar/fastcsv/4.4.0/fastcsv-4.4.0.jar": "8525df9d35d19e822bce252504bbdec7efab23c109060d4cc8835e47b6872934",
     "info/picocli/picocli/4.7.7/picocli-4.7.7.jar": "f86e30fffd10d2b13b8caa8d4b237a7ee61f2ffccf5b1941de718b765d235bf8",
+    "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar": "10434fba4e53f55fa9c76904cde414b918932548c9dfc4e2d634ac05ff7a7d10",
     "io/github/fastfilter/fastfilter/1.0.2/fastfilter-1.0.2.jar": "38f8824d07c8c932fa50cc0175f32c0fff2fafb3913cd2f9571ac349c9631149",
+    "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar": "9990a2039778f6b4cc94790141c2868864eacee0620c6c459451121a901cd5b5",
     "it/unimi/dsi/fastutil-core/8.5.19/fastutil-core-8.5.19.jar": "57ad7ac9f7aef23317446e996732236b18e1eaf07638c4325b6f464cf69c18ab",
     "jakarta/el/jakarta.el-api/5.0.1/jakarta.el-api-5.0.1.jar": "90432d18281717b363b819978c6a172433a2654b77eb87c863c22fc19c20eced",
     "jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar": "f7dc98062fccf14126abb751b64fab12c312566e8cbdc8483598bffcea93af7c",
@@ -2945,6 +5824,8 @@
     "org/cache2k/cache2k-api/2.6.1.Final/cache2k-api-2.6.1.Final.jar": "375a608a9a0d2220a2d33239c746fc8657a319bf61aa1c2ae599a31c9277cbc2",
     "org/cache2k/cache2k-core/2.6.1.Final/cache2k-core-2.6.1.Final.jar": "2d3ad9ef3a7461625859f53ef3d1b3087bf78dac30a2053ef1f39a313a36c2fa",
     "org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.jar": "3fbc2e98f05854c3df16df9abaa955b91b15b3ecac33623208ed6424640ef0f6",
+    "org/checkerframework/checker-qual/4.2.3/checker-qual-4.2.3.jar": "f868f731f6e37db3e1c2140d06016477989959a2d13fc5bed9c46760cffd5ba0",
+    "org/checkerframework/dataflow-nullaway/4.2.3/dataflow-nullaway-4.2.3.jar": "0524cc55673ac10f08d74ca659f7a12c9ce74fba1120a61950c5011b843fb25e",
     "org/eclipse/collections/eclipse-collections-api/12.0.0/eclipse-collections-api-12.0.0.jar": "f3691d2d77bb58fe3c548815d8f16e541419acde0f7763edec8f6ea4fc7c371b",
     "org/eclipse/collections/eclipse-collections-testutils/12.0.0/eclipse-collections-testutils-12.0.0.jar": "111b82ad5367043240eecded9ae585b39b7aeb59dd62b9295e5c8c42e5f6b502",
     "org/eclipse/collections/eclipse-collections/12.0.0/eclipse-collections-12.0.0.jar": "1d862622d7a3afa81f37c9ef408a123d21c107a424229904747839ed1baf5a4b",
@@ -2982,6 +5863,8 @@
     "org/junit/platform/junit-platform-engine/1.14.3/junit-platform-engine-1.14.3.jar": "16bbbf7f5c2f531b97c48b1c6f351d738a41d8809c73b1136457ead77da51019",
     "org/junit/platform/junit-platform-launcher/1.14.3/junit-platform-launcher-1.14.3.jar": "9b2b24b6a8f9c11d5cb9676843da3824271c8e17c8557b5c587040e598989719",
     "org/mockito/mockito-core/5.24.0/mockito-core-5.24.0.jar": "97a1f835ad84075255aa37809e4379eff541273c02c6201cbad49bd5950932cd",
+    "org/mockito/mockito-errorprone/5.24.0/mockito-errorprone-5.24.0.jar": "8aa61b5c6a2a77b02eff222028f84c75914535d0a0c11f58f6d352ac61e9931f",
+    "org/objenesis/objenesis/3.3/objenesis-3.3.jar": "02dfd0b0439a5591e35b708ed2f5474eb0948f53abf74637e959b8e4ef69bfeb",
     "org/openjdk/jcstress/jcstress-core/0.16/jcstress-core-0.16.jar": "58ee119c227bd02a86ad47f32b6165537e42502ef6cc8140d6454b0cac29f6ac",
     "org/openjdk/jmh/jmh-core/1.37/jmh-core-1.37.jar": "dc0eaf2bbf0036a70b60798c785d6e03a9daf06b68b8edb0f1ba9eb3421baeb3",
     "org/openjdk/jmh/jmh-generator-asm/1.37/jmh-generator-asm-1.37.jar": "de29bacc5c3a413215800f57de9017fdda1b3cb6e5359ea0c84ebe13c9610222",
@@ -3021,12 +5904,17 @@
     "org/pastalab/fray/fray-runtime/0.9.0/fray-runtime-0.9.0.jar": "31c771d99ce59fbd0c5a2b1f320aa0ae67200055530cb23150142c9e488fce6b",
     "org/pastalab/fray/instrumentation/fray-instrumentation-agent/0.9.0/fray-instrumentation-agent-0.9.0.jar": "83f0f7049babdc5c57744d00dea1b6007125abab0106ada06395a2c519970e4e",
     "org/pastalab/fray/instrumentation/fray-instrumentation-jdk/0.9.0/fray-instrumentation-jdk-0.9.0.jar": "0421010ccee908a3ab17fd811904a2c9c740395b103be9475106c625835f6bc9",
+    "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar": "1f82766d7c3221930854033bebff5073ea46b43f27326074bbe15d148c18bfb3",
     "org/slf4j/jul-to-slf4j/2.0.20/jul-to-slf4j-2.0.20.jar": "062249d0677a0e08039120a2292a8db064c69d04282bf562af2e54c53ff06976",
     "org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar": "7e1446499b359675d8aabe6af2de86b85e72ae8a2a932c0b40d0e5ba57097439",
     "org/slf4j/slf4j-jdk-platform-logging/2.0.20/slf4j-jdk-platform-logging-2.0.20.jar": "2e7e49d4a17561eb19b59ef4d5194b9a2f35dc52a040aa9afbe461c126628cab",
     "org/slf4j/slf4j-nop/2.0.20/slf4j-nop-2.0.20.jar": "6522080396fb339e99bae40d329a06d18d3190dc864020ac4ca943519d0fd85b",
     "org/testng/testng/7.12.0/testng-7.12.0.jar": "5147e65e0bf0d0f9c7f18a4b2b182d3e4efb7391195e130a64ca9f755e0a6d33",
     "org/tukaani/xz/1.12/xz-1.12.jar": "3e158a87bd73d8afb4b6e8239c013b7d049c48563f45860ce99cd2e448cf4a6b",
-    "site/ycsb/core/0.17.0/core-0.17.0.jar": "e1c64d09bfc642715428c2e53ec129b0a98a0e634ee32bf0ae77e5b4eebb3cda"
+    "site/ycsb/core/0.17.0/core-0.17.0.jar": "e1c64d09bfc642715428c2e53ec129b0a98a0e634ee32bf0ae77e5b4eebb3cda",
+    "tech/picnic/error-prone-support/error-prone-contrib/0.30.0/error-prone-contrib-0.30.0.jar": "49f28f28d002e7c9382df34ac84af04779666ab175a9186dce90f1c915f9afea",
+    "tech/picnic/error-prone-support/error-prone-utils/0.30.0/error-prone-utils-0.30.0.jar": "98816603aba01f8be78b5dbcd7536589ea9df4abf847b2c2ee32c98bf32f44f2",
+    "tech/picnic/error-prone-support/refaster-runner/0.30.0/refaster-runner-0.30.0.jar": "28614a8a9769f5b7d5c97e7a302fdc6ac05669a3c80b4b24eadb8b305b45cc84",
+    "tech/picnic/error-prone-support/refaster-support/0.30.0/refaster-support-0.30.0.jar": "7619423a2326ba8b40ab9b38f1c353c520456e6fef27d334b907a4cf15748185"
   }
 }

@@ -74,8 +74,21 @@ fn git(dir: &Path) -> Command {
 }
 
 fn download(project: &Project, path: &str, sha256: &str, file: &Path) -> Result<()> {
-    std::fs::create_dir_all(file.parent().unwrap())?;
     let partial = file.with_extension("partial");
+    download_any(project, path, &partial)?;
+    let actual = lock::sha256(&partial)?;
+    if actual != sha256 {
+        std::fs::remove_file(&partial)?;
+        bail!("{path}: expected SHA-256 {sha256}, got {actual}");
+    }
+    std::fs::rename(&partial, file)?;
+    Ok(())
+}
+
+/// Downloads `path` from the first of the project's repositories that has it, to `file`.
+pub fn download_any(project: &Project, path: &str, file: &Path) -> Result<()> {
+    std::fs::create_dir_all(file.parent().unwrap())?;
+    let partial = file.with_extension("download");
     for repository in &project.repositories {
         let url = format!("{}/{path}", repository.trim_end_matches('/'));
         let status = Command::new("curl")
@@ -95,14 +108,10 @@ fn download(project: &Project, path: &str, sha256: &str, file: &Path) -> Result<
         if !status.success() {
             continue;
         }
-        let actual = lock::sha256(&partial)?;
-        if actual != sha256 {
-            std::fs::remove_file(&partial)?;
-            bail!("{url}: expected SHA-256 {sha256}, got {actual}");
-        }
         std::fs::rename(&partial, file)?;
         return Ok(());
     }
+    std::fs::remove_file(&partial).ok();
     bail!(
         "{}: {path} is not in any of the project's repositories",
         project.name

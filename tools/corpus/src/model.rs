@@ -5,16 +5,19 @@
 //! `<name>` for the root module), at its release (the lock's JDK when the build sets none), with
 //! absolute paths: source roots in the checkout, jars under the corpus's `jars` directory, and the
 //! generated-source root `generated/<project>/<id>` in the corpus directory, which the oracle
-//! fills by running the build's annotation processors. The JDK is the one passed in, for every
-//! source set; the newest GA JDK serves every release the corpus uses.
+//! fills by running the build's annotation processors, then the roots the build's other plugins
+//! generated sources into, in the checkout. How the build compiles the source set (`platform`,
+//! the options for the JDK's modules) and its processor path are as the lock gives them. The JDK
+//! is the one passed in, for every source set; the newest GA JDK serves every release the corpus
+//! uses.
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
 use ferrion_project::model::{FORMAT_VERSION, ModelEntry, ModelSourceSet, ProjectModel};
 
-use crate::lock::{self, ClasspathEntry};
+use crate::lock::{self, ClasspathEntry, Lock};
 use crate::project::Project;
 use crate::{Dirs, fetch};
 
@@ -42,7 +45,7 @@ pub fn model_file(dirs: &Dirs, project: &Project) -> PathBuf {
 /// The lock's classpath entries a model leaves out.
 #[derive(Default)]
 pub struct LeftOut {
-    /// Entries the lock marks unavailable.
+    /// Entries the lock marks unavailable, on classpaths, processor paths, and patch paths.
     pub unavailable: usize,
     /// References to source sets the lock doesn't have, as `(source set, missing source set)`.
     pub missing_source_sets: Vec<(String, String)>,
@@ -55,14 +58,7 @@ pub fn project_model(
     project: &Project,
     jdk: Option<&Path>,
 ) -> Result<(ProjectModel, LeftOut)> {
-    let lock =
-        lock::read(dirs, project)?.with_context(|| format!("{} has no lock file", project.name))?;
-    if lock.commit != project.commit {
-        bail!(
-            "{}: the lock file is for a different commit; run `cargo corpus lock`",
-            project.name
-        );
-    }
+    let lock = locked(dirs, project)?;
     if !fetch::is_checked_out(project, dirs) {
         bail!(
             "{} isn't checked out at {}; run `cargo corpus fetch {}`",
@@ -87,39 +83,69 @@ pub fn project_model(
     for module in &lock.modules {
         for set in &module.source_sets {
             let id = source_set_id(&module.path, &set.name);
-            let mut classpath = Vec::with_capacity(set.classpath.len());
-            for entry in &set.classpath {
-                match entry {
-                    ClasspathEntry::Jar { jar } => {
-                        classpath.push(ModelEntry::path(dirs.jars().join(jar)));
-                    }
-                    ClasspathEntry::SourceSet { module, source_set } => {
-                        let other = source_set_id(module, source_set);
-                        if ids.contains(&other) {
-                            classpath.push(ModelEntry::source_set(other));
-                        } else {
-                            left_out.missing_source_sets.push((id.clone(), other));
+            let mut entries = |given: &[ClasspathEntry]| {
+                let mut entries = Vec::with_capacity(given.len());
+                for entry in given {
+                    match entry {
+                        ClasspathEntry::Jar { jar } => {
+                            entries.push(ModelEntry::path(dirs.jars().join(jar)));
                         }
+                        ClasspathEntry::SourceSet { module, source_set } => {
+                            let other = source_set_id(module, source_set);
+                            if ids.contains(&other) {
+                                entries.push(ModelEntry::source_set(other));
+                            } else {
+                                left_out.missing_source_sets.push((id.clone(), other));
+                            }
+                        }
+                        ClasspathEntry::ProjectFile { file } => {
+                            entries.push(ModelEntry::path(checkout.join(file)));
+                        }
+                        ClasspathEntry::Unavailable { .. } => left_out.unavailable += 1,
                     }
-                    ClasspathEntry::ProjectFile { file } => {
-                        classpath.push(ModelEntry::path(checkout.join(file)));
-                    }
-                    ClasspathEntry::Unavailable { .. } => left_out.unavailable += 1,
                 }
-            }
+                entries
+            };
+            let classpath = entries(&set.classpath);
+            let processor_path = set.processor_path.as_deref().map(&mut entries);
+            let options = &set.options;
+            let patch_modules: BTreeMap<String, Vec<PathBuf>> = options
+                .patch_modules
+                .iter()
+                .map(|(module, paths)| {
+                    let paths = entries(paths)
+                        .into_iter()
+                        .filter_map(|entry| entry.path)
+                        .collect();
+                    (module.clone(), paths)
+                })
+                .collect();
+            let mut generated_source_roots = vec![generated_root(dirs, project, &id)];
+            generated_source_roots.extend(
+                set.generated_source_roots
+                    .iter()
+                    .map(|root| checkout.join(root)),
+            );
             source_sets.push(ModelSourceSet {
-                generated_source_roots: vec![generated_root(dirs, project, &id)],
                 id,
                 // A build that doesn't set a release compiles for its JDK's.
                 java_release: set.java_release.unwrap_or(lock.jdk),
+                platform: set.platform,
+                enable_preview: options.enable_preview,
+                add_modules: options.add_modules.clone(),
+                add_exports: options.add_exports.clone(),
+                add_reads: options.add_reads.clone(),
+                patch_modules,
                 jdk: jdk.map(Path::to_path_buf),
                 source_roots: set
                     .source_roots
                     .iter()
                     .map(|root| checkout.join(root))
                     .collect(),
+                generated_source_roots,
                 classpath,
                 module_path: Vec::new(),
+                processor_path,
             });
         }
     }
@@ -128,6 +154,47 @@ pub fn project_model(
         source_sets,
     };
     Ok((model, left_out))
+}
+
+/// What the javac oracle runs a source set's annotation processors with, beyond its processor
+/// path, which the model has: the build's `-processor` and `-A` options.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Processors {
+    /// The processors to run, instead of those the processor path registers.
+    pub names: Option<Vec<String>>,
+    /// `-A` options, without the `-A`.
+    pub options: Vec<String>,
+}
+
+/// Each source set's [`Processors`], by its id in the model.
+pub fn processors(dirs: &Dirs, project: &Project) -> Result<BTreeMap<String, Processors>> {
+    let lock = locked(dirs, project)?;
+    let mut found = BTreeMap::new();
+    for module in &lock.modules {
+        for set in &module.source_sets {
+            found.insert(
+                source_set_id(&module.path, &set.name),
+                Processors {
+                    names: set.processors.clone(),
+                    options: set.processor_options.clone(),
+                },
+            );
+        }
+    }
+    Ok(found)
+}
+
+/// The project's lock, which must be for its commit.
+fn locked(dirs: &Dirs, project: &Project) -> Result<Lock> {
+    let lock =
+        lock::read(dirs, project)?.with_context(|| format!("{} has no lock file", project.name))?;
+    if lock.commit != project.commit {
+        bail!(
+            "{}: the lock file is for a different commit; run `cargo corpus lock`",
+            project.name
+        );
+    }
+    Ok(lock)
 }
 
 /// Writes a project's model to [`model_file`], and returns its path.
