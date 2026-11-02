@@ -1,0 +1,9 @@
+class DirectiveComments {
+  //ferrion-disable-next some-rule -- a suppression keeps its text
+  int a = 1;
+
+  //@formatter:off
+  //a comment in a disable region is copied
+  int b = 2;
+  //@formatter:on
+}

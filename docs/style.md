@@ -63,12 +63,12 @@ differences` checks against GJF and Ferrion both.
   Ferrion copies it (SCOPE.md). Case: `formatter-off`.
 - **A doc comment's lines without a star** stay without one, moved as far as its stars. GJF
   rewrites the comment with a star on every line, an empty line included. Ferrion doesn't change
-  a block comment's text (SCOPE.md). Case: `comments-doc-text`.
+  a block comment's text (SCOPE.md). Case: `doc-comment-stars`.
 - **Directives keep their `//`:** formatter markers (`//@formatter:off`), `ferrion-disable*`
   suppression comments, and the comments in a disable region get no space after their `//`,
   which GJF adds. A `//noinspection` or `//$NON-NLS-1$` trailing some statements, such as a local
   variable or an assignment, gets one in GJF, and keeps none in Ferrion wherever it is. Case:
-  `regions`.
+  `directive-comments`.
 - **Long `//` comments** are left as they are, past the column limit. GJF 2.0.0 wraps one that
   goes over onto a new `//` line (SCOPE.md: `//` comments are not wrapped). Case: `line-comment`.
 
