@@ -9,7 +9,7 @@ use corpus::lock::{self, ClasspathEntry};
 use corpus::project::Project;
 use ferrion_classfile::{ArchiveCache, ClassPathEntry, Jdk};
 use ferrion_diagnostics::SourceText;
-use ferrion_parser::{ParseOptions, SyntaxKind, parse};
+use ferrion_parser::{ParseOptions, SyntaxKind, SyntaxTree, parse};
 use ferrion_semantic::{
     ClassPathInput, ClassesInput, Engine, FileId, FileInput, Platform, ProjectInput, Snapshot,
     SourceSetId, SourceSetInput,
@@ -24,16 +24,16 @@ pub fn benchmarks() -> Vec<Benchmark> {
             description: "a new engine over the corpus projects' source sets, with their jars and \
                           the JDK's platform API: parse and summarize every file, build every \
                           package table, every type's entry, and every file's names in \
-                          declarations, on one thread",
+                          declarations and bodies, on one thread",
             setup: corpus_cold,
         },
         Benchmark {
             name: "semantic/edits",
-            description: "after a cold run, a statement added to a method body, a method renamed, \
-                          a top-level class added, and a supertype added to a class, in a file \
-                          of the largest package, each followed by every project-wide entry \
-                          asked for again and the file's names in declarations, and undone the \
-                          same way",
+            description: "after a cold run, a statement added to a method body, a local variable \
+                          renamed, a method renamed, a top-level class added, and a supertype \
+                          added to a class, in a file of the largest package, each followed by \
+                          every project-wide entry asked for again and the file's names in \
+                          declarations and bodies, and undone the same way",
             setup: edits,
         },
     ]
@@ -61,8 +61,14 @@ fn edits(inputs: &Inputs) -> Result<Prepared> {
     let path = snapshot.file(target).unwrap().path;
     let projects = Dirs::new()?.corpus.join("projects");
     let path = path.strip_prefix(&projects).unwrap_or(&path).to_path_buf();
-    let edited: Vec<Arc<str>> = [Edit::Body, Edit::Signature, Edit::NewType, Edit::Supertype]
-        .into_iter()
+    let edited: Vec<Arc<str>> = [
+        Edit::Body,
+        Edit::Local,
+        Edit::Signature,
+        Edit::NewType,
+        Edit::Supertype,
+    ]
+    .into_iter()
         .filter_map(|edit| apply(&original, edit).map(Arc::from))
         .collect();
     drop(snapshot);
@@ -77,14 +83,15 @@ fn edits(inputs: &Inputs) -> Result<Prepared> {
                     snapshot
                         .run_symbols(1)
                         .expect("nothing changes the inputs during a benchmark");
-                    snapshot.decl_names(target).unwrap();
+                    snapshot.file_names(target).unwrap();
                 }
             }
         }),
     })
 }
 
-/// Every summary, package table, type entry, and file's names in declarations: the batch.
+/// Every summary, package table, type entry, and file's names in declarations and bodies: the
+/// batch.
 fn ask_everything(snapshot: &Snapshot) {
     snapshot
         .run_batch(1, |_| Ok(()))
@@ -261,6 +268,8 @@ fn edit_target(snapshot: &Snapshot) -> Result<(FileId, Arc<str>)> {
 enum Edit {
     /// A statement at the start of the first method body.
     Body,
+    /// The first local variable of a method body renamed, with its uses in the body.
+    Local,
     /// The first method with a body renamed.
     Signature,
     /// A top-level class at the end.
@@ -272,6 +281,9 @@ enum Edit {
 
 fn apply(text: &str, edit: Edit) -> Option<String> {
     let tree = parse(Arc::from(text), ParseOptions { release: 27 }).tree;
+    if let Edit::Local = edit {
+        return rename_local(&tree, text);
+    }
     let (offset, insert) = match edit {
         Edit::NewType => (text.len(), "\nclass FerrionBenchNew {}\n"),
         Edit::Supertype => {
@@ -289,7 +301,7 @@ fn apply(text: &str, edit: Edit) -> Option<String> {
                 " implements java.lang.Cloneable ",
             )
         }
-        Edit::Body | Edit::Signature => {
+        Edit::Body | Edit::Local | Edit::Signature => {
             let method = tree.nodes().find(|n| {
                 n.kind() == SyntaxKind::MethodDecl
                     && n.children().any(|c| c.kind() == SyntaxKind::Block)
@@ -313,5 +325,34 @@ fn apply(text: &str, edit: Edit) -> Option<String> {
     };
     let mut out = text.to_owned();
     out.insert_str(offset, insert);
+    Some(out)
+}
+
+/// `text` with the first local variable declared in a method body, and every simple name of it
+/// in that body, renamed.
+fn rename_local(tree: &SyntaxTree, text: &str) -> Option<String> {
+    let block = tree.nodes().find(|n| {
+        n.kind() == SyntaxKind::Block
+            && n.parent().is_some_and(|p| p.kind() == SyntaxKind::MethodDecl)
+            && n.descendants().any(|d| d.kind() == SyntaxKind::LocalVarDecl)
+    })?;
+    let declarator = block.descendants().find(|d| {
+        d.kind() == SyntaxKind::VariableDeclarator
+            && d.parent().is_some_and(|p| p.kind() == SyntaxKind::LocalVarDecl)
+    })?;
+    let name = declarator
+        .direct_tokens()
+        .find(|t| t.kind() == SyntaxKind::Identifier)?;
+    let mut ends: Vec<usize> = vec![name.span().end as usize];
+    for node in block.descendants() {
+        if node.kind() == SyntaxKind::NameExpr && node.text() == name.text() {
+            ends.push(node.span().end as usize);
+        }
+    }
+    ends.sort_unstable();
+    let mut out = text.to_owned();
+    for end in ends.into_iter().rev() {
+        out.insert_str(end, "Renamed");
+    }
     Some(out)
 }

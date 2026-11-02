@@ -517,6 +517,9 @@ pub(crate) struct Resolver<'r, 's> {
     pub(crate) errors: Vec<ErrorSymbol>,
     /// Imports resolved so far, by name as written.
     canonical: HashMap<Name, Vec<TypeResolution>>,
+    /// Simple type names resolved in the classes around a scope: by file, innermost class,
+    /// whether in its header, and name.
+    simple_cache: HashMap<(FileId, Option<usize>, bool, Name), TypeResolution>,
     module_packages: HashMap<Name, Result<Vec<Name>, Cause>>,
     pub(crate) java_lang: Name,
     java_base: Name,
@@ -533,6 +536,7 @@ impl<'r, 's> Resolver<'r, 's> {
             names,
             errors: Vec::new(),
             canonical: HashMap::new(),
+            simple_cache: HashMap::new(),
             module_packages: HashMap::new(),
         }
     }
@@ -620,6 +624,24 @@ impl<'r, 's> Resolver<'r, 's> {
         {
             return Ok(TypeResolution::TypeVar(*owner, index as u32));
         }
+        // What's left depends only on the classes around and the file, so a name looked up
+        // again in the same place is answered at once, and what it read is recorded once.
+        let key = (scope.file.file, scope.innermost, scope.header, name);
+        if let Some(found) = self.simple_cache.get(&key) {
+            return Ok(found.clone());
+        }
+        let found = self.simple_in_classes(scope, name)?;
+        self.simple_cache.insert(key, found.clone());
+        Ok(found)
+    }
+
+    /// A simple type name in the classes around `scope` and its file, after a method's type
+    /// parameters.
+    fn simple_in_classes(
+        &mut self,
+        scope: &Scope<'_>,
+        name: Name,
+    ) -> Result<TypeResolution, Cancelled> {
         let mut incomplete = None;
         let file = scope.file;
         let mut next = scope.innermost;

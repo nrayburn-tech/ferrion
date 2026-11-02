@@ -22,6 +22,7 @@
 //! is left, and bound in the operands, branches, and statements the rules name.
 
 use std::collections::{HashMap, HashSet};
+use std::hash::{BuildHasherDefault, Hasher};
 use std::sync::Arc;
 
 use ferrion_syntax::ast::{self, AstNode};
@@ -43,6 +44,55 @@ use crate::symbols::{
 };
 use crate::view::Found;
 use crate::{Cancelled, FileId, Interner, Name, Snapshot, SourceSetId};
+
+/// A hasher for the walk's own maps, whose keys are ids it made (nodes, names, type keys): a
+/// rotate, xor, and multiply per word. SipHash, the default, was a fifth of the walk's time, and
+/// its resistance to chosen keys isn't needed for maps that last one computation.
+#[derive(Clone, Copy, Default)]
+struct IdHasher(u64);
+
+impl IdHasher {
+    fn add(&mut self, word: u64) {
+        self.0 = (self.0.rotate_left(5) ^ word).wrapping_mul(0x51_7c_c1_b7_27_22_0a_95);
+    }
+}
+
+impl Hasher for IdHasher {
+    fn write(&mut self, bytes: &[u8]) {
+        for chunk in bytes.chunks(8) {
+            let mut word = [0; 8];
+            word[..chunk.len()].copy_from_slice(chunk);
+            self.add(u64::from_le_bytes(word));
+        }
+    }
+
+    fn write_u8(&mut self, n: u8) {
+        self.add(u64::from(n));
+    }
+
+    fn write_u16(&mut self, n: u16) {
+        self.add(u64::from(n));
+    }
+
+    fn write_u32(&mut self, n: u32) {
+        self.add(u64::from(n));
+    }
+
+    fn write_u64(&mut self, n: u64) {
+        self.add(n);
+    }
+
+    fn write_usize(&mut self, n: usize) {
+        self.add(n as u64);
+    }
+
+    fn finish(&self) -> u64 {
+        self.0
+    }
+}
+
+type Map<K, V> = HashMap<K, V, BuildHasherDefault<IdHasher>>;
+type Set<K> = HashSet<K, BuildHasherDefault<IdHasher>>;
 
 /// A file's names inside bodies, and the local and anonymous classes they declare.
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -158,8 +208,8 @@ enum FieldFound {
 /// chosen among, so every method of the name is kept, overridden ones too.
 #[derive(Default)]
 struct ClassMaps {
-    fields: HashMap<Name, (FieldFound, MemberAccess)>,
-    methods: HashMap<Name, Vec<(MethodRef, MemberAccess)>>,
+    fields: Map<Name, (FieldFound, MemberAccess)>,
+    methods: Map<Name, Vec<(MethodRef, MemberAccess)>>,
     /// A supertype didn't resolve, or is cyclic, or is incomplete itself.
     incomplete: bool,
 }
@@ -172,7 +222,7 @@ struct LocalState {
     kind: TypeKind,
     access: MemberAccess,
     /// The member types it declares, by name.
-    declared: HashMap<Name, u32>,
+    declared: Map<Name, u32>,
     summary: Option<TypeSummary>,
     /// Set when its body is entered.
     supertypes: Option<Arc<Supertypes>>,
@@ -204,15 +254,15 @@ type Candidates = (TypeKey, Arc<[MethodRef]>);
 /// The scopes around the walk's position, and what the body has declared so far.
 struct Env {
     frames: Vec<Frame>,
-    vars: HashMap<Name, Vec<Var>>,
-    types: HashMap<Name, Vec<TypeResolution>>,
+    vars: Map<Name, Vec<Var>>,
+    types: Map<Name, Vec<TypeResolution>>,
     /// The methods of a name of each local or anonymous class around, with it as the type to
     /// search.
-    methods: HashMap<Name, Vec<Candidates>>,
+    methods: Map<Name, Vec<Candidates>>,
     locals: Vec<LocalVar>,
     local_types: Vec<LocalState>,
     /// Each local type's declaration, and its body once entered, by node.
-    local_of_node: HashMap<NodeId, u32>,
+    local_of_node: Map<NodeId, u32>,
     /// The file's package, which its local classes are in.
     package: Name,
 }
@@ -403,32 +453,32 @@ struct Walker<'f, 'r, 's> {
     release: u32,
     out: Vec<ResolvedName>,
     /// Each qualifier's meaning, until the name it qualifies is left.
-    meanings: HashMap<NodeId, Meaning>,
+    meanings: Map<NodeId, Meaning>,
     /// The context of each `FieldAccessExpr` being walked.
-    contexts: HashMap<NodeId, Context>,
+    contexts: Map<NodeId, Context>,
     /// What each class type in a body resolved to: its name's last segment.
-    type_of: HashMap<NodeId, TypeResolution>,
+    type_of: Map<NodeId, TypeResolution>,
     /// `var` where a type would be, which isn't a type name (JLS 14.4).
-    var_types: HashSet<NodeId>,
+    var_types: Set<NodeId>,
     /// The pattern bindings an expression introduces when true and when false.
-    bindings: HashMap<NodeId, (Vec<u32>, Vec<u32>)>,
+    bindings: Map<NodeId, (Vec<u32>, Vec<u32>)>,
     /// Pattern bindings declared and not yet claimed by their `instanceof` or `case` label.
     patterns: Vec<u32>,
     /// Where each open `instanceof`'s and `case` label's bindings start in `patterns`.
-    pattern_marks: HashMap<NodeId, usize>,
+    pattern_marks: Map<NodeId, usize>,
     /// Each `case` label's bindings, with its guard's when true.
-    label_bindings: HashMap<NodeId, Vec<u32>>,
+    label_bindings: Map<NodeId, Vec<u32>>,
     /// The switch groups whose labels' bindings are bound.
-    open_groups: HashSet<NodeId>,
+    open_groups: Set<NodeId>,
     /// The local an enhanced `for` declares, bound when its body is entered.
-    for_each: HashMap<NodeId, u32>,
+    for_each: Map<NodeId, u32>,
     /// Statements that can't complete normally (JLS 14.22), as far as bindings need.
-    abrupt: HashSet<NodeId>,
+    abrupt: Set<NodeId>,
     /// Statements a `break` leaves.
-    broken: HashSet<NodeId>,
+    broken: Set<NodeId>,
     breakable: Vec<Breakable>,
     /// The pattern bindings a statement introduces after it (JLS 6.3.2).
-    introduced: HashMap<NodeId, Vec<u32>>,
+    introduced: Map<NodeId, Vec<u32>>,
     /// Each open switch block, with what its selector is.
     switch_enums: Vec<(NodeId, Selector)>,
     regions: Vec<Region>,
@@ -437,7 +487,12 @@ struct Walker<'f, 'r, 's> {
     next_index: usize,
     /// The summary's method or constructor being walked, as its type parameters' owner.
     member_method: Option<(NodeId, TypeVarOwner)>,
-    class_maps: HashMap<TypeKey, Arc<ClassMaps>>,
+    /// Each type's fields and methods, of every name or of one, made so far.
+    class_maps: Map<(TypeKey, Option<Name>), Arc<ClassMaps>>,
+    /// Each summary type's or class file's direct supertypes, as read.
+    supertypes: Map<TypeKey, (Vec<TypeKey>, bool)>,
+    /// Each type's methods of a name, as a call's candidates.
+    candidates: Map<(TypeKey, Name), Arc<[MethodRef]>>,
     /// The local and anonymous classes whose bodies the walk is in, innermost last.
     classes: Vec<(NodeId, TypeKey)>,
     next_check: usize,
@@ -465,12 +520,12 @@ fn compute(reads: &mut Reads<'_>, file: FileId) -> Result<BodyNames, Cancelled> 
         r: Resolver::new(reads, set),
         env: Env {
             frames: Vec::new(),
-            vars: HashMap::new(),
-            types: HashMap::new(),
-            methods: HashMap::new(),
+            vars: Map::default(),
+            types: Map::default(),
+            methods: Map::default(),
             locals: Vec::new(),
             local_types: Vec::new(),
-            local_of_node: HashMap::new(),
+            local_of_node: Map::default(),
             package: fs.package(),
         },
         fs: &fs,
@@ -479,26 +534,28 @@ fn compute(reads: &mut Reads<'_>, file: FileId) -> Result<BodyNames, Cancelled> 
         release: tree.release(),
         names,
         out: Vec::new(),
-        meanings: HashMap::new(),
-        contexts: HashMap::new(),
-        type_of: HashMap::new(),
-        var_types: HashSet::new(),
-        bindings: HashMap::new(),
+        meanings: Map::default(),
+        contexts: Map::default(),
+        type_of: Map::default(),
+        var_types: Set::default(),
+        bindings: Map::default(),
         patterns: Vec::new(),
-        pattern_marks: HashMap::new(),
-        label_bindings: HashMap::new(),
-        open_groups: HashSet::new(),
-        for_each: HashMap::new(),
-        abrupt: HashSet::new(),
-        broken: HashSet::new(),
+        pattern_marks: Map::default(),
+        label_bindings: Map::default(),
+        open_groups: Set::default(),
+        for_each: Map::default(),
+        abrupt: Set::default(),
+        broken: Set::default(),
         breakable: Vec::new(),
-        introduced: HashMap::new(),
+        introduced: Map::default(),
         switch_enums: Vec::new(),
         regions: Vec::new(),
         summary_types: Vec::new(),
         next_index: 0,
         member_method: None,
-        class_maps: HashMap::new(),
+        class_maps: Map::default(),
+        supertypes: Map::default(),
+        candidates: Map::default(),
         classes: Vec::new(),
         next_check: 0,
     };
@@ -1513,7 +1570,7 @@ impl Walker<'_, '_, '_> {
         let (symbol, meaning) = match self.context_of(node) {
             Context::Expr => self.expression_name(name)?,
             Context::Case(enumeration) => {
-                let maps = self.class_maps(enumeration)?;
+                let maps = self.named(enumeration, name)?;
                 match maps.fields.get(&name) {
                     Some((found, _)) => {
                         let found = found.clone();
@@ -1573,7 +1630,7 @@ impl Walker<'_, '_, '_> {
         }
         let mut incomplete = None;
         for key in self.summary_chain() {
-            let maps = self.class_maps(key)?;
+            let maps = self.named(key, name)?;
             if let Some((found, _)) = maps.fields.get(&name) {
                 let found = found.clone();
                 return self.field_symbol(found, name);
@@ -1583,7 +1640,7 @@ impl Walker<'_, '_, '_> {
             }
         }
         for owner in self.static_imports(name, true)? {
-            let maps = self.class_maps(owner)?;
+            let maps = self.named(owner, name)?;
             if let Some((found, _)) = maps.fields.get(&name) {
                 let found = found.clone();
                 return self.field_symbol(found, name);
@@ -1591,7 +1648,7 @@ impl Walker<'_, '_, '_> {
         }
         let mut found: Vec<FieldFound> = Vec::new();
         for owner in self.static_imports(name, false)? {
-            let maps = self.class_maps(owner)?;
+            let maps = self.named(owner, name)?;
             if let Some((f, _)) = maps.fields.get(&name)
                 && !found.contains(f)
             {
@@ -1765,7 +1822,7 @@ impl Walker<'_, '_, '_> {
                 }
             }
             Meaning::Type(owner) => {
-                let maps = self.class_maps(owner)?;
+                let maps = self.named(owner, name)?;
                 if !types && let Some((found, _)) = maps.fields.get(&name) {
                     let found = found.clone();
                     return self.field_symbol(found, name);
@@ -1794,7 +1851,7 @@ impl Walker<'_, '_, '_> {
                 error(Self::not_found(name, maps.incomplete.then_some(owner)))
             }
             Meaning::This(owner) | Meaning::Super(owner) | Meaning::Value(VarTy::Class(owner)) => {
-                let maps = self.class_maps(owner)?;
+                let maps = self.named(owner, name)?;
                 match maps.fields.get(&name) {
                     Some((found, _)) => {
                         let found = found.clone();
@@ -1852,13 +1909,25 @@ impl Walker<'_, '_, '_> {
 
     /// The member methods `name` of `owner`, declared or inherited, as candidates.
     fn methods_in(&mut self, owner: TypeKey, name: Name) -> Result<Symbol, Cancelled> {
-        let maps = self.class_maps(owner)?;
-        Ok(match maps.methods.get(&name) {
-            Some(methods) if !methods.is_empty() => Symbol::Methods {
+        if let Some(candidates) = self.candidates.get(&(owner, name)) {
+            return Ok(Symbol::Methods {
                 search: owner,
                 name,
-                candidates: methods.iter().map(|(m, _)| *m).collect(),
-            },
+                candidates: candidates.clone(),
+            });
+        }
+        let maps = self.named(owner, name)?;
+        Ok(match maps.methods.get(&name) {
+            Some(methods) if !methods.is_empty() => {
+                // Shared by every call of the name on the type.
+                let candidates: Arc<[MethodRef]> = methods.iter().map(|(m, _)| *m).collect();
+                self.candidates.insert((owner, name), candidates.clone());
+                Symbol::Methods {
+                    search: owner,
+                    name,
+                    candidates,
+                }
+            }
             _ => Symbol::Error(Self::not_found(name, maps.incomplete.then_some(owner))),
         })
     }
@@ -1876,7 +1945,7 @@ impl Walker<'_, '_, '_> {
         }
         let mut incomplete = None;
         for key in self.summary_chain() {
-            let maps = self.class_maps(key)?;
+            let maps = self.named(key, name)?;
             if maps.methods.get(&name).is_some_and(|m| !m.is_empty()) {
                 return self.methods_in(key, name);
             }
@@ -1888,7 +1957,7 @@ impl Walker<'_, '_, '_> {
             let mut search = None;
             let mut candidates: Vec<MethodRef> = Vec::new();
             for owner in self.static_imports(name, single)? {
-                let maps = self.class_maps(owner)?;
+                let maps = self.named(owner, name)?;
                 for (method, _) in maps.methods.get(&name).into_iter().flatten() {
                     search.get_or_insert(owner);
                     if !candidates.contains(method) {
@@ -2169,7 +2238,7 @@ impl Walker<'_, '_, '_> {
             at,
             kind,
             access,
-            declared: HashMap::new(),
+            declared: Map::default(),
             summary: None,
             supertypes: None,
             member_types: None,
@@ -2529,7 +2598,7 @@ impl Walker<'_, '_, '_> {
     /// Whether `from` is `to`, or has it among its local supertypes, transitively.
     fn reaches(&self, from: TypeKey, to: TypeKey) -> bool {
         let mut work = vec![from];
-        let mut seen = HashSet::new();
+        let mut seen = Set::default();
         while let Some(key) = work.pop() {
             if key == to {
                 return true;
@@ -2562,13 +2631,13 @@ impl Walker<'_, '_, '_> {
         supers: &[Result<TypeKey, ()>],
     ) -> Result<MemberTypes, Cancelled> {
         let package = self.env.package;
-        let mut members: HashMap<Name, (MemberType, MemberAccess)> = HashMap::new();
+        let mut members: Map<Name, (MemberType, MemberAccess)> = Map::default();
         for (&name, &member) in &self.env.local_types[index as usize].declared {
             let state = &self.env.local_types[member as usize];
             members.insert(name, (MemberType::One(state.key), state.access));
         }
         let mut incomplete = false;
-        let mut inherited: HashMap<Name, (MemberType, MemberAccess)> = HashMap::new();
+        let mut inherited: Map<Name, (MemberType, MemberAccess)> = Map::default();
         for supertype in supers {
             let Ok(supertype) = *supertype else {
                 incomplete = true;
@@ -2672,9 +2741,21 @@ impl Walker<'_, '_, '_> {
     }
 
     /// A type's fields and methods by name, declared and inherited, made once per body
-    /// result for each type asked about, its supertypes first, by a loop rather than
-    /// recursion, so that a long chain of supertypes doesn't overflow the stack.
+    /// result for each type asked about: what a local or anonymous class inherits.
     fn class_maps(&mut self, key: TypeKey) -> Result<Arc<ClassMaps>, Cancelled> {
+        self.maps_of(key, None)
+    }
+
+    /// A type's fields and methods named `name`, declared and inherited: what a lookup by name
+    /// needs, which costs the hierarchy's members of that name rather than all of them.
+    fn named(&mut self, key: TypeKey, name: Name) -> Result<Arc<ClassMaps>, Cancelled> {
+        self.maps_of(key, Some(name))
+    }
+
+    /// A type's fields and methods, of every name or of `only`, its supertypes' first, by a
+    /// loop rather than recursion, so that a long chain of supertypes doesn't overflow the
+    /// stack.
+    fn maps_of(&mut self, key: TypeKey, only: Option<Name>) -> Result<Arc<ClassMaps>, Cancelled> {
         if let TypeKey::Local { .. } = key {
             return Ok(self
                 .env
@@ -2687,42 +2768,48 @@ impl Walker<'_, '_, '_> {
                     })
                 }));
         }
-        if let Some(maps) = self.class_maps.get(&key) {
+        if let Some(maps) = self.class_maps.get(&(key, only)) {
             return Ok(maps.clone());
         }
         let mut stack = vec![(key, false)];
-        let mut open: HashSet<TypeKey> = HashSet::new();
-        let mut supers_of: HashMap<TypeKey, (Vec<TypeKey>, bool)> = HashMap::new();
+        let mut open: Set<TypeKey> = Set::default();
         while let Some((next, ready)) = stack.pop() {
             self.r.reads.check()?;
-            if self.class_maps.contains_key(&next) {
+            if self.class_maps.contains_key(&(next, only)) {
                 continue;
             }
+            let (supers, incomplete) = self.direct_supertypes(next)?;
             if !ready {
                 // On the stack already: a cycle, whose type is made without it.
                 if !open.insert(next) {
                     continue;
                 }
-                let supers = self.direct_supertypes(next)?;
                 stack.push((next, true));
-                for &s in &supers.0 {
-                    if !self.class_maps.contains_key(&s) && !open.contains(&s) {
+                for &s in &supers {
+                    if !self.class_maps.contains_key(&(s, only)) && !open.contains(&s) {
                         stack.push((s, false));
                     }
                 }
-                supers_of.insert(next, supers);
             } else {
-                let (supers, incomplete) = supers_of.remove(&next).unwrap_or_default();
-                let maps = self.declared_maps(next, &supers, incomplete)?;
-                self.class_maps.insert(next, Arc::new(maps));
+                let maps = self.declared_maps(next, &supers, incomplete, only)?;
+                self.class_maps.insert((next, only), Arc::new(maps));
                 open.remove(&next);
             }
         }
-        Ok(self.class_maps[&key].clone())
+        Ok(self.class_maps[&(key, only)].clone())
     }
 
     /// A summary type's or class file's direct supertypes, and whether any didn't resolve.
     fn direct_supertypes(&mut self, key: TypeKey) -> Result<(Vec<TypeKey>, bool), Cancelled> {
+        if let Some(found) = self.supertypes.get(&key) {
+            return Ok(found.clone());
+        }
+        let found = self.read_supertypes(key)?;
+        self.supertypes.insert(key, found.clone());
+        Ok(found)
+    }
+
+    fn read_supertypes(&mut self, key: TypeKey) -> Result<(Vec<TypeKey>, bool), Cancelled> {
         let Some(supertypes) = self.r.reads.supertypes(self.set, key)? else {
             return Ok((Vec::new(), true));
         };
@@ -2741,14 +2828,16 @@ impl Walker<'_, '_, '_> {
         Ok((keys, incomplete))
     }
 
-    /// A summary type's or class file's own fields and methods, then those its supertypes'
-    /// maps (made already) let it inherit.
+    /// A summary type's or class file's own fields and methods, of every name or of `only`,
+    /// then those its supertypes' maps (made already) let it inherit.
     fn declared_maps(
         &mut self,
         key: TypeKey,
         supers: &[TypeKey],
         incomplete: bool,
+        only: Option<Name>,
     ) -> Result<ClassMaps, Cancelled> {
+        let wanted = |name: Name| only.is_none_or(|o| o == name);
         let mut maps = ClassMaps {
             incomplete,
             ..ClassMaps::default()
@@ -2761,14 +2850,16 @@ impl Walker<'_, '_, '_> {
                     let interface = entry.access & 0x0200 != 0;
                     maps.incomplete |= entry.problem.is_some();
                     for (i, field) in entry.fields.iter().enumerate() {
+                        if !wanted(field.name) {
+                            continue;
+                        }
                         maps.fields.entry(field.name).or_insert((
                             FieldFound::One(key, i as u32),
                             access_of_flags(field.access, package),
                         ));
                     }
                     for (i, method) in entry.methods.iter().enumerate() {
-                        let text = self.names.text(method.name);
-                        if text.starts_with('<') {
+                        if !wanted(method.name) || self.names.text(method.name).starts_with('<') {
                             continue;
                         }
                         let access = if interface && method.access & 0x0008 != 0 {
@@ -2791,6 +2882,9 @@ impl Walker<'_, '_, '_> {
             let interface = matches!(entry.kind, TypeKind::Interface | TypeKind::Annotation);
             maps.incomplete |= entry.incomplete;
             for (i, field) in entry.fields.iter().enumerate() {
+                if !wanted(field.name) {
+                    continue;
+                }
                 let access = if interface {
                     MemberAccess::Public
                 } else {
@@ -2801,7 +2895,7 @@ impl Walker<'_, '_, '_> {
                     .or_insert((FieldFound::One(key, i as u32), access));
             }
             for (i, method) in entry.methods.iter().enumerate() {
-                if method.kind != MethodKind::Method {
+                if method.kind != MethodKind::Method || !wanted(method.name) {
                     continue;
                 }
                 let access = if interface && method.modifiers.contains(Modifiers::STATIC) {
@@ -2822,7 +2916,7 @@ impl Walker<'_, '_, '_> {
         }
         let theirs: Vec<Option<Arc<ClassMaps>>> = supers
             .iter()
-            .map(|s| self.class_maps.get(s).cloned())
+            .map(|s| self.class_maps.get(&(*s, only)).cloned())
             .collect();
         inherit(&mut maps, &theirs, package);
         Ok(maps)
@@ -2832,7 +2926,7 @@ impl Walker<'_, '_, '_> {
 /// Adds to `maps`, a type's own fields and methods, what it inherits from its supertypes'
 /// `theirs` (`None` for one that didn't resolve or is in a cycle).
 fn inherit(maps: &mut ClassMaps, theirs: &[Option<Arc<ClassMaps>>], package: Name) {
-    let declared: HashSet<Name> = maps.fields.keys().copied().collect();
+    let declared: Set<Name> = maps.fields.keys().copied().collect();
     for supertype in theirs {
         let Some(supertype) = supertype else {
             maps.incomplete = true;
