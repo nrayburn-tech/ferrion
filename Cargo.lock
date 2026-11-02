@@ -357,6 +357,7 @@ dependencies = [
  "ferrion_java_version",
  "ferrion_lexer",
  "ferrion_parser",
+ "ferrion_project",
  "ferrion_stack",
  "ferrion_syntax",
  "serde",

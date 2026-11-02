@@ -4,10 +4,12 @@
 //! target/oracle/names/<oracle key>/<input hash>.jsonl    the oracle's output for a source set
 //! ```
 //!
-//! The input hash covers the release, the source set's files (names and contents), its classpath
-//! (each entry's path, size, and modification time; jars in the corpus are named by version, so
-//! that's enough), and every Java file on its source path, which includes the sources its
-//! dependencies' processors generated. Paths are hashed relative to the corpus directory, as the
+//! The input hash covers the release and how the source set is compiled (`-source` or
+//! `--release`, its options for the JDK's modules), the source set's files (names and contents),
+//! its classpath and processor path (each entry's path, size, and modification time; jars in the
+//! corpus are named by version, so that's enough), its processors' names and options, and every
+//! Java file on its source path, which includes the sources its dependencies' processors
+//! generated. Paths are hashed relative to the corpus directory, as the
 //! oracle writes them, so a cache restored under another corpus directory still applies. An entry
 //! is used only if the generated files it lists still exist, since the comparison reads them.
 
@@ -24,9 +26,10 @@ use sha2::{Digest, Sha256};
 use super::plan::{self, SourceSet};
 use crate::inventory::java_files;
 use crate::oracle::{Diagnostic, hex};
+use corpus::lock::PlatformKind;
 
 /// Bumped when the oracle's `names` output or the input hash changes meaning.
-const FORMAT: &str = "names-1";
+const FORMAT: &str = "names-2";
 
 /// One file's output.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize)]
@@ -36,6 +39,9 @@ pub struct FileOutput {
     /// 1 for a file an annotation processor wrote.
     #[serde(default)]
     pub generated: u8,
+    /// 1 for a `module-info.java`, compiled on its own in a modular compilation.
+    #[serde(default)]
+    pub module: u8,
     /// 1 when javac stopped before analyzing the file: after a processor reported an error, it
     /// doesn't attribute anything, so names have no elements or error ones.
     #[serde(default)]
@@ -50,7 +56,8 @@ pub struct FileOutput {
     /// javac threw on the file, even on its own.
     #[serde(default)]
     pub crash: Option<String>,
-    /// The oracle left the file out (`module-info.java`).
+    /// The oracle left the file out (`module-info.java`, before module declarations were
+    /// compiled).
     #[serde(default)]
     pub skipped: Option<String>,
 }
@@ -100,6 +107,7 @@ impl<'de> Deserialize<'de> for Name {
 
 /// What the oracle reports about the source set as a whole.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SetOutput {
     /// The processor classes registered on the processor path.
     #[serde(default)]
@@ -107,11 +115,28 @@ pub struct SetOutput {
     /// Errors with no file, or in a file on the source path.
     #[serde(default)]
     pub diagnostics: Vec<OtherDiagnostic>,
+    /// Each processor that ran: the files it created and the errors it reported, which the
+    /// oracle keeps from javac.
+    #[serde(default)]
+    pub processor_runs: Vec<ProcessorRun>,
+    /// The modular compilations' errors in files other than their `module-info.java`.
+    #[serde(default)]
+    pub module_diagnostics: Vec<OtherDiagnostic>,
     /// javac threw on the whole source set, so files were compiled one at a time.
     #[serde(default)]
     pub crash: Option<String>,
     #[serde(default)]
     pub millis: u64,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct ProcessorRun {
+    pub name: String,
+    pub files: u64,
+    pub errors: u64,
+    /// The first error it reported.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub first: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -160,7 +185,8 @@ pub struct NamesOracle {
     java: PathBuf,
     jar: PathBuf,
     heap: String,
-    /// Where processors are found instead of the classpath, if given.
+    /// Where every source set's processors are found instead of its own processor path, if
+    /// given: an experiment.
     processor_path: Vec<PathBuf>,
     /// Identifies the jar, the JDK, and the processor path.
     pub key: String,
@@ -224,7 +250,23 @@ impl NamesOracle {
         let start = Instant::now();
         let sourcepath = plan::source_path(sets, set);
         let classpath = plan::class_path(sets, set);
-        let hash = input_hash(set, &classpath, &sourcepath, corpus)?;
+        let processor_path = if self.processor_path.is_empty() {
+            set.processor_path.clone()
+        } else {
+            Some(self.processor_path.clone())
+        };
+        let module_sources = if set.is_modular() {
+            plan::module_sources(sets, set)
+        } else {
+            Vec::new()
+        };
+        let hash = input_hash(
+            set,
+            &classpath,
+            processor_path.as_deref(),
+            &sourcepath,
+            corpus,
+        )?;
         let cached = cache.join(format!("{hash}.jsonl"));
         if let Ok(text) = std::fs::read_to_string(&cached)
             && let Ok(output) = Output::parse(&text)
@@ -258,6 +300,12 @@ impl NamesOracle {
             text.push('\n');
         }
         std::fs::write(&list, text)?;
+        let roots: Vec<PathBuf> = set
+            .roots
+            .iter()
+            .chain(&set.generated_roots)
+            .cloned()
+            .collect();
         let mut command = Command::new(&self.java);
         command
             .arg(format!("-Xmx{}", self.heap))
@@ -266,22 +314,43 @@ impl NamesOracle {
             .arg("-jar")
             .arg(&self.jar)
             .arg("names")
-            .args(["--release", &set.release.to_string()])
+            .arg(match set.platform {
+                PlatformKind::Release => "--release",
+                PlatformKind::Jdk => "--source",
+            })
+            .arg(set.release.to_string());
+        for option in &set.javac {
+            command.arg("--javac").arg(option);
+        }
+        command
             .arg("--base")
             .arg(corpus)
             .arg("--roots")
-            .arg(joined(&set.roots)?)
+            .arg(joined(&roots)?)
             .arg("--classpath")
             .arg(joined(&classpath)?)
             .arg("--sourcepath")
             .arg(joined(&sourcepath)?)
             .arg("--generated")
-            .arg(&set.generated)
-            .arg(format!("@{}", list.display()));
-        if !self.processor_path.is_empty() {
-            command
-                .arg("--processor-path")
-                .arg(joined(&self.processor_path)?);
+            .arg(&set.generated);
+        if let Some(path) = &processor_path {
+            command.arg("--processor-path").arg(joined(path)?);
+        }
+        if let Some(names) = &set.processors.names {
+            command.arg("--processors").arg(names.join(","));
+        }
+        for option in &set.processors.options {
+            command.arg("--processor-option").arg(option);
+        }
+        if set.is_modular() {
+            for roots in &module_sources {
+                command.arg("--module-source").arg(joined(roots)?);
+            }
+            command.arg("--module-path").arg(joined(module_path(set))?);
+        }
+        command.arg(format!("@{}", list.display()));
+        if std::env::var_os("FERRION_ORACLE_SHOW").is_some() {
+            eprintln!("{}: {command:?}", set.display());
         }
         let status = command
             .stdin(Stdio::null())
@@ -319,6 +388,16 @@ impl NamesOracle {
     }
 }
 
+/// The module path of a source set's modular compilation: its build's, or else its own
+/// classpath's entries.
+fn module_path(set: &SourceSet) -> &[PathBuf] {
+    if set.module_path.is_empty() {
+        &set.classpath
+    } else {
+        &set.module_path
+    }
+}
+
 fn path_text(path: &Path) -> Result<&str> {
     path.to_str()
         .with_context(|| format!("{} is not valid UTF-8", path.display()))
@@ -333,6 +412,7 @@ fn joined(paths: &[PathBuf]) -> Result<String> {
 fn input_hash(
     set: &SourceSet,
     classpath: &[PathBuf],
+    processor_path: Option<&[PathBuf]>,
     sourcepath: &[PathBuf],
     corpus: &Path,
 ) -> Result<String> {
@@ -347,6 +427,16 @@ fn input_hash(
         hash.update(b"\0");
     };
     field("release", set.release.to_string().as_bytes());
+    field("platform", format!("{:?}", set.platform).as_bytes());
+    for option in &set.javac {
+        field("javac", relative(Path::new(option)).as_bytes());
+    }
+    if let Some(names) = &set.processors.names {
+        field("processors", names.join(",").as_bytes());
+    }
+    for option in &set.processors.options {
+        field("processor option", option.as_bytes());
+    }
     field("generated", relative(&set.generated).as_bytes());
     for root in &set.roots {
         field("root", relative(root).as_bytes());
@@ -358,8 +448,16 @@ fn input_hash(
             &std::fs::read(file).with_context(|| format!("reading {}", file.display()))?,
         );
     }
-    for entry in classpath {
-        field("classpath", relative(entry).as_bytes());
+    let processor_path = processor_path.map(|path| path.iter().map(|e| ("processor path", e)));
+    let entries = classpath
+        .iter()
+        .map(|e| ("classpath", e))
+        .chain(processor_path.into_iter().flatten());
+    if set.processor_path.as_ref().is_some_and(Vec::is_empty) {
+        field("processor path", b"none");
+    }
+    for (label, entry) in entries {
+        field(label, relative(entry).as_bytes());
         // A missing entry is hashed as missing; javac reports it.
         if let Ok(metadata) = std::fs::metadata(entry) {
             let modified = metadata
@@ -369,6 +467,11 @@ fn input_hash(
                 .map_or(0, |d| d.as_secs());
             field("size", metadata.len().to_string().as_bytes());
             field("modified", modified.to_string().as_bytes());
+        }
+    }
+    if set.is_modular() {
+        for entry in module_path(set) {
+            field("module path", relative(entry).as_bytes());
         }
     }
     for dir in sourcepath {
@@ -391,11 +494,11 @@ mod tests {
             r#"{"file":"projects/p/src/A.java","diagnostics":[],"lombok":[[0,10]],"names":"#,
             r#"[[8,9,"package","-","package p"],[20,21,"method","-","method p/A.m()V","type p/A source projects/p/src/A.java"]]}"#,
             "\n",
-            r#"{"file":"projects/p/src/module-info.java","skipped":"module declaration"}"#,
+            r#"{"file":"projects/p/src/module-info.java","module":1,"diagnostics":[],"lombok":[],"names":[[7,10,"module","e","none"]]}"#,
             "\n",
             r#"{"file":"generated/p/main/G.java","generated":1,"diagnostics":[{"kind":"ERROR","code":"compiler.err.cant.resolve","start":1,"position":1,"end":2,"args":[],"message":"cannot find symbol"}],"lombok":[],"names":[]}"#,
             "\n",
-            r#"{"sourceSet":{"processors":["a.P"],"diagnostics":[{"file":"x/B.java","error":{"kind":"ERROR","code":"c","start":0,"position":0,"end":0,"args":[],"message":"m"}}],"millis":12}}"#,
+            r#"{"sourceSet":{"processors":["a.P"],"diagnostics":[{"file":"x/B.java","error":{"kind":"ERROR","code":"c","start":0,"position":0,"end":0,"args":[],"message":"m"}}],"processorRuns":[{"name":"a.P","files":0,"errors":2,"first":"A: missing"}],"moduleDiagnostics":[],"millis":12}}"#,
             "\n"
         );
         let output = Output::parse(text).unwrap();
@@ -408,7 +511,8 @@ mod tests {
             a.names[1].searched.as_deref(),
             Some("type p/A source projects/p/src/A.java")
         );
-        assert!(output.files[1].skipped.is_some());
+        assert_eq!(output.files[1].module, 1);
+        assert_eq!(output.set.processor_runs[0].errors, 2);
         assert_eq!(output.files[2].errors().count(), 1);
         assert_eq!(output.set.processors, ["a.P"]);
         assert!(matches!(

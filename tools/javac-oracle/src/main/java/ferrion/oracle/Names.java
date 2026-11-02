@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,11 +38,18 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceConfigurationError;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import javax.annotation.processing.Completion;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.Processor;
+import javax.annotation.processing.RoundEnvironment;
+import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -69,29 +78,44 @@ import javax.tools.ToolProvider;
  * The {@code names} command: compiles one source set with javac and writes, for each of its files,
  * javac's errors and what every name resolves to.
  *
- * <p>Usage: {@code javac-oracle names --release <N> [--roots <paths>] [--classpath <paths>]
- * [--sourcepath <paths>] [--processor-path <paths>] [--generated <dir>] [--base <dir>] <file |
- * @list-file>...}. Path lists are separated by the platform's path separator.
+ * <p>Usage: {@code javac-oracle names (--release <N> | --source <N>) [--javac <option>]...
+ * [--roots <paths>] [--classpath <paths>] [--sourcepath <paths>] [--processor-path <paths>]
+ * [--processors <names>] [--processor-option <key=value>]... [--generated <dir>]
+ * [--module-source <paths>]... [--module-path <paths>] [--base <dir>] <file | @list-file>...}.
+ * Path lists are separated by the platform's path separator.
  *
  * <ul>
+ *   <li>{@code --release N} compiles with {@code --release N}, and {@code --source N} with {@code
+ *       -source N -target N}, which sees the JDK's whole API. Each {@code --javac} is passed to
+ *       javac as it is, in order: the build's options that change what code sees, such as {@code
+ *       --add-exports}.
  *   <li>Every file is on javac's command line, so the source set's own types always come from
  *       source. {@code --sourcepath} has the source roots of the source sets it depends on, read
  *       with {@code -implicit:none -Xprefer:source}; {@code --classpath} has its jars and
  *       directories.
- *   <li>With {@code --generated}, annotation processors run ({@code -proc:full}), found on {@code
- *       --processor-path} or else on the classpath, as javac finds them, and write their sources
- *       there. Class files and resources go to a temporary directory that is deleted afterwards, so
- *       nothing else is written. Without it, no processor runs.
- *   <li>{@code module-info.java} is left out, and hidden on the source path, so the source set is
- *       compiled in the unnamed module with its dependencies on the classpath.
+ *   <li>With {@code --generated}, annotation processors run ({@code -proc:full}) and write their
+ *       sources there: those {@code --processors} names, or else those registered on {@code
+ *       --processor-path} (an empty one has none), or else on the classpath, as javac finds them.
+ *       The oracle loads them and gives javac each through a wrapper, which counts the files it
+ *       creates and the errors it reports ({@code compiler.err.proc.messager}, which aren't
+ *       language errors). {@code --should-stop=ifError=FLOW} keeps such an error from stopping
+ *       javac before it attributes anything. Class files and resources go to a temporary
+ *       directory that is deleted afterwards, so nothing else is written. Without it, no
+ *       processor runs.
+ *   <li>{@code module-info.java} is left out of the main compilation, and hidden on the source
+ *       path, so the source set is compiled in the unnamed module with its dependencies on the
+ *       classpath. Each one is then compiled on its own in a modular compilation: its source set's
+ *       roots and generated sources as its module's module source path, each {@code
+ *       --module-source} (a module's roots) as another's, and {@code --module-path}, at release 9
+ *       or later, with no processors.
  *   <li>{@code analyze()} attributes every file. If javac throws, each file is compiled again on
  *       its own, with the source set's roots and generated sources on the source path and no
  *       processors, so a crash loses only the files it happens in.
  * </ul>
  *
- * <p>The output is one JSON object per line: one per {@code module-info.java}, with {@code
- * skipped}, then one per other file in command-line order, then one per generated file, then a
- * last one for the source set. Paths under {@code --base} are written
+ * <p>The output is one JSON object per line: one per file in command-line order but {@code
+ * module-info.java}, then one per generated file, then one per {@code module-info.java}, with
+ * {@code module: 1}, then a last one for the source set. Paths under {@code --base} are written
  * relative to it, with {@code /}. Offsets are UTF-16, as javac's are, and -1 where javac has none.
  * Each file's object has:
  *
@@ -109,27 +133,45 @@ import javax.tools.ToolProvider;
  *
  * <p>The last object is {@code {"sourceSet": {...}}} with {@code diagnostics} (errors with no file
  * or in a file not compiled, such as one on the source path), {@code processors} (the processor
- * classes registered in the processor path), {@code crash} when the whole run threw and files were
- * compiled one at a time, and {@code millis}.
+ * classes registered in the processor path), {@code processorRuns} (each processor that ran, with
+ * the files it created, the errors it reported, the first of them, and what it threw, after
+ * which it was left out), {@code moduleDiagnostics}
+ * (the modular compilations' errors in other files), {@code crash} when the whole run threw and
+ * files were compiled one at a time, and {@code millis}.
  */
 final class Names {
   private Names() {}
 
   private static final String USAGE =
-      "usage: javac-oracle names --release <N> [--roots <paths>] [--classpath <paths>]"
-          + " [--sourcepath <paths>] [--processor-path <paths>] [--generated <dir>]"
+      "usage: javac-oracle names (--release <N> | --source <N>) [--javac <option>]..."
+          + " [--roots <paths>] [--classpath <paths>] [--sourcepath <paths>]"
+          + " [--processor-path <paths>] [--processors <names>] [--processor-option <k=v>]..."
+          + " [--generated <dir>] [--module-source <paths>]... [--module-path <paths>]"
           + " [--base <dir>] <file | @list-file>...";
 
   /** What a run is given. */
   static final class Request {
     String release;
+    /** Instead of {@link #release}: {@code -source} and {@code -target}. */
+    String source;
+    List<String> javac = new ArrayList<>();
     List<Path> roots = new ArrayList<>();
     List<Path> classpath = new ArrayList<>();
     List<Path> sourcepath = new ArrayList<>();
     List<Path> processorPath;
+    List<String> processorNames;
+    List<String> processorOptions = new ArrayList<>();
     Path generated;
     Path base;
+    /** Each a module's roots, for the modular compilation of {@code module-info.java}. */
+    List<List<Path>> moduleSources = new ArrayList<>();
+    List<Path> modulePath = new ArrayList<>();
     List<Path> files = new ArrayList<>();
+
+    /** The release the code is for, either way it's given. */
+    int feature() {
+      return Integer.parseInt(release != null ? release : source);
+    }
   }
 
   static void main(List<String> args, PrintStream out) throws IOException {
@@ -161,6 +203,12 @@ final class Names {
         String value = args.get(++i);
         switch (arg) {
           case "--release" -> request.release = value;
+          case "--source" -> request.source = value;
+          case "--javac" -> request.javac.add(value);
+          case "--processors" -> request.processorNames = List.of(value.split(","));
+          case "--processor-option" -> request.processorOptions.add(value);
+          case "--module-source" -> request.moduleSources.add(paths(value));
+          case "--module-path" -> request.modulePath = paths(value);
           case "--roots" -> request.roots = paths(value);
           case "--classpath" -> request.classpath = paths(value);
           case "--sourcepath" -> request.sourcepath = paths(value);
@@ -181,8 +229,8 @@ final class Names {
         request.files.add(Path.of(arg));
       }
     }
-    if (request.release == null) {
-      usage("--release is required");
+    if ((request.release == null) == (request.source == null)) {
+      usage("one of --release and --source is required");
     }
     if (request.files.isEmpty()) {
       usage("no input files");
@@ -221,16 +269,10 @@ final class Names {
 
     void all() throws IOException {
       List<Path> files = new ArrayList<>();
+      List<Path> modules = new ArrayList<>();
       for (Path file : request.files) {
         if (file.getFileName().toString().equals("module-info.java")) {
-          Json json = new Json();
-          json.beginObject()
-              .name("file")
-              .value(relative(file))
-              .name("skipped")
-              .value("module declaration")
-              .endObject();
-          out.println(json);
+          modules.add(file);
         } else {
           files.add(file);
         }
@@ -240,29 +282,172 @@ final class Names {
         trailer.value(processor);
       }
       trailer.endArray();
-      if (files.isEmpty()) {
-        // Only a module declaration: javac would refuse to run with no files.
-        trailer.name("diagnostics").beginArray().endArray();
-        return;
-      }
       Path classes = Files.createTempDirectory("javac-oracle-names");
       try {
-        Compiled compiled;
-        try {
-          compiled = compile(files, request.sourcepath, request.generated, classes);
-        } catch (Throwable t) {
-          trailer.name("crash").value(t.toString());
-          compiled = null;
-        }
-        if (compiled != null) {
-          compiled.write(files);
-          compiled.writeOther(trailer);
+        if (files.isEmpty()) {
+          // Only a module declaration: javac would refuse to run with no files.
+          trailer.name("diagnostics").beginArray().endArray();
         } else {
-          oneAtATime(files, classes);
+          Compiled compiled;
+          try {
+            compiled = compile(files, request.sourcepath, request.generated, classes);
+          } catch (Throwable t) {
+            trailer.name("crash").value(t.toString());
+            compiled = null;
+          }
+          if (compiled != null) {
+            compiled.write(files);
+            compiled.writeOther(trailer);
+          } else {
+            oneAtATime(files, classes);
+          }
         }
+        writeProcessorRuns();
+        trailer.name("moduleDiagnostics").beginArray();
+        for (Path module : modules) {
+          modular(module, classes.resolve("modules"));
+        }
+        trailer.endArray();
       } finally {
         deleteTree(classes);
       }
+    }
+
+    /** The processors of the last compilation with processors, for the trailer. */
+    private List<Watched> watched = List.of();
+
+    private void writeProcessorRuns() {
+      trailer.name("processorRuns").beginArray();
+      for (Watched processor : watched) {
+        trailer
+            .beginObject()
+            .name("name")
+            .value(processor.name)
+            .name("files")
+            .value(processor.files)
+            .name("errors")
+            .value(processor.errors);
+        if (!processor.messages.isEmpty()) {
+          trailer.name("first").value(processor.messages.get(0));
+        }
+        if (processor.threw != null) {
+          trailer.name("threw").value(processor.threw);
+        }
+        trailer.endObject();
+      }
+      trailer.endArray();
+    }
+
+    /**
+     * Compiles a {@code module-info.java} in a modular compilation, and writes its names: its
+     * source set's roots and generated sources as its module's source path, the modules of
+     * {@code --module-source} as theirs, the module path, and release 9 at least, which module
+     * declarations need.
+     */
+    private void modular(Path file, Path classes) {
+      try {
+        Collector collector = new Collector();
+        StandardJavaFileManager manager =
+            compiler.getStandardFileManager(collector, null, StandardCharsets.UTF_8);
+        try (manager) {
+          String release = String.valueOf(Math.max(9, request.feature()));
+          List<String> options = new ArrayList<>();
+          if (request.release != null) {
+            Collections.addAll(options, "--release", release);
+          } else {
+            Collections.addAll(options, "-source", release, "-target", release);
+          }
+          Collections.addAll(
+              options,
+              "-encoding",
+              "UTF-8",
+              "-implicit:none",
+              "-proc:none",
+              "-Xmaxerrs",
+              String.valueOf(Integer.MAX_VALUE),
+              "-nowarn",
+              "-Xlint:none",
+              "-d",
+              classes.toString());
+          options.addAll(request.javac);
+          Map<String, List<Path>> sources = new LinkedHashMap<>();
+          List<Path> own = new ArrayList<>(request.roots);
+          if (request.generated != null && Files.isDirectory(request.generated)) {
+            own.add(request.generated);
+          }
+          sources.put(moduleName(manager, file), own);
+          for (List<Path> roots : request.moduleSources) {
+            for (Path root : roots) {
+              Path info = root.resolve("module-info.java");
+              if (Files.isRegularFile(info)) {
+                sources.putIfAbsent(moduleName(manager, info), roots);
+                break;
+              }
+            }
+          }
+          for (Map.Entry<String, List<Path>> module : sources.entrySet()) {
+            options.add("--module-source-path");
+            options.add(module.getKey() + "=" + joined(module.getValue()));
+          }
+          if (!request.modulePath.isEmpty()) {
+            options.add("--module-path");
+            options.add(joined(request.modulePath));
+          }
+          JavacTask task =
+              (JavacTask)
+                  compiler.getTask(
+                      null,
+                      manager,
+                      collector,
+                      options,
+                      null,
+                      manager.getJavaFileObjectsFromPaths(List.of(file)));
+          Map<URI, CompilationUnitTree> parsed = new LinkedHashMap<>();
+          task.addTaskListener(
+              new TaskListener() {
+                @Override
+                public void finished(TaskEvent event) {
+                  if (event.getKind() == TaskEvent.Kind.PARSE) {
+                    parsed.put(event.getSourceFile().toUri(), event.getCompilationUnit());
+                  }
+                }
+              });
+          task.analyze();
+          Compiled compiled = new Compiled(task, parsed, Set.of(), collector, null);
+          compiled.writeFile(file.toUri(), relative(file), false, true);
+          compiled.writeOtherDiagnostics(trailer);
+        }
+      } catch (Throwable t) {
+        Json json = new Json();
+        json.beginObject()
+            .name("file")
+            .value(relative(file))
+            .name("module")
+            .value(1)
+            .name("crash")
+            .value(t.toString())
+            .endObject();
+        out.println(json);
+      }
+    }
+
+    /** The name a {@code module-info.java} declares, from parsing it. */
+    private String moduleName(StandardJavaFileManager manager, Path file) throws IOException {
+      JavacTask task =
+          (JavacTask)
+              compiler.getTask(
+                  null,
+                  manager,
+                  diagnostic -> {},
+                  List.of("-proc:none"),
+                  null,
+                  manager.getJavaFileObjectsFromPaths(List.of(file)));
+      for (CompilationUnitTree unit : task.parse()) {
+        if (unit.getModule() != null) {
+          return unit.getModule().getName().toString();
+        }
+      }
+      throw new IOException(file + " declares no module");
     }
 
     /** After a crash: each file on its own, with the rest on the source path. */
@@ -299,10 +484,13 @@ final class Names {
           compiler.getStandardFileManager(collector, null, StandardCharsets.UTF_8);
       try (HidingFileManager manager = new HidingFileManager(standard)) {
         List<String> options = new ArrayList<>();
+        if (request.release != null) {
+          Collections.addAll(options, "--release", request.release);
+        } else {
+          Collections.addAll(options, "-source", request.source, "-target", request.source);
+        }
         Collections.addAll(
             options,
-            "--release",
-            request.release,
             "-encoding",
             "UTF-8",
             "-implicit:none",
@@ -313,20 +501,25 @@ final class Names {
             "-Xlint:none",
             "-d",
             classes.toString());
+        options.addAll(request.javac);
         options.add("-classpath");
         options.add(joined(request.classpath));
         // Given even when empty: without it, javac looks for sources on the classpath.
         options.add("-sourcepath");
         options.add(joined(sourcepath));
+        List<Watched> processors = null;
         if (generated != null) {
           Files.createDirectories(generated);
+          // An error a processor reports would otherwise stop javac before it attributes
+          // anything, though it isn't a language error.
+          options.add("--should-stop=ifError=FLOW");
           options.add("-proc:full");
           options.add("-s");
           options.add(generated.toString());
-          if (request.processorPath != null) {
-            options.add("-processorpath");
-            options.add(joined(request.processorPath));
+          for (String option : request.processorOptions) {
+            options.add("-A" + option);
           }
+          processors = load(request);
         } else {
           options.add("-proc:none");
         }
@@ -334,6 +527,10 @@ final class Names {
             standard.getJavaFileObjectsFromPaths(files);
         JavacTask task =
             (JavacTask) compiler.getTask(null, manager, collector, options, null, units);
+        if (processors != null) {
+          task.setProcessors(processors);
+          watched = processors;
+        }
         // Every compilation unit javac parses, generated ones included, in order.
         Map<URI, CompilationUnitTree> parsed = new LinkedHashMap<>();
         // The units javac started analyzing a class of: attribution comes first, and flow
@@ -403,7 +600,7 @@ final class Names {
       /** Writes `files`, then the generated files. */
       void write(List<Path> files) {
         for (Path file : files) {
-          writeFile(file.toUri(), Run.this.relative(file), false);
+          writeFile(file.toUri(), Run.this.relative(file), false, false);
         }
         if (generated == null) {
           return;
@@ -414,21 +611,28 @@ final class Names {
           if (!written.contains(uri)
               && uri.getScheme().equals("file")
               && Path.of(uri).normalize().startsWith(root)) {
-            writeFile(uri, Run.this.relative(Path.of(uri)), true);
+            writeFile(uri, Run.this.relative(Path.of(uri)), true, false);
           }
         }
       }
 
-      private void writeFile(URI uri, String path, boolean isGenerated) {
+      void writeFile(URI uri, String path, boolean isGenerated, boolean isModule) {
         written.add(uri);
         Json json = new Json();
         json.beginObject().name("file").value(path);
         if (isGenerated) {
           json.name("generated").value(1);
         }
+        if (isModule) {
+          json.name("module").value(1);
+        }
         CompilationUnitTree unit = findUnit(uri);
-        // A file with no classes, such as one commented out whole, has nothing to analyze.
-        if (unit != null && !unit.getTypeDecls().isEmpty() && !analyzed.contains(uri)) {
+        // A file with no classes, such as one commented out whole, has nothing to analyze; a
+        // module declaration has no class.
+        if (!isModule
+            && unit != null
+            && !unit.getTypeDecls().isEmpty()
+            && !analyzed.contains(uri)) {
           json.name("unanalyzed").value(1);
         }
         json.name("diagnostics").beginArray();
@@ -526,6 +730,10 @@ final class Names {
       if (request.generated == null) {
         return found;
       }
+      if (request.processorNames != null) {
+        found.addAll(request.processorNames);
+        return found;
+      }
       for (Path entry : path) {
         try {
           String text = null;
@@ -557,6 +765,156 @@ final class Names {
         }
       }
       return found;
+    }
+  }
+
+  /**
+   * The processors javac would run: those {@code --processors} names, or else those registered
+   * on the processor path (or the classpath without one), loaded from it, each in a {@link
+   * Watched} wrapper. A processor that can't be loaded is left out, and named as one that
+   * reported an error.
+   */
+  private static List<Watched> load(Request request) throws IOException {
+    List<Path> path = request.processorPath != null ? request.processorPath : request.classpath;
+    URL[] urls = new URL[path.size()];
+    for (int i = 0; i < urls.length; i++) {
+      urls[i] = path.get(i).toUri().toURL();
+    }
+    // Never closed: javac uses the processors' classes until it finishes, and the JVM exits after.
+    ClassLoader loader = new URLClassLoader(urls, Names.class.getClassLoader());
+    List<Watched> found = new ArrayList<>();
+    if (request.processorNames != null) {
+      for (String name : request.processorNames) {
+        try {
+          Processor processor =
+              (Processor) loader.loadClass(name).getDeclaredConstructor().newInstance();
+          found.add(new Watched(name, processor));
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException e) {
+          found.add(Watched.failed(name, e));
+        }
+      }
+      return found;
+    }
+    var providers = ServiceLoader.load(Processor.class, loader).iterator();
+    while (true) {
+      try {
+        if (!providers.hasNext()) {
+          break;
+        }
+        Processor processor = providers.next();
+        found.add(new Watched(processor.getClass().getName(), processor));
+      } catch (ServiceConfigurationError | LinkageError e) {
+        found.add(Watched.failed("(service configuration)", e));
+      }
+    }
+    return found;
+  }
+
+  /**
+   * A processor as javac runs it through the oracle, which counts the files it creates and the
+   * errors it reports: while it runs, it is {@link #CURRENT}, which the file manager and the
+   * diagnostic listener charge them to. It gets javac's own processing environment, since some
+   * processors (Lombok) need javac's own.
+   */
+  static final class Watched implements Processor {
+    /** The processor javac is running on this thread, if any. */
+    static final ThreadLocal<Watched> CURRENT = new ThreadLocal<>();
+
+    final String name;
+    private final Processor delegate;
+    int files;
+    int errors;
+    final List<String> messages = new ArrayList<>();
+
+    Watched(String name, Processor delegate) {
+      this.name = name;
+      this.delegate = delegate;
+    }
+
+    /** A processor that couldn't be loaded: it runs nothing, and is reported as having thrown. */
+    static Watched failed(String name, Throwable why) {
+      Watched watched = new Watched(name, null);
+      watched.fail(why);
+      return watched;
+    }
+
+    void error(String message) {
+      errors++;
+      if (messages.size() < 3) {
+        messages.add(message);
+      }
+    }
+
+    @Override
+    public Set<String> getSupportedOptions() {
+      return delegate == null ? Set.of() : delegate.getSupportedOptions();
+    }
+
+    @Override
+    public Set<String> getSupportedAnnotationTypes() {
+      return delegate == null ? Set.of() : delegate.getSupportedAnnotationTypes();
+    }
+
+    @Override
+    public SourceVersion getSupportedSourceVersion() {
+      return delegate == null ? SourceVersion.latestSupported() : delegate.getSupportedSourceVersion();
+    }
+
+    @Override
+    public void init(ProcessingEnvironment env) {
+      if (delegate == null) {
+        return;
+      }
+      Watched outer = CURRENT.get();
+      CURRENT.set(this);
+      try {
+        delegate.init(env);
+      } catch (RuntimeException | LinkageError e) {
+        fail(e);
+      } finally {
+        CURRENT.set(outer);
+      }
+    }
+
+    @Override
+    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment round) {
+      if (delegate == null || threw != null) {
+        return false;
+      }
+      Watched outer = CURRENT.get();
+      CURRENT.set(this);
+      try {
+        return delegate.process(annotations, round);
+      } catch (RuntimeException | LinkageError e) {
+        fail(e);
+        return false;
+      } finally {
+        CURRENT.set(outer);
+      }
+    }
+
+    /**
+     * What the processor threw, which javac would otherwise report as the processor's error and
+     * then stop on, or go on from with what the processor left half done: Lombok 1.18.42 throws
+     * on javac 27, which no longer has a class it uses, and then a type it annotated isn't found
+     * in the files that use it. After it throws, the processor is as if it weren't there.
+     */
+    String threw;
+
+    private void fail(Throwable e) {
+      Throwable cause = e;
+      while (cause.getCause() != null && cause.getCause() != cause) {
+        cause = cause.getCause();
+      }
+      threw = e + (cause == e ? "" : ", caused by " + cause);
+    }
+
+    @Override
+    public Iterable<? extends Completion> getCompletions(
+        Element element, AnnotationMirror annotation, ExecutableElement member, String text) {
+      return delegate == null
+          ? List.of()
+          : delegate.getCompletions(element, annotation, member, text);
     }
   }
 
@@ -1180,6 +1538,54 @@ final class Names {
       }
       return super.getJavaFileForInput(location, className, kind);
     }
+
+    /** Charges a file created while a processor runs to it. */
+    private static void created() {
+      Watched processor = Watched.CURRENT.get();
+      if (processor != null) {
+        processor.files++;
+      }
+    }
+
+    @Override
+    public JavaFileObject getJavaFileForOutput(
+        Location location, String className, JavaFileObject.Kind kind, FileObject sibling)
+        throws IOException {
+      created();
+      return super.getJavaFileForOutput(location, className, kind, sibling);
+    }
+
+    @Override
+    public JavaFileObject getJavaFileForOutputForOriginatingFiles(
+        Location location,
+        String className,
+        JavaFileObject.Kind kind,
+        FileObject... originatingFiles)
+        throws IOException {
+      created();
+      return super.getJavaFileForOutputForOriginatingFiles(
+          location, className, kind, originatingFiles);
+    }
+
+    @Override
+    public FileObject getFileForOutput(
+        Location location, String packageName, String relativeName, FileObject sibling)
+        throws IOException {
+      created();
+      return super.getFileForOutput(location, packageName, relativeName, sibling);
+    }
+
+    @Override
+    public FileObject getFileForOutputForOriginatingFiles(
+        Location location,
+        String packageName,
+        String relativeName,
+        FileObject... originatingFiles)
+        throws IOException {
+      created();
+      return super.getFileForOutputForOriginatingFiles(
+          location, packageName, relativeName, originatingFiles);
+    }
   }
 
   /** Collects what javac reports; trusted, so javac gives it its own diagnostics. */
@@ -1189,6 +1595,11 @@ final class Names {
 
     @Override
     public void report(Diagnostic<? extends JavaFileObject> diagnostic) {
+      Watched processor = Watched.CURRENT.get();
+      if (processor != null && diagnostic.getKind() == Diagnostic.Kind.ERROR) {
+        String file = diagnostic.getSource() == null ? "" : diagnostic.getSource().getName() + ": ";
+        processor.error(file + diagnostic.getMessage(null).lines().findFirst().orElse(""));
+      }
       diagnostics.add(diagnostic);
     }
   }
