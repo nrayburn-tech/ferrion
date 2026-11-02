@@ -780,6 +780,15 @@ x =
 All on the call's line; otherwise all on the next line at +4; otherwise one per line. When every
 argument is at most 9 wide, they fill instead: as many on a line as fit. The `)` follows the last
 argument. A text block as an argument breaks the list, so it starts a line of its own at +4.
+Arguments whose input has them in pairs, a pair a line, keep the pairs, as an array initializer
+keeps rows of two (see [Arrays](#arrays)), but with no argument left over.
+
+```java
+x =
+    Map.of(
+        "magenta", HIGHLIGHT_MAGENTA,
+        "teal", HIGHLIGHT_TEAL);
+```
 
 ```java
 foobarbaz(
@@ -983,6 +992,37 @@ the `}` on a line of its own: all on one line if they fit there, filled when eve
 most 9 wide, and otherwise one per line. A trailing comma keeps the elements off the braces'
 lines. Dimensions follow the type, `new int[3][]`, and an array access that doesn't fit breaks
 after its `[`, with the index at +4.
+
+An initializer whose input has its elements in rows keeps them, one row a line, even when they'd
+fit on one, and each row that doesn't fit breaks at +4 before each element that doesn't fit. The
+rows are the input's lines, starting at the first element's column, and are kept when:
+
+- the first element starts a line, and no line starts left of it;
+- every row has as many elements as the first, except that the last can have fewer, and at
+  least two rows have them all;
+- the first row has at least two elements other than arrays, counting an array's elements
+  instead of the array, so a row of `{0, 1}` counts but one of `{1}` doesn't;
+- the rows' first elements are all of one kind of expression, and so are more than half of each
+  other column's. Kinds are javac's: `1` and `-1` are alike, as are `a` and `!a`, `a.b` and
+  `A.class`, or two calls, but `a + b` and `a - b` aren't, nor are `1` and `1L`, `a` and `(a)`,
+  or `"a"` and `null`.
+
+```java
+static final String[] data = {
+  "apple", "banana", "avocado", "raspberry", "grape",
+  "lemon", "mango", "mandarin", "quince", "guava",
+  "melon"
+};
+int[][] values = {
+  {0, 0, 0},
+  {0, 10, 0}
+};
+String[] e = {
+  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "cccc", "dddd",
+  "eeee", "ffff", "gggg", "hhhh"
+};
+```
 
 ```java
 x =
