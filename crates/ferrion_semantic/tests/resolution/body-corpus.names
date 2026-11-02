@@ -1,0 +1,117 @@
+== main p/Keys.java
+p -> package p
+java.util.List -> type java/util/List class platform
+java.util -> package java.util
+java -> package java
+String -> type java/lang/String class platform
+java.lang.String -> type java/lang/String class platform
+java.lang -> package java.lang
+java -> package java
+List<String> -> type java/util/List class platform
+String -> type java/lang/String class platform
+String -> type java/lang/String class platform
+a.length -> b3 method-of-expression
+a -> local p/Keys.java:48
+b.length -> b3 method-of-expression
+b -> local p/Keys.java:67
+c.size -> b3 method-of-expression
+c -> local p/Keys.java:82
+d.length -> b3 array
+d -> local p/Keys.java:97
+e.length -> b3 array
+e -> local p/Keys.java:109
+Deprecated -> type java/lang/Deprecated class platform
+new Local().x -> b3 expression-type
+Local -> type local p/Keys.java:276
+Runnable -> type java/lang/Runnable class platform
+Runnable -> type java/lang/Runnable class platform
+y -> field local p/Keys.java:362.y
+# type p/Keys source p/Keys.java
+  superclass type java/lang/Record class platform
+  field a Ljava/lang/String;
+  field b Ljava/lang/String;
+  field c Ljava/util/List;
+  field d [I
+  field e [Ljava/lang/String;
+  method Keys(Ljava/lang/String;Ljava/lang/String;Ljava/util/List;[I[Ljava/lang/String;)V
+  method local()V
+  method a()Ljava/lang/String; implicit
+  method b()Ljava/lang/String; implicit
+  method c()Ljava/util/List; implicit
+  method d()[I implicit
+  method e()[Ljava/lang/String; implicit
+  method equals(Ljava/lang/Object;)Z implicit
+  method hashCode()I implicit
+  method toString()Ljava/lang/String; implicit
+# type local p/Keys.java:276
+  superclass type java/lang/Object class platform
+  field x I
+  method Local()V implicit
+# type local p/Keys.java:362
+  superclass type java/lang/Object class platform
+  interface type java/lang/Runnable class platform
+  field y I
+  method run()V
+== main p/Members.java
+p -> package p
+String -> type java/lang/String class platform
+getClass().getName -> b3 method-of-expression
+getClass -> method java/lang/Object.getClass()Ljava/lang/Class;
+hashCode -> method java/lang/Object.hashCode()I
+Members -> type p/Members source p/Members.java
+String -> type java/lang/String class platform
+toString -> method java/lang/Object.toString()Ljava/lang/String;
+# type p/Members source p/Members.java
+  member Sub: type p/Members$Sub source p/Members.java
+  method name()Ljava/lang/String;
+# type p/Members$Sub source p/Members.java
+  interface type p/Members source p/Members.java
+  member Sub: type p/Members$Sub source p/Members.java
+  method other()Ljava/lang/String;
+== main p/Switches.java
+p -> package p
+k -> local p/Switches.java:47
+seen -> local p/Switches.java:113
+seen -> local p/Switches.java:113
+# type p/Switches source p/Switches.java
+  superclass type java/lang/Object class platform
+  method count(I)I
+  method Switches()V implicit
+== main p/Bounds.java
+p -> package p
+Enum<T> -> type java/lang/Enum class platform
+T -> typevar type p/Bounds source p/Bounds.java T
+T -> typevar type p/Bounds source p/Bounds.java T
+X -> typevar method p/Bounds.first(Ljava/lang/Enum;)Ljava/lang/Enum; X
+X -> typevar method p/Bounds.first(Ljava/lang/Enum;)Ljava/lang/Enum; X
+first -> method p/Bounds.first(Ljava/lang/Enum;)Ljava/lang/Enum;
+# type p/Bounds source p/Bounds.java
+  superclass type java/lang/Object class platform
+  method first(Ljava/lang/Enum;)Ljava/lang/Enum;
+  method use()V
+  method Bounds()V implicit
+== main p/Outer.java
+p -> package p
+U -> typevar type p/Outer$Inner source p/Outer.java U
+Object -> type java/lang/Object class platform
+Outer<String> -> type p/Outer source p/Outer.java
+String -> type java/lang/String class platform
+Inner<Integer> -> type p/Outer$Inner source p/Outer.java
+Integer -> type java/lang/Integer class platform
+Object -> type java/lang/Object class platform
+Outer<String> -> type p/Outer source p/Outer.java
+String -> type java/lang/String class platform
+Inner<Integer> -> type p/Outer$Inner source p/Outer.java
+Integer -> type java/lang/Integer class platform
+# type p/Outer source p/Outer.java
+  superclass type java/lang/Object class platform
+  member Inner: type p/Outer$Inner source p/Outer.java
+  method make()V
+  method Outer()V implicit
+# type p/Outer$Inner source p/Outer.java
+  superclass type java/lang/Object class platform
+  field u Ljava/lang/Object;
+  method Inner()V implicit
+# type local p/Outer.java:183
+  superclass type p/Outer source p/Outer.java
+  member Inner: type p/Outer$Inner source p/Outer.java

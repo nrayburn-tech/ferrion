@@ -1,0 +1,20 @@
+== main module-info.java
+m -> module m
+p -> package p
+== main p/U.java
+p -> package p
+java.lang.annotation.Retention -> type java/lang/annotation/Retention class platform
+java.lang.annotation -> package java.lang.annotation
+java.lang -> package java.lang
+java -> package java
+Deprecated -> type java/lang/Deprecated class platform
+Class<? extends Retention> -> type java/lang/Class class platform
+Retention -> type java/lang/annotation/Retention class platform
+Class<? extends java.sql.Connection> -> type java/lang/Class class platform
+java.sql.Connection -> type java/sql/Connection class platform
+java.sql -> package java.sql
+java -> package java
+# type p/U source p/U.java
+  interface type java/lang/annotation/Annotation class platform
+  method r()Ljava/lang/Class;
+  method c()Ljava/lang/Class;

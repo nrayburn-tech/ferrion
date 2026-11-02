@@ -1,0 +1,79 @@
+// What the corpus comparison found (observations 16 to 20 in semantic-names.md): where javac
+// keys local and anonymous classes (the `class` keyword, after modifiers, and the body's `{`)
+// and a compact constructor's parameters (the component's type); `Object`'s methods as members
+// of an interface; a local of one `switch` group in scope in the later ones; a type variable
+// bounded by another erased to that one's bound; and a member type of what a `new` creates,
+// named by a qualified `new`. javac compiles every file.
+//- set main 27
+//- file main p/Keys.java
+package p;
+
+import java.util.List;
+
+record Keys(String a, java.lang.String b, List<String> c, int[] d, String... e) {
+    Keys {
+        a.length();
+        b.length();
+        c.size();
+        int n = d.length + e.length;
+    }
+
+    void local() {
+        @Deprecated final class Local { int x; }
+        new Local().x = 1;
+        Runnable r = new Runnable() {
+            int y;
+            public void run() { y++; }
+        };
+    }
+}
+//- file main p/Members.java
+package p;
+
+interface Members {
+    default String name() {
+        return getClass().getName() + hashCode();
+    }
+
+    interface Sub extends Members {
+        default String other() { return toString(); }
+    }
+}
+//- file main p/Switches.java
+package p;
+
+class Switches {
+    int count(int k) {
+        switch (k) {
+            case 1:
+                int seen = 1;
+                break;
+            case 2:
+                seen = 2;
+                return seen;
+            default:
+        }
+        return 0;
+    }
+}
+//- file main p/Bounds.java
+package p;
+
+abstract class Bounds<T extends Enum<T>> {
+    abstract <X extends T> X first(X x);
+
+    void use() {
+        first(null);
+    }
+}
+//- file main p/Outer.java
+package p;
+
+class Outer<T> {
+    class Inner<U> { U u; }
+
+    static void make() {
+        Object i = new Outer<String>().new Inner<Integer>();
+        Object j = new Outer<String>() {}.new Inner<Integer>();
+    }
+}

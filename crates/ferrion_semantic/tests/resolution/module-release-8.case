@@ -1,0 +1,20 @@
+// A `module-info.java` in a source set at release 8, as guava has one (observation 16 in
+// semantic-names.md): before release 9 it declares no module, so the source set is in the
+// unnamed module and sees every exported package. javac at `--release 8` reports `modules are
+// not supported in -source 8` for module-info.java, and compiles p/U.java without it.
+//- set main 8
+//- file main module-info.java
+module m {
+    exports p;
+}
+//- file main p/U.java
+package p;
+
+import java.lang.annotation.Retention;
+
+@Deprecated
+@interface U {
+    Class<? extends Retention> r();
+
+    Class<? extends java.sql.Connection> c();
+}

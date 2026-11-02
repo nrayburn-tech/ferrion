@@ -227,6 +227,12 @@ fn module_view(reads: &mut Reads<'_>, set: SourceSetId) -> Result<ModuleView, Ca
     let Some(file) = reads.module_file(set)? else {
         return Ok(ModuleView::default());
     };
+    // Before release 9 there are no modules: javac rejects a module declaration (`modules are
+    // not supported in -source 8`), and a build that has one compiles it on its own, at a later
+    // release, while the rest of the source set is in the unnamed module.
+    if reads.release(file)? < 9 {
+        return Ok(ModuleView::default());
+    }
     let summary = reads.summary(file)?;
     let Some(module) = &summary.module else {
         return Ok(ModuleView::default());
