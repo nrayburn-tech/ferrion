@@ -131,19 +131,21 @@ fn filled_dots<'t>(
         call_link(f, root, Hugs::Lambdas);
         return;
     };
-    // Link `i`, the name only for the last.
+    // Link `i`, the name only for the last, whose group, if it has type arguments, goes in
+    // `typed`.
+    let typed = std::cell::Cell::new(None);
     let link = |f: &mut Formatter<'t>, i: usize| {
         if i + 1 == links.len() {
-            link_name(f, last);
+            typed.set(link_name(f, last));
         } else {
             link_after_receiver(f, links[i], Hugs::None);
         }
     };
-    // The links in `range` filled, each after a break, except the first when `first` is false.
-    let filled = |f: &mut Formatter<'t>, range: std::ops::Range<usize>, first: bool| {
+    // The links in `range` filled, each after a break but the first.
+    let filled = |f: &mut Formatter<'t>, range: std::ops::Range<usize>| {
         f.fill(|f| {
             for i in range.clone() {
-                if first || i != range.start {
+                if i != range.start {
                     f.fill_break(true);
                 }
                 link(f, i);
@@ -170,9 +172,9 @@ fn filled_dots<'t>(
                 link(f, t);
             });
             f.group_breaking_with(field, |f| f.soft_line());
-            filled(f, t + 1..links.len(), false);
+            filled(f, t + 1..links.len());
         }
-        None if attached => filled(f, 0..links.len(), false),
+        None if attached => filled(f, 0..links.len()),
         None => {
             f.fill(|f| {
                 f.node(root);
@@ -185,7 +187,15 @@ fn filled_dots<'t>(
     }
     indentation.end(f);
     if let Some(list) = ast::MethodCallExpr::cast(last).and_then(|c| c.arguments()) {
-        arguments(f, list.syntax(), Hugs::Lambdas);
+        match typed.get() {
+            // At +4 from the name's line, which is +4 from the dots' when it breaks.
+            Some(group) => Indentation::if_broken(f, group, |f| {
+                Indentation::if_broken(f, group, |f| {
+                    arguments(f, list.syntax(), Hugs::Lambdas);
+                });
+            }),
+            None => arguments(f, list.syntax(), Hugs::Lambdas),
+        }
     }
 }
 
@@ -256,20 +266,28 @@ fn is_type_name(name: &str) -> bool {
 /// Emits a link of a chain without its receiver: `.name(arguments)` or `.field`, its arguments
 /// hugging as `hugs` says.
 fn link_after_receiver<'t>(f: &mut Formatter<'t>, link: SyntaxNode<'t>, hugs: Hugs) {
-    link_name(f, link);
+    let typed = link_name(f, link);
     if link.kind() == K::MethodCallExpr
         && let Some(list) = ast::MethodCallExpr::cast(link).and_then(|c| c.arguments())
     {
-        arguments(f, list.syntax(), hugs);
+        match typed {
+            Some(group) => Indentation::if_broken(f, group, |f| arguments(f, list.syntax(), hugs)),
+            None => arguments(f, list.syntax(), hugs),
+        }
     }
 }
 
 /// Emits a link's `.`, type arguments, annotations, and name: everything after the receiver and
 /// before the arguments.
-fn link_name<'t>(f: &mut Formatter<'t>, link: SyntaxNode<'t>) {
+///
+/// A call's type arguments and name are a group, which returns: `.<A, B>name` on one line, or
+/// a line break before the name at +4, with the type arguments filled at +4 and the arguments
+/// at +4 from the name's line (observed).
+fn link_name<'t>(f: &mut Formatter<'t>, link: SyntaxNode<'t>) -> Option<u32> {
     let mut receiver = true;
     let mut previous = None;
-    for element in elements(link) {
+    let mut elements = elements(link).peekable();
+    while let Some(element) = elements.next() {
         match element {
             NodeOrToken::Node(child) if receiver && child.kind() != K::Annotation => {
                 receiver = false;
@@ -277,6 +295,24 @@ fn link_name<'t>(f: &mut Formatter<'t>, link: SyntaxNode<'t>) {
             NodeOrToken::Node(child) if child.kind() == K::Arguments => {}
             NodeOrToken::Token(token) if token.kind() == K::Dot => {
                 receiver = false;
+                if link.kind() == K::MethodCallExpr
+                    && let Some(&NodeOrToken::Node(list)) = elements.peek()
+                    && list.kind() == K::TypeArguments
+                {
+                    elements.next();
+                    let name: Vec<_> = elements.filter(|e| e.kind() != K::Arguments).collect();
+                    let group = f.start_group();
+                    f.token(token);
+                    Indentation::if_broken(f, group, |f| {
+                        type_arguments(f, list);
+                        f.soft_line();
+                        for element in name {
+                            emit(f, element);
+                        }
+                    });
+                    f.end();
+                    return Some(group);
+                }
                 f.token(token);
                 previous = Some(element);
             }
@@ -286,6 +322,29 @@ fn link_name<'t>(f: &mut Formatter<'t>, link: SyntaxNode<'t>) {
             }
         }
     }
+    None
+}
+
+/// A call's type arguments, `<A, B>`, filled.
+fn type_arguments<'t>(f: &mut Formatter<'t>, list: SyntaxNode<'t>) {
+    let parts: Vec<_> = elements(list).collect();
+    let [open, items @ .., close] = parts.as_slice() else {
+        // Not a list with both brackets.
+        for &part in &parts {
+            emit(f, part);
+        }
+        return;
+    };
+    emit(f, *open);
+    f.fill(|f| {
+        for &item in items {
+            emit(f, item);
+            if item.kind() == K::Comma {
+                f.fill_break(false);
+            }
+        }
+    });
+    emit(f, *close);
 }
 
 /// A call without a receiver, `foo(x)`, the root of a chain or on its own.
