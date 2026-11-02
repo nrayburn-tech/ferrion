@@ -787,6 +787,21 @@ RepositoryQueryMethodBenchmarks_BenchmarkParameters_jmhTypeAAAAAAAAAAAAAAAAAAAA
     .get(l_benchmarkparameters1_G);
 ```
 
+A call's type arguments stay with its dot. When `.<A, B>name(` doesn't fit, the name goes on the
+next line at +4, with its arguments at +4 from it, and type arguments that don't fit on their line
+fill at +4:
+
+```java
+legs =
+    this
+        .<ShipmentRoutingRegressionIT.LegRecord, QShipmentRoutingRegressionIT_LegRecord>
+            createList(
+                "legs",
+                ShipmentRoutingRegressionIT.LegRecord.class,
+                QShipmentRoutingRegressionIT_LegRecord.class,
+                PathInits.DIRECT2);
+```
+
 In a chain that breaks, the root's and the prefix's arguments are at +8, and a call of a short
 name, up to four characters, at the root keeps its only argument on its line when that argument
 fits on no line of its own:

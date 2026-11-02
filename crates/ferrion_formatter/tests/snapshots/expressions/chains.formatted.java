@@ -144,4 +144,31 @@ class Chains {
     ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOP
         .setupIterationMutexUpdater.get(l_benchmarkparameters1_G);
   }
+
+  // A call's type arguments stay with the dot, and the name breaks after them at +4.
+  void typeArguments() {
+    legs =
+        this
+            .<ShipmentRoutingRegressionIT.LegRecord, QShipmentRoutingRegressionIT_LegRecord>
+                createList(
+                    "legs",
+                    ShipmentRoutingRegressionIT.LegRecord.class,
+                    QShipmentRoutingRegressionIT_LegRecord.class,
+                    PathInits.DIRECT2);
+    legs =
+        this.<ShipmentRoutingRegressionIT.LegRecord, QShipmentRouti>createList(
+            "legs", ShipmentRoutingRegressionIT.LegRecord.class, PathInits.DIRECT2);
+    foo.bar()
+        .<ShipmentRoutingRegressionIT.LegRecord, QShipmentRoutingRegressionIT_LegRecordAAAAAA>
+            createList(
+                "legs",
+                ShipmentRoutingRegressionIT.LegRecord.class,
+                QShipmentRoutingRegressionIT_LegRecord.class,
+                PathInits.DIRECT2)
+        .baz();
+    this
+        .<ShipmentRoutingRegressionIT.LegRecord, QShipmentRoutingRegressionIT_LegRecord,
+            ShipmentRoutingRegressionIT.LegRecord2, ShipmentRoutingRegressionIT.LegRecord3>
+            createList("legs");
+  }
 }
