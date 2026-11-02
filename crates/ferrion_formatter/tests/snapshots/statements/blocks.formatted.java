@@ -83,6 +83,52 @@ class Blocks {
     }
   }
 
+  void blankLineBeforeTheBraceKeptWhenTheStatementGoesOn() {
+    try {
+      a();
+
+    } catch (E e) {
+      b(); // trailing
+
+    } finally {
+      c();
+    }
+    if (a) {
+      b();
+
+    } else if (c) {
+      d();
+
+    } else {
+      e();
+    }
+    do {
+      a();
+
+    } while (b);
+    try {
+
+    } catch (E e) {
+
+    }
+    if (a) {
+
+    } else {
+
+    }
+  }
+
+  void blankLineBeforeTheBraceAfterAComment() {
+    while (a) {
+      b(); // trailing, removed
+    }
+    while (a) {
+      b();
+      // on its own line, kept
+
+    }
+  }
+
   static {
   }
 

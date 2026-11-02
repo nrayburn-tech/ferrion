@@ -1,7 +1,7 @@
 //! Blocks: every `{ … }` of statements, whether it is a statement, a body of a statement, or the
 //! body of a method, constructor, initializer, or lambda.
 
-use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
+use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode, SyntaxToken};
 
 use super::{elements, line_break};
 use crate::document::IndentKind;
@@ -11,10 +11,12 @@ use crate::rules::comments::{self, has_comments_before};
 /// A block: its statements on their own lines at +2, and the `}` on a line of its own.
 ///
 /// Blank lines between statements are kept, at most one, and a blank line before the `}` is
-/// removed. Whether a blank line after the `{` is kept, and whether an empty block prints as `{}`
-/// or as `{` and `}` on two lines, depend on what the block belongs to (see [`Style`]). Comments
-/// in an otherwise empty block go on their own lines inside it, except a line comment on the
-/// `{`'s line, which stays there.
+/// removed, unless the statement goes on after the `}` (see [`continued`]) or a comment on a line
+/// of its own comes before it, as GJF keeps it. Whether a blank line after the `{` is kept, and
+/// whether an empty block prints as `{}` or as `{` and `}` on two lines, depend on what the block
+/// belongs to (see [`Style`]); one on two lines keeps a blank line between them where a blank
+/// line after the `{` is kept. Comments in an otherwise empty block go on their own lines inside
+/// it, except a line comment on the `{`'s line, which stays there.
 pub fn block<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     let style = Style::of(node);
     let mut first = true;
@@ -29,7 +31,20 @@ pub fn block<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                 if !first {
                     f.comments_before(token.id());
                     f.end();
-                    f.hard_line();
+                    if continued(token) && !has_comments_before(token) {
+                        f.line_break_before(token);
+                    } else {
+                        if !continued(token) && !comments::own_line_comment_before(token) {
+                            f.no_blank_line();
+                        }
+                        f.hard_line();
+                    }
+                } else if style.keep_blank_at_start
+                    && !style.keep_empty
+                    && !has_comments_before(token)
+                    && f.blank_line_before(token)
+                {
+                    f.blank_line();
                 } else if has_comments_before(token) {
                     f.indent(IndentKind::Block, |f| {
                         if !lbrace.is_some_and(comments::line_comment_after) {
@@ -56,6 +71,18 @@ pub fn block<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             }
         }
     }
+}
+
+/// Whether the statement goes on after `rbrace`, a block's `}`, on its line: `} catch`,
+/// `} finally`, `} else`, or a `do`'s `} while`. GJF keeps a blank line before such a `}`.
+fn continued(rbrace: SyntaxToken<'_>) -> bool {
+    rbrace
+        .next_non_trivia()
+        .is_some_and(|next| match next.kind() {
+            K::CatchKw | K::FinallyKw | K::ElseKw => true,
+            K::WhileKw => next.parent().kind() == K::DoStmt,
+            _ => false,
+        })
 }
 
 /// How a block's ends print, by what it belongs to, as observed in GJF.

@@ -19,6 +19,27 @@ pub(crate) fn has_comments_before(token: SyntaxToken<'_>) -> bool {
     false
 }
 
+/// Whether the last comment before `token` is on a line of its own, rather than trailing the code
+/// before it.
+pub(crate) fn own_line_comment_before(token: SyntaxToken<'_>) -> bool {
+    let mut previous = token.prev_token();
+    while let Some(t) = previous
+        && matches!(t.kind(), K::Whitespace | K::LineTerminator)
+    {
+        previous = t.prev_token();
+    }
+    let Some(comment) = previous.filter(|t| is_comment(t.kind())) else {
+        return false;
+    };
+    let mut previous = comment.prev_token();
+    while let Some(t) = previous
+        && t.kind() == K::Whitespace
+    {
+        previous = t.prev_token();
+    }
+    previous.is_none_or(|t| t.kind() == K::LineTerminator)
+}
+
 /// Whether the first thing after `token` other than whitespace is a block comment, which is then
 /// on `token`'s line.
 pub(crate) fn block_comment_after(token: SyntaxToken<'_>) -> bool {
