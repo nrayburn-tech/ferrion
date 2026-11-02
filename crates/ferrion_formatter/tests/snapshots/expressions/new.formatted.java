@@ -32,4 +32,48 @@ class New {
     throw new IllegalArgumentException(
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" + variable);
   }
+
+  // A chain on an anonymous class keeps its first link on the `}`, and the body is indented
+  // from the line the `new` starts on.
+  void chains() {
+    new Sorter(x) {
+      void get() {
+        run();
+      }
+    }.sort(0, len);
+    x =
+        new Sorter(x) {
+          void get() {
+            run();
+          }
+        }.sort(0, len).then(y);
+    new Sorter(x) {
+      void get() {
+        run();
+      }
+    }.sort(
+        argumentNumberOneAAAAAAAAAAAAAAAAAAA, argumentNumberTwoBBBBBBBBBBBBBBBBBB, cccccccccccccc);
+    new Sorter(x) {
+      void get() {
+        run();
+      }
+    }.sort(argumentNumberOneAAAAAAAAAAAAAAAAAAA)
+        .then(argumentNumberTwoBBBBBBBBBBBBBBBBBB)
+        .then(ccccccccccccc);
+    new Sorter(x) {
+      void get() {
+        run();
+      }
+    }.aaaaaaaaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ccccccccccccccccccccccccc
+        .ddddddddddd();
+    new Sorter(x) {}.sort(argumentNumberOneAAAAAAAAAAAAAAAAAAA)
+        .then(argumentNumberTwoBBBBBBBBBBBBBBBBBB)
+        .then(ccccccccccccc);
+    foo(
+        new Sorter(x) {
+          void get() {
+            run();
+          }
+        }.sort(0, len));
+  }
 }

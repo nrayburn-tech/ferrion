@@ -836,6 +836,20 @@ new Foo(
 };
 ```
 
+A chain on an anonymous class keeps its first link on the `}`, and the rest of the chain breaks
+as it would after a prefix, at +4 from the line the `new` starts on:
+
+```java
+new NameShuffler(comparator) {
+  void swap(int i, int j) {}
+}.sort(0, length);
+new Sorter(x) {
+  void get() {}
+}.sort(argumentNumberOneAAAAAAAAAAAAAAAAAAA)
+    .then(argumentNumberTwoBBBBBBBBBBBBBBBBBB)
+    .then(ccccccccccccc);
+```
+
 ### Arrays
 
 An array initializer stays on one line, or puts its elements on lines of their own at +2, with

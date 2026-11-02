@@ -54,20 +54,30 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     let last_is_call = links
         .last()
         .map_or(root_is_call, |l| l.kind() == K::MethodCallExpr);
+    // An anonymous class, `new Foo() {...}`, keeps the first link on its `}`, and is outside
+    // the chain's groups and indent, so its body is indented from the line it starts on
+    // (observed).
+    let body_root = root.kind() == K::NewExpr && root.children().any(|c| c.kind() == K::ClassBody);
     // `new Foo().bar(x)` and `"a".concat(x)` break like longer chains (observed).
-    let dotted_root = !matches!(
-        root.kind(),
-        K::NewExpr | K::LiteralExpr | K::ParenExpr | K::CastExpr
-    );
+    let dotted_root = body_root
+        || !matches!(
+            root.kind(),
+            K::NewExpr | K::LiteralExpr | K::ParenExpr | K::CastExpr
+        );
+    if body_root {
+        f.comments_before(root.first_token().id());
+        new_with(f, root, Hugs::None);
+    }
     if calls <= 1 && last_is_call && dotted_root {
-        filled_dots(f, root, &links);
+        filled_dots(f, root, &links, body_root);
         return;
     }
     // Everything up to a `.stream()` is a group of its own, kept on the first line if it fits
     // there, and otherwise broken before each of its dots (observed).
     let stream = links.iter().position(|&l| is_stream(l));
     let prefix = match stream {
-        Some(_) => 0,
+        Some(_) => usize::from(body_root),
+        None if body_root => 1,
         None => prefix_len(root, &links, calls),
     };
     f.start_group();
@@ -75,7 +85,9 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     if stream.is_some() {
         f.start_group();
     }
-    if root_is_call {
+    if body_root {
+        // Emitted above.
+    } else if root_is_call {
         // A short call's only argument is hugged: `when(a.b(` (observed).
         let short = ast::MethodCallExpr::cast(root)
             .and_then(|call| call.name())
@@ -103,19 +115,33 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
 
 /// A chain with one call, last: the root and the dots up to the call's name in a fill, then the
 /// call's arguments.
-fn filled_dots<'t>(f: &mut Formatter<'t>, root: SyntaxNode<'t>, links: &[SyntaxNode<'t>]) {
+///
+/// When `attached`, the root is already emitted, and the first link follows it on its line.
+fn filled_dots<'t>(
+    f: &mut Formatter<'t>,
+    root: SyntaxNode<'t>,
+    links: &[SyntaxNode<'t>],
+    attached: bool,
+) {
     let Some((&last, fields)) = links.split_last() else {
         call_link(f, root, Hugs::Lambdas);
         return;
     };
     let indentation = Indentation::start(f, IndentKind::Continuation);
     f.fill(|f| {
-        f.node(root);
+        let mut first = attached;
+        if !attached {
+            f.node(root);
+        }
         for &link in fields {
-            f.fill_break(true);
+            if !std::mem::take(&mut first) {
+                f.fill_break(true);
+            }
             link_after_receiver(f, link, Hugs::None);
         }
-        f.fill_break(true);
+        if !first {
+            f.fill_break(true);
+        }
         link_name(f, last);
     });
     indentation.end(f);
