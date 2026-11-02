@@ -268,6 +268,28 @@ pub fn module_sources(sets: &[SourceSet], set: &SourceSet) -> Vec<Vec<PathBuf>> 
         .collect()
 }
 
+/// The module path of a source set's modular compilation: its build's (or else its own
+/// classpath's entries), then each of the module paths of the source sets it reads from source,
+/// as their builds gave them: a module it reads from source requires the modules its own build
+/// put on its module path, which javac resolves from source too.
+pub fn module_path(sets: &[SourceSet], set: &SourceSet) -> Vec<PathBuf> {
+    let own = if set.module_path.is_empty() {
+        &set.classpath
+    } else {
+        &set.module_path
+    };
+    let mut path = own.clone();
+    let mut seen: HashSet<PathBuf> = path.iter().cloned().collect();
+    for dependency in closure(sets, set) {
+        for entry in &sets[dependency].module_path {
+            if seen.insert(entry.clone()) {
+                path.push(entry.clone());
+            }
+        }
+    }
+    path
+}
+
 /// The source path a source set is compiled with: the roots and generated sources of the source
 /// sets it depends on, then, for the same reason as [`class_path`], those of their dependencies it
 /// doesn't list.

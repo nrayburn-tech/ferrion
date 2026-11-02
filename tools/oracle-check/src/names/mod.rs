@@ -8,8 +8,8 @@
 //! `target/corpus/generated/<project>/<source set>`; each `module-info.java` is compiled on its
 //! own, in a modular compilation. Its output is cached by a hash of the inputs ([`oracle`]).
 //! Files javac reports language errors in are left out whole, and so are files it never analyzed
-//! (counted apart) and Lombok-annotated types; what processors report is kept from javac and
-//! counted, not a reason to leave a file out. The names in B2's part ([`compare`]) of the rest
+//! (counted apart) and Lombok-annotated types; what processors report is no language error, and
+//! is counted, not a reason to leave a file out. The names in B2's part ([`compare`]) of the rest
 //! are matched with Ferrion's by range and compared by key. Until Ferrion resolves names, [`ferrion`]
 //! has a stand-in with no results, and the report counts javac's side: files run, files left out
 //! by cause, and names by context and kind of symbol.
@@ -394,6 +394,7 @@ fn run_set(context: &Shared, sets: &[SourceSet], i: usize) -> Result<SetResult> 
             continue;
         }
         tally.module_declarations += u64::from(file.module);
+        tally.files_with_processor_errors += u64::from(file.processor_errors() > 0);
         if let Some(crash) = &file.crash {
             tally.excluded.crashes += 1;
             crashes.push((display, crash.clone()));

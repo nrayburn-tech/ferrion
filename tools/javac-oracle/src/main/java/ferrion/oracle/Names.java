@@ -1016,7 +1016,7 @@ final class Names {
     private boolean implicitlyTyped(VariableTree node) {
       Tree type = node.getType();
       return type == null
-          || type.getKind() == Tree.Kind.VAR_TYPE
+          || type.getKind().name().equals("VAR_TYPE") // by name: older JDKs have no VAR_TYPE
           || positions.getEndPosition(unit, type) < 0;
     }
 

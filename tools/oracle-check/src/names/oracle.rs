@@ -62,9 +62,24 @@ pub struct FileOutput {
     pub skipped: Option<String>,
 }
 
+/// The code of an error an annotation processor reports through its `Messager`: not a language
+/// error.
+pub const PROCESSOR_ERROR: &str = "compiler.err.proc.messager";
+
 impl FileOutput {
+    /// javac's language errors in the file: every error but those processors report.
     pub fn errors(&self) -> impl Iterator<Item = &Diagnostic> {
-        self.diagnostics.iter().filter(|d| d.is_error())
+        self.diagnostics
+            .iter()
+            .filter(|d| d.is_error() && d.code != PROCESSOR_ERROR)
+    }
+
+    /// The errors processors reported at the file.
+    pub fn processor_errors(&self) -> usize {
+        self.diagnostics
+            .iter()
+            .filter(|d| d.is_error() && d.code == PROCESSOR_ERROR)
+            .count()
     }
 }
 
@@ -115,8 +130,8 @@ pub struct SetOutput {
     /// Errors with no file, or in a file on the source path.
     #[serde(default)]
     pub diagnostics: Vec<OtherDiagnostic>,
-    /// Each processor that ran: the files it created and the errors it reported, which the
-    /// oracle keeps from javac.
+    /// Each processor that ran: the files it created, the errors it reported, and what it threw,
+    /// after which the oracle left it out.
     #[serde(default)]
     pub processor_runs: Vec<ProcessorRun>,
     /// The modular compilations' errors in files other than their `module-info.java`.
@@ -261,6 +276,7 @@ impl NamesOracle {
             Vec::new()
         };
         let hash = input_hash(
+            sets,
             set,
             &classpath,
             processor_path.as_deref(),
@@ -346,7 +362,9 @@ impl NamesOracle {
             for roots in &module_sources {
                 command.arg("--module-source").arg(joined(roots)?);
             }
-            command.arg("--module-path").arg(joined(module_path(set))?);
+            command
+                .arg("--module-path")
+                .arg(joined(&plan::module_path(sets, set))?);
         }
         command.arg(format!("@{}", list.display()));
         if std::env::var_os("FERRION_ORACLE_SHOW").is_some() {
@@ -388,16 +406,6 @@ impl NamesOracle {
     }
 }
 
-/// The module path of a source set's modular compilation: its build's, or else its own
-/// classpath's entries.
-fn module_path(set: &SourceSet) -> &[PathBuf] {
-    if set.module_path.is_empty() {
-        &set.classpath
-    } else {
-        &set.module_path
-    }
-}
-
 fn path_text(path: &Path) -> Result<&str> {
     path.to_str()
         .with_context(|| format!("{} is not valid UTF-8", path.display()))
@@ -410,6 +418,7 @@ fn joined(paths: &[PathBuf]) -> Result<String> {
 }
 
 fn input_hash(
+    sets: &[SourceSet],
     set: &SourceSet,
     classpath: &[PathBuf],
     processor_path: Option<&[PathBuf]>,
@@ -470,8 +479,8 @@ fn input_hash(
         }
     }
     if set.is_modular() {
-        for entry in module_path(set) {
-            field("module path", relative(entry).as_bytes());
+        for entry in plan::module_path(sets, set) {
+            field("module path", relative(&entry).as_bytes());
         }
     }
     for dir in sourcepath {
