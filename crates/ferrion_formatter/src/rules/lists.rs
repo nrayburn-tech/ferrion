@@ -27,7 +27,7 @@ use crate::format::Formatter;
 /// GJF fills a list whose items are all at most this wide: as many on a line as fit. Otherwise a
 /// list that doesn't fit on a line puts each item on its own (observed: up to 9 fills, from 10
 /// one per line, for arguments, array initializers, and annotations' arrays of values alike).
-const FILL_WIDTH: u32 = 9;
+pub(crate) const FILL_WIDTH: u32 = 9;
 
 /// What a delimited list is, which decides how it breaks.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -422,7 +422,7 @@ fn comment_on_line_before(token: SyntaxToken<'_>) -> bool {
 /// tells: its tokens' widths and the spaces between them. The scan stops once past the limit,
 /// so it costs at most a few tokens, however large the node. A comment or a token with a line
 /// break makes the node too wide.
-fn fits_in(node: SyntaxNode<'_>, limit: u32) -> bool {
+pub(crate) fn fits_in(node: SyntaxNode<'_>, limit: u32) -> bool {
     let mut total = 0;
     let mut previous: Option<SyntaxToken<'_>> = None;
     for token in node.tokens() {
