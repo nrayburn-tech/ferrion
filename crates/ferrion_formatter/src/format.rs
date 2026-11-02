@@ -442,11 +442,11 @@ impl<'t> Formatter<'t> {
             // A doc comment starts its line, as GJF prints it (observed).
             0 if token.kind() == SyntaxKind::DocComment => self.hard_line(),
             _ if joins => {}
+            // A space goes between code and a comment after it on its line, as GJF puts one
+            // (`f(x);// c` gives `f(x); // c`), except after a `(`, `.`, or `<`, where the space
+            // goes after the comment instead (`f( /* c */x)` gives `f(/* c */ x)`; observed).
             0 => {
-                if token
-                    .prev_token()
-                    .is_some_and(|t| t.kind() == SyntaxKind::Whitespace)
-                {
+                if token.prev_non_trivia().is_some() && !tight_before(token) {
                     self.space();
                 }
             }
@@ -482,9 +482,10 @@ impl<'t> Formatter<'t> {
         match breaks {
             0 if ends_line => self.line_owed = 1,
             0 => {
-                if token
-                    .next_token()
-                    .is_some_and(|t| t.kind() == SyntaxKind::Whitespace)
+                if tight_before(token)
+                    || token
+                        .next_token()
+                        .is_some_and(|t| t.kind() == SyntaxKind::Whitespace)
                 {
                     self.space();
                 }
@@ -553,8 +554,11 @@ impl<'t> Formatter<'t> {
                         VerbatimKind::Copy { to_end: false },
                     ));
                 } else {
-                    self.doc()
-                        .token(token.id(), trimmed.len() as u32, width(trimmed));
+                    // GJF measures a bare `//` as if it had the space after it, so one that ends
+                    // at the limit breaks its line (observed). Nothing follows a line comment on
+                    // its line, so the column it leaves doesn't matter.
+                    let measured = width(trimmed) + u32::from(trimmed == "//");
+                    self.doc().token(token.id(), trimmed.len() as u32, measured);
                 }
             }
             _ if text.is_empty() => return,
@@ -593,14 +597,27 @@ fn one_line_block_comment(token: SyntaxToken<'_>) -> bool {
     token.kind() == SyntaxKind::BlockComment && !token.text().contains(['\n', '\r'])
 }
 
+/// Whether `comment`, on the line of the code before it, follows a `(`, `.`, or `<`, which GJF
+/// puts it right after, with a space after it instead.
+fn tight_before(comment: SyntaxToken<'_>) -> bool {
+    comment.kind() == SyntaxKind::BlockComment
+        && comment.prev_non_trivia().is_some_and(|t| {
+            matches!(
+                t.kind(),
+                SyntaxKind::LParen | SyntaxKind::Dot | SyntaxKind::Lt
+            )
+        })
+}
+
 /// Whether `comment` follows an opening `(`, `[`, or `{`.
 fn after_opening_delimiter(comment: SyntaxToken<'_>) -> bool {
-    comment.prev_non_trivia().is_some_and(|t| {
-        matches!(
-            t.kind(),
-            SyntaxKind::LParen | SyntaxKind::LBracket | SyntaxKind::LBrace
-        )
-    })
+    comment.kind() == SyntaxKind::BlockComment
+        && comment.prev_non_trivia().is_some_and(|t| {
+            matches!(
+                t.kind(),
+                SyntaxKind::LParen | SyntaxKind::LBracket | SyntaxKind::LBrace
+            )
+        })
 }
 
 /// Whether a comment in a node of `kind` is inside an expression, a list, or a declarator,
