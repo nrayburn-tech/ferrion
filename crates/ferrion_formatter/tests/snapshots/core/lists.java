@@ -147,4 +147,17 @@ class Lists {
       2
     };
   }
+
+  // A comment on a line of its own before an item after the first puts narrow items one per
+  // line.
+  int[] ownLine = {
+    0x0D, 0x0A, 0x0D, // header
+    // Addresses
+    0x21, 0x22
+  };
+  void ownLineArguments() {
+    foo(1, 2, 3,
+        /* c */
+        4, 5);
+  }
 }
