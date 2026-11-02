@@ -5,12 +5,14 @@ use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 use super::{Indentation, elements, emit};
 use crate::document::IndentKind;
 use crate::format::Formatter;
+use crate::rules::lists::{FILL_WIDTH, fits_in};
 use crate::rules::variables::assigned_value;
 
 /// A run of operators of one precedence, `a + b - c`, as one group: the operands stay on one
 /// line, or each operator starts a line, all at once, +4 from the first operand. Operators of
 /// higher precedence in an operand are a group of their own, decided after this one, so
-/// `a + b * c` breaks before the `+` first.
+/// `a + b * c` breaks before the `+` first. When every operand is at most [`FILL_WIDTH`] wide,
+/// the run is a fill instead, each operator breaking only if what follows it doesn't fit.
 ///
 /// The run is a left-nested spine of `BinaryExpr`s, walked in a loop rather than by recursion,
 /// so a long run of `+` nests no deeper than one.
@@ -25,37 +27,50 @@ pub fn binary<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         spine.push(lhs);
         leftmost = lhs.first_child();
     }
-    f.start_group();
-    let indentation = Indentation::start(f, IndentKind::Continuation);
-    let mut first = true;
-    for &binary in spine.iter().rev() {
-        let mut seen_lhs = false;
-        let mut seen_op = false;
-        for element in elements(binary) {
-            match element {
-                NodeOrToken::Node(child) if !seen_lhs => {
-                    seen_lhs = true;
-                    if first {
-                        f.node(child);
-                        first = false;
+    // Operands all at most `FILL_WIDTH` wide fill, as many on a line as fit (observed).
+    let fill = std::iter::once(leftmost)
+        .chain(spine.iter().map(|b| b.children().nth(1)))
+        .all(|operand| operand.is_some_and(|o| fits_in(o, FILL_WIDTH)));
+    let body = |f: &mut Formatter<'t>| {
+        let indentation = Indentation::start(f, IndentKind::Continuation);
+        let mut first = true;
+        for &binary in spine.iter().rev() {
+            let mut seen_lhs = false;
+            let mut seen_op = false;
+            for element in elements(binary) {
+                match element {
+                    NodeOrToken::Node(child) if !seen_lhs => {
+                        seen_lhs = true;
+                        if first {
+                            f.node(child);
+                            first = false;
+                        }
                     }
-                }
-                NodeOrToken::Token(op) => {
-                    if !seen_op {
-                        f.line();
-                        seen_op = true;
+                    NodeOrToken::Token(op) => {
+                        if !seen_op {
+                            if fill {
+                                f.fill_break(false);
+                            } else {
+                                f.line();
+                            }
+                            seen_op = true;
+                        }
+                        f.token(op);
                     }
-                    f.token(op);
-                }
-                NodeOrToken::Node(rhs) => {
-                    f.space();
-                    f.node(rhs);
+                    NodeOrToken::Node(rhs) => {
+                        f.space();
+                        f.node(rhs);
+                    }
                 }
             }
         }
+        indentation.end(f);
+    };
+    if fill {
+        f.fill(body);
+    } else {
+        f.group(body);
     }
-    indentation.end(f);
-    f.end();
 }
 
 /// The precedence of a binary operator, higher binding tighter (JLS 15.7). `>>` and `>>>` are runs

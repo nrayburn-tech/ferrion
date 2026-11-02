@@ -24,4 +24,14 @@ class Binary {
         || entryTotal == 2 * ((maxEntriesPerBucket + 1) / 2); // when an entry sits on a split
     x = ++a + --b - a++ - b-- + - -c + + +d - -e + ~f + (!g ? 1 : 0);
   }
+
+  // Operands all at most 9 wide fill, as many on a line as fit.
+  void fill() {
+    String label = (p.text() + " " + p.text() + " " + p.text() + " " + p.text() + " " + p.text() + "-b " + p.text() + "-b " + p.text() + "-b " + p.text() + "-b");
+    x = aaaaaaaaa + bbbbbbbbb + ccccccccc + ddddddddd + eeeeeeeee + fffffffff + ggggggggg + hhhhhhhhh + iiiiiiiii + jjjjjjjjj;
+    x = aaaaaaaaa + bbbbbbbbb + ccccccccc + ddddddddd + eeeeeeeee + fffffffff + ggggggggg + hhhhhhhhh + iiiiiiiii + jjjjjjjjjj;
+    x = aaaaaaaaa && bbbbbbbbb && ccccccccc && ddddddddd && eeeeeeeee && fffffffff && ggggggggg && hhhhhhhhh && iiiiiiiii;
+    x = a * b + bbbbbbbbb + ccccccccc + ddddddddd + eeeeeeeee + fffffffff + ggggggggg + hhhhhhhhh + iiiiiiiii + jjjjjjjjj;
+    foo(aaaaaaaaa + bbbbbbbbb + ccccccccc + ddddddddd + eeeeeeeee + fffffffff + ggggggggg + hhhhhhhhh + iiiiiiiii + jjjjjjjjj, b);
+  }
 }
