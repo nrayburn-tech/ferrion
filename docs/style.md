@@ -778,6 +778,15 @@ new Foo()
     .bar(argumentNumberOneAAAAAAAAAAA, argumentNumberTwoBBBBBBBBBBBBB, argumentNumberThreeCCCC);
 ```
 
+The exception is a field after a type's name: when the dot before the field breaks, so does the
+one after it.
+
+```java
+RepositoryQueryMethodBenchmarks_BenchmarkParameters_jmhTypeAAAAAAAAAAAAAAAAAAAA
+    .setupIterationMutexUpdater
+    .get(l_benchmarkparameters1_G);
+```
+
 In a chain that breaks, the root's and the prefix's arguments are at +8, and a call of a short
 name, up to four characters, at the root keeps its only argument on its line when that argument
 fits on no line of its own:
