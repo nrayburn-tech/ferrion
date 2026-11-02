@@ -1,11 +1,10 @@
 // Simple and qualified expression names (JLS 6.5.6): locals shadow fields; a field of an
 // enclosing class, declared or inherited, innermost class first; then a single-static import,
 // then a static-import-on-demand. An inherited field wins over a single-static import of the
-// same name, and a single-static import over an on-demand one (observation
-// "static-import-and-inherited-field"). A superclass's private field isn't inherited, even in
-// the same top-level class: `x` in p/Outer.java is `Outer.x` ("private-members"). `e.f` is
-// looked up in `e`'s declared type; what needs an expression's type is left to B3. javac
-// compiles every file.
+// same name, and a single-static import over an on-demand one (observation 12 in
+// semantic-names.md). A superclass's private field isn't inherited, even in the same top-level
+// class: `x` in p/Outer.java is `Outer.x` (observation 13). `e.f` is looked up in `e`'s
+// declared type; what needs an expression's type is left to B3. javac compiles every file.
 //- set main 27
 //- file main q/C.java
 package q;

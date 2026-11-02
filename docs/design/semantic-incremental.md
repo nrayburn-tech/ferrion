@@ -321,6 +321,24 @@ files and drops the rest after use; the CLI drops each file's after its rules ha
 Names in declarations (W4) are kept the same way: `run_batch` drops each file's after its callback
 has run. Kept for every lucene file, they took 57 MB, more than the summaries.
 
+As built in W5, a file's body result is a derived entry like its names in declarations
+(`ferrion_semantic::body`, `Snapshot::body_names`): its scopes are the walk's and aren't kept, so
+the result is the resolved names, by `NodeId` of the tree they were resolved on with their
+ranges, and the local and anonymous classes they declare, each with a type entry, supertypes,
+and member types. It reads the file's tree (its input, by version) and its file scope, and
+project symbols only through `Reads`, as type entries do: the package entries of the names it
+looks up by name (`Dep::PackageType`, so a new type reaches only the bodies that look its name
+up), and the supertypes, member types, and type entries of the types whose members it looks up.
+A body edit gives a new tree and summary, the summary comes out equal, and only that file's body
+result is computed again. `run_batch` computes each file's after its names in declarations, and
+drops both after its callback; it holds the file's tree meanwhile, so that with the tree cache
+too small to keep it, the file is parsed once for both.
+
+A lookup in the walk is a map read, whatever the nesting: each scope's declarations are bound in
+maps by name, innermost last, and unbound when the walk leaves the node that opened it.
+A type's fields and methods are looked up by name, its supertypes' first, by a loop, and kept for
+the rest of the file's walk, as are the simple type names resolved in each class around a scope.
+
 ### Trees
 
 Trees are an input-derived cache, not a layer: computed from a file's text, used by the summary and
@@ -340,8 +358,8 @@ about 360 MB allocated).
   runs on the calling thread. Source sets are processed together, so a dependent source set's
   summaries exist before its dependents' bodies run. `Snapshot::run_batch` runs the summary,
   package table, and type entry phases (`Snapshot::run_symbols`, which a language server runs
-  after an edit), then, per file in reverse order, its names in declarations and a callback; W5
-  adds the names in bodies.
+  after an edit), then, per file in reverse order, its names in declarations and in bodies and a
+  callback.
 - **Language server:** a writer (the message loop) applies edits and bumps the revision; requests
   run on a pool and hold `Arc`s to what they read. A request started at revision N that sees N+1
   stops and is retried or answered with "content modified", as LSP allows.
@@ -441,6 +459,64 @@ again, then undone the same way, three times each:
 Nearly all of each edit's time is verifying what didn't change: 5,968 summaries, about 3,700
 package entries, 8,800 supertypes, 9,400 member types, and 8,700 type entries.
 
+### With body names (W5)
+
+Measured after W5 on lucene through its lock file, as W4 was: 79 source sets, 5,968 files,
+50.3 MB, with its jars and JDK 27's platform API. A cold run is `run_batch`, now resolving every
+file's names in bodies too: 1,354,817 names, and 2,900 local and anonymous classes. Release
+build, Apple M1 Pro, on the shared machine (load averages 5 to 9).
+
+| Cold run | 1 thread | 4 | 8 | Kept after | Peak |
+| --- | --- | --- | --- | --- | --- |
+| trees dropped (cache of 0 bytes) | 3.4 s | 1.9 s | 2.4 s | 83 MB | 95 MB |
+| tree cache 256 MB | | 1.7 s | | 327 MB | 329 MB |
+
+The body phase alone, on one thread with every tree cached, takes 1.16 s (0.9 µs a name), and
+0.9 s on four threads: it scales worse than the phases before it, on the shared machine, and is
+mostly hashing and allocation, the parse of the summary phase aside. Before the walk looked
+members up by name and its resolver kept the type names it had resolved, it took 1.5 s; before
+the batch held each file's tree for both kinds of names, a cold run with trees dropped parsed
+every file three times (17,904 parses, 4.4 s on one thread). The 83 MB kept are W4's 79 MB and
+the names bodies interned.
+
+Body results kept for every file would be large: with the project symbols' 78 MB, every file's
+names in declarations and in bodies took 214 MB, 137 MB of names, against 50 MB of text. So the
+batch drops each file's after its callback, and a language server keeps them for open files
+only, as planned.
+
+After a cold run on four threads, with every file's body names then asked for and kept, the edit
+target was `lucene/search/AbstractKnnVectorQuery.java` (the first file of the largest directory
+that has a local variable to rename; W4's target has none). Each edit was made, everything
+project-wide brought up to date (`run_symbols` on four threads), and the file's names resolved
+(`file_names`), then undone the same way, three times each. Then every file's body names were
+asked for again, to see which the edit reached:
+
+| Edit | Time | Work | Every file's body names then |
+| --- | --- | --- | --- |
+| The same text again | 24 to 28 ms | 1 parse and summary (cut off); its body names computed and cut off; the rest verified | 15 to 21 ms, none other computed |
+| Statement added to a method body | 20 to 27 ms | the same, its body names changed | 17 to 21 ms, none other computed |
+| Local variable renamed | 25 to 29 ms | the same | 17 to 21 ms, none other computed |
+| Method renamed | 25 to 28 ms | 1 summary changed; 3 type entries computed, 1 changed | 18 to 22 ms, 12 other files' computed, 8 of them cut off |
+| Top-level class added | 25 to 27 ms | also the new type's entries | 16 to 21 ms, none other computed |
+| `implements java.lang.Cloneable` added | 21 to 27 ms | 7 supertypes computed, 1 changed; 1 type entry changed | 20 to 23 ms, 12 other files' computed, 11 of them cut off |
+
+A new top-level type reaches no other file's body names, since none looks its name up. A renamed
+method or a new supertype reaches the bodies that read the type's entry: those of its file's
+users and subclasses. Nearly all of each edit's time is still verifying what didn't change, as
+after W4.
+
+Cancellation, at 5%, 10%, ... 95% of a cold run on four threads, with the body phase from about
+half way: the setter returned in 1 to 5 µs, and the run stopped in a median of 0.10 ms (0.18 ms
+with trees dropped); the slowest three took 0.2, 1.6, and 3.1 ms (1.6, 2.8, and 60 ms with trees
+dropped, the last a parse in flight in the body phase, which doesn't poll). The walk polls every
+1,024 tokens.
+
+`ProjectInput::from_project` with real `TypeInputs` (lucene's project model, with the JDKs it
+names): `Project::load` took 6 ms, `TypeInputs::open` 52 ms, with one warning (a manifest
+`Class-Path` entry of an opennlp jar that doesn't exist), and `from_project` 193 ms, reading
+5,968 files into 79 source sets with 490 classpath entries, none skipped. A cold `run_batch` of
+that input on four threads took 1.7 s and kept 326 MB with the default tree cache.
+
 ## Checking the engine
 
 A dependency the engine fails to record would make it reuse a stale result. The check is
@@ -453,17 +529,22 @@ differential:
 
   As built, `ferrion_semantic::invariants::check_edits` does this for summaries, package
   tables, and, from W4, each file's type entries (with their supertypes and member types) and
-  names in declarations, compared as text with a fresh engine's, on a project of two source sets
-  on the stand-in platform, with edits chosen from bytes: a fragment inserted at a token
-  (supertypes, member types, and imports among them), a token deleted or renamed, a statement
-  added to a body, the same text set again, a file added or removed, and a release changed. After
-  each edit it asks only some questions, chosen from the bytes, so that entries go unverified
-  across several revisions, and checks each entry's stored fingerprint against its value. The tests run it from seeds, with a batch at the
-  old revision running while each edit lands, and with a deeply nested file; the
-  `semantic_edits` fuzz target runs it on fuzzer-chosen bytes, from seeds of small files of each
-  kind rather than corpus files, whose licenses vary. Leaving out one recorded dependency (a
-  file's top-level part, read by the package table) makes each of the three tests fail, and so
-  does leaving out the one a lookup by name records (W4).
+  names in declarations, and from W5 its names in bodies and the local classes they declare,
+  compared as text with a fresh engine's, on a project of two source sets on the stand-in
+  platform, with edits chosen from bytes: a fragment inserted at a token (supertypes, member
+  types, imports, locals, pattern bindings, and local and anonymous classes among them), a token
+  deleted or renamed, a statement added to a body, the same text set again, a file added or
+  removed, and a release changed. After each edit it asks only some questions, chosen from the
+  bytes, so that entries go unverified across several revisions, and checks each entry's stored
+  fingerprint against its value. The tests run it from seeds, with a batch at the old revision
+  running while each edit lands, and with a deeply nested file; the `semantic_edits` fuzz target
+  runs it on fuzzer-chosen bytes, from seeds of small files of each kind rather than corpus
+  files, whose licenses vary. Leaving out one recorded dependency (a file's top-level part, read
+  by the package table) makes each of the three tests fail, and so does leaving out the one a
+  lookup by name records (W4). Leaving out a body's read of a type's entry for its methods (W5)
+  makes the engine test of a renamed method fail, but not the seeded edits, which rarely rename
+  a member that another file's body calls; the fuzz target ran 28,883 inputs in five minutes
+  without a failure.
 - **Corpus:** `oracle-check` runs the comparison with javac twice, once from a cold engine and once
   after replaying each file as an edit, and the results must be identical.
 

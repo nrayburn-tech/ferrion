@@ -3,9 +3,9 @@
 // declaration, in its own body, and has its own members and supertypes; an anonymous class's
 // fields, declared or inherited, shadow the enclosing method's locals; a local record reads an
 // enclosing local, and javac reports `non-static variable x cannot be referenced from a static
-// context` for it rather than finding the static field `x` (observations "local-types" and
-// "local-record-and-enclosing-local"). javac compiles every file but p/Records.java, which is in
-// a source set of its own.
+// context` for it rather than finding the static field `x` (observations 15 and 14 in
+// semantic-names.md). javac compiles every file but p/Records.java, which is in a source set
+// of its own.
 //- set main 27
 //- set records 27
 //- file main p/Types.java

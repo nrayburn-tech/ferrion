@@ -1,6 +1,6 @@
 // Pattern bindings by the flow-scoping rules of JLS 6.3.1 and 6.3.2, with a field `s` that every
-// use of `s` outside a binding's scope finds instead (observation "pattern-bindings"). javac
-// compiles every file.
+// use of `s` outside a binding's scope finds instead (observation 10 in semantic-names.md).
+// javac compiles every file.
 //- set main 27
 //- file main p/Patterns.java
 package p;
