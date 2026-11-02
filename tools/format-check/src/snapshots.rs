@@ -26,8 +26,8 @@ const EXPECTED: &str = ".formatted.java";
 const NOT_GJF: &[(&str, &str)] = &[
     (
         "core/comments-doc-text",
-        "a comment's text doesn't change: GJF adds a star to a doc comment's lines without one \
-         (docs/style.md)",
+        "a block comment's text doesn't change: GJF adds a star to a doc comment's lines without \
+         one (docs/style.md)",
     ),
     (
         "core/copied-text",

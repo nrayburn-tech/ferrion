@@ -15,6 +15,13 @@ class A {
   /* @formatter:off */ static   public   int   e; /* @formatter:on */
 
   static /* @formatter:on */ public int f;
+
+  //@formatter:off
+  int   g; //without a space
+  //@formatter:on
+  //@formatter:on without an off
+  //ferrion-disable-next some-rule -- a reason
+  int h; //with a space
 }
 
 // An `off` without an `on` runs to the end of the file.

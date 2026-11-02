@@ -346,7 +346,9 @@ line breaks:
 The width of a trailing comment counts toward its line, as observed in GJF.
 
 `//` comments are never wrapped and their text never changes, apart from trailing whitespace,
-which is removed. Block comments that span lines are re-indented (see [Copied
+which is removed, and the space GJF puts after `//` when text follows it directly (docs/style.md,
+"General"), which is added: the `//` is emitted as a token of its own, then a space, then the
+rest copied. Block comments that span lines are re-indented (see [Copied
 text](#copied-text)). Formatter markers and `ferrion-disable*` comments, found by their text, are
 copied exactly.
 

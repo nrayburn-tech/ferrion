@@ -25,7 +25,16 @@ differences` checks against GJF and Ferrion both.
   `*`. Otherwise the later lines keep their indentation relative to each other, the least
   indented at the comment's column, not counting empty lines. A doc comment (`/**`) aligns the
   stars it has whatever its other lines are, and moves those by as much as its least indented
-  star.
+  star. A comment's text doesn't change, except that a line comment gets a space after its `//`
+  when text follows it directly, as GJF does: `//x` becomes `// x`, and `//-----` becomes
+  `// -----`. `//` alone, `///`, `////`, and a `//` followed by a tab are left alone, and so are
+  `//noinspection` and `//$NON-NLS-1$`, which tools read.
+
+  ```java
+  // TODO fix
+  ///without a space
+  //noinspection unchecked
+  ```
 - **Modifiers** are reordered within each run of adjacent keyword modifiers into
   `public protected private abstract default static final sealed non-sealed transient volatile
   synchronized native strictfp`. Annotations stay where they are.
@@ -40,8 +49,13 @@ differences` checks against GJF and Ferrion both.
 - **Disable regions:** GJF doesn't recognize the markers and formats the code between them;
   Ferrion copies it (SCOPE.md). Case: `formatter-off`.
 - **A doc comment's lines without a star** stay without one, moved as far as its stars. GJF
-  rewrites the comment with a star on every line, an empty line included (comment text never
-  changes, SCOPE.md). Case: `comments-doc-text`.
+  rewrites the comment with a star on every line, an empty line included. Ferrion doesn't change
+  a block comment's text (SCOPE.md). Case: `comments-doc-text`.
+- **Directives keep their `//`:** formatter markers (`//@formatter:off`), `ferrion-disable*`
+  suppression comments, and the comments in a disable region get no space after their `//`,
+  which GJF adds. A `//noinspection` or `//$NON-NLS-1$` trailing some statements, such as a local
+  variable or an assignment, gets one in GJF, and keeps none in Ferrion wherever it is. Case:
+  `regions`.
 - **Long `//` comments** are left as they are, past the column limit. GJF 2.0.0 wraps one that
   goes over onto a new `//` line (SCOPE.md: `//` comments are not wrapped). Case: `line-comment`.
 

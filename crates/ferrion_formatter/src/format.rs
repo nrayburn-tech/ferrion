@@ -523,14 +523,51 @@ impl<'t> Formatter<'t> {
             }
             SyntaxKind::LineComment | SyntaxKind::DocLineComment => {
                 let trimmed = trim_end(text);
-                self.doc()
-                    .token(token.id(), trimmed.len() as u32, width(trimmed));
+                if adds_space_after_slashes(trimmed) {
+                    // The `//`, a space, then the rest of the comment, copied.
+                    let start = token.span().start;
+                    self.doc().token(token.id(), 2, 2);
+                    self.doc.space();
+                    self.doc.verbatim(copied(
+                        self.tree.text(),
+                        start + 2,
+                        start + trimmed.len() as u32,
+                        VerbatimKind::Copy { to_end: false },
+                    ));
+                } else {
+                    self.doc()
+                        .token(token.id(), trimmed.len() as u32, width(trimmed));
+                }
             }
             _ if text.is_empty() => return,
             _ => self.doc().token(token.id(), text.len() as u32, width(text)),
         }
         self.comment_break = false;
     }
+}
+
+/// Whether a space goes after the `//` of `comment`, a line comment without its trailing
+/// whitespace, as GJF puts one (docs/style.md, "General"): when the `//` is followed by text
+/// that doesn't start with whitespace or another `/`. GJF leaves IntelliJ's `noinspection` and
+/// Eclipse's `$NON-NLS-n$` without one, and Ferrion also leaves its own directives, formatter
+/// markers and `ferrion-disable*` comments, as written.
+pub(crate) fn adds_space_after_slashes(comment: &str) -> bool {
+    let Some(rest) = comment.strip_prefix("//") else {
+        return false;
+    };
+    let Some(first) = rest.chars().next() else {
+        return false;
+    };
+    let nls = rest
+        .strip_prefix("$NON-NLS-")
+        .is_some_and(|n| n.starts_with(|c: char| c.is_ascii_digit()));
+    !matches!(first, ' ' | '\t' | '\x0c' | '/')
+        && !rest.starts_with("noinspection")
+        && !nls
+        && !rest.starts_with("ferrion-disable")
+        && !rest.starts_with("ferrion-enable")
+        && !rest.contains(regions::OFF)
+        && !rest.contains(regions::ON)
 }
 
 /// Whether the next token after `token` other than whitespace and line terminators is a comment.

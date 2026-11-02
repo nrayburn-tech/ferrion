@@ -78,6 +78,22 @@ fn a_lost_or_changed_comment_is_reported() {
         "class A {} // c\n/* a\nb */\n",
     )
     .unwrap();
+    // So may the space after a line comment's `//`, but only where the formatter adds one.
+    check("class A {} //c\n", "class A {} // c\n").unwrap();
+    assert_eq!(
+        property(
+            "class A {} //noinspection c\n",
+            "class A {} // noinspection c\n"
+        ),
+        Property::Comments
+    );
+    assert_eq!(
+        property("class A {} // c\n", "class A {} //c\n"),
+        Property::Comments
+    );
+    // A disable region's comments are copied.
+    let region = "// @formatter:off\nclass A {} //c\n";
+    check(region, region).unwrap();
 }
 
 #[test]

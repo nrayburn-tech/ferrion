@@ -122,9 +122,10 @@ pub struct Verbatim {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum VerbatimKind {
-    /// Copied as written, apart from line terminators, which become the file's: a text block, or
-    /// a disable region. `to_end` marks a region that runs to the end of the file, whose text
-    /// ends the output as written, with no line ending added.
+    /// Copied as written, apart from line terminators, which become the file's: a text block, a
+    /// disable region, or a line comment's text after the space added after its `//`. `to_end`
+    /// marks a region that runs to the end of the file, whose text ends the output as written,
+    /// with no line ending added.
     Copy { to_end: bool },
     /// A block comment, its later lines re-indented to the column it starts at.
     Comment,
