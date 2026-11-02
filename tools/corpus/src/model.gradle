@@ -1,23 +1,46 @@
 // Init script used by `corpus lock`. Adds a `ferrionCorpusModel` task to every project, which
-// writes the project's source sets and resolved compile classpaths to a JSON file in the directory
-// named by the FERRION_CORPUS_OUT environment variable.
+// writes the project's source sets, their resolved compile classpaths and annotation processor
+// paths, and how each is compiled, to a JSON file in the directory named by the
+// FERRION_CORPUS_OUT environment variable. The task runs after every source set's compile task,
+// so the source roots other tasks generate exist when it lists them.
 
 import groovy.json.JsonOutput
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 
 allprojects { p ->
-    p.tasks.register('ferrionCorpusModel') {
+    def model = p.tasks.register('ferrionCorpusModel') {
         doLast {
             def sourceSets = p.extensions.findByName('sourceSets')
             if (sourceSets == null) {
                 return
             }
             def model = [path: p.path, dir: p.projectDir.absolutePath, sourceSets: []]
+            // A configuration's artifacts, as classpath entries.
+            def entries = { configuration ->
+                def found = []
+                configuration.incoming.artifactView { lenient(false) }.artifacts.each { a ->
+                    def id = a.id.componentIdentifier
+                    if (id instanceof ProjectComponentIdentifier) {
+                        // The test fixtures variant's capability is the project's name plus
+                        // `-test-fixtures`; a project whose own name ends that way is still `main`.
+                        def testFixtures = a.variant.capabilities.any { it.name == id.projectName + '-test-fixtures' }
+                        found << [project: id.projectPath, sourceSet: testFixtures ? 'testFixtures' : 'main']
+                    } else if (id instanceof ModuleComponentIdentifier) {
+                        found << [group: id.group, module: id.module, version: id.version, file: a.file.absolutePath]
+                    } else {
+                        found << [file: a.file.absolutePath]
+                    }
+                }
+                found
+            }
             sourceSets.each { s ->
                 def compile = p.tasks.findByName(s.compileJavaTaskName)
                 def release = compile?.options?.release?.getOrNull()
-                if (release == null) {
+                // The compiler arguments, with those of argument providers.
+                def args = compile == null ? [] : compile.options.allCompilerArgs.collect { it.toString() }
+                def releaseFlag = release != null || args.contains('--release')
+                if (release == null && !releaseFlag) {
                     release = compile?.sourceCompatibility
                 }
 
@@ -29,31 +52,28 @@ allprojects { p ->
                         classpath << [project: p.path, sourceSet: other.name]
                     }
                 }
-
-                def configuration = p.configurations.getByName(s.compileClasspathConfigurationName)
-                configuration.incoming.artifactView { lenient(false) }.artifacts.each { a ->
-                    def id = a.id.componentIdentifier
-                    if (id instanceof ProjectComponentIdentifier) {
-                        // The test fixtures variant's capability is the project's name plus
-                        // `-test-fixtures`; a project whose own name ends that way is still `main`.
-                        def testFixtures = a.variant.capabilities.any { it.name == id.projectName + '-test-fixtures' }
-                        classpath << [project: id.projectPath, sourceSet: testFixtures ? 'testFixtures' : 'main']
-                    } else if (id instanceof ModuleComponentIdentifier) {
-                        classpath << [group: id.group, module: id.module, version: id.version, file: a.file.absolutePath]
-                    } else {
-                        classpath << [file: a.file.absolutePath]
-                    }
-                }
+                classpath.addAll(entries(p.configurations.getByName(s.compileClasspathConfigurationName)))
+                def processors = p.configurations.findByName(s.annotationProcessorConfigurationName)
+                def processorOutput = compile?.options?.generatedSourceOutputDirectory?.getAsFile()?.getOrNull()
 
                 model.sourceSets << [
                     name: s.name,
                     release: release?.toString(),
-                    sourceRoots: s.java.srcDirs.findAll { it.isDirectory() }.collect { it.absolutePath },
+                    releaseFlag: releaseFlag,
+                    compilerArgs: args,
+                    sourceRoots: s.java.srcDirs.findAll { it.isDirectory() && it != processorOutput }.collect { it.absolutePath },
+                    buildDir: p.layout.buildDirectory.get().asFile.absolutePath,
                     classpath: classpath,
+                    processorPath: processors == null ? [] : entries(processors),
                 ]
             }
             def name = p.path == ':' ? 'root' : p.path.substring(1).replace(':', '_')
             new File(System.getenv('FERRION_CORPUS_OUT'), name + '.json').text = JsonOutput.toJson(model)
+        }
+    }
+    p.plugins.withType(JavaBasePlugin) {
+        model.configure { task ->
+            p.extensions.getByName('sourceSets').each { s -> task.dependsOn(s.compileJavaTaskName) }
         }
     }
 }

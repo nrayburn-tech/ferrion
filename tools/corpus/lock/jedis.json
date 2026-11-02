@@ -1,5 +1,5 @@
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "commit": "eb8cd653e0400f30337e6cd927459d995cd8f5ba",
   "jdk": 21,
   "modules": [
@@ -9,6 +9,7 @@
         {
           "name": "main",
           "javaRelease": 8,
+          "platform": "jdk",
           "sourceRoots": [
             "src/main/java"
           ],
@@ -54,6 +55,7 @@
         {
           "name": "test",
           "javaRelease": 8,
+          "platform": "jdk",
           "sourceRoots": [
             "src/test/java"
           ],

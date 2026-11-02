@@ -1,7 +1,9 @@
 //! Resolving Gradle projects.
 //!
-//! An init script adds a task to every Gradle project that writes its source sets and resolved
-//! compile classpaths as JSON. Nothing is compiled.
+//! An init script adds a task to every Gradle project that writes its source sets, their resolved
+//! compile classpaths and annotation processor paths, and their compile tasks' options as JSON.
+//! The task runs after every source set's compile task, so roots that other tasks generate
+//! sources into exist.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -11,7 +13,10 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 
 use crate::Dirs;
-use crate::lock::{ClasspathEntry, Jars, Module, SourceSet, parse_java_version, relative, run};
+use crate::lock::{
+    ClasspathEntry, Jars, Module, PlatformKind, SourceSet, compile_options, javac_options,
+    jdk_modules, parse_java_version, relative, release_options, run,
+};
 
 const INIT_SCRIPT: &str = include_str!("model.gradle");
 
@@ -27,9 +32,16 @@ struct GradleProject {
 #[serde(rename_all = "camelCase")]
 struct GradleSourceSet {
     name: String,
+    /// `options.release`, or else the source compatibility.
     release: Option<String>,
+    /// Whether javac is given `--release`: `options.release`, or in the compiler arguments.
+    release_flag: bool,
+    /// The compile task's compiler arguments, those of argument providers included.
+    compiler_args: Vec<String>,
     source_roots: Vec<PathBuf>,
+    build_dir: PathBuf,
     classpath: Vec<GradleEntry>,
+    processor_path: Vec<GradleEntry>,
 }
 
 #[derive(Deserialize)]
@@ -57,6 +69,8 @@ pub fn resolve(checkout: &Path, dirs: &Dirs, jars: &mut Jars) -> Result<Vec<Modu
         std::fs::remove_dir_all(&out)?;
     }
     std::fs::create_dir_all(&out)?;
+    let java_home = PathBuf::from(std::env::var_os("JAVA_HOME").context("JAVA_HOME is set")?);
+    let jdk_modules = jdk_modules(&java_home)?;
     let init_script = dirs.corpus.join("ferrion-corpus-model.gradle");
     std::fs::write(&init_script, INIT_SCRIPT)?;
     run(Command::new(checkout.join("gradlew"))
@@ -94,48 +108,96 @@ pub fn resolve(checkout: &Path, dirs: &Dirs, jars: &mut Jars) -> Result<Vec<Modu
     for project in projects {
         let mut source_sets = Vec::new();
         for source_set in project.source_sets {
-            let mut classpath = Vec::new();
-            for entry in source_set.classpath {
-                let entry = match entry {
-                    GradleEntry::Project {
-                        project,
-                        source_set,
-                    } => ClasspathEntry::SourceSet {
-                        module: module_paths
-                            .get(&project)
-                            .with_context(|| format!("unknown Gradle project {project}"))?
-                            .clone(),
-                        source_set,
-                    },
-                    GradleEntry::Module {
-                        group,
-                        module,
-                        version,
-                        file,
-                    } => {
-                        let path = repository_path(&group, &module, &version, &file);
-                        jars.add(path, &file)?
+            let mut convert = |entries: Vec<GradleEntry>| -> Result<Vec<ClasspathEntry>> {
+                let mut classpath = Vec::new();
+                for entry in entries {
+                    let entry = match entry {
+                        GradleEntry::Project {
+                            project,
+                            source_set,
+                        } => ClasspathEntry::SourceSet {
+                            module: module_paths
+                                .get(&project)
+                                .with_context(|| format!("unknown Gradle project {project}"))?
+                                .clone(),
+                            source_set,
+                        },
+                        GradleEntry::Module {
+                            group,
+                            module,
+                            version,
+                            file,
+                        } => {
+                            let path = repository_path(&group, &module, &version, &file);
+                            jars.add(path, &file)?
+                        }
+                        GradleEntry::File { file } => {
+                            match classify(checkout, &module_dirs, &file) {
+                                Some(entry) => entry,
+                                None => continue,
+                            }
+                        }
+                    };
+                    // A module's Java and Kotlin output directories both map to its source set.
+                    if !classpath.contains(&entry) {
+                        classpath.push(entry);
                     }
-                    GradleEntry::File { file } => match classify(checkout, &module_dirs, &file) {
-                        Some(entry) => entry,
-                        None => continue,
-                    },
-                };
-                // A module's Java and Kotlin output directories both map to its source set.
-                if !classpath.contains(&entry) {
-                    classpath.push(entry);
+                }
+                Ok(classpath)
+            };
+            let classpath = convert(source_set.classpath)?;
+            let processor_path = convert(source_set.processor_path)?;
+            let mut source_roots = Vec::new();
+            let mut generated_source_roots = Vec::new();
+            for root in &source_set.source_roots {
+                let path = within(checkout, root)?;
+                if root.starts_with(&source_set.build_dir) {
+                    generated_source_roots.push(path);
+                } else {
+                    source_roots.push(path);
                 }
             }
-            let source_roots = source_set
-                .source_roots
-                .iter()
-                .map(|root| within(checkout, root))
-                .collect::<Result<_>>()?;
+            let args = &source_set.compiler_args;
+            let (java_release, platform) = match release_options(args) {
+                (Some(release), PlatformKind::Release) => (Some(release), PlatformKind::Release),
+                _ if source_set.release_flag => (
+                    source_set.release.as_deref().and_then(parse_java_version),
+                    PlatformKind::Release,
+                ),
+                _ => (
+                    source_set.release.as_deref().and_then(parse_java_version),
+                    PlatformKind::Jdk,
+                ),
+            };
+            let options = compile_options(args, &jdk_modules, |path| {
+                Ok(classify(checkout, &module_dirs, path).unwrap_or_else(|| {
+                    ClasspathEntry::Unavailable {
+                        unavailable: path.display().to_string(),
+                    }
+                }))
+            })?;
+            let options_of = javac_options(args);
             source_sets.push(SourceSet {
                 name: source_set.name,
-                java_release: source_set.release.as_deref().and_then(parse_java_version),
+                java_release,
+                platform,
+                options,
                 source_roots,
+                generated_source_roots,
                 classpath,
+                // Gradle runs only the processors of the annotation processor path, which
+                // `-proc:none` stands for when it's empty.
+                processor_path: Some(processor_path),
+                processors: options_of
+                    .iter()
+                    .find(|(option, _)| option == "-processor")
+                    .and_then(|(_, value)| value.as_ref())
+                    .map(|names| names.split(',').map(str::to_owned).collect()),
+                processor_options: options_of
+                    .into_iter()
+                    .filter(|(option, _)| option == "-A")
+                    .filter_map(|(_, value)| value)
+                    .collect(),
             });
         }
         modules.push(Module {

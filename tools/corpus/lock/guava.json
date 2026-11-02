@@ -1,5 +1,5 @@
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "commit": "666338cc49d5686c07e3e4d17f0aa1cec25a2be6",
   "jdk": 21,
   "modules": [
@@ -9,6 +9,7 @@
         {
           "name": "main",
           "javaRelease": 8,
+          "platform": "jdk",
           "sourceRoots": [
             "guava/src"
           ],
@@ -27,6 +28,71 @@
             },
             {
               "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            }
+          ],
+          "processorPath": [
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "com/github/ben-manes/caffeine/caffeine/3.0.5/caffeine-3.0.5.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/3.19.0/checker-qual-3.19.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.5.0-jre/guava-33.5.0-jre.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.33.2/protobuf-java-4.33.2.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
             }
           ]
         },
@@ -64,6 +130,7 @@
         {
           "name": "main",
           "javaRelease": 8,
+          "platform": "jdk",
           "sourceRoots": [
             "guava-testlib/src"
           ],
@@ -93,11 +160,77 @@
             {
               "jar": "org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "com/github/ben-manes/caffeine/caffeine/3.0.5/caffeine-3.0.5.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/3.19.0/checker-qual-3.19.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.5.0-jre/guava-33.5.0-jre.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.33.2/protobuf-java-4.33.2.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            }
           ]
         },
         {
           "name": "test",
           "javaRelease": 8,
+          "platform": "jdk",
           "sourceRoots": [
             "guava-testlib/test"
           ],
@@ -158,6 +291,71 @@
             {
               "jar": "org/ow2/asm/asm/9.8/asm-9.8.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "com/github/ben-manes/caffeine/caffeine/3.0.5/caffeine-3.0.5.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/3.19.0/checker-qual-3.19.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.5.0-jre/guava-33.5.0-jre.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.33.2/protobuf-java-4.33.2.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            }
           ]
         }
       ]
@@ -174,8 +372,10 @@
         {
           "name": "test",
           "javaRelease": 8,
+          "platform": "jdk",
           "sourceRoots": [
-            "guava-tests/test"
+            "guava-tests/test",
+            "guava-tests/benchmark"
           ],
           "classpath": [
             {
@@ -307,6 +507,71 @@
             {
               "jar": "javax/annotation/javax.annotation-api/1.3.2/javax.annotation-api-1.3.2.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "com/github/ben-manes/caffeine/caffeine/3.0.5/caffeine-3.0.5.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/3.19.0/checker-qual-3.19.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.5.0-jre/guava-33.5.0-jre.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.33.2/protobuf-java-4.33.2.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            }
           ]
         }
       ]
@@ -317,6 +582,7 @@
         {
           "name": "main",
           "javaRelease": 8,
+          "platform": "jdk",
           "sourceRoots": [
             "guava-gwt/src"
           ],
@@ -571,11 +837,77 @@
             {
               "jar": "org/w3c/css/sac/1.3/sac-1.3.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "com/github/ben-manes/caffeine/caffeine/3.0.5/caffeine-3.0.5.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/3.19.0/checker-qual-3.19.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.5.0-jre/guava-33.5.0-jre.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.33.2/protobuf-java-4.33.2.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            }
           ]
         },
         {
           "name": "test",
           "javaRelease": 8,
+          "platform": "jdk",
           "sourceRoots": [
             "guava-gwt/test"
           ],
@@ -858,6 +1190,71 @@
             {
               "jar": "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar"
             }
+          ],
+          "processorPath": [
+            {
+              "jar": "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar"
+            },
+            {
+              "jar": "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar"
+            },
+            {
+              "jar": "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar"
+            },
+            {
+              "jar": "com/github/ben-manes/caffeine/caffeine/3.0.5/caffeine-3.0.5.jar"
+            },
+            {
+              "jar": "org/checkerframework/checker-qual/3.19.0/checker-qual-3.19.0.jar"
+            },
+            {
+              "jar": "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar"
+            },
+            {
+              "jar": "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar"
+            },
+            {
+              "jar": "com/google/guava/guava/33.5.0-jre/guava-33.5.0-jre.jar"
+            },
+            {
+              "jar": "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar"
+            },
+            {
+              "jar": "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"
+            },
+            {
+              "jar": "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar"
+            },
+            {
+              "jar": "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar"
+            },
+            {
+              "jar": "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar"
+            },
+            {
+              "jar": "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            },
+            {
+              "jar": "com/google/protobuf/protobuf-java/4.33.2/protobuf-java-4.33.2.jar"
+            },
+            {
+              "jar": "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar"
+            },
+            {
+              "jar": "javax/inject/javax.inject/1/javax.inject-1.jar"
+            }
           ]
         }
       ]
@@ -865,8 +1262,13 @@
   ],
   "jars": {
     "colt/colt/1.2.0/colt-1.2.0.jar": "e1fcbfbdd0d0caedadfb59febace5a62812db3b9425f3a03ef4c4cbba3ed0ee3",
+    "com/github/ben-manes/caffeine/caffeine/3.0.5/caffeine-3.0.5.jar": "8a9b54d3506a3b92ee46b217bcee79196b21ca6d52dc2967c686a205fb2f9c15",
+    "com/github/kevinstern/software-and-algorithms/1.0/software-and-algorithms-1.0.jar": "61ab82439cef37343b14f53154c461619375373a56b9338e895709fb54e0864c",
+    "com/google/auto/auto-common/1.2.2/auto-common-1.2.2.jar": "f50b1ce8a41fad31a8a819c052f8ffa362ea0a3dbe9ef8f7c7dc9a36d4738a59",
+    "com/google/auto/service/auto-service-annotations/1.0.1/auto-service-annotations-1.0.1.jar": "c7bec54b7b5588b5967e870341091c5691181d954cf2039f1bf0a6eeb837473b",
     "com/google/auto/value/auto-value-annotations/1.11.0/auto-value-annotations-1.11.0.jar": "5a055ce4255333b3346e1a8703da5bf8ff049532286fdcd31712d624abe111dd",
     "com/google/auto/value/auto-value-annotations/1.7.4/auto-value-annotations-1.7.4.jar": "fedd59b0b4986c342f6ab2d182f2a4ee9fceb2c7e2d5bdc4dc764c92394a23d3",
+    "com/google/auto/value/auto-value-annotations/1.9/auto-value-annotations-1.9.jar": "fa5469f4c44ee598a2d8f033ab0a9dcbc6498a0c5e0c998dfa0c2adf51358044",
     "com/google/caliper/caliper-api/1.0-beta-3/caliper-api-1.0-beta-3.jar": "374f0c6c0c1f8784cb69d885e1dcbb7498c34ca20369e0597264568530642928",
     "com/google/caliper/caliper-core/1.0-beta-3/caliper-core-1.0-beta-3.jar": "514deac8f8b09dd4262733e0a4406a333208c899dc7ea726b03600b9bb94f192",
     "com/google/caliper/caliper-runner/1.0-beta-3/caliper-runner-1.0-beta-3.jar": "3ab58890aa01343361adedf859500d280f67813df0cedfcd165b169533b9b1fa",
@@ -881,12 +1283,18 @@
     "com/google/code/java-allocation-instrumenter/java-allocation-instrumenter/3.3.0/java-allocation-instrumenter-3.3.0.jar": "1ef5535a8bd41cf3072469f381b9ee6ab28275311a7499f53d6e52adf976fef0",
     "com/google/dagger/dagger-producers/2.22.1/dagger-producers-2.22.1.jar": "f834a0082014213a68ff06a0f048d750178d02196c58b0b15beb367d32b97e35",
     "com/google/dagger/dagger/2.22.1/dagger-2.22.1.jar": "329d4340f24c4f5717af016c097e90668bfea2a5376e6aa9964b01cef3fd241a",
+    "com/google/errorprone/error_prone_annotation/2.50.0/error_prone_annotation-2.50.0.jar": "aa9b67a3aa3418b366e26594e1ae35d100ad3369cd1010ae7d4782d984ea9aaf",
     "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar": "4667724877f1d37a689202da191e23efa7657c62eef93ccdac406eccfe5cdd0a",
+    "com/google/errorprone/error_prone_check_api/2.50.0/error_prone_check_api-2.50.0.jar": "ee935a4f42ac409fb0a471affea938c3050c6887dbaadb106868936d83d8c8f1",
+    "com/google/errorprone/error_prone_core/2.50.0/error_prone_core-2.50.0.jar": "40a88d3ea732fac3a57ae0e2b27f1729ce76cc41857bcd63d5845e79eae5f72e",
+    "com/google/googlejavaformat/google-java-format/1.35.0/google-java-format-1.35.0.jar": "b2a52e363d51dd86b3b38d1a8dd51538541b42ff1048769684681c676550f043",
     "com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar": "cbfc3906b19b8f55dd7cfd6dfe0aa4532e834250d7f080bd8d211a3e246b59cb",
+    "com/google/guava/guava/33.5.0-jre/guava-33.5.0-jre.jar": "1e301f0c52ac248b0b14fdc3d12283c77252d4d6f48521d572e7d8c4c2cc4ac7",
     "com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar": "b372a037d4230aa57fbeffdef30fd6123f9c0c2db85d0aced00c91b974f33f99",
     "com/google/j2objc/j2objc-annotations/3.1/j2objc-annotations-3.1.jar": "84d3a150518485f8140ea99b8a985656749629f6433c92b80c75b36aba3b099b",
     "com/google/jimfs/jimfs/1.3.1/jimfs-1.3.1.jar": "b31e5da8d4d73bf9634ca8543af099517d45e9c2e6b47b76c6bcc28736902f14",
     "com/google/jsinterop/jsinterop-annotations/2.0.0/jsinterop-annotations-2.0.0.jar": "ce01f48439240e46521b99cc4c889dcb6793f7a0b0a3e238a38359093f457b49",
+    "com/google/protobuf/protobuf-java/4.33.2/protobuf-java-4.33.2.jar": "c5b582aa127fb62c5fc3077329d522dfb7930b4e9a625c08760b681b2ba5aab7",
     "com/google/testparameterinjector/test-parameter-injector/1.22/test-parameter-injector-1.22.jar": "ff534578f2e3dc6030d1f4a6896df3d20573644858c6ade878efb75d2a36504b",
     "com/google/truth/truth/1.4.5/truth-1.4.5-gwt.jar": "266e2f0f74af18b8fac3083cf0ff2b202aab5b3ddde97bbcf2894d25407ffbdd",
     "com/google/truth/truth/1.4.5/truth-1.4.5.jar": "a6409e90fdd6b31f239b0c02065c43b53e1b09c72f2e08c3a86d04fe5910cf4b",
@@ -901,6 +1309,8 @@
     "commons-io/commons-io/2.4/commons-io-2.4.jar": "cc6a41dc3eaacc9e440a6bd0d2890b20d36b4ee408fe2d67122f328bb6e01581",
     "commons-logging/commons-logging/1.2/commons-logging-1.2.jar": "daddea1ea0be0f56978ab3006b8ac92834afeefbd9b7e4e6316fca57df0fa636",
     "commons-net/commons-net/3.8.0/commons-net-3.8.0.jar": "352b0ba1c657d8930063a9b83878fb717deef2d29ee25d13943be9beccc64d49",
+    "io/github/eisop/dataflow-errorprone/3.41.0-eisop1/dataflow-errorprone-3.41.0-eisop1.jar": "10434fba4e53f55fa9c76904cde414b918932548c9dfc4e2d634ac05ff7a7d10",
+    "io/github/java-diff-utils/java-diff-utils/4.12/java-diff-utils-4.12.jar": "9990a2039778f6b4cc94790141c2868864eacee0620c6c459451121a901cd5b5",
     "javax/annotation/javax.annotation-api/1.3.2/javax.annotation-api-1.3.2.jar": "e04ba5195bcd555dc95650f7cc614d151e4bcd52d29a10b8aa2197f3ab89ab9b",
     "javax/inject/javax.inject/1/javax.inject-1.jar": "91c77044a50c481636c32d916fd89c9118a72195390452c81065080f957de7ff",
     "javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar": "af456b2dd41c4e82cf54f3e743bc678973d9fe35bd4d3071fa05c7e5333b8482",
@@ -922,6 +1332,7 @@
     "org/apache/httpcomponents/httpmime/4.5.13/httpmime-4.5.13.jar": "06e754d99245b98dcc2860dcb43d20e737d650da2bf2077a105f68accbd5c5cc",
     "org/brotli/dec/0.1.2/dec-0.1.2.jar": "615c0c3efef990d77831104475fba6a1f7971388691d4bad1471ad84101f6d52",
     "org/checkerframework/checker-compat-qual/2.5.3/checker-compat-qual-2.5.3.jar": "d76b9afea61c7c082908023f0cbc1427fab9abd2df915c8b8a3e7a509bccbc6d",
+    "org/checkerframework/checker-qual/3.19.0/checker-qual-3.19.0.jar": "a827c49183f3a632277d27a0a4673686cb341507447b9d570261094bd748aa68",
     "org/eclipse/jdt/ecj/3.33.0/ecj-3.33.0.jar": "f7686c4960cf70c2ebc5c500a73a8cfc04541b730c18f1c5c21329889b137f45",
     "org/eclipse/jdt/org.eclipse.jdt.core/3.33.0/org.eclipse.jdt.core-3.33.0.jar": "c03cbbf5ab447d954efb8268a58dd9f2fe70f9e5d9be0a8371f79d785357eba3",
     "org/eclipse/jetty/apache-jsp/9.4.58.v20250814/apache-jsp-9.4.58.v20250814.jar": "970d14c2368e1f72f8d28d62a2fb5488eefd25553ec7d99c7fc3c7d350186d02",
@@ -963,6 +1374,7 @@
     "org/jetbrains/annotations/13.0/annotations-13.0.jar": "ace2a10dc8e2d5fd34925ecac03e4988b2c0f851650c94b8cef49ba1bd111478",
     "org/jetbrains/kotlin/kotlin-reflect/2.2.20/kotlin-reflect-2.2.20.jar": "8209083a4a7c4e476d9842b078308fa96a96f07a6bd99f05f3586ee13289ab26",
     "org/jetbrains/kotlin/kotlin-stdlib/2.2.20/kotlin-stdlib-2.2.20.jar": "8836ccffd3585fadda9901244b20d42901d2f3cd581058d8434e2ffabcf3a3e7",
+    "org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar": "1fad6e6be7557781e4d33729d49ae1cdc8fdda6fe477bb0cc68ce351eafdfbab",
     "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar": "070d75f261fe4c5b8202508366715f7f2d4660f88c8ef7e6d3575e48c9683b66",
     "org/mockito/mockito-core/4.11.0/mockito-core-4.11.0.jar": "4b909690cab288c761eb94c0bf0e814496cf3921d8affac84cd87774530351e5",
     "org/mortbay/jasper/apache-el/8.5.100/apache-el-8.5.100.jar": "d8c308da48c0229ab71905fba410fee44c73a4650a27ef7cece072e925ce9242",
@@ -980,6 +1392,7 @@
     "org/ow2/asm/asm-util/9.6/asm-util-9.6.jar": "c635a7402f4aa9bf66b2f4230cea62025a0fe1cd63e8729adefc9b1994fac4c3",
     "org/ow2/asm/asm/9.6/asm-9.6.jar": "3c6fac2424db3d4a853b669f4e3d1d9c3c552235e19a319673f887083c2303a1",
     "org/ow2/asm/asm/9.8/asm-9.8.jar": "876eab6a83daecad5ca67eb9fcabb063c97b5aeb8cf1fca7a989ecde17522051",
+    "org/pcollections/pcollections/4.0.1/pcollections-4.0.1.jar": "1f82766d7c3221930854033bebff5073ea46b43f27326074bbe15d148c18bfb3",
     "org/w3c/css/sac/1.3/sac-1.3.jar": "003785669f921aafe4f137468dd20a01a36111e94fd7449f26c16e7924d82d23",
     "org/yaml/snakeyaml/2.0/snakeyaml-2.0.jar": "880c9d896e4b74a06c549c15ca496450165d6909fa15d7e662bee8f6a66d7afa",
     "tapestry/tapestry/4.0.2/tapestry-4.0.2.jar": "16dfc5b6b322bb0734b80e89d77fbeb987c809002fe59d52d9707a035949b107",

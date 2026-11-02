@@ -1,5 +1,5 @@
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "commit": "a85bd46c18d33130298f0e223bd84ea6e29a17de",
   "jdk": 25,
   "modules": [
