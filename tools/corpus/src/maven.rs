@@ -19,7 +19,7 @@ use roxmltree::Node;
 
 use crate::lock::{
     ClasspathEntry, CompileOptions, Jars, Module, PlatformKind, SourceSet, compile_options,
-    javac_options, jdk_modules, parse_java_version, relative, release_options, run,
+    javac_options, jdk_modules, module_path, parse_java_version, relative, release_options, run,
 };
 use crate::project::Project;
 use crate::{Dirs, fetch};
@@ -312,6 +312,7 @@ impl Build<'_> {
                 processor_path: None,
                 processors: None,
                 processor_options: Vec::new(),
+                module_path: Vec::new(),
             });
         };
         let (release, platform) = release_options(&execution.options);
@@ -357,6 +358,9 @@ impl Build<'_> {
         let options = compile_options(&execution.options, self.modules, |path| {
             self.classify(path, jars)
         })?;
+        let module_path = module_path(&execution.options, |path| {
+            self.classify(path, jars).map(Some)
+        })?;
         Ok(SourceSet {
             name: name.to_owned(),
             java_release: release.or_else(|| java_release(pom, test)),
@@ -368,6 +372,7 @@ impl Build<'_> {
             processor_path,
             processors,
             processor_options,
+            module_path,
         })
     }
 

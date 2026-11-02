@@ -107,6 +107,11 @@ pub fn project_model(
                 entries
             };
             let classpath = entries(&set.classpath);
+            // Source sets on the build's module path are on the oracle's module source path.
+            let module_path = entries(&set.module_path)
+                .into_iter()
+                .filter_map(|entry| entry.path)
+                .collect();
             let processor_path = set.processor_path.as_deref().map(&mut entries);
             let options = &set.options;
             let patch_modules: BTreeMap<String, Vec<PathBuf>> = options
@@ -144,7 +149,7 @@ pub fn project_model(
                     .collect(),
                 generated_source_roots,
                 classpath,
-                module_path: Vec::new(),
+                module_path,
                 processor_path,
             });
         }

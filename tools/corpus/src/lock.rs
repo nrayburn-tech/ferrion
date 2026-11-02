@@ -61,6 +61,10 @@ pub struct SourceSet {
     /// classpath, as javac finds them without one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub processor_path: Option<Vec<ClasspathEntry>>,
+    /// The module path the build gives javac, for a modular compile: in the corpus, a module
+    /// declaration is compiled with it.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub module_path: Vec<ClasspathEntry>,
     /// The build's `-processor`: the processors to run, instead of those the processor path
     /// registers.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -297,8 +301,32 @@ pub fn compile_options(
     Ok(options)
 }
 
+/// The entries of the build's `--module-path` in `args`, each classified by `path`.
+pub fn module_path(
+    args: &[String],
+    mut path: impl FnMut(&Path) -> Result<Option<ClasspathEntry>>,
+) -> Result<Vec<ClasspathEntry>> {
+    let mut entries = Vec::new();
+    for (option, value) in javac_options(args) {
+        if option != "--module-path" && option != "-p" {
+            continue;
+        }
+        for entry in std::env::split_paths(value.as_deref().unwrap_or("")) {
+            if entry.as_os_str().is_empty() {
+                continue;
+            }
+            if let Some(entry) = path(&entry)?
+                && !entries.contains(&entry)
+            {
+                entries.push(entry);
+            }
+        }
+    }
+    Ok(entries)
+}
+
 /// The javac options that take a value, which [`javac_options`] pairs with it.
-const WITH_VALUES: [&str; 20] = [
+const WITH_VALUES: [&str; 22] = [
     "--release",
     "-source",
     "--source",
@@ -319,6 +347,8 @@ const WITH_VALUES: [&str; 20] = [
     "--source-path",
     "-d",
     "-s",
+    "--module-path",
+    "-p",
 ];
 
 /// javac's options in `args`, each with its value: the next argument, or what follows `=` for a

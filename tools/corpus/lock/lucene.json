@@ -159,7 +159,90 @@
               "jar": "org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/icu",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/kuromoji",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/morfologik",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/nori",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/opennlp",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/phonetic",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/smartcn",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/stempel",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-polish/2.1.9/morfologik-polish-2.1.9.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-stemming/2.1.9/morfologik-stemming-2.1.9.jar"
+            },
+            {
+              "jar": "ua/net/nlp/morfologik-ukrainian-search/4.9.1/morfologik-ukrainian-search-4.9.1.jar"
+            },
+            {
+              "jar": "org/apache/opennlp/opennlp-tools/2.5.3/opennlp-tools-2.5.3.jar"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.17.2/commons-codec-1.17.2.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-fsa/2.1.9/morfologik-fsa-2.1.9.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar"
+            }
+          ]
         }
       ]
     },
@@ -245,6 +328,12 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -281,7 +370,30 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         },
         {
           "name": "tools",
@@ -388,6 +500,19 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
+            }
           ]
         },
         {
@@ -431,7 +556,37 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         },
         {
           "name": "tools",
@@ -542,6 +697,16 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -582,7 +747,34 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -684,6 +876,28 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/carrot2/morfologik-polish/2.1.9/morfologik-polish-2.1.9.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-stemming/2.1.9/morfologik-stemming-2.1.9.jar"
+            },
+            {
+              "jar": "ua/net/nlp/morfologik-ukrainian-search/4.9.1/morfologik-ukrainian-search-4.9.1.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-fsa/2.1.9/morfologik-fsa-2.1.9.jar"
+            }
           ]
         },
         {
@@ -736,7 +950,46 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/carrot2/morfologik-polish/2.1.9/morfologik-polish-2.1.9.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-stemming/2.1.9/morfologik-stemming-2.1.9.jar"
+            },
+            {
+              "jar": "ua/net/nlp/morfologik-ukrainian-search/4.9.1/morfologik-ukrainian-search-4.9.1.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-fsa/2.1.9/morfologik-fsa-2.1.9.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -856,7 +1109,50 @@
               "jar": "org/carrot2/morfologik-fsa/2.1.9/morfologik-fsa-2.1.9.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/morfologik",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/carrot2/morfologik-polish/2.1.9/morfologik-polish-2.1.9.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-stemming/2.1.9/morfologik-stemming-2.1.9.jar"
+            },
+            {
+              "jar": "ua/net/nlp/morfologik-ukrainian-search/4.9.1/morfologik-ukrainian-search-4.9.1.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-fsa/2.1.9/morfologik-fsa-2.1.9.jar"
+            }
+          ]
         }
       ]
     },
@@ -946,6 +1242,16 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -986,7 +1292,34 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -1082,6 +1415,22 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/apache/opennlp/opennlp-tools/2.5.3/opennlp-tools-2.5.3.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar"
+            }
           ]
         },
         {
@@ -1128,7 +1477,40 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/apache/opennlp/opennlp-tools/2.5.3/opennlp-tools-2.5.3.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -1221,6 +1603,19 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.17.2/commons-codec-1.17.2.jar"
+            }
           ]
         },
         {
@@ -1264,7 +1659,37 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.17.2/commons-codec-1.17.2.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -1354,6 +1779,16 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -1394,7 +1829,34 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -1484,6 +1946,16 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -1524,7 +1996,34 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -1610,6 +2109,12 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -1646,7 +2151,30 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -1782,6 +2310,63 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/highlighter",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/spatial-extras",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/memory",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/spatial3d",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/apache/commons/commons-compress/1.19/commons-compress-1.19.jar"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
+            },
+            {
+              "jar": "org/locationtech/spatial4j/spatial4j/0.8/spatial4j-0.8.jar"
+            },
+            {
+              "jar": "net/sourceforge/nekohtml/nekohtml/1.9.17/nekohtml-1.9.17.jar"
+            },
+            {
+              "jar": "io/sgr/s2-geometry-library-java/1.0.0/s2-geometry-library-java-1.0.0.jar"
+            }
           ]
         },
         {
@@ -1868,7 +2453,81 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/highlighter",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/spatial-extras",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/memory",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/spatial3d",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/apache/commons/commons-compress/1.19/commons-compress-1.19.jar"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
+            },
+            {
+              "jar": "org/locationtech/spatial4j/spatial4j/0.8/spatial4j-0.8.jar"
+            },
+            {
+              "jar": "net/sourceforge/nekohtml/nekohtml/1.9.17/nekohtml-1.9.17.jar"
+            },
+            {
+              "jar": "io/sgr/s2-geometry-library-java/1.0.0/s2-geometry-library-java-1.0.0.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -1991,6 +2650,53 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/expressions",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/openjdk/jmh/jmh-core/1.37/jmh-core-1.37.jar"
+            },
+            {
+              "jar": "org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.6/asm-commons-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.6/asm-9.6.jar"
+            },
+            {
+              "jar": "net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar"
+            }
           ]
         },
         {
@@ -2052,7 +2758,67 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/expressions",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/openjdk/jmh/jmh-core/1.37/jmh-core-1.37.jar"
+            },
+            {
+              "jar": "org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.6/asm-commons-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.6/asm-9.6.jar"
+            },
+            {
+              "jar": "net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar"
+            },
+            {
+              "jar": "org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -2146,6 +2912,20 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/grouping",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -2198,7 +2978,42 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/grouping",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -2283,6 +3098,12 @@
             },
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
             }
           ]
         },
@@ -2567,7 +3388,34 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/core.tests",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -2677,6 +3525,52 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/expressions",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.6/asm-commons-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.6/asm-9.6.jar"
+            }
           ]
         },
         {
@@ -2737,7 +3631,66 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/expressions",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.6/asm-commons-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.6/asm-9.6.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -2850,7 +3803,24 @@
               "jar": "org/assertj/assertj-core/3.21.0/assertj-core-3.21.0.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "jar": "com/carrotsearch/procfork/1.0.6/procfork-1.0.6.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            },
+            {
+              "jar": "org/assertj/assertj-core/3.21.0/assertj-core-3.21.0.jar"
+            }
+          ]
         }
       ]
     },
@@ -2952,6 +3922,28 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.6/asm-commons-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.6/asm-9.6.jar"
+            }
           ]
         },
         {
@@ -3004,7 +3996,42 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.6/asm-commons-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.6/asm-9.6.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -3090,6 +4117,12 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -3134,7 +4167,38 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/backward-codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -3224,6 +4288,16 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -3264,7 +4338,34 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -3358,6 +4459,20 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/memory",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -3418,7 +4533,54 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/memory",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -3504,6 +4666,12 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -3540,7 +4708,30 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -3716,6 +4907,112 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/backward-codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/icu",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/kuromoji",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/morfologik",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/nori",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/opennlp",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/phonetic",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/smartcn",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/stempel",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/suggest",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/highlighter",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/misc",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/memory",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-polish/2.1.9/morfologik-polish-2.1.9.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-stemming/2.1.9/morfologik-stemming-2.1.9.jar"
+            },
+            {
+              "jar": "ua/net/nlp/morfologik-ukrainian-search/4.9.1/morfologik-ukrainian-search-4.9.1.jar"
+            },
+            {
+              "jar": "org/apache/opennlp/opennlp-tools/2.5.3/opennlp-tools-2.5.3.jar"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.17.2/commons-codec-1.17.2.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-fsa/2.1.9/morfologik-fsa-2.1.9.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar"
+            }
           ]
         },
         {
@@ -3842,7 +5139,126 @@
               "jar": "org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/backward-codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/icu",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/kuromoji",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/morfologik",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/nori",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/opennlp",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/phonetic",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/smartcn",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/stempel",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/suggest",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/highlighter",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/misc",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/memory",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-polish/2.1.9/morfologik-polish-2.1.9.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-stemming/2.1.9/morfologik-stemming-2.1.9.jar"
+            },
+            {
+              "jar": "ua/net/nlp/morfologik-ukrainian-search/4.9.1/morfologik-ukrainian-search-4.9.1.jar"
+            },
+            {
+              "jar": "org/apache/opennlp/opennlp-tools/2.5.3/opennlp-tools-2.5.3.jar"
+            },
+            {
+              "jar": "commons-codec/commons-codec/1.17.2/commons-codec-1.17.2.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            },
+            {
+              "jar": "org/carrot2/morfologik-fsa/2.1.9/morfologik-fsa-2.1.9.jar"
+            },
+            {
+              "jar": "org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar"
+            }
+          ]
         }
       ]
     },
@@ -3928,6 +5344,12 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -3980,7 +5402,46 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -4066,6 +5527,12 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -4102,7 +5569,30 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -4196,6 +5686,20 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/memory",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -4256,7 +5760,54 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/memory",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queryparser",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -4342,6 +5893,12 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -4382,7 +5939,46 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/expressions",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            },
+            {
+              "jar": "org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-commons/9.6/asm-commons-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar"
+            },
+            {
+              "jar": "org/ow2/asm/asm/9.6/asm-9.6.jar"
+            }
+          ]
         }
       ]
     },
@@ -4480,6 +6076,24 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -4528,7 +6142,42 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/sandbox",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -4614,6 +6263,12 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -4650,7 +6305,30 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -4744,6 +6422,20 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -4788,7 +6480,38 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/queries",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/facet",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -4884,6 +6607,22 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/spatial3d",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/locationtech/spatial4j/spatial4j/0.8/spatial4j-0.8.jar"
+            },
+            {
+              "jar": "io/sgr/s2-geometry-library-java/1.0.0/s2-geometry-library-java-1.0.0.jar"
+            }
           ]
         },
         {
@@ -4940,7 +6679,47 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/spatial-test-fixtures",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/spatial3d",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/locationtech/spatial4j/spatial4j/0.8/spatial4j-0.8.jar"
+            },
+            {
+              "jar": "io/sgr/s2-geometry-library-java/1.0.0/s2-geometry-library-java-1.0.0.jar"
+            },
+            {
+              "jar": "org/locationtech/jts/jts-core/1.17.0/jts-core-1.17.0.jar"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -5048,6 +6827,33 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/spatial3d",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
           ]
         },
         {
@@ -5086,7 +6892,34 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/spatial3d",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -5172,6 +7005,12 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -5212,7 +7051,34 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/spatial-test-fixtures",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -5302,6 +7168,16 @@
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
             }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            }
           ]
         },
         {
@@ -5342,7 +7218,34 @@
               "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ],
-          "processorPath": []
+          "processorPath": [],
+          "modulePath": [
+            {
+              "module": "lucene/analysis/common",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/test-framework",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
+            }
+          ]
         }
       ]
     },
@@ -5440,6 +7343,25 @@
             },
             {
               "jar": "com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar"
+            }
+          ],
+          "modulePath": [
+            {
+              "module": "lucene/codecs",
+              "sourceSet": "main"
+            },
+            {
+              "module": "lucene/core",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "com/carrotsearch/randomizedtesting/randomizedtesting-runner/2.8.1/randomizedtesting-runner-2.8.1.jar"
+            },
+            {
+              "jar": "junit/junit/4.13.1/junit-4.13.1.jar"
+            },
+            {
+              "jar": "org/hamcrest/hamcrest/2.2/hamcrest-2.2.jar"
             }
           ]
         },
