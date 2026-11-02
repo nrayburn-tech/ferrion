@@ -234,7 +234,8 @@ onto the next line at +4, and the value is indented from it. A value whose layou
 such as a lambda with a block or an anonymous class, starts on the next line. Several declarators
 go one per line at +4 when they don't fit on one, and if the first of them, up to its comma,
 doesn't fit on the type's line either, it moves onto the next line at +4 too, with its value
-indented from it.
+indented from it. After a line comment on the name, the `=` or the `,` goes on the next line at
++4, and a value that breaks after the `=` is at +4 as well.
 
 ```java
 private static final String MESSAGE =

@@ -25,7 +25,9 @@ pub(crate) fn type_then_name<'t>(
 }
 
 /// Emits a type and its one declarator: `Type name` in a group that breaks before the name, then
-/// `= value`, indented from the name if that group broke.
+/// `= value`, indented from the name if that group broke. The `=` is in the name's indent, so
+/// that after a line comment on the name it goes on the next line at +4, and the value after it
+/// at +4 too (observed in GJF).
 pub(crate) fn single_declarator<'t>(
     f: &mut Formatter<'t>,
     ty: NodeOrToken<'t>,
@@ -36,23 +38,26 @@ pub(crate) fn single_declarator<'t>(
     let (name, value) = parts.split_at(eq.unwrap_or(parts.len()));
     // Comments before the type go before the group, so that a line comment doesn't break it.
     f.comments_before(first_token(ty).id());
+    // The name's indent, around `Type name` as in `type_then_name`, and the `=`.
+    f.start_indent(IndentKind::Continuation);
     let group = f.group(|f| {
-        type_then_name(f, ty, |f| {
-            for &part in name {
-                name_part(f, part);
-            }
-        });
+        emit(f, ty);
+        f.line();
+        for &part in name {
+            name_part(f, part);
+        }
     });
-    if let [eq, value @ ..] = value {
-        f.indent_if_broken(group, |f| {
-            f.space();
-            emit(f, *eq);
-            match value {
-                [value] => value_after_eq(f, *value),
-                _ => value.iter().for_each(|&part| emit(f, part)),
-            }
-        });
-    }
+    let Some((eq, value)) = value.split_first() else {
+        f.end();
+        return;
+    };
+    f.space();
+    emit(f, *eq);
+    f.end();
+    f.indent_if_broken(group, |f| match value {
+        [value] => value_after_eq(f, *value),
+        _ => value.iter().for_each(|&part| emit(f, part)),
+    });
 }
 
 /// Emits a type and several declarators, `rest`, with the commas between them: one to a line at
