@@ -30,6 +30,11 @@ differences` checks against GJF and Ferrion both.
   int x = /* why */ 5;
   ```
 
+  A comment on the line of the code before it has a space before it, as GJF puts one
+  (`f(x);// c` gives `f(x); // c`), except a block comment after a `(`, `.`, or `<`, which goes
+  right after it with a space after it instead (`f(/* c */ x)`). A bare `//` counts as three
+  columns wide, as GJF measures it, so one that ends at the limit breaks its line.
+
   Block comments that span lines are re-indented to their new
   column, with their stars aligned one column after the `/` when every later line starts with
   `*`. Otherwise the later lines keep their indentation relative to each other, the least
