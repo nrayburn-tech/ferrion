@@ -818,8 +818,8 @@ A lambda that is a call's only argument is hugged: `foo(x -> {` stays on the cal
 fits, with the block indented from the statement, and otherwise the lambda goes on the next line
 at +4. A lambda with an expression body that doesn't fit on the call's line goes on the next line
 if it fits there, and otherwise stays on the call's line and breaks after its arrow, with the body
-at +4. The calls in a chain's prefix don't hug, and the block's line breaks still break the
-groups around the call, such as an assignment's.
+at +4. The calls in a chain's prefix hug only a lambda with an expression body, and the block's
+line breaks still break the groups around the call, such as an assignment's.
 
 ```java
 executor.submit(() -> {
@@ -840,6 +840,10 @@ x =
     foo(a -> {
       run();
     });
+gen.withArgument(configuredRetryRule ->
+        configuredRetryRule.name("retryRuleArg").type(TypeSpec.builder()))
+    .appendCode("this.retrier = retryRuleArg.orElseGet(")
+    .appendCode(generatedType);
 ```
 
 Elsewhere, an expression body is on the arrow's line, or on the next line at +4.

@@ -99,4 +99,36 @@ class Lambdas {
           run();
         };
   }
+
+  // In a chain's prefix, a lambda with an expression body is hugged, and one with a block isn't.
+  void prefix() {
+    gen.withArgument(configuredRetryRule ->
+            configuredRetryRule
+                .name("retryRuleArg")
+                .type(
+                    TypeSpec.builder()
+                        .from(TypeSpecs.OPTIONAL)
+                        .addGenericParam(RETRY_RULE_TYPE)
+                        .build())
+                .attachMarker1(markerForTarget(name)))
+        .appendCode("this.retrier = retryRuleArg.orElseGet(")
+        .appendCode(generatedType);
+    gen.withArgument(configuredRetryRule ->
+            configuredRetryRule.name("retryRuleArg").type(TypeSpec.builder()))
+        .appendCode("this.retrier = retryRuleArg.orElseGet(")
+        .appendCode(generatedType);
+    gen.withArgument(
+            configuredRetryRule -> {
+              foo();
+            })
+        .appendCode("this.retrier = retryRuleArg.orElseGet(")
+        .appendCode(generatedType);
+    withArgument(configuredRetryRule ->
+            foo(
+                configuredRetryRuleAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,
+                bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb,
+                ccccccccccccccccccc))
+        .appendCode("this.retrier = retryRuleArg.orElseGet(")
+        .appendCode(generatedType);
+  }
 }
