@@ -48,7 +48,8 @@ pub(crate) enum Shape {
     /// the line; otherwise the items on lines of their own at +2, all on one line, filled, or one
     /// per line, and the `}` on a line of its own. A trailing comma keeps the items off the
     /// braces' lines. In an array of values, a comment on a line of its own before the first
-    /// value puts the values one per line (observed), and they aren't kept in rows.
+    /// value puts the values one per line (observed), and they aren't kept in rows; and in an
+    /// annotation, the values are never all on one line between the braces.
     Initializer { values: bool },
     /// `(int a, int b)`, parameters or record components: as arguments, without filling, and
     /// with the `)` after the list's group, so a line comment before it puts it on a line of its
@@ -226,6 +227,13 @@ pub(crate) fn delimited<'t>(
         };
         match shape {
             Shape::Hug | Shape::Annotation { .. } => list(f),
+            // An annotation's array of values that breaks has its values one per line: they are
+            // never all on a line of their own, as an element's default's are (observed).
+            Shape::Initializer { values: true }
+                if !fill && node.parent().is_none_or(|p| p.kind() != K::DefaultValue) =>
+            {
+                list(f)
+            }
             _ if fill => f.fill(list),
             _ => items_group = Some(f.group(list)),
         }
