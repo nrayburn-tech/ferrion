@@ -6,6 +6,7 @@ use std::fmt::Write as _;
 use serde::Serialize;
 
 use super::compare::{Category, Part};
+use super::oracle::ProcessorRun;
 
 /// Counts for a project, or for every project.
 #[derive(Clone, Debug, Default, Serialize)]
@@ -20,7 +21,11 @@ pub struct Tally {
     pub cached: u64,
     /// Files of the source sets, and files annotation processors generated.
     pub files: u64,
+    /// Files annotation processors generated, and files under the roots the build's other
+    /// plugins generated sources into.
     pub generated_files: u64,
+    /// `module-info.java` files compiled on their own.
+    pub module_declarations: u64,
     /// Files left out of the comparison, by cause.
     pub excluded: Excluded,
     /// Files compared: every file not left out.
@@ -34,24 +39,41 @@ pub struct Tally {
     pub comparison: Comparison,
     /// For files left out for javac's errors, how many have each error code.
     pub error_codes: BTreeMap<String, u64>,
-    /// Annotation processors registered on the classpath.
+    /// Annotation processors registered on the processor path (or the classpath).
     pub processors: BTreeSet<String>,
+    /// Each processor that ran, by class: the source sets it ran in, the files it created, and
+    /// the errors it reported, which the oracle keeps from javac. One that never creates a file
+    /// only checks code.
+    pub processor_runs: BTreeMap<String, ProcessorTally>,
     /// The oracle's own time for the source sets it ran, and the time to read cached ones.
     pub javac_seconds: f64,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ProcessorTally {
+    pub source_sets: u64,
+    pub files: u64,
+    pub errors: u64,
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Excluded {
-    /// javac reported an error in the file.
+    /// javac reported an error in the file: a language error, since what processors report is
+    /// kept from javac.
     pub javac_errors: u64,
     /// Of those, generated files.
     pub generated_with_errors: u64,
+    /// Of those, module declarations.
+    pub module_declarations_with_errors: u64,
     /// javac threw on the file, even on its own, or never parsed it.
     pub crashes: u64,
-    /// `module-info.java`: the oracle compiles in the unnamed module.
+    /// `module-info.java` the oracle didn't compile: output from before module declarations
+    /// were compiled on their own.
     pub module_declarations: u64,
-    /// javac stopped before analyzing the file, after an error elsewhere (a processor's).
+    /// javac never analyzed the file, with no error in it: after an error that stopped javac
+    /// before attribution.
     pub unanalyzed: u64,
     /// Ferrion's results for the source set failed.
     pub ferrion_failures: u64,
@@ -83,6 +105,18 @@ impl Tally {
         }
     }
 
+    pub fn add_processor_run(&mut self, run: &ProcessorRun) {
+        let tally = self.processor_runs.entry(run.name.clone()).or_default();
+        tally.source_sets += 1;
+        tally.files += run.files;
+        tally.errors += run.errors;
+    }
+
+    /// Errors processors reported, which the oracle kept from javac.
+    pub fn processor_errors(&self) -> u64 {
+        self.processor_runs.values().map(|p| p.errors).sum()
+    }
+
     pub fn add_mismatch(&mut self, category: Category) {
         *self
             .comparison
@@ -98,9 +132,11 @@ impl Tally {
         self.cached += other.cached;
         self.files += other.files;
         self.generated_files += other.generated_files;
+        self.module_declarations += other.module_declarations;
         let (e, o) = (&mut self.excluded, &other.excluded);
         e.javac_errors += o.javac_errors;
         e.generated_with_errors += o.generated_with_errors;
+        e.module_declarations_with_errors += o.module_declarations_with_errors;
         e.crashes += o.crashes;
         e.module_declarations += o.module_declarations;
         e.unanalyzed += o.unanalyzed;
@@ -130,6 +166,12 @@ impl Tally {
             *self.error_codes.entry(code.clone()).or_default() += count;
         }
         self.processors.extend(other.processors.iter().cloned());
+        for (name, run) in &other.processor_runs {
+            let ours = self.processor_runs.entry(name.clone()).or_default();
+            ours.source_sets += run.source_sets;
+            ours.files += run.files;
+            ours.errors += run.errors;
+        }
         self.javac_seconds += other.javac_seconds;
     }
 
@@ -205,8 +247,8 @@ impl Report {
             "gen",
             "compared",
             "errors",
+            "unanl",
             "crash",
-            "module",
             "lombok",
             "B2 names",
             "B3",
@@ -230,8 +272,8 @@ impl Report {
                 t.generated_files,
                 t.compared_files,
                 t.excluded.javac_errors,
+                t.excluded.unanalyzed,
                 t.excluded.crashes,
-                t.excluded.module_declarations,
                 t.lombok_types,
                 t.b2_names(),
                 t.names.get(Part::B3.name()).copied().unwrap_or(0),
@@ -249,16 +291,19 @@ impl Report {
         let t = &self.total;
         writeln!(
             out,
-            "\nfiles: {} of the source sets and {} generated; left out: {} with javac errors \
-             ({} of them generated), {} javac crashed on, {} module declarations, {} javac didn't \
-             analyze; {} Lombok types left out",
+            "\nfiles: {} of the source sets and {} generated, {} of them module declarations; \
+             left out: {} with javac errors ({} of them generated, {} module declarations), {} \
+             javac never analyzed, {} javac crashed on, {} module declarations not compiled; {} \
+             Lombok types left out",
             t.files - t.generated_files,
             t.generated_files,
+            t.module_declarations,
             t.excluded.javac_errors,
             t.excluded.generated_with_errors,
+            t.excluded.module_declarations_with_errors,
+            t.excluded.unanalyzed,
             t.excluded.crashes,
             t.excluded.module_declarations,
-            t.excluded.unanalyzed,
             t.lombok_types
         )
         .unwrap();
@@ -310,10 +355,28 @@ impl Report {
                 writeln!(out, "  {count:>7} {code}").unwrap();
             }
         }
-        if !t.processors.is_empty() {
-            writeln!(out, "\nannotation processors found on classpaths:").unwrap();
-            for processor in &t.processors {
-                writeln!(out, "  {processor}").unwrap();
+        if !t.processor_runs.is_empty() {
+            writeln!(
+                out,
+                "\nannotation processors run: source sets, files created, errors kept from javac \
+                 ({} in all)",
+                t.processor_errors()
+            )
+            .unwrap();
+            for (name, run) in &t.processor_runs {
+                writeln!(
+                    out,
+                    "  {:>5} {:>7} {:>7} {name}{}",
+                    run.source_sets,
+                    run.files,
+                    run.errors,
+                    if run.files == 0 {
+                        " (created nothing)"
+                    } else {
+                        ""
+                    }
+                )
+                .unwrap();
             }
         }
         let failed: Vec<&SetRow> = self

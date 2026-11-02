@@ -1,12 +1,16 @@
 //! `oracle names`: compares Ferrion's name resolution with javac's, source set by source set
 //! (docs/design/semantic.md, "Verification").
 //!
-//! For each source set of each corpus project, `javac-oracle names` compiles every file with the
-//! source sets it depends on on the source path, the jars on the classpath, and the annotation
-//! processors it finds there writing to `target/corpus/generated/<project>/<source set>`. Its
-//! output is cached by a hash of the inputs ([`oracle`]). Files javac reports errors in are left
-//! out whole, and Lombok-annotated types too; the names in B2's part ([`compare`]) of the rest are
-//! matched with Ferrion's by range and compared by key. Until Ferrion resolves names, [`ferrion`]
+//! For each source set of each corpus project, `javac-oracle names` compiles every file as the
+//! build does (its release, `-source` or `--release`, and its options for the JDK's modules),
+//! with the source sets it depends on on the source path, the jars on the classpath, and the
+//! build's annotation processors (its processor path, or else the classpath) writing to
+//! `target/corpus/generated/<project>/<source set>`; each `module-info.java` is compiled on its
+//! own, in a modular compilation. Its output is cached by a hash of the inputs ([`oracle`]).
+//! Files javac reports language errors in are left out whole, and so are files it never analyzed
+//! (counted apart) and Lombok-annotated types; what processors report is kept from javac and
+//! counted, not a reason to leave a file out. The names in B2's part ([`compare`]) of the rest
+//! are matched with Ferrion's by range and compared by key. Until Ferrion resolves names, [`ferrion`]
 //! has a stand-in with no results, and the report counts javac's side: files run, files left out
 //! by cause, and names by context and kind of symbol.
 
@@ -35,10 +39,11 @@ use self::report::{MismatchRow, Report, SetRow, Tally};
 pub const USAGE: &str = "\
 usage: oracle names [<option>...] [<project>...]
 
-Compiles each source set of the corpus projects (by default all of them) with javac, running the
-annotation processors on its classpath, and compares what each name in B2's part resolves to with
-Ferrion's resolution. Files with javac errors and Lombok-annotated types are left out. Until
-Ferrion resolves names, nothing is compared, and the report counts javac's side.
+Compiles each source set of the corpus projects (by default all of them) with javac as its build
+does, running the build's annotation processors, and compares what each name in B2's part resolves
+to with Ferrion's resolution. Files with javac errors, files javac never analyzed, and
+Lombok-annotated types are left out. Until Ferrion resolves names, nothing is compared, and the
+report counts javac's side.
 
 options:
   --source-set <id>    only this source set of each project, such as `main` or `common/config/test`
@@ -48,8 +53,8 @@ options:
   --heap <size>        each JVM's maximum heap (default: 4g)
   --processor-path <paths>
                        find annotation processors on these jars and directories (separated as
-                       on a classpath) for every source set, instead of on its classpath: for
-                       measuring what a build's own processor path would give
+                       on a classpath) for every source set, instead of the build's processor
+                       path or its classpath: an experiment
   --limit <N>          show the first N failures (default: 10)
   --json <file>        also write the full report as JSON
   --oracle-jar <file>  the javac oracle (default: tools/javac-oracle/target/javac-oracle.jar)
@@ -370,13 +375,17 @@ fn run_set(context: &Shared, sets: &[SourceSet], i: usize) -> Result<SetResult> 
     }
     tally.processors = output.set.processors.iter().cloned().collect();
     row.processors = output.set.processors.clone();
+    for run in &output.set.processor_runs {
+        tally.add_processor_run(run);
+    }
     let ferrion: Result<Option<SetNames>, String> =
         context.resolver.resolve(sets, set, context.corpus);
     for file in &output.files {
         let display = display(&file.file);
         tally.files += 1;
         row.files += 1;
-        if file.generated == 1 {
+        let generated = file.generated == 1 || set.is_generated(&context.corpus.join(&file.file));
+        if generated {
             tally.generated_files += 1;
             row.generated_files += 1;
         }
@@ -384,6 +393,7 @@ fn run_set(context: &Shared, sets: &[SourceSet], i: usize) -> Result<SetResult> 
             tally.excluded.module_declarations += 1;
             continue;
         }
+        tally.module_declarations += u64::from(file.module);
         if let Some(crash) = &file.crash {
             tally.excluded.crashes += 1;
             crashes.push((display, crash.clone()));
@@ -391,7 +401,8 @@ fn run_set(context: &Shared, sets: &[SourceSet], i: usize) -> Result<SetResult> 
         }
         if file.errors().next().is_some() {
             tally.excluded.javac_errors += 1;
-            tally.excluded.generated_with_errors += u64::from(file.generated);
+            tally.excluded.generated_with_errors += u64::from(generated);
+            tally.excluded.module_declarations_with_errors += u64::from(file.module);
             row.error_files += 1;
             if let Some(first) = file.errors().next() {
                 let message = first.message.lines().next().unwrap_or("");

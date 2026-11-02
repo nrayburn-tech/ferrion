@@ -15,6 +15,7 @@ ferrion_diagnostics.workspace = true
 ferrion_java_version.workspace = true
 ferrion_lexer.workspace = true
 ferrion_parser.workspace = true
+ferrion_project.workspace = true
 ferrion_stack.workspace = true
 ferrion_syntax.workspace = true
 serde.workspace = true
