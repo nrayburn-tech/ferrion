@@ -342,6 +342,23 @@ As built in W6a, the corpus's inputs side of the run (details in
    `--should-stop=ifError=FLOW` keeps it from stopping javac before attribution. Processors that
    only check code aren't recognized in advance, since nothing tells them apart before they run;
    one that created no file is reported as such, and running it changes nothing the comparison
-   sees (a deviation from "aren't run", for review).
+   sees (a deviation from "aren't run", which the user accepted; see below).
 4. Each `module-info.java` is compiled on its own with its module's and its dependencies' roots
    on the module source path, and its build's module path with those of its dependencies.
+
+### The corpus inputs review
+
+After W6a, the user accepted the corpus inputs as built and settled the questions W6a raised, as a
+follow-up once W6b's comparison has landed:
+
+1. **Each project's oracle runs on the JDK its lock names**, so that Lombok runs where its version
+   supports the JDK: hertzbeat runs on JDK 25. Its test files that use the generated members of
+   its main source set's types still fail, since javac reads those types from source, where
+   Lombok doesn't run; they wait for B4.
+2. **Processors that only check code run**, and nothing they report counts (decision 3 above, as
+   built), rather than being recognized and skipped, which would take a list of processor names
+   per project.
+3. **A `corpus generate` command** runs each build's source generation after `corpus fetch` (Maven's
+   `generate-sources`, or the Gradle generator tasks), so the generated-source roots of plugins
+   other than processors, and processor jars a build makes for itself (caffeine's), exist on CI as
+   they did when locking. The weekly job runs it.
