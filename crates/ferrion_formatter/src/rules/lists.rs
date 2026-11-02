@@ -366,9 +366,10 @@ fn is_format_string(item: SyntaxNode<'_>) -> bool {
 /// Whether the input has a list's items in rows that GJF keeps (observed), read one item at a
 /// time:
 ///
-/// - **Lines:** the first item starts a line, and each row starts with an item that starts a
-///   line at the first item's column. An item on a line of its own further right continues the
-///   row, as a row that doesn't fit is printed; one further left means there are no rows.
+/// - **Lines:** each row after the first starts with an item that starts a line at the first
+///   item's column, which may be after the opening delimiter, `Map.of("a", A,` then `"b", B)`
+///   under the `"a"`. An item on a line of its own further right continues the row, as a row
+///   that doesn't fit is printed; one further left means there are no rows.
 /// - **Counts:** every row has the same number of items, except that an initializer's last row
 ///   can have fewer, and at least two rows have them all. Arguments are kept only in pairs,
 ///   `Map.of(` then `"a", A,` then `"b", B)`, with no item left over.
@@ -379,11 +380,13 @@ fn is_format_string(item: SyntaxNode<'_>) -> bool {
 ///   column more than half are (see [`ItemKind`]).
 ///
 /// Rows are printed one a line, each filled at +4 (see [`in_rows`]).
-struct Rows {
+struct Rows<'t> {
     /// False once the items can't be in rows.
     possible: bool,
     arguments: bool,
-    /// The first item's column.
+    /// The first item's first token, and its column, found when an item after it starts a
+    /// line.
+    first: Option<SyntaxToken<'t>>,
     base: Option<u32>,
     /// The number of items in the first row, once it's complete.
     count: Option<u32>,
@@ -392,11 +395,12 @@ struct Rows {
     full: u32,
 }
 
-impl Rows {
-    fn new(shape: Shape) -> Rows {
+impl<'t> Rows<'t> {
+    fn new(shape: Shape) -> Rows<'t> {
         Rows {
             possible: matches!(shape, Shape::Arguments | Shape::Initializer { .. }),
             arguments: shape == Shape::Arguments,
+            first: None,
             base: None,
             count: None,
             current: 0,
@@ -404,28 +408,31 @@ impl Rows {
         }
     }
 
-    fn item(&mut self, item: SyntaxNode<'_>) {
+    fn item(&mut self, item: SyntaxNode<'t>) {
         if !self.possible {
             return;
         }
-        let column = line_start_column(item.first_token());
-        let starts_row = match (self.base, column) {
-            (None, Some(column)) => {
-                self.base = Some(column);
-                false
-            }
-            (None, None) => {
-                self.possible = false;
-                return;
-            }
-            (Some(base), Some(column)) if column < base => {
-                self.possible = false;
-                return;
-            }
-            (Some(base), Some(column)) => column == base,
-            (Some(_), None) => false,
+        let token = item.first_token();
+        let Some(first) = self.first else {
+            self.first = Some(token);
+            self.base = line_start_column(token);
+            self.current = 1;
+            return;
         };
-        if starts_row {
+        let Some(column) = line_start_column(token) else {
+            self.current += 1;
+            return;
+        };
+        let Some(base) = self.base.or_else(|| input_column(first)) else {
+            self.possible = false;
+            return;
+        };
+        self.base = Some(base);
+        if column < base {
+            self.possible = false;
+            return;
+        }
+        if column == base {
             // The row before it is complete, so it must have the first row's count.
             match self.count {
                 None => self.count = Some(self.current),
@@ -733,6 +740,91 @@ fn line_start_column(token: SyntaxToken<'_>) -> Option<u32> {
     }
     Some(column)
 }
+
+/// The column `token` starts at in the input, or the comments before it on its line do, counting
+/// a tab as one column, as GJF does when it compares columns (observed). None past
+/// [`MAX_COLUMN_TOKENS`] tokens from the line's start, so that lists nested on one long line
+/// don't each scan it.
+fn input_column(token: SyntaxToken<'_>) -> Option<u32> {
+    let mut start = token;
+    let mut previous = token.prev_token();
+    while let Some(t) = previous
+        && t.is_trivia()
+        && t.kind() != K::LineTerminator
+    {
+        if is_comment(t.kind()) {
+            start = t;
+        }
+        previous = t.prev_token();
+    }
+    let mut column = 0;
+    let mut previous = start.prev_token();
+    for _ in 0..MAX_COLUMN_TOKENS {
+        let Some(t) = previous else {
+            return Some(column);
+        };
+        let text = t.text();
+        if t.kind() == K::LineTerminator {
+            return Some(column);
+        }
+        if let Some(line) = text.rfind(['\n', '\r']) {
+            return Some(column + width(&text[line + 1..]));
+        }
+        if matches!(t.kind(), K::Gt | K::GtEq) {
+            // The lexer splits `>>` and `>>=`; the run of them is javac's operators.
+            let mut run = String::new();
+            let mut t = Some(t);
+            while let Some(gt) = t
+                && matches!(gt.kind(), K::Gt | K::GtEq)
+            {
+                run.insert_str(0, gt.text());
+                t = gt.prev_token();
+            }
+            column += operators_width(&run);
+            previous = t;
+            continue;
+        }
+        let operator = !t.is_trivia()
+            && !matches!(t.kind(), K::CharLiteral | K::StringLiteral)
+            && text.bytes().all(|b| b.is_ascii_punctuation());
+        column += if operator {
+            operators_width(text)
+        } else {
+            width(text)
+        };
+        previous = t.prev_token();
+    }
+    None
+}
+
+/// The width GJF counts for `run`, an operator, or a run of `>` and `>=` with nothing between
+/// them, which are javac's operators from `>` to `>>>=`: each operator as wide as the square of
+/// its length (observed: the column after `->` or `==` is 2 more than its characters, after
+/// `List<List<String>>` 2 more, after `>>>`, `<<=`, or `...` 6 more).
+fn operators_width(run: &str) -> u32 {
+    if !run.starts_with('>') {
+        let n = run.len() as u32;
+        return n * n;
+    }
+    let bytes = run.as_bytes();
+    let mut i = 0;
+    let mut total = 0;
+    while i < bytes.len() {
+        let mut n = 1;
+        while n < 3 && bytes.get(i + n) == Some(&b'>') {
+            n += 1;
+        }
+        if bytes.get(i + n) == Some(&b'=') {
+            n += 1;
+        }
+        total += (n * n) as u32;
+        i += n;
+    }
+    total
+}
+
+/// How far back [`input_column`] looks for the start of a line.
+const MAX_COLUMN_TOKENS: u32 = 256;
 
 /// Whether a comment comes before `token` on its line, after the token before it.
 fn comment_on_line_before(token: SyntaxToken<'_>) -> bool {

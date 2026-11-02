@@ -1010,7 +1010,9 @@ An initializer whose input has its elements in rows keeps them, one row a line, 
 fit on one, and each row that doesn't fit breaks at +4 before each element that doesn't fit. The
 rows are the input's lines, starting at the first element's column, and are kept when:
 
-- the first element starts a line, and no line starts left of it;
+- no line starts left of the first element, which can follow the `{` on its line. The columns
+  are GJF's: a tab counts one, a comment before the first element is its start, and an operator
+  before it on its line counts the square of its length, so `->` counts 4 and `>>>` 9;
 - every row has as many elements as the first, except that the last can have fewer, and at
   least two rows have them all;
 - the first row has at least two elements other than arrays, counting an array's elements
