@@ -95,13 +95,22 @@ class A {
 
 A field's annotations do the same if any of them has arguments. Annotations without arguments stay
 on the field's line, unless the field doesn't fit on it, and then they go on a line of their own
-before it, still together.
+before it, still together, or one per line if they don't fit together on one line or a line
+comment follows one before the last.
 
 ```java
 @Inject @Named private Foo foo;
 
 @Column(name = "id")
 private long id;
+
+@NoJvmEnvironment @BrowserExcluded // not in browsers
+private static final String A = "a";
+
+@NoJvmEnvironment
+@BrowserExcluded // not in browsers
+@VisibleForTesting
+static final String B = "b";
 ```
 
 A local variable's annotations go on their own lines if there are two or more, if one has
