@@ -756,7 +756,8 @@ qualified, and the link after it; otherwise it is the root alone. A name is a ty
 with an uppercase letter and has a lowercase one, so `FOO_BAR` is not. When the chain has a
 `.stream()` or `.parallelStream()` link, the prefix is everything up to it if that fits on the
 line, and otherwise everything up to it breaks before each `.` too. A chain whose only call has
-fields after it has the call in its prefix, `explorer.lookup(query, 10)` then `.hitsFound`. Both
+fields after it has the call in its prefix, `explorer.lookup(query, 10)` then `.hitsFound`; an
+array access after a chain's last call counts as a field, so `a.b(x).c()[0]` keeps `a.b(x)`. Both
 of these prefixes are measured up to the call's `(`: when the line up to there fits, the call's
 arguments break before its dot does.
 

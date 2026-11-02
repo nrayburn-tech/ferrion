@@ -177,6 +177,19 @@ class Chains {
             .hitsFound
             .length
             .foo();
+    // An array access after the last call counts as a field.
+    parameterType =
+        HasTypeVariablesAAAAAAAA.class.getDeclaredMethod(methodName, List.class)
+            .getGenericParameterTypes()[0];
+    parameterType =
+        HasTypeVariablesAAAAAAAA.class
+            .getDeclaredMethod(methodName, List.class)
+            .getGenericParameterTypes();
+    parameterType =
+        withGenericBoundAAAAAAAA
+            .getDeclaredMethod(methodName, List.class)
+            .getGenericParameterTypes()
+            .aaa()[0];
   }
 
   // On a root that breaks like a longer chain, the links after it are a group of their own,
