@@ -791,6 +791,18 @@ x =
         "teal", HIGHLIGHT_TEAL);
 ```
 
+A first argument that is a format string, a string literal or text block with a `%` in it, or a
+concatenation of only string literals one of which has a `%`, goes on a line of its own when the
+arguments break, and the arguments after it are a list of their own on the next lines: all on one
+line, filled, or one per line. Any method's arguments, or a constructor's, are treated alike;
+`"%s" + x` and a `{}` placeholder are not format strings.
+
+```java
+throw new StorageExhaustedException(
+    "Ran out of memory while growing the slot table: from %,d to %,d",
+    e, this.size + 1, slotCount);
+```
+
 ```java
 foobarbaz(
     argumentNumberOneAAAAAAAAAAA, argumentNumberTwoBBBBBBBBBBBBB, argumentNumberThreeC, d);
