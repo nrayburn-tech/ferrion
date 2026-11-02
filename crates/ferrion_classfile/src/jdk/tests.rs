@@ -180,6 +180,17 @@ fn own_release_from_the_image() {
             .is_some()
     );
     assert!(!platform.is_visible(&PackageName::new("jdk/incubator/vector")));
+    // `--add-modules` makes it a root; `ALL-SYSTEM` makes every module one.
+    for roots in [["jdk.incubator.vector"], ["ALL-SYSTEM"]] {
+        let visible = platform.visible_with_roots(&roots).unwrap();
+        assert!(visible.contains("jdk/incubator/vector"), "{roots:?}");
+        assert!(visible.contains("java/lang"), "{roots:?}");
+        assert!(!visible.contains("jdk/internal/misc"), "{roots:?}");
+    }
+    assert_eq!(
+        platform.visible_with_roots(&[]).unwrap().len(),
+        platform.visible_packages().unwrap().len()
+    );
     assert_eq!(platform.modules().len(), 2);
     assert_eq!(
         platform.class_names().unwrap(),
