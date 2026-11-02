@@ -23,7 +23,9 @@ differences` checks against GJF and Ferrion both.
   input, at most one blank line, except that a block comment on one line that trails code, other
   than an opening `(`, `[`, or `{`, isn't followed by the input's line break, as GJF does. Where
   the line breaks there is then the rules' choice: `int x = /* why */` then `5;` gives
-  `int x = /* why */ 5;`.
+  `int x = /* why */ 5;`. One that starts a line with code after it on the line isn't preceded
+  by the input's line break either, and one naming a parameter, `/* name= */`, keeps no line
+  break around it: `foo(a,` then `/* c */ b)` gives `foo(a, /* c */ b)`.
 
   A comment on the line of the code before it has a space before it, as GJF puts one
   (`f(x);// c` gives `f(x); // c`), except a block comment after a `(`, `.`, or `<`, which goes

@@ -442,6 +442,21 @@ impl<'t> Formatter<'t> {
                     self.space();
                 }
             }
+            // A block comment on one line that starts a line, with code after it on the line,
+            // or one naming a parameter, joins the line before it, as GJF prints it
+            // (observed): `foo(a,` then `/* c */ b)` is `foo(a, /* c */ b)`. It takes the
+            // space the rules put before the code, or one after anything but an opening
+            // delimiter.
+            1 if joins(comment, token) => {
+                if !token.prev_non_trivia().is_some_and(|t| {
+                    matches!(
+                        t.kind(),
+                        SyntaxKind::LParen | SyntaxKind::LBracket | SyntaxKind::LBrace
+                    )
+                }) {
+                    self.space();
+                }
+            }
             1 => self.hard_line(),
             _ => self.blank_line(),
         }
@@ -471,8 +486,26 @@ impl<'t> Formatter<'t> {
         } else {
             comment.line_breaks_after
         };
+        // A block comment naming a parameter joins the line after it too (observed): `foo(a,`
+        // then `/* b= */` then `b)` is `foo(a, /* b= */ b)`.
+        let joined =
+            breaks == 1 && one_line_block_comment(token) && rules::names_parameter(token.text());
         match breaks {
             0 if ends_line => self.line_owed = 1,
+            _ if joined => {
+                if !token.next_non_trivia().is_some_and(|t| {
+                    matches!(
+                        t.kind(),
+                        SyntaxKind::Comma
+                            | SyntaxKind::Semi
+                            | SyntaxKind::RParen
+                            | SyntaxKind::RBracket
+                            | SyntaxKind::Dot
+                    )
+                }) {
+                    self.space();
+                }
+            }
             0 => {
                 if tight_before(token)
                     || token
@@ -610,6 +643,23 @@ fn after_opening_delimiter(comment: SyntaxToken<'_>) -> bool {
                 SyntaxKind::LParen | SyntaxKind::LBracket | SyntaxKind::LBrace
             )
         })
+}
+
+/// Whether `comment`, which starts a line, joins the line before it: a block comment on one line
+/// with code after it on its line, or one naming a parameter, `/* name= */`, in an expression or
+/// a list. Before a statement, a member, or an `else`, it keeps its line (observed).
+fn joins(comment: Comment, token: SyntaxToken<'_>) -> bool {
+    let in_expression = rules::area(token.parent().kind()) == Some(rules::Area::Expressions)
+        || matches!(
+            token.parent().kind(),
+            SyntaxKind::FormalParameters
+                | SyntaxKind::AnnotationArguments
+                | SyntaxKind::ElementValueArray
+                | SyntaxKind::TypeArguments
+        );
+    in_expression
+        && one_line_block_comment(token)
+        && (comment.line_breaks_after == 0 || rules::names_parameter(token.text()))
 }
 
 /// Whether the next token after `token` other than whitespace and line terminators is a comment.

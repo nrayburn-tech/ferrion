@@ -709,7 +709,7 @@ fn comment_on_line_after(token: SyntaxToken<'_>) -> bool {
 }
 
 /// Whether `comment` is `/* name= */`.
-fn names_parameter(comment: &str) -> bool {
+pub(crate) fn names_parameter(comment: &str) -> bool {
     comment
         .strip_prefix("/*")
         .and_then(|c| c.strip_suffix("*/"))

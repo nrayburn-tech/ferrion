@@ -97,4 +97,38 @@ class Lists {
        * a block comment
        */
       int a, int b) {}
+
+  // A block comment on one line joins the lines around it unless it is on a line of its own,
+  // and one naming a parameter joins them always. The space after a comma and the one before a
+  // comment on its line count once.
+  void joined() {
+    foo(a,
+        /* c */ b);
+    foo(
+        /* c */ a, b);
+    foo(a, /* c */
+        b);
+    foo(a /* c */
+        , b);
+    foo(a, b
+        /* c */);
+    foo(a,
+        /* c= */
+        b);
+    int[] y = {1,
+      /* on its own line */
+      2};
+    x = a
+        /* c */ + b;
+    empty.scheduleRebalancing(0, /* bufferCeiling= */ 0,
+        /* primaryReservedLimit= */ 0, /* historyBatchSize= */ 1000);
+    report(up, /* bufferCap= */ 4095,
+        /* bufferUses= */ 0, /* coreUses= */ 0, /* faults= */ 10000);
+    @A(a = 1,
+        /* c */ b = 2)
+    int q;
+  }
+
+  void n(int a,
+      /* c */ int b) {}
 }
