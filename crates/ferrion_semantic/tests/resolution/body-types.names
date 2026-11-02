@@ -6,14 +6,14 @@ java -> package java
 new Member().fromMember -> b3 method-of-expression
 Member -> type p/Types$Member source p/Types.java
 Base -> type p/Base source p/Base.java
-own -> field local p/Types.java:219.own
+own -> field local p/Types.java:213.own
 inherited -> field p/Base.inherited
-own -> field local p/Types.java:219.own
+own -> field local p/Types.java:213.own
 new Member().fromLocal -> b3 method-of-expression
-Member -> type local p/Types.java:219
-Member -> type local p/Types.java:219
-Member -> type local p/Types.java:219
-m.own -> field local p/Types.java:219.own
+Member -> type local p/Types.java:213
+Member -> type local p/Types.java:213
+Member -> type local p/Types.java:213
+m.own -> field local p/Types.java:213.own
 m -> local p/Types.java:345
 m.inherited -> field p/Base.inherited
 m -> local p/Types.java:345
@@ -24,28 +24,28 @@ l -> local p/Types.java:405
 T -> typevar method p/Types.generic(Ljava/lang/Object;)Ljava/lang/Object; T
 T -> typevar method p/Types.generic(Ljava/lang/Object;)Ljava/lang/Object; T
 T -> typevar method p/Types.generic(Ljava/lang/Object;)Ljava/lang/Object; T
-U -> typevar type local p/Types.java:495 U
-Box<String> -> type local p/Types.java:495
+U -> typevar type local p/Types.java:489 U
+Box<String> -> type local p/Types.java:489
 String -> type java/lang/String class platform
-Box<> -> type local p/Types.java:495
-box.held -> field local p/Types.java:495.held
+Box<> -> type local p/Types.java:489
+box.held -> field local p/Types.java:489.held
 box -> local p/Types.java:543
 Base -> type p/Base source p/Base.java
 Base -> type p/Base source p/Base.java
 value -> local p/Types.java:656
 inherited -> field p/Base.inherited
-own -> field local p/Types.java:707.own
+own -> field local p/Types.java:718.own
 other -> local p/Types.java:679
 Runnable -> type java/lang/Runnable class platform
 Runnable -> type java/lang/Runnable class platform
 value -> local p/Types.java:656
-Inner -> type local p/Types.java:951
-Inner -> type local p/Types.java:951
-Outer.Inner -> type local p/Types.java:951
-Outer -> type local p/Types.java:937
+Inner -> type local p/Types.java:945
+Inner -> type local p/Types.java:945
+Outer.Inner -> type local p/Types.java:945
+Outer -> type local p/Types.java:931
 new Outer().make -> b3 method-of-expression
-Outer -> type local p/Types.java:937
-inner.deep -> field local p/Types.java:951.deep
+Outer -> type local p/Types.java:931
+inner.deep -> field local p/Types.java:945.deep
 inner -> local p/Types.java:1030
 # type p/Types source p/Types.java
   superclass type java/lang/Object class platform
@@ -64,30 +64,30 @@ inner -> local p/Types.java:1030
   superclass type java/lang/Object class platform
   method fromMemberList()V
   method List()V implicit
-# type local p/Types.java:219
+# type local p/Types.java:213
   superclass type p/Base source p/Base.java
   field own I
   method fromLocal()V
   method Member()V implicit
-# type local p/Types.java:495
+# type local p/Types.java:489
   superclass type java/lang/Object class platform
   field held Ljava/lang/Object;
   field other Ljava/lang/Object;
   method Box()V implicit
-# type local p/Types.java:707
+# type local p/Types.java:718
   superclass type p/Base source p/Base.java
   field own I
   method get()I
-# type local p/Types.java:839
+# type local p/Types.java:854
   superclass type java/lang/Object class platform
   interface type java/lang/Runnable class platform
   method run()V
-# type local p/Types.java:937
+# type local p/Types.java:931
   superclass type java/lang/Object class platform
-  member Inner: type local p/Types.java:951
-  method make()Llocal p/Types.java:951;
+  member Inner: type local p/Types.java:945
+  method make()Llocal p/Types.java:945;
   method Outer()V implicit
-# type local p/Types.java:951
+# type local p/Types.java:945
   superclass type java/lang/Object class platform
   field deep I
   method Inner()V implicit
@@ -100,14 +100,14 @@ p -> package p
 == records p/Records.java
 p -> package p
 x -> local p/Records.java:78
-y -> field local p/Records.java:100.y
+y -> field local p/Records.java:93.y
 x -> local p/Records.java:78
 # type p/Records source p/Records.java
   superclass type java/lang/Object class platform
   field x I
   method m()V
   method Records()V implicit
-# type local p/Records.java:100
+# type local p/Records.java:93
   superclass type java/lang/Record class platform
   field y I
   method f()I
@@ -116,10 +116,10 @@ x -> local p/Records.java:78
   method equals(Ljava/lang/Object;)Z implicit
   method hashCode()I implicit
   method toString()Ljava/lang/String; implicit
-# type local p/Records.java:152
+# type local p/Records.java:147
   superclass type java/lang/Enum class platform
-  field A Llocal p/Records.java:152;
+  field A Llocal p/Records.java:147;
   method g()I
   method E()V implicit
-  method values()[Llocal p/Records.java:152; implicit
-  method valueOf(Ljava/lang/String;)Llocal p/Records.java:152; implicit
+  method values()[Llocal p/Records.java:147; implicit
+  method valueOf(Ljava/lang/String;)Llocal p/Records.java:147; implicit

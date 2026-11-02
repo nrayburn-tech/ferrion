@@ -350,13 +350,14 @@ impl Snapshot {
     }
 
     /// The descriptor of a resolved type's erasure: `Ljava/lang/String;`, `[I`. A type variable
-    /// is erased to its first bound's erasure, a bound that is itself a type variable to
-    /// `Object`, so that bounds naming each other can't loop.
+    /// is erased to its first bound's erasure, following bounds that are type variables
+    /// themselves (`<X extends T>` with `T extends Enum<T>` is `Ljava/lang/Enum;`, as javac
+    /// erases it) up to [`MAX_BOUNDS`] deep, so that bounds naming each other can't loop.
     pub fn erased_descriptor(&self, ty: &Ty) -> Result<String, Cancelled> {
-        self.erasure(ty, true)
+        self.erasure(ty, 0)
     }
 
-    fn erasure(&self, ty: &Ty, follow: bool) -> Result<String, Cancelled> {
+    fn erasure(&self, ty: &Ty, depth: u32) -> Result<String, Cancelled> {
         let mut out = String::new();
         let mut parts: &[TyPart] = ty.parts();
         while let Some(TyPart::Array { dims }) = parts.first() {
@@ -374,9 +375,9 @@ impl Snapshot {
             Some(TyPart::Binary { binary, .. }) => {
                 out.push_str(&format!("L{};", self.names().text(*binary)))
             }
-            Some(TyPart::TypeVar { owner, index }) if follow => {
+            Some(TyPart::TypeVar { owner, index }) if depth < MAX_BOUNDS => {
                 match self.first_bound(*owner, *index)? {
-                    Some(bound) => out.push_str(&self.erasure(&bound, false)?),
+                    Some(bound) => out.push_str(&self.erasure(&bound, depth + 1)?),
                     None => out.push_str("Ljava/lang/Object;"),
                 }
             }
@@ -411,6 +412,9 @@ impl Snapshot {
         }))
     }
 }
+
+/// How many type variables' bounds erasure follows, one through the next.
+const MAX_BOUNDS: u32 = 64;
 
 struct Walker<'r, 's> {
     r: Resolver<'r, 's>,

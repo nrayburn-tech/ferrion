@@ -669,6 +669,16 @@ impl Reads<'_> {
         Ok((tree, path))
     }
 
+    /// The release `file` is analyzed at: its source set's. Records the file's input.
+    pub(crate) fn release(&mut self, file: FileId) -> Result<u32, Cancelled> {
+        let (release, version) = self.snapshot.inputs(|i| {
+            let state = i.file(file).unwrap_or_else(|| missing(file));
+            (i.sets[state.set.index()].release, state.version)
+        })?;
+        self.record(Dep::FileInput(file), Fingerprint::from_version(version));
+        Ok(release)
+    }
+
     /// A source set's files. Records the list.
     pub(crate) fn set_files(&mut self, set: SourceSetId) -> Result<Arc<[FileId]>, Cancelled> {
         let (files, version) = self.snapshot.inputs(|i| {

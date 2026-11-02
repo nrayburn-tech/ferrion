@@ -122,7 +122,7 @@ MERCURY -> b3 expression-type
 # type local p/Misc.java:90
   superclass type p/Planet source p/Misc.java
   method moons()I
-# type local p/Misc.java:619
+# type local p/Misc.java:632
   superclass type java/lang/Object class platform
   field size I
 == main Main.java

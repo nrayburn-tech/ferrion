@@ -109,8 +109,8 @@ pub struct BodyNames {
 pub struct LocalType {
     /// The type declaration, or for an anonymous class its body.
     pub node: NodeId,
-    /// The offset of its name, or for an anonymous class of its `new` or enum constant: where
-    /// its key says it is.
+    /// The offset of its `class` (or `interface`, `enum`, `record`) keyword, or for an
+    /// anonymous class of its body's `{` or its enum constant's name: where its key says it is.
     pub at: u32,
     pub entry: Arc<TypeEntry>,
     pub supertypes: Arc<Supertypes>,
@@ -170,6 +170,52 @@ impl Snapshot {
             .local_types
             .get(index as usize)
             .cloned())
+    }
+}
+
+/// Where a local class, or a member type of one, is for its key: its `class`, `interface`,
+/// `enum`, or `record` keyword (or the `@` of `@interface`), after its modifiers, which is where
+/// javac's tree for it is.
+fn declaration_at(decl: SyntaxNode<'_>) -> u32 {
+    decl.direct_tokens()
+        .find(|t| !t.is_trivia())
+        .map_or(decl.span().start, |t| t.span().start)
+}
+
+/// Where a compact constructor's parameter for `component` is for its key: where javac's tree
+/// for the component's type is, since javac makes the parameter from the component (observed:
+/// `String` in `@A String a`, the last `.` of `java.lang.String`, the `<` of `List<String>`, the
+/// first `[` or its annotation in an array type, and the `...` of `String... f`).
+fn component_type_at(component: ast::RecordComponent<'_>) -> u32 {
+    if let Some(varargs) = component.varargs() {
+        return varargs.syntax().span().start;
+    }
+    let Some(ty) = component.ty() else {
+        return component.syntax().span().start;
+    };
+    let ty = ty.syntax();
+    let child = |kind: SyntaxKind| ty.children().find(|c| c.kind() == kind);
+    match ty.kind() {
+        SyntaxKind::ClassType => {
+            if let Some(arguments) = child(SyntaxKind::TypeArguments) {
+                return arguments.span().start;
+            }
+            if let Some(annotation) = child(SyntaxKind::Annotation) {
+                return annotation.span().start;
+            }
+            let tokens = || ty.direct_tokens().filter(|t| !t.is_trivia());
+            if child(SyntaxKind::ClassType).is_some()
+                && let Some(dot) = tokens().find(|t| t.kind() == SyntaxKind::Dot)
+            {
+                return dot.span().start;
+            }
+            tokens()
+                .filter(|t| matches!(t.kind(), SyntaxKind::Identifier | SyntaxKind::Underscore))
+                .last()
+                .map_or(ty.span().start, |t| t.span().start)
+        }
+        SyntaxKind::ArrayType => child(SyntaxKind::Dim).map_or(ty.span().start, |d| d.span().start),
+        _ => ty.span().start,
     }
 }
 
@@ -911,7 +957,8 @@ impl Walker<'_, '_, '_> {
         for param in parameters.iter().flat_map(|p| p.parameters()) {
             let extra = param.dims().count() + usize::from(param.varargs().is_some());
             let ty = TypeRef::from_syntax(param.ty(), &self.names);
-            declared.push((param.syntax(), param.name(), ty, extra as u32));
+            let at = param.name().map(|n| n.span().start);
+            declared.push((param.syntax(), param.name(), ty, extra as u32, at));
         }
         if member.kind() == SyntaxKind::CompactConstructorDecl
             && let Some(record) = member
@@ -922,14 +969,19 @@ impl Walker<'_, '_, '_> {
             for component in record.record_header().iter().flat_map(|h| h.components()) {
                 let extra = u32::from(component.varargs().is_some());
                 let ty = TypeRef::from_syntax(component.ty(), &self.names);
-                declared.push((component.syntax(), component.name(), ty, extra));
+                let at = Some(component_type_at(component));
+                declared.push((component.syntax(), component.name(), ty, extra, at));
             }
         }
-        for (node, name, ty, extra) in declared {
+        for (node, name, ty, extra, at) in declared {
             let resolved = self.r.ty(&scope, &ty, extra)?;
             self.r.errors.clear();
             let ty = self.var_ty(&resolved);
-            self.declare_local(node, name, ty);
+            if let Some(index) = self.declare_local(node, name, ty)
+                && let Some(at) = at
+            {
+                self.env.locals[index as usize].at = at;
+            }
         }
         Ok(())
     }
@@ -1105,6 +1157,9 @@ impl Walker<'_, '_, '_> {
                     _ => Selector::Unknown,
                 };
                 self.switch_enums.push((node.id(), selector));
+                // A local declared in a statement group is in scope in the rest of the switch
+                // block, the later groups included (JLS 6.3).
+                self.env.push(node.id());
             }
             SyntaxKind::SwitchLabel | SyntaxKind::InstanceofExpr => {
                 self.pattern_marks.insert(node.id(), self.patterns.len());
@@ -1212,8 +1267,12 @@ impl Walker<'_, '_, '_> {
                             locals.extend_from_slice(l);
                         }
                     }
-                    self.env.push(parent.id());
-                    self.bind_locals(&locals);
+                    // The group's pattern bindings are its own; so, as built, are the locals
+                    // of a group that has them.
+                    if !locals.is_empty() {
+                        self.env.push(parent.id());
+                        self.bind_locals(&locals);
+                    }
                 }
             }
             SyntaxKind::TryStmt => {
@@ -1277,6 +1336,7 @@ impl Walker<'_, '_, '_> {
             SyntaxKind::MethodRefExpr => self.method_ref(node)?,
             SyntaxKind::ThisExpr => self.this_expr(node)?,
             SyntaxKind::SuperExpr => self.super_expr(node)?,
+            SyntaxKind::NewExpr => self.new_as_outer(node),
             SyntaxKind::ParenExpr => {
                 let inner = id_of(ast::ParenExpr::cast(node).unwrap().expr());
                 if let Some(b) = inner.and_then(|i| self.bindings.get(&i)).cloned() {
@@ -1521,6 +1581,36 @@ impl Walker<'_, '_, '_> {
         });
         if reads {
             self.meanings.insert(node.id(), meaning);
+        }
+    }
+
+    /// `new Outer().new Inner()`: the outer instance is of the class it creates, whose member
+    /// types `Inner` is looked up in. Kept for that alone; a created value's other members
+    /// are B3's.
+    fn new_as_outer(&mut self, node: SyntaxNode<'_>) {
+        let new = ast::NewExpr::cast(node).unwrap();
+        let is_outer = node
+            .parent()
+            .and_then(ast::NewExpr::cast)
+            .and_then(|p| p.outer())
+            .is_some_and(|outer| outer.syntax() == node);
+        if !is_outer {
+            return;
+        }
+        // An anonymous class: its own member types and those it inherits.
+        if let Some(body) = new.body() {
+            if let Some(&index) = self.env.local_of_node.get(&body.syntax().id()) {
+                let key = self.env.local_types[index as usize].key;
+                self.store(node, Meaning::Value(VarTy::Class(key)));
+            }
+            return;
+        }
+        let created = match new.ty() {
+            Some(ast::Type::ClassType(c)) => self.type_of.get(&c.syntax().id()).cloned(),
+            _ => None,
+        };
+        if let Some(TypeResolution::Type(key)) = created {
+            self.store(node, Meaning::Value(VarTy::Class(key)));
         }
     }
 
@@ -2271,9 +2361,7 @@ impl Walker<'_, '_, '_> {
             }
             let header = Header::of(decl);
             let name = header.name.map_or(Name::EMPTY, |n| self.text(n));
-            let at = header
-                .name
-                .map_or(decl.syntax().span().start, |n| n.span().start);
+            let at = declaration_at(decl.syntax());
             let access = access_of(modifiers(header.modifiers, &self.names).0, self.env.package);
             let member = self.new_local_type(decl.syntax(), at, header.kind, access);
             self.env.local_types[outer as usize]
@@ -2303,7 +2391,7 @@ impl Walker<'_, '_, '_> {
         let index = match self.env.local_of_node.get(&node.id()) {
             Some(&index) => index,
             None => {
-                let at = header.name.map_or(node.span().start, |n| n.span().start);
+                let at = declaration_at(node);
                 let index = self.new_local_type(node, at, header.kind, MemberAccess::Public);
                 let key = self.env.local_types[index as usize].key;
                 self.env.bind_type(name, TypeResolution::Type(key));
@@ -2363,7 +2451,9 @@ impl Walker<'_, '_, '_> {
         {
             for component in record.record_header().iter().flat_map(|h| h.components()) {
                 let ty = self.declared_ty(component.ty(), component.varargs().is_some());
-                self.declare_local(component.syntax(), component.name(), ty);
+                if let Some(index) = self.declare_local(component.syntax(), component.name(), ty) {
+                    self.env.locals[index as usize].at = component_type_at(component);
+                }
             }
         }
     }
@@ -2398,7 +2488,8 @@ impl Walker<'_, '_, '_> {
                     Some(TypeResolution::Error(e)) => Err(e),
                     _ => Err(Self::not_found(Name::EMPTY, None)),
                 };
-                (parent.span().start, superclass)
+                // Where javac's tree for the class is: its body's `{`.
+                (node.span().start, superclass)
             }
             SyntaxKind::EnumConstant => {
                 let constant = ast::EnumConstant::cast(parent).unwrap();
@@ -2829,6 +2920,17 @@ impl Walker<'_, '_, '_> {
             match s {
                 Ok(s) => keys.push(*s),
                 Err(_) => incomplete = true,
+            }
+        }
+        // An interface without superinterfaces has `Object`'s public methods as members (JLS
+        // 9.2): `getClass()` in an interface's default method is searched in the interface.
+        // Only `Object` itself has no superclass otherwise.
+        if supertypes.superclass.is_none() && supertypes.interfaces.is_empty() {
+            let object = self.names.intern("java/lang/Object");
+            if let Some(found) = self.r.reads.find_binary(self.set, object)?
+                && found != key
+            {
+                keys.push(found);
             }
         }
         Ok((keys, incomplete))
