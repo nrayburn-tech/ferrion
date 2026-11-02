@@ -5,43 +5,44 @@
 # differing lines are above the number here; a change that lowers them records the new numbers
 # with `cargo format-check gjf --update`. This file's history is the record over time.
 #
-# These numbers are from the first pass of the GJF diff (work order step 3), over the core and what
-# the construct areas duplicated: 72,212 lines in all, with 90% of the files identical. The
-# construct rules (step 2) gave 74,204 lines, with 88% identical. The formatter's core, whose first rule printed every construct with single
-# spaces and line breaks, gave 1,156,515; each input compared unchanged, before the formatter,
-# gave 1,747,623, most of lucene's in a few generated files.
+# These numbers are from the GJF diff (work order step 3): 18,242 lines in all, with 95.6% of the
+# files identical. Most of what's left is text blocks and long `//` comments, which are departures
+# (docs/style.md). The first pass over the core gave 72,212 lines, with 90% identical; the
+# construct rules (step 2) gave 74,204, with 88%. The formatter's core, whose first rule printed
+# every construct with single spaces and line breaks, gave 1,156,515; each input compared
+# unchanged, before the formatter, gave 1,747,623, most of lucene's in a few generated files.
 
 [jedis]
 compared = 1077
-identical = 974
-differing-lines = 1911
+identical = 1038
+differing-lines = 321
 
 [guava]
 compared = 1531
-identical = 1412
-differing-lines = 6439
+identical = 1519
+differing-lines = 111
 
 [caffeine]
 compared = 708
-identical = 626
-differing-lines = 1755
+identical = 678
+differing-lines = 488
 
 [spring-data-jpa]
 compared = 612
-identical = 533
-differing-lines = 3835
+identical = 572
+differing-lines = 3304
 
 [lucene]
 compared = 5968
-identical = 5503
-differing-lines = 39898
+identical = 5906
+differing-lines = 288
 
 [hertzbeat]
 compared = 1384
-identical = 1254
-differing-lines = 2955
+identical = 1292
+differing-lines = 2591
 
 [helidon]
 compared = 4439
-identical = 3830
-differing-lines = 15419
+identical = 4023
+differing-lines = 11139

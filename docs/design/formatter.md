@@ -595,6 +595,10 @@ once and heavy jobs going through the shared slot lock.
    its section to `docs/style.md`. Done: with all four, 74,204 lines differ from GJF over the
    corpus, and 88% of the files are identical to GJF's output.
 3. **The GJF diff:** work down the largest differences on the corpus, and finish `docs/style.md`.
+   Done: a pass over the core, then one per area (lists, expressions, declarations, statements
+   and comments), leaves 18,242 lines different from GJF over the corpus, with 95.6% of the files
+   identical. About three quarters of what's left is text blocks and long `//` comments, which
+   are departures.
 4. **Exit check** against the roadmap's A1 criteria.
 
 ## What was consulted
