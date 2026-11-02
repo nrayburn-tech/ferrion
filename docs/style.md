@@ -71,10 +71,14 @@ stays on its line, and a block comment after an annotation stays on the annotati
 public @Nullable String name() {}
 ```
 
-The exception is a method's `@Nullable` or `@NonNull` right before its return type, which stays on
-the type's line when the file imports it from `org.jspecify.annotations` or
+The exception is a `@Nullable` or `@NonNull` right before the type of a method, a field, a
+parameter, or a local variable, with nothing but annotations before it, which stays on the type's
+line when the file imports it from `org.jspecify.annotations` or
 `org.checkerframework.checker.nullness.qual`. GJF recognizes those type-use annotations by their
-import (observed), and Ferrion does the same, from the syntax alone.
+import (observed), and Ferrion does the same, from the syntax alone. Such an annotation is laid
+out as part of the type, and the rules below are for the annotations before it: `@Nullable
+String name` is a declaration without annotations, and in `@Deprecated @Nullable String name`
+only `@Deprecated` can go on a line of its own.
 
 ```java
 import org.jspecify.annotations.Nullable;
@@ -82,6 +86,10 @@ import org.jspecify.annotations.Nullable;
 class A {
   @Override
   @Nullable String name() {}
+
+  @Deprecated
+  @Nullable ConcurrentContainer<? extends ObservableResult<? extends ValueT>>
+      resultsAwaitingMerging = null;
 }
 ```
 

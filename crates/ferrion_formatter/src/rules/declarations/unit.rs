@@ -22,7 +22,7 @@ pub(super) fn compilation_unit<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) 
             emit(f, part);
             break;
         }
-        let spaced = types::spaced_member(part);
+        let spaced = types::spaced_member(f, part);
         match previous.map(|p| p.kind()) {
             None => {}
             Some(K::PackageDecl) => f.blank_line(),

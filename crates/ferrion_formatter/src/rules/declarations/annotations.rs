@@ -12,6 +12,10 @@
 //!   declaration doesn't fit on its line; otherwise inline, `@A int x = 1;`.
 //! - **Parameters and record components:** inline; when the parameter doesn't fit, the
 //!   annotations break onto their own lines at +4 as a group, then the rest of the parameter.
+//!
+//! In each, the type-use annotations right before the type of a method, field, parameter, or
+//! local (see [`is_type_use`]) stay on the type's line, and only the annotations before them are
+//! placed as above.
 
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
@@ -58,7 +62,7 @@ pub(super) enum After {
 pub(super) fn modifiers_node<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     let layout = match node.parent() {
         Some(parent) if super::super::is_member(parent.kind()) => match parent.kind() {
-            K::FieldDecl => field_layout(node),
+            K::FieldDecl => field_layout(f, node),
             K::MethodDecl => Layout::BeforeType,
             _ => Layout::OwnLines,
         },
@@ -88,10 +92,11 @@ pub(crate) fn local_variable<'t>(
         .and_then(|local| local.parent())
         .is_some_and(|p| matches!(p.kind(), K::Block | K::SwitchGroup));
     let leading = leading_annotations(node);
-    let layout = if !in_block || leading.is_empty() {
+    // Type-use annotations right before the type stay on its line (observed).
+    let layout = if !in_block || leading.len() == type_use_annotations(f, node) {
         Layout::Inline
     } else if leading.len() > 1 || leading.iter().any(|&a| has_arguments(a)) {
-        Layout::OwnLines
+        Layout::BeforeType
     } else {
         Layout::LineAfter
     };
@@ -110,10 +115,11 @@ pub(crate) fn local_variable<'t>(
 }
 
 /// The layout of a field's modifiers: own lines if a leading annotation has arguments, otherwise
-/// a `Line` after the leading annotations, for the field's group to break.
-pub(super) fn field_layout(node: SyntaxNode<'_>) -> Layout {
+/// a `Line` after the leading annotations, for the field's group to break. Type-use annotations
+/// right before the type stay on its line either way, and don't count.
+pub(super) fn field_layout(f: &Formatter<'_>, node: SyntaxNode<'_>) -> Layout {
     let leading = leading_annotations(node);
-    if leading.is_empty() {
+    if leading.len() == type_use_annotations(f, node) {
         Layout::Inline
     } else if leading.iter().any(|&a| has_arguments(a)) {
         Layout::BeforeType
@@ -129,6 +135,18 @@ pub(super) fn leading_annotations(modifiers: SyntaxNode<'_>) -> Vec<SyntaxNode<'
         .filter(|part| !part.as_token().is_some_and(|t| t.is_trivia()))
         .map_while(|part| part.as_node().filter(|n| n.kind() == K::Annotation))
         .collect()
+}
+
+/// How many of the annotations at the end of `modifiers` are type-use annotations that GJF keeps
+/// on the line of the type after them (see [`is_type_use`]): none unless `modifiers` holds
+/// nothing but annotations.
+pub(super) fn type_use_annotations(f: &Formatter<'_>, modifiers: SyntaxNode<'_>) -> usize {
+    let items = modifiers::items(modifiers);
+    if items.iter().all(|item| matches!(item, Item::Annotation(_))) {
+        type_use_suffix(f, &items)
+    } else {
+        0
+    }
 }
 
 /// Whether `annotation` has arguments: `@A(1)`, but not `@A` or `@A()`.
@@ -150,19 +168,28 @@ pub(super) fn modifiers<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, layout:
         .iter()
         .take_while(|item| matches!(item, Item::Annotation(_)))
         .count();
-    // The leading annotations that go on lines of their own.
-    let own_lines = match layout {
-        Layout::BeforeType if leading == items.len() => leading - type_use_suffix(f, &items),
-        Layout::OwnLines | Layout::BeforeType => leading,
+    // The type-use annotations right before the type, which stay on its line, and the leading
+    // annotations before them, which the layout places.
+    let type_use = match layout {
+        Layout::BeforeType | Layout::LineAfter | Layout::Parameter if leading == items.len() => {
+            type_use_suffix(f, &items)
+        }
         _ => 0,
     };
-    let parameter = layout == Layout::Parameter && leading > 0;
+    let placed = leading - type_use;
+    // The leading annotations that go on lines of their own.
+    let own_lines = match layout {
+        Layout::OwnLines => leading,
+        Layout::BeforeType => placed,
+        _ => 0,
+    };
+    let parameter = layout == Layout::Parameter && placed > 0;
     for (i, item) in items.iter().enumerate() {
         if i > 0 {
             match layout {
                 _ if i <= own_lines => {}
-                Layout::LineAfter if i == leading => f.line(),
-                Layout::Parameter if i <= leading => f.line(),
+                Layout::LineAfter if i == placed => f.line(),
+                Layout::Parameter if i <= placed => f.line(),
                 _ => f.space(),
             }
         }
@@ -176,7 +203,7 @@ pub(super) fn modifiers<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, layout:
             Item::Annotation(annotation) => f.node(*annotation),
             Item::Run(run) => modifiers::run(f, run, reorder),
         }
-        if parameter && i + 1 == leading {
+        if parameter && i + 1 == placed {
             f.end();
             f.end();
             f.start_indent(IndentKind::Continuation);
@@ -199,7 +226,7 @@ pub(super) fn modifiers<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, layout:
         }
     }
     match layout {
-        _ if leading < items.len() => After::Space,
+        _ if leading < items.len() || type_use > 0 => After::Space,
         _ if own_lines == items.len() => After::Nothing,
         Layout::LineAfter | Layout::Parameter => {
             f.line();
