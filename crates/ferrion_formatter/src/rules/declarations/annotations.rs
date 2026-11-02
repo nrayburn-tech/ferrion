@@ -56,7 +56,8 @@ pub(super) enum After {
 }
 
 /// The rule for a `Modifiers` node formatted on its own, as one in another area's construct is
-/// (a catch or lambda parameter, a pattern): inline. A line break after the modifiers is emitted
+/// (a catch or lambda parameter, a pattern): inline, except for a catch parameter's annotations
+/// with arguments, on their own lines. A line break after the modifiers is emitted
 /// here, since the parent puts only a space after them. A local variable's are laid out by
 /// [`local_variable`].
 pub(super) fn modifiers_node<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
@@ -67,6 +68,14 @@ pub(super) fn modifiers_node<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             _ => Layout::OwnLines,
         },
         Some(parent) if parent.kind() == K::EnumConstant => Layout::OwnLines,
+        // A catch parameter's annotations go on their own lines if one has arguments, as a
+        // field's do, unless it catches several types (observed).
+        Some(parent)
+            if parent.kind() == K::CatchParameter
+                && !parent.children().any(|c| c.kind() == K::UnionType) =>
+        {
+            field_layout(f, node)
+        }
         _ => Layout::Inline,
     };
     let layout = if layout == Layout::LineAfter {
