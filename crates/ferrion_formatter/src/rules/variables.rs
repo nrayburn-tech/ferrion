@@ -5,6 +5,7 @@
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
 use super::expressions::Indentation;
+use super::lists::separated;
 use super::{children, emit, first_token};
 use crate::document::IndentKind;
 use crate::format::Formatter;
@@ -52,6 +53,34 @@ pub(crate) fn single_declarator<'t>(
             }
         });
     }
+}
+
+/// Emits a type and several declarators, `rest`, with the commas between them: one to a line at
+/// +4 when they don't fit on one, and first a line break at +4 between the type and the first
+/// declarator when the type and the whole first declarator up to its comma don't fit (observed
+/// in GJF: `Method` then `A =` at +4 and its value at +8, then `B = ...` at +4).
+pub(crate) fn several_declarators<'t>(
+    f: &mut Formatter<'t>,
+    ty: NodeOrToken<'t>,
+    rest: &[NodeOrToken<'t>],
+) {
+    emit(f, ty);
+    f.indent(IndentKind::Continuation, |f| {
+        f.group(|f| {
+            let comma = rest
+                .iter()
+                .position(|part| part.kind() == K::Comma)
+                .unwrap_or(rest.len());
+            let (first, rest) = rest.split_at(comma);
+            // The break after the type measures the first declarator and its comma, which
+            // stays out of the group so that a comment after it doesn't break the type.
+            f.group(|f| {
+                f.line();
+                first.iter().for_each(|&part| emit(f, part));
+            });
+            separated(f, rest);
+        });
+    });
 }
 
 /// Emits a part of a declarator before its `=`: the name, or a dimension, which is spaced from

@@ -7,13 +7,16 @@ use super::annotations::{self, After, Layout};
 use super::{emit, first_token, parts, take};
 use crate::document::IndentKind;
 use crate::format::Formatter;
-use crate::rules::lists::{Shape, delimited, separated};
-use crate::rules::variables::{name_part, single_declarator, type_then_name, value_after_eq};
+use crate::rules::lists::{Shape, delimited};
+use crate::rules::variables::{
+    name_part, several_declarators, single_declarator, type_then_name, value_after_eq,
+};
 
 /// The rule for a field: its annotations as [`annotations::field_layout`] says, then the type
 /// and the declarators. A single declarator's name moves to the next line at +4 only if
 /// `Type name =` doesn't fit, and then its value is indented from the name; several declarators
-/// go one per line at +4 when they don't fit on the line.
+/// go one per line at +4 when they don't fit on the line, after a break after the type if the
+/// first doesn't fit on the type's line (see [`several_declarators`]).
 pub(super) fn field<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     f.comments_before(node.first_token().id());
     let parts = parts(node);
@@ -57,11 +60,7 @@ fn variables<'t>(f: &mut Formatter<'t>, parts: &[NodeOrToken<'t>]) {
         [NodeOrToken::Node(declarator)] if declarator.kind() == K::VariableDeclarator => {
             single_declarator(f, *ty, *declarator);
         }
-        _ => {
-            emit(f, *ty);
-            f.space();
-            f.group(|f| f.indent(IndentKind::Continuation, |f| separated(f, declarators)));
-        }
+        _ => several_declarators(f, *ty, declarators),
     }
 }
 

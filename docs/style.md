@@ -224,13 +224,19 @@ record Point(int x, int y) {
 array initializer, whose braces break instead. If `Type name =` doesn't fit either, the name moves
 onto the next line at +4, and the value is indented from it. A value whose layout forces a break,
 such as a lambda with a block or an anonymous class, starts on the next line. Several declarators
-go one per line at +4 when they don't fit on one.
+go one per line at +4 when they don't fit on one, and if the first of them, up to its comma,
+doesn't fit on the type's line either, it moves onto the next line at +4 too, with its value
+indented from it.
 
 ```java
 private static final String MESSAGE =
     "a string that doesn't fit on the line of the field's name";
 int first = 1,
     second = 2;
+private static final Method
+    CONSTRUCTOR =
+        lookupMethod(void.class, ConstantDescs.INIT_NAME, String.class, Object[].class),
+    DISPATCH = lookupMethod(double.class, "dispatch");
 ```
 
 ### Methods and constructors
