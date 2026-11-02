@@ -35,14 +35,15 @@ differences` checks against GJF and Ferrion both.
   right after it with a space after it instead (`f(/* c */ x)`). A bare `//` counts as three
   columns wide, as GJF measures it, so one that ends at the limit breaks its line.
 
-  Block comments that span lines are re-indented to their new
-  column, with their stars aligned one column after the `/` when every later line starts with
-  `*`. Otherwise the later lines keep their indentation relative to each other, the least
-  indented at the comment's column, not counting empty lines. A doc comment (`/**`) aligns the
-  stars it has whatever its other lines are, and moves those by as much as its least indented
-  star. A comment's text doesn't change, except that a line comment gets a space after its `//`
-  when text follows it directly, as GJF does: `//x` becomes `// x`, and `//-----` becomes
-  `// -----`. `//` alone, `///`, `////`, and a `//` followed by a tab are left alone, and so are
+  Block comments that span lines are re-indented to their new column, with their stars aligned
+  one column after the `/` when every later line starts with `*`. Otherwise the later lines keep
+  their indentation relative to each other, the least indented at the comment's column, not
+  counting empty lines. A doc comment (`/**`) aligns the stars it has whatever its other lines
+  are, and moves those by as much as its least indented star.
+
+  A comment's text doesn't change, except that a line comment gets a space after its `//` when
+  text follows it directly, as GJF does: `//x` becomes `// x`, and `//-----` becomes `// -----`.
+  `//` alone, `///`, `////`, and a `//` followed by a tab are left alone, and so are
   `//noinspection` and `//$NON-NLS-1$`, which tools read.
 
   ```java
