@@ -4,8 +4,9 @@
 //! A dependency the engine fails to record would make it reuse a stale entry. So [`check_edits`]
 //! applies a sequence of edits to a small project with two source sets on the stand-in platform,
 //! and after each one asks the engine some of its questions (summaries, package tables, each
-//! file's type entries with their supertypes and member types, and its names in declarations)
-//! and compares every answer with a fresh engine's, built from the same inputs. Which edits, and which questions, come from the input bytes: asking only some
+//! file's type entries with their supertypes and member types, and its names in declarations
+//! and bodies, with the local classes its bodies declare) and compares every answer with a
+//! fresh engine's, built from the same inputs. Which edits, and which questions, come from the input bytes: asking only some
 //! questions leaves the other entries unverified across several revisions, which is where a
 //! stale entry would hide. Every entry the engine returns is also checked to carry its value's
 //! fingerprint.
@@ -149,7 +150,7 @@ const STARTING_FILES: &[(usize, &str, &str)] = &[
     (
         0,
         "p/B.java",
-        "package p;\n\nclass B {\n    void m() {}\n}\n\ninterface I {}\n",
+        "package p;\n\nclass B {\n    int f;\n    void m() {}\n    static class M { static int K; }\n}\n\ninterface I {}\n",
     ),
     (
         0,
@@ -176,6 +177,11 @@ const STARTING_FILES: &[(usize, &str, &str)] = &[
         1,
         "p/F.java",
         "package p;\n\nclass F extends E { Inner i; M m; static class G extends F {} }\n",
+    ),
+    (
+        0,
+        "p/Bodies.java",
+        "package p;\n\nimport static p.B.M.K;\n\nclass Bodies extends B {\n    int count;\n\n    int m(Object o, int x) {\n        if (!(o instanceof String s)) return f + K;\n        class L extends B { int g() { return f + count + x; } }\n        B b = new B() { int h = f; };\n        Runnable r = () -> m();\n        for (int i = 0; i < x; i++) { count += i + b.f + new L().g(); }\n        return s.length() + B.M.K + this.count + super.f;\n    }\n}\n",
     ),
 ];
 
@@ -223,10 +229,22 @@ const FRAGMENTS: &[&str] = &[
     "String...",
     "\n// comment\n",
     "/* c */",
+    "int f = 2;",
+    "x = f + count;",
+    "if (!(o instanceof B q)) return 0;",
+    "q.f",
+    "class L { int count; }",
+    "new B() { void m() { f = 1; } };",
+    "(o) -> o",
+    "m();",
+    "super.m();",
+    "B.M.K",
+    "switch (x) { case 1 -> {} default -> {} }",
+    "var v = 1;",
 ];
 
 const NAMES: &[&str] = &[
-    "A", "B", "C", "I", "E", "R", "p", "q", "r", "m", "f", "x", "T",
+    "A", "B", "C", "I", "E", "R", "p", "q", "r", "m", "f", "x", "T", "L", "count", "K", "s",
 ];
 
 const PACKAGES: &[&str] = &["p", "p.q", "r", ""];

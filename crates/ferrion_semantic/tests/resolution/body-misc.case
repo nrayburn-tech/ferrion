@@ -1,0 +1,98 @@
+// Bodies of every other kind, and names in their less common places: field initializers,
+// initializer blocks, enum constants' arguments and bodies, annotation arguments of
+// declarations and in bodies, a compact unit's methods, `var` (not a type name), a union of
+// exception types, explicit type arguments, method and constructor references, qualified
+// `new`, `case` labels of an enum selector, of an enum's own `this`, and of a selector whose
+// type needs attribution, and an interface's constants through a class implementing it. javac
+// compiles every file.
+//- set main 27
+//- file main p/Misc.java
+package p;
+
+import java.util.List;
+
+interface Limits { int MAX = 10; }
+
+enum Planet {
+    MERCURY(Limits.MAX) { int moons() { return size; } },
+    EARTH(1);
+
+    final int size;
+
+    Planet(int size) { this.size = size; }
+
+    int moons() { return 0; }
+
+    boolean inner() {
+        switch (this) {
+            case MERCURY: return true;
+            default: return false;
+        }
+    }
+}
+
+@SuppressWarnings(Misc.WARNING)
+class Misc implements Limits {
+    static final String WARNING = "unchecked";
+    static int count = MAX;
+    int total = count + MAX;
+    Runnable task = () -> count++;
+    Object anonymous = new Object() { int size = total; };
+
+    { total = count; }
+
+    static { count = 1; }
+
+    @SuppressWarnings(WARNING)
+    void annotated(@SuppressWarnings(WARNING) int x) {
+        @SuppressWarnings(value = WARNING) int y = x;
+    }
+
+    class Inner { int depth = total; }
+
+    void misc(List<String> list) throws Exception {
+        var copy = list;
+        copy.size();
+        Inner made = this.new Inner();
+        made.depth = 1;
+        java.util.function.Function<String, Integer> f = Integer::valueOf;
+        java.util.function.Supplier<Inner> s = Inner::new;
+        List<String> empty = java.util.Collections.<String>emptyList();
+        try {
+            list.get(0);
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            e.getMessage();
+        }
+        AutoCloseable resource = () -> {};
+        try (resource) {
+            count++;
+        }
+    }
+
+    int planets(Planet p) {
+        int n = switch (p) {
+            case MERCURY -> 1;
+            case Planet.EARTH -> 2;
+        };
+        return n + switch (p.ordinal()) {
+            case 0 -> MAX;
+            default -> 0;
+        };
+    }
+
+    int unknown(List<Planet> planets) {
+        return switch (planets.get(0)) {
+            case MERCURY -> 1;
+            default -> 0;
+        };
+    }
+}
+//- file main Main.java
+void main() {
+    String greeting = greeting();
+    System.out.println(greeting);
+}
+
+String greeting() { return NAME; }
+
+static final String NAME = "x";

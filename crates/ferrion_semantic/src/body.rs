@@ -28,7 +28,7 @@ use ferrion_syntax::ast::{self, AstNode};
 use ferrion_syntax::{NodeId, SyntaxKind, SyntaxNode, SyntaxToken, SyntaxTree, WalkEvent};
 
 use crate::decl_names::{FileNames, ResolvedName, Symbol};
-use crate::engine::derived::Reads;
+use crate::engine::derived::{Memo, Reads};
 use crate::resolve::{
     BodyTypes, FileScope, MAX_SEGMENTS, MemberLookup, Resolver, Scope, members_of, package_of,
     type_params,
@@ -71,12 +71,13 @@ impl Snapshot {
     /// The names inside `file`'s bodies, by node of its current tree ([`Snapshot::tree`]).
     pub fn body_names(&self, file: FileId) -> Result<Arc<BodyNames>, Cancelled> {
         self.check()?;
-        Ok(self
-            .shared()
+        Ok(self.body_memo(file)?.value.clone())
+    }
+
+    pub(crate) fn body_memo(&self, file: FileId) -> Result<Arc<Memo<BodyNames>>, Cancelled> {
+        self.shared()
             .body_names
-            .get(self, &file, |reads| compute(reads, file))?
-            .value
-            .clone())
+            .get(self, &file, |reads| compute(reads, file))
     }
 
     /// Every name in `file`, in its declarations ([`Snapshot::decl_names`]) and in its bodies
@@ -335,6 +336,20 @@ enum Context {
     Type,
     /// A `case` label's constant, where the selector's type is this enum.
     Case(TypeKey),
+    /// A `case` label's constant, where the selector's type needs attribution: an enum
+    /// constant of it if no variable of the name is in scope.
+    CaseOfUnknown,
+}
+
+/// What a switch's selector says about its `case` labels' simple names (JLS 14.11.1).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Selector {
+    /// An enum, whose constants they are.
+    Enum(TypeKey),
+    /// Another type: they are constant variables in scope.
+    Other,
+    /// A type that needs attribution.
+    Unknown,
 }
 
 /// What a qualifier turned out to be.
@@ -414,8 +429,8 @@ struct Walker<'f, 'r, 's> {
     breakable: Vec<Breakable>,
     /// The pattern bindings a statement introduces after it (JLS 6.3.2).
     introduced: HashMap<NodeId, Vec<u32>>,
-    /// Each open switch block, with the enum its selector is, if it is one.
-    switch_enums: Vec<(NodeId, Option<TypeKey>)>,
+    /// Each open switch block, with what its selector is.
+    switch_enums: Vec<(NodeId, Selector)>,
     regions: Vec<Region>,
     summary_types: Vec<SummaryType>,
     /// The summary's next type index; the walk meets types in the summary's order.
@@ -1021,15 +1036,18 @@ impl Walker<'_, '_, '_> {
                     _ => None,
                 });
                 let meaning = selector.and_then(|s| self.meanings.remove(&s));
-                let enumeration = match meaning {
-                    Some(Meaning::Value(VarTy::Class(key)))
-                        if self.kind_of(key)? == Some(TypeKind::Enum) =>
-                    {
-                        Some(key)
+                let selector = match meaning {
+                    Some(Meaning::Value(VarTy::Class(key)) | Meaning::This(key)) => {
+                        if self.kind_of(key)? == Some(TypeKind::Enum) {
+                            Selector::Enum(key)
+                        } else {
+                            Selector::Other
+                        }
                     }
-                    _ => None,
+                    Some(Meaning::Value(VarTy::Primitive | VarTy::Error(_))) => Selector::Other,
+                    _ => Selector::Unknown,
                 };
-                self.switch_enums.push((node.id(), enumeration));
+                self.switch_enums.push((node.id(), selector));
             }
             SyntaxKind::SwitchLabel | SyntaxKind::InstanceofExpr => {
                 self.pattern_marks.insert(node.id(), self.patterns.len());
@@ -1469,7 +1487,8 @@ impl Walker<'_, '_, '_> {
                 Context::Type
             }
             SyntaxKind::SwitchLabel => match self.switch_enums.last() {
-                Some((_, Some(enumeration))) => Context::Case(*enumeration),
+                Some((_, Selector::Enum(enumeration))) => Context::Case(*enumeration),
+                Some((_, Selector::Unknown)) => Context::CaseOfUnknown,
                 _ => Context::Expr,
             },
             _ => Context::Expr,
@@ -1501,6 +1520,16 @@ impl Walker<'_, '_, '_> {
                         self.field_symbol(found, name)?
                     }
                     None => self.expression_name(name)?,
+                }
+            }
+            Context::CaseOfUnknown => {
+                let (symbol, meaning) = self.expression_name(name)?;
+                match &symbol {
+                    Symbol::Error(ErrorSymbol {
+                        cause: Cause::NotFound | Cause::Incomplete { .. },
+                        ..
+                    }) => (Symbol::LeftToB3(LeftToB3::ExpressionType), Meaning::Unknown),
+                    _ => (symbol, meaning),
                 }
             }
             Context::Ambiguous => {

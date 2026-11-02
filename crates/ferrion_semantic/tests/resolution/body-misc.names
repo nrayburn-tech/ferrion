@@ -1,0 +1,143 @@
+== main p/Misc.java
+p -> package p
+java.util.List -> type java/util/List class platform
+java.util -> package java.util
+java -> package java
+Limits.MAX -> field p/Limits.MAX
+Limits -> type p/Limits source p/Misc.java
+size -> field p/Planet.size
+this.size -> field p/Planet.size
+size -> local p/Misc.java:195
+MERCURY -> field p/Planet.MERCURY
+SuppressWarnings -> type java/lang/SuppressWarnings class platform
+Misc.WARNING -> field p/Misc.WARNING
+Misc -> type p/Misc source p/Misc.java
+Limits -> type p/Limits source p/Misc.java
+String -> type java/lang/String class platform
+MAX -> field p/Limits.MAX
+count -> field p/Misc.count
+MAX -> field p/Limits.MAX
+Runnable -> type java/lang/Runnable class platform
+count -> field p/Misc.count
+Object -> type java/lang/Object class platform
+Object -> type java/lang/Object class platform
+total -> field p/Misc.total
+total -> field p/Misc.total
+count -> field p/Misc.count
+count -> field p/Misc.count
+SuppressWarnings -> type java/lang/SuppressWarnings class platform
+WARNING -> field p/Misc.WARNING
+SuppressWarnings -> type java/lang/SuppressWarnings class platform
+WARNING -> field p/Misc.WARNING
+SuppressWarnings -> type java/lang/SuppressWarnings class platform
+value -> method java/lang/SuppressWarnings.value()[Ljava/lang/String;
+WARNING -> field p/Misc.WARNING
+x -> local p/Misc.java:788
+total -> field p/Misc.total
+List<String> -> type java/util/List class platform
+String -> type java/lang/String class platform
+Exception -> type java/lang/Exception class platform
+list -> local p/Misc.java:921
+copy.size -> b3 method-of-expression
+copy -> local p/Misc.java:958
+Inner -> type p/Misc$Inner source p/Misc.java
+Inner -> type p/Misc$Inner source p/Misc.java
+made.depth -> field p/Misc$Inner.depth
+made -> local p/Misc.java:1006
+java.util.function.Function<String, Integer> -> type java/util/function/Function class platform
+java.util.function -> package java.util.function
+java.util -> package java.util
+java -> package java
+String -> type java/lang/String class platform
+Integer -> type java/lang/Integer class platform
+Integer::valueOf -> method java/lang/Integer.valueOf(Ljava/lang/String;)Ljava/lang/Integer;
+Integer -> type java/lang/Integer class platform
+java.util.function.Supplier<Inner> -> type java/util/function/Supplier class platform
+java.util.function -> package java.util.function
+java.util -> package java.util
+java -> package java
+Inner -> type p/Misc$Inner source p/Misc.java
+Inner::new -> b3 method-of-expression
+Inner -> type p/Misc$Inner source p/Misc.java
+List<String> -> type java/util/List class platform
+String -> type java/lang/String class platform
+java.util.Collections.<String>emptyList -> method java/util/Collections.emptyList()Ljava/util/List;
+java.util.Collections -> type java/util/Collections class platform
+java.util -> package java.util
+java -> package java
+String -> type java/lang/String class platform
+list.get -> b3 method-of-expression
+list -> local p/Misc.java:921
+IllegalStateException -> type java/lang/IllegalStateException class platform
+IllegalArgumentException -> type java/lang/IllegalArgumentException class platform
+e.getMessage -> b3 method-of-expression
+e -> local p/Misc.java:1366
+AutoCloseable -> type java/lang/AutoCloseable class platform
+resource -> local p/Misc.java:1431
+count -> field p/Misc.count
+Planet -> type p/Planet source p/Misc.java
+p -> local p/Misc.java:1538
+MERCURY -> field p/Planet.MERCURY
+Planet.EARTH -> field p/Planet.EARTH
+Planet -> type p/Planet source p/Misc.java
+n -> local p/Misc.java:1555
+p.ordinal -> b3 method-of-expression
+p -> local p/Misc.java:1538
+MAX -> field p/Limits.MAX
+List<Planet> -> type java/util/List class platform
+Planet -> type p/Planet source p/Misc.java
+planets.get -> b3 method-of-expression
+planets -> local p/Misc.java:1792
+MERCURY -> b3 expression-type
+# type p/Limits source p/Misc.java
+  field MAX I
+# type p/Planet source p/Misc.java
+  superclass type java/lang/Enum class platform
+  field size I
+  field MERCURY Lp/Planet;
+  field EARTH Lp/Planet;
+  method Planet(I)V
+  method moons()I
+  method inner()Z
+  method values()[Lp/Planet; implicit
+  method valueOf(Ljava/lang/String;)Lp/Planet; implicit
+# type p/Misc source p/Misc.java
+  superclass type java/lang/Object class platform
+  interface type p/Limits source p/Misc.java
+  member Inner: type p/Misc$Inner source p/Misc.java
+  field WARNING Ljava/lang/String;
+  field count I
+  field total I
+  field task Ljava/lang/Runnable;
+  field anonymous Ljava/lang/Object;
+  method annotated(I)V
+  method misc(Ljava/util/List;)V
+  method planets(Lp/Planet;)I
+  method unknown(Ljava/util/List;)I
+  method Misc()V implicit
+# type p/Misc$Inner source p/Misc.java
+  superclass type java/lang/Object class platform
+  field depth I
+  method Inner()V implicit
+# type local p/Misc.java:90
+  superclass type p/Planet source p/Misc.java
+  method moons()I
+# type local p/Misc.java:619
+  superclass type java/lang/Object class platform
+  field size I
+== main Main.java
+String -> type java/lang/String class platform
+greeting -> method Main.greeting()Ljava/lang/String;
+System.out.println -> b3 method-of-expression
+System.out -> field java/lang/System.out
+System -> type java/lang/System class platform
+greeting -> local Main.java:25
+String -> type java/lang/String class platform
+NAME -> field Main.NAME
+String -> type java/lang/String class platform
+# type Main source Main.java
+  superclass type java/lang/Object class platform
+  field NAME Ljava/lang/String;
+  method main()V
+  method greeting()Ljava/lang/String;
+  method ()V implicit

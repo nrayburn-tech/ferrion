@@ -1,5 +1,5 @@
-//! Deep inputs through resolution: the parser's deep-nesting stress patterns that reach
-//! declarations, and long chains of supertypes, resolved on a 256 KiB stack, so that recursion
+//! Deep inputs through resolution: the parser's deep-nesting stress patterns in declarations
+//! and in bodies, and long chains of supertypes, resolved on a 256 KiB stack, so that recursion
 //! on the input's depth anywhere but under `ferrion_stack::ensure_stack` overflows here, and
 //! work that grows faster than the input shows as a slow test.
 
@@ -41,10 +41,128 @@ fn resolve_everything(engine: &Engine) -> usize {
     let mut names = 0;
     for set in snapshot.source_sets().unwrap() {
         for &file in snapshot.files(set).unwrap().iter() {
-            names += snapshot.decl_names(file).unwrap().names.len();
+            names += snapshot.file_names(file).unwrap().names.len();
         }
     }
     names
+}
+
+/// A stress pattern: its input with `n` repetitions.
+type Generate = Box<dyn Fn(usize) -> String>;
+
+/// The parser's stress patterns that nest in bodies, and its chains, as a field's initializer
+/// or a method's body, and nesting that only bodies have: local classes, pattern bindings,
+/// and scopes. Ten times the input must take well under a hundred times as long.
+#[test]
+fn bodies_of_stress_patterns() {
+    let nest = |open: &str, middle: &str, close: &str, n: usize| {
+        open.repeat(n) + middle + &close.repeat(n)
+    };
+    let field = |ty: &str, init: String| format!("class A {{ int a; {ty} x = {init}; }}\n");
+    let method = |body: String| format!("class A {{ int a; void m(Object o) {{ {body} }} }}\n");
+    let patterns: Vec<(&str, Generate)> = vec![
+        (
+            "parentheses",
+            Box::new(move |n| field("int", nest("(", "a", ")", n))),
+        ),
+        (
+            "blocks",
+            Box::new(move |n| method(nest("{ int b; ", "b = a;", "}", n))),
+        ),
+        (
+            "if statements",
+            Box::new(move |n| method(nest("if (a > 0) ", "a++;", "", n))),
+        ),
+        (
+            "anonymous classes",
+            Box::new(move |n| field("Object", nest("new Object() { Object f = ", "a", "; }", n))),
+        ),
+        (
+            "lambdas",
+            Box::new(move |n| field("Object", nest("(Runnable) () -> ", "a", "", n))),
+        ),
+        (
+            "lambda blocks",
+            Box::new(move |n| field("Runnable", nest("() -> { Runnable r = ", "null", "; }", n))),
+        ),
+        (
+            "conditionals",
+            Box::new(move |n| field("int", nest("a > 0 ? ", "a", " : a", n))),
+        ),
+        (
+            "switch expressions",
+            Box::new(move |n| field("int", nest("switch (a) { default -> ", "a", "; }", n))),
+        ),
+        (
+            "call arguments",
+            Box::new(move |n| field("int", nest("f(", "a", ")", n))),
+        ),
+        (
+            "local classes",
+            Box::new(move |n| method(nest("class L { int b; void n() { ", "b = a;", "} }", n))),
+        ),
+        (
+            "negated patterns",
+            Box::new(move |n| field("boolean", nest("!(", "o instanceof String s", ")", n))),
+        ),
+        (
+            "plus",
+            Box::new(move |n| field("int", "a + ".repeat(n * 4) + "a")),
+        ),
+        (
+            "method calls",
+            Box::new(move |n| field("Object", "a".to_owned() + &".b()".repeat(n * 4))),
+        ),
+        (
+            "field accesses",
+            Box::new(move |n| field("Object", "a".to_owned() + &".b".repeat(n * 4))),
+        ),
+        (
+            "qualified names",
+            Box::new(move |n| field("Object", "java".to_owned() + &".b".repeat(n * 4))),
+        ),
+        (
+            "array accesses",
+            Box::new(move |n| field("Object", "a".to_owned() + &"[0]".repeat(n * 4))),
+        ),
+        (
+            "else if",
+            Box::new(move |n| {
+                method("if (a > 0) {}".to_owned() + &" else if (a > 0) {}".repeat(n * 4))
+            }),
+        ),
+        (
+            "statements",
+            Box::new(move |n| method("a = 1; ".repeat(n * 4))),
+        ),
+        (
+            "pattern conjunctions",
+            Box::new(move |n| {
+                let tests: Vec<String> = (0..n / 10)
+                    .map(|i| format!("o instanceof String s{i}"))
+                    .collect();
+                method(format!("if ({}) {{ }}", tests.join(" && ")))
+            }),
+        ),
+    ];
+    for (name, generate) in patterns {
+        let small = generate(900);
+        let large = generate(9_000);
+        let name = name.to_owned();
+        on_small_stack(&name.clone(), move || {
+            let time = |text: String| {
+                let engine = engine(vec![("p/A.java".to_owned(), text)]);
+                let start = Instant::now();
+                resolve_everything(&engine);
+                start.elapsed()
+            };
+            let (small, large) = (time(small), time(large));
+            assert!(
+                large < small * 60 + std::time::Duration::from_millis(200),
+                "{name}: {small:?} for the small input, {large:?} for ten times it"
+            );
+        });
+    }
 }
 
 #[test]

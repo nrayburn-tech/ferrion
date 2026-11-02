@@ -104,6 +104,10 @@ impl Snapshot {
         if scope.fingerprint != Fingerprint::of(&*scope.value) {
             return Err("its scope has a stale fingerprint".to_owned());
         }
+        let body = self.body_memo(file).map_err(cancelled)?;
+        if body.fingerprint != Fingerprint::of(&*body.value) {
+            return Err("its body names have a stale fingerprint".to_owned());
+        }
         for &key in scope.value.keys.iter() {
             if let Some(memo) = self.supertypes_memo(key).map_err(cancelled)?
                 && memo.fingerprint != Fingerprint::of(&*memo.value)
