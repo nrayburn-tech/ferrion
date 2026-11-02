@@ -178,14 +178,16 @@ pub fn for_each_stmt<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             NodeOrToken::Token(token) if token.kind() == K::LParen => {
                 f.space();
                 f.token(token);
-                f.group(|f| {
-                    while let Some(&element) = elements.peek()
-                        && element.kind() != K::RParen
-                    {
-                        elements.next();
-                        if element.kind() == K::Colon {
-                            f.space();
-                            f.token(element.as_token().expect("a token"));
+                // The variable breaks before its name first, then the line breaks after the
+                // `:` if the rest doesn't fit (observed in GJF).
+                while let Some(&element) = elements.peek()
+                    && element.kind() != K::RParen
+                {
+                    elements.next();
+                    if element.kind() == K::Colon {
+                        f.space();
+                        f.token(element.as_token().expect("a token"));
+                        f.group(|f| {
                             f.indent(IndentKind::Continuation, |f| {
                                 f.line();
                                 while let Some(&element) = elements.peek()
@@ -195,11 +197,11 @@ pub fn for_each_stmt<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                                     emit(f, element);
                                 }
                             });
-                        } else {
-                            emit(f, element);
-                        }
+                        });
+                    } else {
+                        emit(f, element);
                     }
-                });
+                }
             }
             NodeOrToken::Token(token) => {
                 f.token(token);

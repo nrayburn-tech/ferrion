@@ -19,9 +19,12 @@ use crate::rules::variables::single_declarator;
 ///   a statement, a line break at +4 comes first between the type and the first declarator, when
 ///   the type and the whole first declarator up to its comma don't fit.
 ///
-/// The breaks after the type aren't made in `for` and `try` headers.
+/// The breaks after the type aren't made in `for` and `try` headers, where the first declarator
+/// stays on the type's line, except before an enhanced `for` variable's name.
 pub fn local_var_decl<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     let statement = node.last_token().kind() == K::Semi;
+    // A for-each variable breaks before its name, as a statement's does (observed in GJF).
+    let for_each = node.parent().is_some_and(|p| p.kind() == K::ForEachStmt);
     let elements: Vec<_> = elements(node).collect();
     let (rest, semi) = match elements.as_slice() {
         [rest @ .., semi] if semi.kind() == K::Semi => (rest, Some(*semi)),
@@ -29,7 +32,7 @@ pub fn local_var_decl<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     };
     let declaration = |f: &mut Formatter<'t>, declaration: &[NodeOrToken<'t>]| match declaration {
         [ty, NodeOrToken::Node(declarator)]
-            if statement && declarator.kind() == K::VariableDeclarator =>
+            if (statement || for_each) && declarator.kind() == K::VariableDeclarator =>
         {
             single_declarator(f, *ty, *declarator);
         }
@@ -74,7 +77,11 @@ fn declarators_after_type<'t>(f: &mut Formatter<'t>, rest: &[NodeOrToken<'t>], s
                     }
                 });
             } else {
+                // In a header, the first declarator stays on the type's line.
                 f.space();
+                if let Some(first) = rest.next() {
+                    super::emit(f, first);
+                }
             }
             for element in rest {
                 if element.kind() == K::VariableDeclarator {

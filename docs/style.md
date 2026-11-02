@@ -496,8 +496,8 @@ The same holds for the conditions of `while` and `do` and a `switch`'s selector.
 
 A `for` header that doesn't fit breaks after each `;`, all together, with the condition and the
 update at +4. A missing part leaves its `;` and a space (`for (; ; )`). Initializations that don't
-fit go one to a line at +4 from the condition, as declarators do. Updates go as many to a line as
-fit, continuing at +4 from the first.
+fit go one to a line at +4 from the condition, as declarators do, the first on the type's line.
+Updates go as many to a line as fit, continuing at +4 from the first.
 
 ```java
 for (index = 0,
@@ -511,7 +511,9 @@ for (index = 0,
 }
 ```
 
-An enhanced `for` header that doesn't fit breaks after the `:`, at +4.
+An enhanced `for` header that doesn't fit breaks before the variable's name, at +4, when the
+type, the name, and the `:` don't fit on the line, as a variable does, and then after the `:`,
+at +4, if the rest doesn't fit.
 
 ```java
 for (Map.Entry<String, SomeVeryLongTypeName> entryWithALongName :
