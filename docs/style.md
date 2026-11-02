@@ -117,6 +117,18 @@ void m(@Nullable String name, final @Deprecated int count) {
 }
 ```
 
+A `catch` parameter's annotations go on their own lines if one of them has arguments, which breaks
+the `catch (` as well, and otherwise stay on its line. A parameter that catches several types keeps
+them on its line either way (observed).
+
+```java
+} catch (
+    @SuppressWarnings("unused")
+    IOException e) {
+} catch (@SuppressWarnings("unused") IOException | RuntimeException e) {
+}
+```
+
 ### Annotation arguments
 
 On the annotation's line if they fit. Otherwise one per line at +4, and also when there are two or
