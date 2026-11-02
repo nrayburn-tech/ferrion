@@ -3,10 +3,12 @@
 //!
 //! Trees are derived from inputs alone, so they aren't entries with dependencies: a tree is
 //! found by its file and version, and one of an older version is never returned. A tree evicted
-//! while in use lives on through its `Arc` until its user is done.
+//! while in use lives on through its `Arc` until its user is done, and is found by anyone else
+//! who asks for it meanwhile, so that a file's tree is parsed once for every query its user runs
+//! while holding it, whatever the budget.
 
 use std::collections::{BTreeMap, HashMap};
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, Mutex, PoisonError, Weak};
 
 use ferrion_syntax::{Node, SyntaxKind, SyntaxTree};
 
@@ -24,6 +26,8 @@ struct Inner {
     by_use: BTreeMap<u64, FileId>,
     clock: u64,
     bytes: usize,
+    /// Every file's latest tree, kept or not, while someone holds it.
+    alive: HashMap<FileId, (u64, Weak<SyntaxTree>)>,
 }
 
 struct Entry {
@@ -41,14 +45,29 @@ impl TreeCache {
         }
     }
 
-    /// The tree of `file` at `version`, if it's kept.
+    /// The tree of `file` at `version`, if it's kept or still in use.
     pub(crate) fn get(&self, file: FileId, version: u64) -> Option<Arc<SyntaxTree>> {
         let mut inner = self.lock();
         let inner = &mut *inner;
-        let entry = inner.entries.get_mut(&file)?;
-        if entry.version != version {
-            return None;
-        }
+        let Some(entry) = inner
+            .entries
+            .get_mut(&file)
+            .filter(|e| e.version == version)
+        else {
+            // Not kept, but perhaps still in use.
+            let tree = match inner.alive.get(&file) {
+                Some((v, weak)) if *v == version => weak.upgrade(),
+                _ => None,
+            };
+            if inner
+                .alive
+                .get(&file)
+                .is_some_and(|(_, weak)| weak.strong_count() == 0)
+            {
+                inner.alive.remove(&file);
+            }
+            return tree;
+        };
         inner.by_use.remove(&entry.used);
         inner.clock += 1;
         entry.used = inner.clock;
@@ -63,6 +82,14 @@ impl TreeCache {
         let bytes = tree_bytes(&tree);
         let mut inner = self.lock();
         let inner = &mut *inner;
+        if inner.alive.get(&file).is_none_or(|(v, _)| *v <= version) {
+            inner.alive.insert(file, (version, Arc::downgrade(&tree)));
+        }
+        // Trees no one holds any more leave their entries behind; they are cleared now and
+        // then, so that there are never many more than the trees kept and in use.
+        if inner.alive.len() > 2 * inner.entries.len() + 1024 {
+            inner.alive.retain(|_, (_, weak)| weak.strong_count() > 0);
+        }
         if bytes > self.budget {
             return;
         }
@@ -99,6 +126,9 @@ impl TreeCache {
     pub(crate) fn remove_older(&self, file: FileId, version: u64) {
         let mut inner = self.lock();
         let inner = &mut *inner;
+        if inner.alive.get(&file).is_some_and(|(v, _)| *v < version) {
+            inner.alive.remove(&file);
+        }
         if inner
             .entries
             .get(&file)

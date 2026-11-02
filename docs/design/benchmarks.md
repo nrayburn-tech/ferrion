@@ -33,12 +33,12 @@ components add their benchmarks to the same harness.
 | `classfile/read-image` | find and read every class of the JDK's own release |
 | `classfile/read-ctsym` | find and read every class of the older release |
 | `classfile/read-jars` | open the corpus projects' dependency jars and read every class in them |
-| `semantic/corpus-cold` | a new semantic engine over the corpus projects' source sets (from their lock files): parse and summarize every file, then build every package table, on one thread |
-| `semantic/edits` | after a cold run, the [incremental spike's](semantic-incremental.md#edits) three edits to a file of the largest package (a statement in a method body, a method renamed, a top-level class added), each followed by asking for every summary and package entry again, and undone the same way |
+| `semantic/corpus-cold` | a new semantic engine over the corpus projects' source sets (from their lock files), with their jars and the JDK's platform API: parse and summarize every file, build every package table and every type's entry, and resolve every file's names in declarations and bodies, on one thread |
+| `semantic/edits` | after a cold run, five edits to a file of the largest package (a statement in a method body, a local variable renamed, a method renamed, a top-level class added, and a supertype added), each followed by asking for every project-wide entry again and the file's names, and undone the same way |
 
 The semantic benchmarks run on one thread, so that their instruction and heap counts repeat; the
-engine's scaling across threads is measured separately (semantic-incremental.md). They grow with
-B2: symbols and names join them as W4 and W5 add those layers.
+engine's scaling across threads is measured separately (semantic-incremental.md). They grew with
+B2: W4 added the project symbols and names in declarations, and W5 the names in bodies.
 
 "Read a class" is what B2 will need from one: its names, supertypes, members, descriptors (parsed),
 and attributes (decoded).

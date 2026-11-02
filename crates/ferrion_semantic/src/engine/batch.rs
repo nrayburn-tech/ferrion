@@ -30,6 +30,9 @@ impl Snapshot {
         let files = self.run_symbols(threads)?;
         parallel(self, threads, files.len(), |i| {
             let file = files[files.len() - 1 - i];
+            // Held while both are resolved, so that a tree the cache didn't keep is parsed once
+            // for both.
+            let _tree = self.tree(file)?;
             self.decl_names(file)?;
             self.body_names(file)?;
             each(file)?;
