@@ -141,4 +141,20 @@ class Lists {
   }
 
   void n(int a, /* c */ int b) {}
+
+  // A blank line after a comment on a separator's line is removed, unless a comment follows.
+  void blankLines() {
+    foo(
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, // c
+        bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb);
+    foo(
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, // c
+
+        // d
+        bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb);
+    int[] x = {
+      1, // c
+      2
+    };
+  }
 }
