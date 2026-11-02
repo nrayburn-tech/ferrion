@@ -755,7 +755,10 @@ root is a name of up to four characters, `this`, or `super`, or a type's name, p
 qualified, and the link after it; otherwise it is the root alone. A name is a type's if it starts
 with an uppercase letter and has a lowercase one, so `FOO_BAR` is not. When the chain has a
 `.stream()` or `.parallelStream()` link, the prefix is everything up to it if that fits on the
-line, and otherwise everything up to it breaks before each `.` too.
+line, and otherwise everything up to it breaks before each `.` too. A chain whose only call has
+fields after it has the call in its prefix, `explorer.lookup(query, 10)` then `.hitsFound`. Both
+of these prefixes are measured up to the call's `(`: when the line up to there fits, the call's
+arguments break before its dot does.
 
 ```java
 builder
@@ -772,6 +775,10 @@ ImmutableList.<String>builder()
 someVeryLongName.entrySet().stream()
     .sorted(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)
     .forEach(bbbbbbbbbbbbbbbbbbbbbbbbbb);
+result =
+    lookup.lookup(
+            span("name", "a", "z", T, T, RangeSelection.INCLUSIVE_BOUNDS_FAST_ITERATOR), 1000)
+        .hitsFound;
 ```
 
 A chain with one call, last, breaks its arguments first, and its dots fill: each breaks only if
