@@ -590,7 +590,15 @@ union type stays on the `(`'s line instead and breaks before its `|`s (see
 Annotations before a `catch` parameter's or a resource's first keyword modifier stay on the line,
 unless one of them has arguments. Then each goes on a line of its own, as GJF does: a `catch`
 breaks after its `(` and puts them and the type at +4, and a resource puts the lines after its
-first at +4 from it. A union type keeps its annotations on the line.
+first at +4 from it. Before a union type, they stay on the `(`'s line, and the line breaks
+after them when the alternatives break.
+
+```java
+} catch (@SuppressWarnings("unused")
+    ReflectiveOperationException
+    | RuntimeExceptionWithALongName e) {
+}
+```
 
 ```java
 } catch (

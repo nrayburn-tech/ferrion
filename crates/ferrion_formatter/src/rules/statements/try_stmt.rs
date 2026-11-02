@@ -82,20 +82,57 @@ pub fn catch_parameter<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         elements.into_iter().for_each(|element| emit(f, element));
         return;
     };
+    let name = |f: &mut Formatter<'t>| emit(f, *name);
+    let union = ty.as_node().filter(|ty| ty.kind() == K::UnionType);
+    // Before a union, annotations with arguments break onto a line of their own when the
+    // alternatives do, in their group (observed in GJF).
+    if let Some(union) = union
+        && modifiers.iter().any(|&m| annotation_with_arguments(m))
+    {
+        let before = |f: &mut Formatter<'t>| {
+            for &modifiers in modifiers {
+                emit(f, modifiers);
+            }
+            f.line();
+        };
+        types::union_then_name(f, union, Some(before), name);
+        return;
+    }
     for &modifiers in modifiers {
         emit(f, modifiers);
         f.space();
     }
-    let name = |f: &mut Formatter<'t>| emit(f, *name);
-    match ty {
-        NodeOrToken::Node(union) if union.kind() == K::UnionType => {
-            types::union_then_name(f, *union, name);
-        }
-        _ => {
+    match union {
+        Some(union) => types::union_then_name(f, union, None::<fn(&mut Formatter<'t>)>, name),
+        None => {
             f.comments_before(crate::rules::first_token(*ty).id());
             f.group(|f| type_then_name(f, *ty, name));
         }
     }
+}
+
+/// Whether `modifiers`, a `Modifiers` node, has an annotation with arguments before its first
+/// keyword modifier: `@A(1)`, but not `@A` or `@A()`.
+fn annotation_with_arguments(modifiers: NodeOrToken<'_>) -> bool {
+    let Some(modifiers) = modifiers.as_node() else {
+        return false;
+    };
+    modifiers
+        .children_with_tokens()
+        .filter(|part| !part.as_token().is_some_and(|t| t.is_trivia()))
+        .map_while(|part| part.as_node().filter(|n| n.kind() == K::Annotation))
+        .any(|annotation| {
+            annotation
+                .children()
+                .filter(|c| c.kind() == K::AnnotationArguments)
+                .any(|arguments| {
+                    arguments
+                        .children_with_tokens()
+                        .filter(|part| !part.as_token().is_some_and(|t| t.is_trivia()))
+                        .count()
+                        > 2
+                })
+        })
 }
 
 /// `finally { … }`.

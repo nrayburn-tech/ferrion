@@ -102,30 +102,43 @@ fn intersection_type<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
 /// `A | B` in a `catch`: on one line if it fits, otherwise one alternative per line at +4, each
 /// starting with its `|`.
 fn union_type<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
-    union_with(f, node, None::<fn(&mut Formatter<'t>)>);
+    union_with(
+        f,
+        node,
+        None::<fn(&mut Formatter<'t>)>,
+        None::<fn(&mut Formatter<'t>)>,
+    );
 }
 
 /// `A | B e`, a `catch` parameter's union type, `node`, and what `name` emits: laid out as
 /// [`union_type`], with the last alternative and the name a type and its name, which breaks
 /// before the name (observed in GJF: the last alternative's breaks are at +4 from the others'
-/// when the name breaks, and the name is at +8).
+/// when the name breaks, and the name is at +8). `before`, if any, emits what goes before the
+/// type in its group, such as modifiers that break with it, and a line element after them.
 pub(crate) fn union_then_name<'t>(
     f: &mut Formatter<'t>,
     node: SyntaxNode<'t>,
+    before: Option<impl FnOnce(&mut Formatter<'t>)>,
     name: impl FnOnce(&mut Formatter<'t>),
 ) {
-    union_with(f, node, Some(name));
+    union_with(f, node, before, Some(name));
 }
 
 fn union_with<'t>(
     f: &mut Formatter<'t>,
     node: SyntaxNode<'t>,
+    before: Option<impl FnOnce(&mut Formatter<'t>)>,
     name: Option<impl FnOnce(&mut Formatter<'t>)>,
 ) {
-    f.comments_before(node.first_token().id());
+    if before.is_none() {
+        f.comments_before(node.first_token().id());
+    }
     let mut children = children(node).peekable();
     f.group(|f| {
         f.indent(IndentKind::Continuation, |f| {
+            if let Some(before) = before {
+                before(f);
+            }
             while let Some(child) = children.next() {
                 if child.kind() == K::Pipe {
                     f.line();

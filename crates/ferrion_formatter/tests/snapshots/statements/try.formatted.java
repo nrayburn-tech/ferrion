@@ -112,6 +112,13 @@ class Try {
     } catch (@A("x") E | F e) {
       c();
     }
+    try {
+      b();
+    } catch (@SuppressWarnings("unused")
+        ReflectiveOperationException
+        | RuntimeExceptionWithALongName e) {
+      c();
+    }
     try (@SuppressWarnings("unused")
         R r = open()) {
       b();
