@@ -8,15 +8,17 @@ use super::{doc_comment_before, emit, first_token, fits_on_line, parts, take};
 use crate::document::IndentKind;
 use crate::format::Formatter;
 use crate::rules::comments::{block_comment_after, has_comments_before, leads_on_code_line};
-use crate::rules::lists::separated;
+use crate::rules::lists::{Shape, delimited, separated};
 
 /// The rule for a class, interface, enum, record, or annotation type declaration.
 ///
 /// The header's annotations go on their own lines. Each clause (`extends`, `implements`,
 /// `permits`) moves to the next line at +4 only if it doesn't fit on the line it would continue,
-/// so `class A extends B` can stay together with `implements C` below it; a class's type
-/// parameters break inside the first clause's indentation. A record's `implements` goes below
-/// its components when they break. The body follows the header's last line.
+/// so `class A extends B` can stay together with `implements C` below it, or if the clause before
+/// it took more than one line; a class's type parameters break inside the first clause's
+/// indentation. A record's `implements` goes below its components when they go one per line,
+/// and otherwise only if it doesn't fit on the line of the `)`. The body follows the header's
+/// last line.
 pub(super) fn type_decl<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     let parts = parts(node);
     let mut rest = parts.as_slice();
@@ -50,18 +52,17 @@ pub(super) fn type_decl<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             if let Some(type_parameters) = type_parameters {
                 emit(f, type_parameters);
             }
-            if clauses.is_empty() {
-                emit(f, header);
-            } else {
-                f.group(|f| {
+            let components = match header {
+                NodeOrToken::Node(header) => delimited(f, header, Shape::Parameters),
+                NodeOrToken::Token(_) => {
                     emit(f, header);
-                    f.indent(IndentKind::Continuation, |f| {
-                        for &clause in &clauses {
-                            f.line();
-                            emit(f, clause);
-                        }
-                    });
-                });
+                    None
+                }
+            };
+            // As a method's `throws` after its parameters (observed).
+            let mut previous = components;
+            for clause in clauses {
+                previous = Some(clause_on_next_line(f, previous, clause));
             }
         }
         _ => {
@@ -70,6 +71,7 @@ pub(super) fn type_decl<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                 emit(f, header);
             }
             let mut clauses = clauses.into_iter();
+            let mut previous = None;
             match (type_parameters, clauses.next()) {
                 (type_parameters, Some(first)) => {
                     f.group(|f| {
@@ -78,7 +80,7 @@ pub(super) fn type_decl<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                                 emit(f, type_parameters);
                             }
                             f.line();
-                            emit(f, first);
+                            previous = Some(f.group(|f| emit(f, first)));
                         });
                     });
                 }
@@ -86,12 +88,7 @@ pub(super) fn type_decl<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                 (None, None) => {}
             }
             for clause in clauses {
-                f.group(|f| {
-                    f.indent(IndentKind::Continuation, |f| {
-                        f.line();
-                        emit(f, clause);
-                    });
-                });
+                previous = Some(clause_on_next_line(f, previous, clause));
             }
         }
     }
@@ -99,6 +96,29 @@ pub(super) fn type_decl<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         f.space();
         emit(f, part);
     }
+}
+
+/// Emits `clause` after a line break at +4 that it takes if it doesn't fit on the line, or if
+/// `previous` broke: the group of the clause before it, or of a record's components. Returns the
+/// group of the clause itself, which breaks when it doesn't fit on one line (observed: after
+/// `extends A<` with the type arguments one per line, `>` then `implements B` at +4).
+fn clause_on_next_line<'t>(
+    f: &mut Formatter<'t>,
+    previous: Option<u32>,
+    clause: NodeOrToken<'t>,
+) -> u32 {
+    let mut content = 0;
+    let line_then_clause = |f: &mut Formatter<'t>| {
+        f.indent(IndentKind::Continuation, |f| {
+            f.line();
+            content = f.group(|f| emit(f, clause));
+        });
+    };
+    match previous {
+        Some(previous) => f.group_breaking_with(previous, line_then_clause),
+        None => f.group(line_then_clause),
+    };
+    content
 }
 
 /// The rule for an `extends`, `implements`, or `permits` clause: the keyword, then the types on

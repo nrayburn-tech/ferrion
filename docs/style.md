@@ -157,9 +157,10 @@ on a line of its own at +4.
 
 `class`, `interface`, `enum`, `record`, and `@interface` headers. Each clause, `extends`,
 `implements`, or `permits`, moves onto the next line at +4 only if it doesn't fit on the line it
-would continue, so one clause can stay on the first line while the next breaks. A clause's types
-break one per line at +8 when they don't fit on its line. Type parameters that break are indented
-from the clause lines. The `{` ends the header's last line.
+would continue, so one clause can stay on the first line while the next breaks, or if the clause
+before it took more than one line. A clause's types break one per line at +8 when they don't fit
+on its line. Type parameters that break are indented from the clause lines. The `{` ends the
+header's last line.
 
 ```java
 class Handler extends AbstractHandler
@@ -175,7 +176,13 @@ class Registry
 
 An enum's `implements` is the exception: when its types don't fit on the clause's line, they move
 together onto the next line at +8, and fill the lines from there. A record's `implements` goes on
-the next line when its components break.
+the next line when its components go one per line, and otherwise stays on the line of the `)` if
+it fits there, as a method's `throws` does.
+
+```java
+record Config(
+    String name, Set<String> acceptedEncodingNames, boolean enabled) implements Channels {}
+```
 
 ### Bodies and blank lines
 
