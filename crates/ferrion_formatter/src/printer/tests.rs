@@ -430,6 +430,35 @@ fn an_unstarred_comment_keeps_its_relative_indentation() {
 }
 
 #[test]
+fn a_doc_comment_aligns_the_stars_it_has() {
+    // A line without a star moves with the least indented star, and an empty line doesn't count
+    // as the least indented.
+    let output = print_lf("x\n/**\n * a\n\n *\n       b\n   * c\n */", |b, emit| {
+        b.start_indent(IndentKind::Block);
+        emit(b, 0);
+        b.hard_line();
+        emit(b, 1);
+        b.end();
+    });
+    assert_eq!(
+        output,
+        "x\n  /**\n   * a\n\n   *\n         b\n   * c\n   */\n"
+    );
+}
+
+#[test]
+fn a_block_comment_with_an_empty_line_keeps_its_relative_indentation() {
+    let output = print_lf("x\n/*\n * a\n\n * b\n */", |b, emit| {
+        b.start_indent(IndentKind::Block);
+        emit(b, 0);
+        b.hard_line();
+        emit(b, 1);
+        b.end();
+    });
+    assert_eq!(output, "x\n  /*\n  * a\n\n  * b\n  */\n");
+}
+
+#[test]
 fn text_blocks_are_copied_with_the_files_line_ending() {
     let text = "s = \"\"\"\r\n    a  \n  b\"\"\" ;";
     let output = print_with(text, LineEnding::CrLf, false, |b, emit| {

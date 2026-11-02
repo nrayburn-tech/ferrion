@@ -21,7 +21,11 @@ differences` checks against GJF and Ferrion both.
 - **Comments** stay where they are relative to the code: a comment that leads a token stays before
   it, and one that trails a token stays after it. The line breaks around a comment come from the
   input, at most one blank line. Block comments that span lines are re-indented to their new
-  column, with their stars aligned when every later line starts with `*`.
+  column, with their stars aligned one column after the `/` when every later line starts with
+  `*`. Otherwise the later lines keep their indentation relative to each other, the least
+  indented at the comment's column, not counting empty lines. A doc comment (`/**`) aligns the
+  stars it has whatever its other lines are, and moves those by as much as its least indented
+  star.
 - **Modifiers** are reordered within each run of adjacent keyword modifiers into
   `public protected private abstract default static final sealed non-sealed transient volatile
   synchronized native strictfp`. Annotations stay where they are.
@@ -35,6 +39,9 @@ differences` checks against GJF and Ferrion both.
   code (SCOPE.md and the comments design). Case: `modifier-comment`.
 - **Disable regions:** GJF doesn't recognize the markers and formats the code between them;
   Ferrion copies it (SCOPE.md). Case: `formatter-off`.
+- **A doc comment's lines without a star** stay without one, moved as far as its stars. GJF
+  rewrites the comment with a star on every line, an empty line included (comment text never
+  changes, SCOPE.md). Case: `comments-doc-text`.
 - **Long `//` comments** are left as they are, past the column limit. GJF 2.0.0 wraps one that
   goes over onto a new `//` line (SCOPE.md: `//` comments are not wrapped). Case: `line-comment`.
 
