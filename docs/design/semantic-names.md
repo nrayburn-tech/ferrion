@@ -395,8 +395,8 @@ annotations on declarations and their element names, type parameter bounds, `ext
 and `throws`. Each `Name` and `ClassType` node is one name, so `java.util.List` gives the packages
 `java` and `java.util` and the type. Each resolves to a symbol (a package, module, type, type
 variable, annotation element, or a single-static import's member name) or an error symbol, and
-`Snapshot::symbol_key` gives the key of semantic.md's table: the exchange with W3's oracle is left
-for integration.
+`Snapshot::symbol_key` gives the key of semantic.md's table, which the javac comparison converts
+to the oracle's form ([normalization](semantic-oracle-normalization.md#ferrions-side)).
 
 ## Names in bodies
 
@@ -444,7 +444,9 @@ them, and `Snapshot::file_names` the names of declarations and bodies together, 
   ambiguous. An inherited field wins over a single-static import (observation 12), and a
   superclass's private field isn't inherited, even within one top-level class (observation 13).
   A `case` label's simple name is an enum constant of the selector's type when it is an enum;
-  when the selector's type needs attribution, a name no variable has is left to B3.
+  when the selector's type needs attribution, it is a variable in scope that could be a `case`
+  constant (of a primitive type, `String`, or an enum type), and any other name is left to B3
+  (observation 24).
 - **Fields and methods by name** are worked out once per body result for each type asked
   about, its supertypes first, by a loop: declared ones, then the non-private ones each
   supertype has (package-access ones only in the same package, an interface's static methods
@@ -453,10 +455,12 @@ them, and `Snapshot::file_names` the names of declarations and bodies together, 
 - **Method names** (JLS 15.12.1): for `m()`, the innermost class around with a member method
   `m`, declared or inherited, is the type to search, else, for a statically imported method
   (for which JLS 15.12.1 has no type to search), the type declaring its candidates, as the
-  oracle has it, or the first import's when several types declare them; for `Q.m()`, `this.m()`, `Q::m`, and `this::m`, `Q`'s or this class's; for `super.m()`
-  and `Q.super.m()`, the superclass of this class or of `Q`, or for a superinterface `Q`, `Q`. The
-  name records the type and its candidates. A call on any other expression, and a constructor
-  reference, are B3's.
+  oracle has it, or the first import's when several types declare them (javac's is the type of
+  the overload it chooses, a known difference in the comparison); for `Q.m()`, `this.m()`,
+  `Q::m`, and `this::m`, `Q`'s or this class's; for `super.m()` and `Q.super.m()`, the
+  superclass of this class or of `Q`, or for a superinterface `Q`, `Q`. The name records the
+  type and its candidates. A call on any other expression, and a constructor reference, are
+  B3's.
 - **Local and anonymous classes** get what a summary's types have, made the same way: a summary
   of their declaration (`summary::local_type`, `summary::anonymous_type`), a type entry resolved
   with `resolve::members_of` in the scope of their body, erased supertypes, and member types
@@ -468,13 +472,16 @@ them, and `Snapshot::file_names` the names of declarations and bodies together, 
   javac finds it and reports an error rather than looking further (observation 14). A field
   inherited by an anonymous class shadows the method's local of the name (observation 15).
 - **Keys:** a local is `local <file>:<offset of its name>`; a local or anonymous class is `type
-  local <file>:<offset>`, of its name, or of its `new` or enum constant's name for an anonymous
-  class, a member type of one included (javac's binary names for them have digits it chooses);
-  its members are keyed by that, `field local <file>:<offset>.f`. A field is `field <declaring
-  type>.f`, a method name with one candidate `method <type>.m<descriptor>`, and one with several
-  `methods <type searched>.m:` and its candidates' keys. A compact constructor's parameters are
-  its record's components, keyed at their names. How javac's positions are matched with these
-  is for the comparison's normalization (W6).
+  local <file>:<offset>`, a member type of one included (javac's binary names for them have
+  digits it chooses): of its `class`, `interface`, `enum`, or `record` keyword, after any
+  modifiers, and for an anonymous class of its body's `{`, or its enum constant's name, which is
+  where javac's trees for them are (observation 16); its members are keyed by that, `field local
+  <file>:<offset>.f`. A field is `field <declaring type>.f`, a method name with one candidate
+  `method <type>.m<descriptor>`, and one with several `methods <type searched>.m:` and its
+  candidates' keys. A compact constructor's parameters are its record's components, keyed where
+  javac's tree for the component's type is (observation 16). Offsets are bytes; the comparison
+  converts them to javac's UTF-16 units
+  ([normalization](semantic-oracle-normalization.md#keys)).
 - **Errors and B3:** a name that doesn't resolve is an error symbol as in declarations, and a
   name qualified by one, or by a variable whose type didn't resolve, has the same error. A name
   whose meaning needs types is `Symbol::LeftToB3` with a reason: a member of an expression whose
@@ -484,7 +491,32 @@ them, and `Snapshot::file_names` the names of declarations and bodies together, 
 
 Labels aren't names javac gives elements for, so they aren't recorded; they are followed for the
 statements a `break` leaves. Not done: inherited members of a local class's member type named
-before the walk reaches that member's header resolve its declared members only.
+before the walk reaches that member's header resolve its declared members only. The corpus
+comparison found no name that needs them.
+
+Found by the corpus comparison (W6), each with its observation:
+
+- **Modules before release 9:** a `module-info.java` in a source set below release 9 declares no
+  module, and the source set is in the unnamed module (observation 17). Guava has one at release
+  8, which its build compiles on its own.
+- **An interface's members** include `Object`'s methods (JLS 9.2), so `getClass()` in a default
+  method is searched in the interface (observation 18).
+- **A local declared in a `switch` statement group** is in scope in the rest of the switch block,
+  the later groups included (JLS 6.3, observation 19). A group's pattern bindings stay its own,
+  and, as built, so do the locals of a group that has some.
+- **Erasure** follows a type variable whose first bound is another type variable, to that one's
+  bound, up to 64 deep (observation 20).
+- **`new Outer().new Inner()`:** a `new` expression that is the outer instance of another has
+  the type it creates, an anonymous class's included, so the inner class is looked up in its
+  member types (observation 21). Its other members are still B3's.
+- **A named module reads through other modules:** a module of the classpath or module path (by
+  its `module-info.class`) or a dependency's module declaration that the module requires brings
+  the modules it requires transitively, the platform's among them (observation 22).
+- **`C::new`** names a class type, so a field `C` in scope doesn't obscure it (JLS 15.13,
+  observation 23).
+- **`case` labels of a selector whose type needs attribution** (observation 24): a field in scope
+  that can't be a `case` constant, such as helidon's `TypeName STRING` where the selector is
+  an enum, isn't taken.
 
 ## What B2 leaves to B3
 
@@ -623,3 +655,49 @@ source set and compiled with `javac --release 27 -implicit:none -d out <files>` 
     (`getfield inherited` in `p.Types$1`), and the method's other locals are captured (`val$value`,
     `val$other`). A generic local class's field of the method's type variable `T`, and a local
     class's member class used as `Outer.Inner`, compile.
+
+Observations 16 to 24 were made for the corpus comparison (W6), with `javac-oracle names
+--release 27` (or 8) on each case's files, which gives each name's element as the comparison
+keys it, and the files compiled as above.
+
+16. **Where javac's keys put local declarations** (`body-corpus.case`, p/Keys.java). The key of
+    `@Deprecated final class Local` is at `class`, of a local `interface`, `enum`, or `record` at
+    its keyword, and of a member type of an anonymous class (`static class SubIterator` in
+    lucene) at its keyword; an anonymous `new Runnable() { ... }` at its body's `{`; an enum
+    constant's body at the constant's name, annotated or not. A compact constructor's parameter
+    is keyed where the record component's type is (and, for the forms the case doesn't have, in a
+    record with a component of each): `String` in `@N String a`, the last `.` of
+    `java.lang.String b`, the `<` of `List<String> c` (and of `java.util.@T List<String>`), the
+    first `[` of `int[] d` and `int[][] k`, an annotated dimension's annotation (`String @T []`),
+    and the `...` of `String... e`.
+17. **A module declaration at release 8** (`module-release-8.case`). `javac --release 8
+    module-info.java p/U.java` reports `modules are not supported in -source 8`; without
+    `module-info.java`, `p/U.java`, which names `java.sql.Connection` and
+    `java.lang.annotation.Retention`, compiles, as it does in guava, whose build compiles its
+    `module-info.java` apart.
+18. **`Object`'s methods in an interface** (`body-corpus.case`, p/Members.java). `getClass()` and
+    `hashCode()` in a default method of an interface without superinterfaces, and `toString()` in
+    one of its subinterface, compile, and the types searched are the interface and the
+    subinterface.
+19. **A local of a `switch` group** (`body-corpus.case`, p/Switches.java). `int seen = 1;` under
+    `case 1:` and `seen = 2; return seen;` under `case 2:` compile, and both uses are the local.
+20. **Erasure through a bound** (`body-corpus.case`, p/Bounds.java). In `Bounds<T extends
+    Enum<T>>`, `<X extends T> X first(X x)` is `first(Ljava/lang/Enum;)Ljava/lang/Enum;` in the
+    key of `X`.
+21. **A qualified `new` on a created object** (`body-corpus.case`, p/Outer.java). In `new
+    Outer<String>().new Inner<Integer>()` and `new Outer<String>() {}.new Inner<Integer>()`,
+    `Inner` is `p/Outer$Inner`. Both compile.
+22. **Readability through another module** (`module-transitive.case`). With `api` declaring
+    `module api { requires transitive java.sql; exports a; }`, compiled to `out/api`, `javac
+    --module-path out/api main/module-info.java main/p/U.java`, where `main`'s `module m {
+    requires api; }` and `U` has a field `java.sql.Connection c`, compiles; without `transitive`,
+    it reports `package java.sql is not visible`. In the corpus, helidon's
+    `io.helidon.data.jakarta.persistence` reads `java.sql` this way, through
+    `jakarta.persistence`'s `module-info.class`.
+23. **A constructor reference** (`body-corpus.case`, p/Switches.java). With a member class `Made`
+    and a field `static final Object Made`, `Made::new` compiles, and its qualifier is the class
+    (caffeine's `ConcurrentHashMap::new` beside an enum constant `ConcurrentHashMap`).
+24. **`case` labels of an unattributed selector** (`body-corpus.case`, p/Switches.java). In
+    `switch (kind())` on an enum `Kind`, with a field `static final Object ONE` in scope, `case
+    ONE:` is `Kind.ONE`; in `switch (count(2))`, `case LOW:` is the field `static final int LOW`.
+    Both compile.

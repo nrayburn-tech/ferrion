@@ -1699,8 +1699,8 @@ impl Walker<'_, '_, '_> {
     /// A `case` label's simple name where the selector's type needs attribution: an enum
     /// constant of that type, if it is an enum, or else a constant variable in scope (JLS
     /// 14.11.1). A variable in scope that could be a `case` constant, of a primitive type, of
-    /// `String`, or of an enum type, is taken; any other (helidon's `case ENTITY ->` on an enum,
-    /// with a `TypeName ENTITY` inherited) is left to B3 with names no variable has.
+    /// `String`, or of an enum type, is taken; any other (helidon's `case STRING ->` on an enum,
+    /// with a `TypeName STRING` imported) is left to B3 with names no variable has.
     fn case_of_unknown(&mut self, name: Name) -> Result<(Symbol, Meaning), Cancelled> {
         let (symbol, meaning) = self.expression_name(name)?;
         let constant = match &meaning {
