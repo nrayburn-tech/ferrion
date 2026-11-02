@@ -19,7 +19,8 @@ workstream, since source sets drive name resolution. Part of the
   source set), a jar's manifest, or `JAVA_HOME`. Every message names it (SCOPE.md).
 - **The project model is JSON with a format version,** shaped like the corpus lock files: a list
   of source sets, each with roots, release, JDK, and a classpath whose entries are paths or other
-  source sets, in order.
+  source sets, in order, and from format version 2, how it is compiled where that changes which
+  names its code sees (decision 2 of the [oracle review](semantic.md#the-oracle-review)).
 
 ## Single source set from flags
 
@@ -55,7 +56,7 @@ Paths are absolute, or relative to the model file's directory.
 
 ```json
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "sourceSets": [
     {
       "id": "core/main",
@@ -78,7 +79,20 @@ Paths are absolute, or relative to the model file's directory.
         { "sourceSet": "core/main" },
         { "sourceSet": "api/main" },
         { "path": "/home/me/.m2/repository/junit/junit/4.13.2/junit-4.13.2.jar" }
+      ],
+      "processorPath": [
+        { "path": "/home/me/.m2/repository/org/openjdk/jmh/jmh-generator-annprocess/1.37/jmh.jar" }
       ]
+    },
+    {
+      "id": "core/main21",
+      "javaRelease": 21,
+      "platform": "jdk",
+      "addModules": ["jdk.incubator.vector"],
+      "addExports": ["java.base/jdk.internal.misc=ALL-UNNAMED"],
+      "patchModules": { "java.base": ["core/src/generated/jdk21.apijar"] },
+      "sourceRoots": ["core/src/java21"],
+      "classpath": [{ "sourceSet": "core/main" }]
     }
   ]
 }
@@ -94,6 +108,31 @@ Paths are absolute, or relative to the model file's directory.
   that source set's output directory (`target/classes`), since Ferrion reads it from source.
 - **`jdk`** may be left out: then `--jdk`, then `JAVA_HOME`, with the origin recorded.
 - **`javaRelease`** is required.
+- **How a source set is compiled** (format version 2), as javac's options for it, each left out
+  for javac's default:
+  - **`platform`** is `release` (the default) for a build that gives `--release`, so the code
+    sees the API of `javaRelease` alone, and `jdk` for one that gives `-source` and `-target` (or
+    neither), so the code sees the JDK's whole API, internal packages included: every package
+    before release 9 (`-source 8` resolves `sun.security.jca` and `jdk.internal.misc`), and from 9
+    what the JDK's module graph exports to the unnamed module ([observations](#observations)).
+  - **`enablePreview`** is `--enable-preview`.
+  - **`addModules`** are `--add-modules`' values: more root modules of the unnamed module's
+    module graph (`ALL-DEFAULT`, `ALL-SYSTEM`, and `ALL-MODULE-PATH` too).
+  - **`addExports`** and **`addReads`** are `--add-exports`' and `--add-reads`' values,
+    `<module>/<package>=<target>(,<target>)*` and `<module>=<target>(,<target>)*`, the targets
+    module names or `ALL-UNNAMED`.
+  - **`patchModules`** are `--patch-module`'s: for each module, the jars and directories whose
+    classes are in the module, before its own (lucene compiles `core/src/java21` with JDK 21's
+    preview and incubating APIs patched into `java.base` that way).
+- **`processorPath`** is the annotation processor path the build gives javac (Maven's
+  `annotationProcessorPaths` resolved, Gradle's `annotationProcessor` configuration), entries
+  like the classpath's; left out, processors are found on the classpath, as javac finds them
+  without `-processorpath`, and `[]` is none (`-proc:none`). Ferrion runs no processors (their
+  output is in `generatedSourceRoots`); it's for tools that compare with javac, such as the
+  javac oracle.
+- **Format version 2** added the compile options and `processorPath`, since a Ferrion that
+  ignored them would resolve names differently from the build; an older Ferrion refuses such a
+  model and says to upgrade, and this one reads version 1 models as ones without them.
 - **Unknown fields** are a usage error, and a `formatVersion` newer than this Ferrion knows says to
   upgrade Ferrion, since the Maven plugin may be newer than the binary.
 - **A file under the roots of more than one source set** is analyzed in each and its findings
@@ -113,9 +152,24 @@ under `FERRION_CORPUS_DIR`). The oracle comparison and the semantic benchmark us
 - **Paths** are absolute: source roots in the checkout, jars under `target/corpus/jars`, and files
   committed to the project in the checkout.
 - **Generated sources:** each source set lists `target/corpus/generated/<project>/<id>` as its
-  generated-source root, where the oracle writes what the build's annotation processors generate
-  (decision 3 in [review](semantic.md#decisions-made-in-review)). Until the oracle has run, these
-  don't exist, which is a warning.
+  first generated-source root, where the oracle writes what the build's annotation processors
+  generate (decision 3 in [review](semantic.md#decisions-made-in-review)), then the roots the
+  build's other plugins generated sources into, in the checkout, as the lock records them
+  (Helidon's templates, ANTLR's and protobuf's output, caffeine's code generator's). Until the
+  oracle has run, the first doesn't exist, and the others exist only where the lock's build ran;
+  each missing one is a warning.
+- **How a source set is compiled** (`platform` and the options) and its **processor path** are
+  as the lock records them: the build's own, read from what it ran (see the corpus tool's
+  `lock`), with only the options for the JDK's own modules, since the corpus compiles every
+  source set in the unnamed module and a build's options for its own modules (Maven's for a
+  modular test compile, `--patch-module io.helidon.common=src/test/java`) name modules that
+  don't exist there. A processor path entry that is one of the build's own modules is its
+  published jar, so that fetching the corpus, without building it, gives the oracle the
+  processors.
+- **The module path** is the jars and directories of the build's `--module-path`, where it gives
+  one (Helidon's and lucene's modular compiles); the build's own modules on it are left out, since
+  they're source sets. The oracle compiles module declarations with it; Ferrion reads it after
+  the classpath, as from any model, and an entry the classpath has too is read there.
 - **The release** is the lock's, or the lock's JDK when the build sets none, as the parser checks
   use.
 - **The JDK** is `--jdk`, else `JAVA_HOME`, for every source set, as the other corpus tools find
@@ -157,10 +211,16 @@ at its release:
   the file name as `ModuleFinder`'s documentation describes it (checked against
   `jar --describe-module`). Manifests' `Class-Path` aren't followed there, which javac doesn't do
   either.
-- **The JDK** is opened with `Jdk::open` and asked for `platform(release)`; B1's usage errors (a
-  JDK 9 or 10, a release the JDK can't serve) are passed through with the JDK's origin added. A JDK
-  older than the release gets its own message, with help. Each JDK is opened once per run, and a
-  problem that many source sets share (one JDK, one missing jar) is reported once.
+- **The JDK** is opened with `Jdk::open` and asked for `platform(release)`, or for a `jdk`
+  source set `platform(<the JDK's own version>)`, its whole image; B1's usage errors (a JDK 9 or
+  10, a release the JDK can't serve) are passed through with the JDK's origin added. A JDK older
+  than the release gets its own message, with help. Each JDK is opened once per run, and a
+  problem that many source sets share (one JDK, one missing jar) is reported once. Which of its
+  packages the code sees, as the compile options change it, is applied by `ferrion_semantic`'s
+  input adapter.
+- **Patched modules** (`patchModules`) are opened as jars and directories at the release, apart
+  from the classpath, without following manifests: a missing jar is a usage error, and a missing
+  directory a warning, as on the classpath.
 
 ## Validation
 
@@ -176,6 +236,8 @@ at its release:
 | Type inputs missing and an enabled rule needs them | Usage error |
 | Project model: unreadable, malformed, unknown field, newer format version | Usage error |
 | Project model: empty or duplicate `id`, unknown `sourceSet` reference, an entry with both or neither of `path` and `sourceSet`, a cycle of source set dependencies | Usage error |
+| Project model: an `addModules` or `patchModules` module that isn't a module name, an `addExports` or `addReads` entry not in javac's form | Usage error |
+| A `patchModules` jar doesn't exist, or isn't a zip; a `patchModules` directory doesn't exist | Usage error, or a warning for a directory, when types are needed |
 | Project model: a source root or generated-source root that doesn't exist | Warning |
 | A manifest `Class-Path` entry that doesn't exist, or isn't a local file; a manifest that can't be parsed | Warning |
 | A module path entry's `module-info.class` that can't be read | Warning, and the module has no name |
@@ -266,6 +328,18 @@ pub struct SourceSet {
     pub jdk: Option<Given<PathBuf>>,
     pub classpath: Option<Vec<ClassPathItem>>, // `None`: not given, so type inputs are missing
     pub module_path: Vec<Given<PathBuf>>,
+    pub compile: CompileOptions, // the default for the source set of flags
+    pub processor_path: Option<Vec<ClassPathItem>>, // `None`: processors from the classpath
+}
+
+/// javac's options that change which names a source set's code sees.
+pub struct CompileOptions {
+    pub platform: PlatformKind, // Release (`--release`) or Jdk (`-source` and `-target`)
+    pub enable_preview: bool,
+    pub add_modules: Vec<String>,
+    pub add_exports: Vec<AddExports>, // module, package, targets; `to_unnamed()`
+    pub add_reads: Vec<AddReads>,     // module, targets
+    pub patch_modules: Vec<PatchModule>, // module, paths
 }
 
 pub enum ClassPathItem { Path(Given<PathBuf>), SourceSet(Given<SourceSetId>) }
@@ -281,7 +355,8 @@ impl TypeInputs {
 
 pub struct SourceSetTypes {
     pub jdk: Arc<Jdk>,
-    pub platform: Arc<PlatformApi>,
+    pub platform: Arc<PlatformApi>, // the JDK's own for a `jdk` source set
+    pub patches: Vec<(String, Vec<ClassesEntry>)>, // `--patch-module`'s, by module
     /// The classpath, manifests expanded, then the module path; source sets in their places.
     pub entries: Vec<TypeEntry>,
     /// The compiled entries of `entries`, in order.
@@ -336,6 +411,14 @@ apart. Compiling a file that calls one of the methods with `javac -cp a.jar` sho
   read as an archive.
 - **Module path:** a `Class-Path` of a jar on the module path isn't followed (with
   `--add-modules ALL-MODULE-PATH`, `package lib does not exist`); a directory of jars works.
+- **The platform without `--release`** (javac 27, on a file naming `sun.misc.Unsafe`,
+  `sun.security.jca.Providers`, `jdk.internal.misc.VM`, and `java.lang.classfile.ClassFile`):
+  `--release 8` finds none of the four, and `--release 11` only `sun.misc` (`does not exist` for
+  the others). `-source 8 -target 8` finds all four, with warnings for the internal ones, so
+  before release 9 every package of the JDK is visible; `-source 11 -target 11` and `-source 21
+  -target 21` find `sun.misc` and `java.lang.classfile` but report `package sun.security.jca is
+  not visible`, the module graph's rule. On JDK 21, `-source 8` doesn't find
+  `java.lang.classfile`, which JDK 21 doesn't have: the API is the running JDK's own.
 - **Automatic module names** (`jar --describe-module`): `guava-33.4.0-jre.jar` is `guava`,
   `commons-lang3-3.17.0.jar` `commons.lang3`, `foo_bar--baz.jar` `foo.bar.baz`, `.x.y..jar`
   `x.y`, `foo-bar-1.0-SNAPSHOT.jar` `foo.bar`; `lib-1a.jar` (`lib.1a`), `1lib-2.0.jar`, and
@@ -344,7 +427,9 @@ apart. Compiling a file that calls one of the methods with `javac -cp a.jar` sho
 ## Tests
 
 - **Loading:** every row of the validation table, with the message as a snapshot; unset against
-  empty classpaths; origin on each value; relative paths in a model.
+  empty classpaths; origin on each value; relative paths in a model; compile options and the
+  processor path, and a version 1 model read without them.
+- **Patched modules:** opened apart from the classpath, with their module; a missing jar.
 - **Classpath files** in both formats, with Windows separators tested through a parameter rather
   than the platform.
 - **Manifest `Class-Path`:** relative entries, chains, cycles, and missing entries, with jars

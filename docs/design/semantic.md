@@ -323,3 +323,25 @@ corpus run (W6):
    as Helidon's API stability checks) aren't run.
 4. **Module declarations are compared**, through a separate modular compile of each source set
    with a `module-info.java`.
+
+As built in W6a, the corpus's inputs side of the run (details in
+[normalization](semantic-oracle-normalization.md#the-compilation) and
+[inputs](project-inputs.md#the-project-model)):
+
+1. The lock (format 2) reads each build's processor path, release, options for the JDK's modules,
+   module path, and other plugins' generated-source roots from what the build ran: the Maven
+   compiler plugin's debug log of each execution's javac options and source roots, and each
+   Gradle compile task's options. A processor path entry that is one of the build's own modules
+   is its published jar, so fetching gives the oracle the processors.
+2. The project model (format 2) records `platform` (`release`, or `jdk` for `-source` and
+   `-target`), `enablePreview`, `addModules`, `addExports`, `addReads`, `patchModules`, and
+   `processorPath`; `ferrion_project` validates and exposes them, and `ferrion_semantic`'s input
+   adapter gives a `jdk` source set its JDK's whole API (every package before release 9) and
+   applies `--add-modules`, `--add-exports`, and `--patch-module` to what its code sees.
+3. What a processor reports isn't a language error and leaves no file out, and
+   `--should-stop=ifError=FLOW` keeps it from stopping javac before attribution. Processors that
+   only check code aren't recognized in advance, since nothing tells them apart before they run;
+   one that created no file is reported as such, and running it changes nothing the comparison
+   sees (a deviation from "aren't run", for review).
+4. Each `module-info.java` is compiled on its own with its module's and its dependencies' roots
+   on the module source path, and its build's module path with those of its dependencies.
