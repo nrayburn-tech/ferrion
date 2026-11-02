@@ -20,10 +20,9 @@ For each source set of each corpus project's model (`corpus::model`, from its lo
 - **javac:** `javac-oracle names` compiles the source set (see [The compilation](#the-compilation))
   and writes, per file, its errors and every identifier and member select tree with its range and
   the key of the element `Trees.getElement` gives.
-- **Ferrion:** for each file, a range and a key for every name in B2's part, in the oracle's terms.
-  `tools/oracle-check/src/names/ferrion.rs` defines the format (`ResolvedName`) and the interface
-  (`Resolver`); until name resolution exists (W5), a stand-in gives nothing, and every name is
-  counted as not compared.
+- **Ferrion:** for each file, a range and a key for every name `ferrion_semantic` resolves, in the
+  oracle's terms (see [Ferrion's side](#ferrions-side)). `--javac-only` runs javac's side alone,
+  and counts every name as not compared.
 
 The check then:
 
@@ -42,13 +41,16 @@ The check then:
    [parser comparison](parser-oracle-normalization.md#the-oracles-output)), and compares the keys
    as strings. For a method name the key compared is the type searched for the method, not the
    method javac chose.
-5. **Categorizes each mismatch:** `missing` (Ferrion has no name at the range), `kind` (the keys
-   name different kinds of symbol), `origin` (the same type from somewhere else), `symbol` (another
-   symbol of the same kind). A mismatch listed in `tools/oracle-check/differences/names-known.txt`
-   is counted under its known category instead, and the file gives each category's explanation.
-   Mismatches and source sets the oracle's JVM gave no output for fail the run.
+5. **Categorizes each mismatch:** `missing` (Ferrion has no name at the range), `b3` (Ferrion
+   leaves the name to B3), `kind` (the keys name different kinds of symbol), `origin` (the same
+   type from somewhere else), `symbol` (another symbol of the same kind). A mismatch listed in
+   `tools/oracle-check/differences/names-known.txt` is counted under its known category instead
+   ([Known differences](#known-differences)). Mismatches that aren't known, source sets the
+   oracle's JVM gave no output for, and source sets Ferrion failed on fail the run.
 
-Ferrion's names at a range where javac has no B2 name are counted as extra, not compared.
+Ferrion's names at a range where javac has no B2 name are counted, not compared: those it leaves
+to B3 apart from the others ("extra"): names in javac's other parts that B2 resolves anyway, and
+ranges javac has no name at.
 
 ## The oracle's output
 
@@ -119,15 +121,22 @@ lambda parameter without a type), when the expression is a chain of names, and `
   the source path, or generated) is `source <path>`; a class file in a jar or directory on the
   classpath is `class <entry>`; anything from the JDK (`ct.sym` with `--release`, or `jrt:`) is
   `platform`. A jar a manifest's `Class-Path` adds is named as itself.
-- **Offsets** of locals and local classes are the declaration's preferred position (its name, as
-  in the [tree comparison](parser-oracle-normalization.md#positions)), found by a first walk over
-  the file that records each local's and local class's element. Javac's binary names for local
-  classes (`Outer$1Local`) are its own choice of digits, so they're never in a key; a member type
-  of a local class is keyed by its own declaration. Descriptors write a local class as
-  `L<local key>;`.
-- **Ferrion's keys** (`SymbolKey` in `ferrion_semantic`) have the same form but for absolute paths
-  and `class platform` for the platform; `oracle_key` in `ferrion.rs` converts them. Its `member`
-  keys, for a single-static import's member, meet no javac key: javac gives those names no element.
+- **Offsets** of locals and local classes are the position of the declaration's tree, found by a
+  first walk over the file that records each local's and local class's element. For a variable
+  that is its name. For a local class, or a member type of a local or anonymous class, it is its
+  `class`, `interface`, `enum`, or `record` keyword, after any modifiers; for an anonymous class,
+  its body's `{`, or for an enum constant's body the constant's name; for a compact constructor's
+  parameter, which javac makes from the record component, the preferred position of the
+  component's type (`String` in `@A String a`, the last `.` of `java.lang.String`, the `<` of
+  `List<String>`, the first `[` of an array type, the `...` of `String...`), as observation 16
+  in [names](semantic-names.md#observations) records. Javac's binary names for local classes
+  (`Outer$1Local`) are its own choice of digits, so they're never in a key; a member type of a
+  local class is keyed by its own declaration. Descriptors write a local class as `L<local
+  key>;`.
+- **Ferrion's keys** (`SymbolKey` in `ferrion_semantic`) have the same form and positions, but for
+  absolute paths, byte offsets, and `class platform` for the platform; `ferrion.rs` converts
+  them, each `local <file>:<offset>` of the file to UTF-16 units. Its `member` keys, for a
+  single-static import's member, meet no javac key: javac gives those names no element.
 - **Descriptors** erase each parameter and the return type with `Types.erasure`; constructors
   return `V`. Synthetic parameters aren't in `javax.lang.model`, so an inner class's constructor
   has none for its outer instance.
@@ -154,11 +163,40 @@ ones included) with a member method of that name in `Elements.getAllMembers`; wi
 method came from a static import, and the type is the method's owner. For `Q.m()` it's `Q`; for
 `super.m()` and `this.m()`, the type of `super` or `this`.
 
+## Ferrion's side
+
+`Ferrion` in `tools/oracle-check/src/names/ferrion.rs` runs `ferrion_semantic` as the CLI will:
+
+- **One engine per project:** the project's model (`corpus::model`, with `JAVA_HOME` as each
+  source set's JDK, the oracle's), loaded by `ferrion_project` with its type inputs opened, made
+  into a `ProjectInput` by `ProjectInput::from_project`, so the compile options, processor and
+  module paths, and generated roots in the model are the oracle's too.
+- **Source set by source set,** as the oracle finishes each: the files the oracle generated for it
+  are added to the engine (or changed, or removed), the project symbols are brought up to date
+  (`Snapshot::run_symbols`, computed once and verified after), and its files' names resolved
+  (`Snapshot::run_names`), each file's mapped to ranges and keys and then dropped. A project's
+  source sets are resolved one at a time, since a generated file added for one would cancel
+  another's snapshot; the engine is dropped after the project's last source set in the run.
+- **Mapping:** each `Name`, `ClassType`, `NameExpr`, field access, method call, and element-value
+  pair name is one name, with [javac's range](#javacs-ranges), and its symbol's key in the
+  oracle's form ([Keys](#keys)); for a method name, the key of the type searched. Names
+  `ferrion_semantic` leaves to B3 (`Symbol::LeftToB3`) are given as `b3 <why>`.
+
+The report gives Ferrion's time per project: loading the model and its jars, the project symbols,
+and the names of every source set the run compares.
+
 ## javac's ranges
 
 - An identifier's range is the identifier's. A member select's starts where its first qualifier
   starts and ends after its identifier: `java.util.List` is `[0, 14]`, `java.util` `[0, 9]`, `java`
   `[0, 4]`. The outer select comes first in pre-order, then its qualifiers.
+- A class type's name ends at its last identifier: `List` in `List<String>` is `[0, 4]`, and in
+  `@A List`, the `IDENTIFIER` is `List` alone. One exception: a variable arity parameter's element
+  type with annotations on its `...` alone, `Object @A ... args`, ends after the annotations (as
+  in the [tree comparison](parser-oracle-normalization.md#spans-that-dont-contain-their-children)).
+- A resource that is a variable, `try (r; ...)`, ends after its `;` (`r;` is the `IDENTIFIER`),
+  as observed with the oracle on a resolution case (`body-corpus.case`).
+- Ferrion's side gives these ranges (`javac_range` in `ferrion.rs`).
 - Offsets are UTF-16 code units of the file as written: a Unicode escape in an identifier
   (`ab`) counts six units for its one character, and a character outside the BMP two.
 - javac attributes every file of the source set even when one has a syntax error, and attributes
@@ -168,7 +206,8 @@ method came from a static import, and the type is the method's owner. For `Q.m()
 
 ### Implicit names
 
-Trees javac makes up have a start but no end (-1). They're counted as implicit and never compared:
+Trees javac makes up have a start but no end (-1), or an empty range. They're counted as implicit
+and never compared:
 
 - the default constructor's `super()` call, an `IDENTIFIER` at the class declaration whose key is
   the superclass's constructor (`method java/lang/Object.<init>()V`), also for anonymous and local
@@ -176,7 +215,10 @@ Trees javac makes up have a start but no end (-1). They're counted as implicit a
   (`java/lang/Record.<init>()V`);
 - each enum constant's type and `new`, two `IDENTIFIER`s of the enum's type at the constant;
 - a record component's type again, for the implicit field or accessor, at the component's type
-  (`String` in `record B(int c, String d)` appears once with its range and once without an end).
+  (`String` in `record B(int c, String d)` appears once with its range and once without an end);
+- the superclass of an anonymous class a qualified `new` creates: in `o.new Inner<String>() {}`,
+  a `MEMBER_SELECT` of `Inner` with an empty range at the end of `Inner`, after the `IDENTIFIER`
+  with its own range, and, without ends, its qualifiers.
 
 Corpus counts are in [The corpus](#the-corpus).
 
@@ -376,6 +418,56 @@ project's build directory. The model lists them as generated-source roots, and t
 their files with the source set's own and puts them on dependents' source paths. They exist where
 the lock's build ran, and not after `corpus fetch` alone.
 
+## Known differences
+
+Each mismatch that isn't fixed is listed in `tools/oracle-check/differences/names-known.txt`, by
+file and javac's range, under one of these categories (the counts are of the run in
+[The comparison](#the-comparison)):
+
+- **`case-label`** (1,012): a `case` label's simple name in a switch whose selector's type needs
+  attribution (`switch (range.getLowerBoundType()) { case OPEN: ... }`, a call's result). Whether
+  it is an enum constant of the selector's type or a constant in scope depends on that type,
+  which is B3's. Ferrion takes a variable in scope that could be a `case` constant (of a
+  primitive type, `String`, or an enum type), which is right for `switch (count()) { case LOW:
+  }`, and leaves the rest to B3 (observation 24 in [names](semantic-names.md#observations)). So
+  the listed names are B3's in Ferrion (1,010) or, in 2, a `String` constant of the name in scope
+  where the selector is an enum (helidon's `case ENTITY ->`, with a `String ENTITY` inherited).
+  B3 resolves them from the selector's type.
+- **`static-import-overload`** (4,830, 4,743 of them in caffeine's generated code): a method named
+  alone that only static imports have, where several imported types declare methods of the name
+  (`filter` from both `Sets.*` and `Collections2.*`). JLS 15.12.1 gives no type to search; the
+  oracle's searched type is the declaring type of the overload javac chooses, and choosing is
+  B3's, so Ferrion gives the first import's type. Every listed name's file imports both types
+  statically.
+- **`patched-platform`** (1,014): a class that `--patch-module` adds to a platform module:
+  lucene's `java21` sources, compiled with the JDK 21 API jar its build extracts patched into
+  `java.base` and `jdk.incubator.vector`. javac's key names the jar as the class's origin
+  (`class projects/lucene/lucene/core/src/generated/jdk/jdk21.apijar`), while Ferrion's platform
+  serves patched classes as part of their module, so its key says `platform`. Giving them the
+  jar's origin would need the platform to say where each class came from; it's the same class
+  either way.
+- **`platform-per-source-set`** (8, guava): `ProjectInput::from_project` wraps the platform of
+  each source set compiled with `-source` before release 9 in a new `Configured`, so guava's
+  `main` and `test` have two platform class sources, the same platform class is two types, and
+  `Map.Entry`, inherited by `SynchronizedNavigableMapTest.TestMap` through `main`'s
+  `ForwardingMap` and its own `NavigableMap`, is ambiguous. To be fixed in
+  `ferrion_semantic::input::project` by sharing one wrapped platform among source sets with the
+  same platform and options.
+- **`jdk-internal-package`** (11, guava's `MacHashFunctionTest`): `guava-tests`' tests compile
+  with `-source 8` against JDK 27's own API, where javac finds `sun.security.jca`, a package
+  `java.base` doesn't export; Ferrion's platform for the source set has no such package. To be
+  looked into in `ferrion_project`'s platform for `PlatformKind::Jdk`.
+- **`dependency-view`** (none): a dependency's type resolved in the dependency's own view
+  (decision 1 of the [project symbols review](semantic.md#the-project-symbols-review)), where
+  javac compiles the dependent source set as one namespace, so a type the dependent redeclares
+  replaces the dependency's in the dependency's code too. The corpus has one such type, in
+  hertzbeat (`CollectorAutoConfiguration`, redeclared by `hertzbeat-collector-collector` over a
+  dependency's), and no name resolves differently because of it: the count is negligible, and
+  dependencies' references stay resolved in their own views.
+
+Lombok-annotated types aren't a category: their names are left out before comparing, until B4
+(248 types in hertzbeat, at JDK 27).
+
 ## The corpus
 
 `cargo oracle names` on every locked project, on a 10-core Mac with two JVMs of 5 GB at a time,
@@ -446,6 +538,50 @@ The processors that ran, by the files they created: Helidon's `AptProcessor` (23
 configuration metadata (28, 90), jcstress's (1, 20); and, creating nothing, Helidon's API
 stability enforcer (43), Lombok's two (46), and Log4j's two (11). None reported an error.
 
+### The comparison
+
+`cargo oracle names` on every locked project, from the cache of the run above, with Ferrion's
+side on 4 threads (`--threads`), on 2 November 2026. "Extra" are Ferrion's names where javac has
+no B2 name, apart from those Ferrion leaves to B3. Ferrion's time is loading each project's
+model and jars, its symbols, and every source set's names, under the heavy-job lock with other
+work on the machine.
+
+| Project | B2 names | Matched | Known | Unexplained | Extra | Left to B3 | Ferrion |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| jedis | 351,154 | 351,154 | 0 | 0 | 2,522 | 74,274 | 0.7 s |
+| guava | 466,671 | 466,548 | 123 | 0 | 7,314 | 64,996 | 0.9 s |
+| caffeine | 300,781 | 296,005 | 4,776 | 0 | 3,258 | 64,378 | 0.9 s |
+| spring-data-jpa | 215,039 | 215,017 | 22 | 0 | 524 | 25,868 | 0.9 s |
+| lucene | 1,694,555 | 1,693,258 | 1,297 | 0 | 3,405 | 220,261 | 2.8 s |
+| hertzbeat, JDK 27 | 67,782 | 67,782 | 0 | 0 | 8,827 | 6,856 | 2.7 s |
+| helidon | 1,092,038 | 1,091,381 | 657 | 0 | 11,198 | 188,574 | 3.8 s |
+| total | 4,188,020 | 4,181,145 | 6,875 | 0 | 37,048 | 645,207 | 12.6 s |
+
+Known differences by project: guava 21 `case-label`, 83 `static-import-overload`, 11
+`jdk-internal-package`, 8 `platform-per-source-set`; caffeine 33 and 4,743; spring-data-jpa 22
+`case-label`; lucene 279 `case-label`, 1,014 `patched-platform`, 4 `static-import-overload`;
+helidon 657 `case-label`. 99.84% of the B2 names match; without caffeine's generated
+static-import calls, 99.95%.
+
+A run of one project, from the cache, peaked at 864 MB of memory for lucene and 505 MB for
+helidon, the oracle's output included.
+
+The first run, before any fix, had 50,167 mismatches in guava and lucene alone. What it found was
+fixed in `ferrion_semantic`, each with a resolution case checked against javac (observations 16
+to 24 in [names](semantic-names.md#observations)):
+
+- the keys of local classes (their keyword, not their name), anonymous classes (their body's
+  `{`, not `new`), and compact constructors' parameters (the component's type);
+- a `module-info.java` below release 9, which made guava a named module reading nothing (40,000
+  of the mismatches);
+- `Object`'s methods as members of an interface; a local of a `switch` group in later groups; a
+  type variable bounded by another in descriptors; `new Outer().new Inner()`; `C::new` with a
+  field `C`; readability through modules other than the platform's (helidon's `java.sql`); and
+  `case` labels of a selector Ferrion can't type, where a field of the name was taken;
+
+and in the comparison's ranges: class types before their type arguments, annotated varargs, a
+resource's `;`, and the empty range of a qualified `new`'s anonymous superclass.
+
 ### Helidon with its own processors
 
 Before the locks recorded processor paths, an experiment gave every source set, through
@@ -471,6 +607,6 @@ compiles (see [The corpus](#the-corpus)).
   `corpus fetch` alone (the weekly workflow), Helidon's `common/common` loses `Version`, and
   caffeine's `codeGen` its sources, until something runs those plugins.
 - A static import whose member is inherited by the imported type: which type javac's method gives
-  as the searched one, against the type the import names.
+  as the searched one, against the type the import names. The corpus has no mismatch of it.
 - Type annotations inside a qualified type (`java.lang.@A String`): which ranges javac gives the
-  select and its qualifier.
+  select and its qualifier. The corpus has no mismatch of it either.

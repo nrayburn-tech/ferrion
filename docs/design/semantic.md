@@ -173,6 +173,27 @@ under a category. Known differences go in a file with a category and an explanat
 the parser's do. The check runs weekly with the other oracle jobs, and on pull requests for one
 small project.
 
+### The comparison as run (W6)
+
+Ferrion's side (`tools/oracle-check/src/names/ferrion.rs`) builds one engine per project from its
+model and type inputs, runs the project symbols once, and resolves each source set's names after
+the oracle has run it, dropping each file's names once they are compared
+([normalization](semantic-oracle-normalization.md#ferrions-side)). On every corpus project
+(jedis, guava, caffeine, spring-data-jpa, lucene, hertzbeat, helidon), 4,188,020 names in B2's
+part were compared: 4,181,145 match, 6,875 are known differences in five categories, and none is
+unexplained ([the comparison](semantic-oracle-normalization.md#the-comparison),
+[known differences](semantic-oracle-normalization.md#known-differences)). Ferrion's side took
+12.6 s for all seven, on 4 threads, and at most 864 MB for one project (lucene). The pull-request
+job, `cargo oracle names jedis`, fails on any mismatch not listed in
+`tools/oracle-check/differences/names-known.txt`, and on a source set Ferrion fails on.
+
+Two of the categories are Ferrion bugs in its inputs rather than differences to keep, 19 names in
+guava: a platform wrapped once per source set, and a JDK-internal package missing from a `-source
+8` platform. The rest stay until B3 (`case` labels of a selector B2 can't type, and statically
+imported overloads) or are a difference of origin only (lucene's patched platform classes).
+Dependency source sets resolved in their own view (decision 1 of the project symbols review)
+cost no name in the corpus.
+
 ### What the exit criterion means
 
 "Names in the corpus resolve to the same symbols as in javac, except for a documented, categorized
