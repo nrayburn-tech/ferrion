@@ -381,7 +381,7 @@ impl Jdk {
                 unreachable!("platform_source chose a source this JDK has")
             }
         };
-        let visible = (!modules.is_empty()).then(|| visible_packages(&modules, release));
+        let visible = (!modules.is_empty()).then(|| visible_packages(&modules, release, &[]));
         Ok(PlatformApi {
             release,
             source,
@@ -403,12 +403,22 @@ enum Choice {
 /// modules that export a package without qualification and aren't marked "do not resolve by
 /// default", with one difference for releases 9 and 10, which javac keeps with `--release 9` and
 /// `--release 10` (observed with javac 27): there, of the `java.*` modules only `java.se` is a
-/// root, so `java.xml.bind`, `java.corba`, and `java.smartcardio` aren't visible.
-fn visible_packages(modules: &[ModuleDescriptor], release: u32) -> HashSet<Box<str>> {
+/// root, so `java.xml.bind`, `java.corba`, and `java.smartcardio` aren't visible. `roots` are
+/// more root modules, as javac's `--add-modules` gives them; `ALL-SYSTEM` makes every module one,
+/// and `ALL-DEFAULT` adds the default roots, which are roots anyway.
+fn visible_packages(
+    modules: &[ModuleDescriptor],
+    release: u32,
+    roots: &[&str],
+) -> HashSet<Box<str>> {
     let by_name: HashMap<&str, &ModuleDescriptor> =
         modules.iter().map(|m| (m.name.as_str(), m)).collect();
     let java_se_only = release <= 10 && by_name.contains_key("java.se");
+    let all = roots.contains(&"ALL-SYSTEM");
     let is_root = |m: &ModuleDescriptor| {
+        if all || roots.contains(&m.name.as_str()) {
+            return true;
+        }
         if java_se_only && m.name.starts_with("java.") {
             return m.name == "java.se";
         }
@@ -489,6 +499,13 @@ impl PlatformApi {
         self.visible
             .as_ref()
             .is_none_or(|visible| visible.contains(package.as_str()))
+    }
+
+    /// The packages code in the unnamed module can name when `roots` are root modules too, as
+    /// javac's `--add-modules` makes them (`ALL-SYSTEM` for every module), or `None` when there
+    /// are no modules and every package is visible.
+    pub fn visible_with_roots(&self, roots: &[&str]) -> Option<HashSet<Box<str>>> {
+        (!self.modules.is_empty()).then(|| visible_packages(&self.modules, self.release, roots))
     }
 
     /// The visible packages, sorted, or `None` when every package is visible.
