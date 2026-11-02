@@ -342,6 +342,9 @@ line breaks:
   GJF puts a space after a dangling block comment before a closing `)` (`foo(/* none */ );`), and
   Ferrion matches it.
 - **Blank lines** before a comment are kept, at most one, as for code.
+- **One-line block comments** don't keep every line break around them, as GJF doesn't: none
+  after one that trails code other than an opening delimiter, and none before one with code
+  after it on its line inside an expression, a list, or a declarator (docs/style.md, "General").
 
 The width of a trailing comment counts toward its line, as observed in GJF.
 
