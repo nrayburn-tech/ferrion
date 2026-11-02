@@ -21,8 +21,12 @@ mod types;
 use std::path::PathBuf;
 
 pub use error::{InputError, Origin, Severity};
+pub use model::PlatformKind;
 pub use paths::PATH_SEPARATOR;
-pub use project::{ClassPathItem, Given, Project, SourceSet, SourceSetId};
+pub use project::{
+    AddExports, AddReads, ClassPathItem, CompileOptions, Given, PatchModule, Project, SourceSet,
+    SourceSetId,
+};
 pub use types::{ClassesEntry, SourceSetTypes, TypeEntry, TypeInputs};
 
 /// Flag values as the CLI parsed them. `None` is "not given".

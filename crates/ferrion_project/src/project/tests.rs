@@ -451,8 +451,9 @@ fn unreadable_and_malformed_models() {
             "{\"formatVersion\": 1,\n \"sourceSets\": [{\"id\": \"a\", \"javaRelease\": 21, \
              \"sourceRoots\": [], \"sourcePath\": []}]}",
             "the project model isn't valid: unknown field `sourcePath`, expected one of `id`, \
-             `javaRelease`, `jdk`, `sourceRoots`, `generatedSourceRoots`, `classpath`, \
-             `modulePath` at line 2 column 78",
+             `javaRelease`, `platform`, `enablePreview`, `addModules`, `addExports`, `addReads`, \
+             `patchModules`, `jdk`, `sourceRoots`, `generatedSourceRoots`, `classpath`, \
+             `modulePath`, `processorPath` at line 2 column 78",
         ),
         (
             r#"{"formatVersion": 1, "sourceSets": [{"id": "a", "sourceRoots": []}]}"#,
@@ -474,13 +475,96 @@ fn newer_format_version() {
     // Fields a newer format may have aren't reported.
     let flags = model_flags(
         &scratch,
-        r#"{"formatVersion": 2, "sourceSets": [], "toolchains": {}}"#,
+        r#"{"formatVersion": 3, "sourceSets": [], "toolchains": {}}"#,
     );
     assert_eq!(
         load_errors(&flags, &scratch),
-        "error: the project model has format version 2, and this Ferrion reads only version 1\n  \
-         from: project model `build/model.json`\n  help: upgrade Ferrion to the version of the \
-         integration that wrote the model"
+        "error: the project model has format version 3, and this Ferrion reads versions up to \
+         2\n  from: project model `build/model.json`\n  help: upgrade Ferrion to the version of \
+         the integration that wrote the model"
+    );
+}
+
+#[test]
+fn compile_options() {
+    let scratch = Scratch::new("model-compile");
+    // Version 1 has none of them: the defaults.
+    let old = r#"{"formatVersion": 1, "sourceSets": [{"id": "a", "javaRelease": 8,
+        "sourceRoots": []}]}"#;
+    let project = Project::load(&model_flags(&scratch, old), &scratch.env()).unwrap();
+    let set = &project.source_sets()[0];
+    assert_eq!(set.compile, CompileOptions::default());
+    assert_eq!(set.compile.platform, PlatformKind::Release);
+    assert_eq!(set.processor_path, None);
+
+    let json = r#"{"formatVersion": 2, "sourceSets": [{"id": "a", "javaRelease": 8,
+        "platform": "jdk", "enablePreview": true,
+        "addModules": ["jdk.incubator.vector", "ALL-MODULE-PATH"],
+        "addExports": ["java.base/jdk.internal.misc=ALL-UNNAMED,m.x"],
+        "addReads": ["java.base=ALL-UNNAMED"],
+        "patchModules": {"java.base": ["lib/api.jar"]},
+        "processorPath": [{"path": "lib/p.jar"}, {"sourceSet": "b"}],
+        "sourceRoots": []}, {"id": "b", "javaRelease": 21, "sourceRoots": []}]}"#;
+    let project = Project::load(&model_flags(&scratch, json), &scratch.env()).unwrap();
+    let [a, b] = project.source_sets() else {
+        panic!("two source sets");
+    };
+    let options = &a.compile;
+    assert_eq!(options.platform, PlatformKind::Jdk);
+    assert!(options.enable_preview);
+    assert_eq!(
+        options.add_modules,
+        ["jdk.incubator.vector", "ALL-MODULE-PATH"]
+    );
+    assert_eq!(
+        options.add_exports,
+        [AddExports {
+            module: "java.base".into(),
+            package: "jdk.internal.misc".into(),
+            targets: vec!["ALL-UNNAMED".into(), "m.x".into()],
+        }]
+    );
+    assert!(options.add_exports[0].to_unnamed());
+    assert_eq!(
+        options.add_reads,
+        [AddReads {
+            module: "java.base".into(),
+            targets: vec!["ALL-UNNAMED".into()],
+        }]
+    );
+    assert_eq!(options.patch_modules[0].module, "java.base");
+    assert_eq!(
+        options.patch_modules[0].paths[0].value,
+        scratch.path("build/lib/api.jar")
+    );
+    let processors = a.processor_path.as_ref().unwrap();
+    assert_eq!(
+        paths(&processors[..1])[0].0,
+        scratch.path("build/lib/p.jar")
+    );
+    assert!(matches!(&processors[1], ClassPathItem::SourceSet(id) if id.value == b.id));
+    assert_eq!(b.compile, CompileOptions::default());
+
+    let bad = r#"{"formatVersion": 2, "sourceSets": [{"id": "a", "javaRelease": 21,
+        "addModules": ["no way"], "addExports": ["java.base=ALL-UNNAMED"],
+        "addReads": ["java.base"], "patchModules": {"1x": []},
+        "processorPath": [{"sourceSet": "gone"}], "sourceRoots": []}]}"#;
+    assert_eq!(
+        load_errors(&model_flags(&scratch, bad), &scratch),
+        "error: source set `a` depends on `gone`, which isn't in the project model\n  from: \
+         project model `build/model.json`, source set `a`\n\n\
+         error: `addModules` entry `no way` of source set `a` isn't a module name\n  from: \
+         project model `build/model.json`, source set `a`\n  help: write it as javac's \
+         --add-modules takes it\n\n\
+         error: `addExports` entry `java.base=ALL-UNNAMED` of source set `a` isn't \
+         `<module>/<package>=<target>(,<target>)*`\n  from: project model `build/model.json`, \
+         source set `a`\n  help: write it as javac's --add-exports takes it\n\n\
+         error: `addReads` entry `java.base` of source set `a` isn't \
+         `<module>=<target>(,<target>)*`\n  from: project model `build/model.json`, source set \
+         `a`\n  help: write it as javac's --add-reads takes it\n\n\
+         error: `patchModules` entry `1x` of source set `a` isn't a module name\n  from: project \
+         model `build/model.json`, source set `a`\n  help: write it as javac's --patch-module \
+         takes it"
     );
 }
 

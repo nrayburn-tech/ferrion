@@ -48,7 +48,7 @@ fn a_model_becomes_the_engine_inputs() {
             source_roots: roots.iter().map(|r| dir.join(r)).collect(),
             generated_source_roots: generated.iter().map(|r| dir.join(r)).collect(),
             classpath,
-            module_path: Vec::new(),
+            ..ModelSourceSet::default()
         };
     let model = ProjectModel {
         format_version: ferrion_project::model::FORMAT_VERSION,
