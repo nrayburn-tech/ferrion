@@ -241,7 +241,8 @@ parameters. The parameters go all on the line; otherwise all on the next line at
 per line at +4. When a break before the name is taken, the parameters are indented from the name.
 `throws` goes on the next line at +4 when it doesn't fit on the line of the `)`, and always when
 the parameters went one per line; parameters that all moved to the next line together keep
-`) throws X {` on their line if it fits there.
+`) throws X {` on their line if it fits there. However the header breaks, the body is indented
++2 from its first line.
 
 ```java
 void process(
