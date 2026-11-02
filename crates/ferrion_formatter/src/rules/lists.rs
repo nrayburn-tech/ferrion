@@ -95,13 +95,17 @@ pub(crate) fn delimited<'t>(
             NodeOrToken::Token(token) if is_open(token) => opened = true,
             NodeOrToken::Node(child) if opened => {
                 items += 1;
-                // A comment before an item on its line counts toward its width, as GJF
+                // A comment that starts an item's line counts toward the item's width, as GJF
                 // measures it, and one on a line of its own before an item after the first puts
                 // the items one per line (observed).
                 let narrow_item = |child: SyntaxNode<'_>| {
-                    !comment_on_line_before(child.first_token())
-                        && (items == 1 || !comment_on_own_line_before(child.first_token()))
-                        && fits_in(child, FILL_WIDTH)
+                    let first = child.first_token();
+                    leading_comments_width(first).is_none_or(|lead| lead < FILL_WIDTH)
+                        && (items == 1 || !comment_on_own_line_before(first))
+                        && fits_in(
+                            child,
+                            FILL_WIDTH - leading_comments_width(first).unwrap_or(0),
+                        )
                 };
                 narrow = narrow && shape.fills() && narrow_item(child);
                 if shape == Shape::Arguments {
@@ -834,8 +838,12 @@ fn operators_width(run: &str) -> u32 {
 /// How far back [`input_column`] looks for the start of a line.
 const MAX_COLUMN_TOKENS: u32 = 256;
 
-/// Whether a comment on a line of its own comes before `token`, after the token before it.
+/// Whether a comment on a line of its own comes before `token`, after the token before it: one
+/// with a line break before it and after it.
 fn comment_on_own_line_before(token: SyntaxToken<'_>) -> bool {
+    // Walking back: whether a line break has come between the comment looked at and `token`, and
+    // whether a comment after such a line break has.
+    let mut break_after = false;
     let mut comment = false;
     let mut previous = token.prev_token();
     while let Some(t) = previous
@@ -843,7 +851,8 @@ fn comment_on_own_line_before(token: SyntaxToken<'_>) -> bool {
     {
         match t.kind() {
             K::LineTerminator if comment => return true,
-            kind if is_comment(kind) => comment = true,
+            K::LineTerminator => break_after = true,
+            kind if is_comment(kind) && break_after => comment = true,
             _ => {}
         }
         previous = t.prev_token();
@@ -851,20 +860,27 @@ fn comment_on_own_line_before(token: SyntaxToken<'_>) -> bool {
     false
 }
 
-/// Whether a comment comes before `token` on its line, after the token before it.
-fn comment_on_line_before(token: SyntaxToken<'_>) -> bool {
+/// The width of the comments before `token` that go with it, and a space after each, or `None`
+/// if there are none: those that start its line, or a `/* name= */` on the line of the token
+/// before it. Other comments on that line trail the token before, as after a comma, so they're
+/// not counted, whether or not `token` follows them on their line (observed: `4, /* c */9` is
+/// laid out as `4, /* c */ 9`, like `4, /* c */` then `9`).
+fn leading_comments_width(token: SyntaxToken<'_>) -> Option<u32> {
+    let mut total = 0;
     let mut previous = token.prev_token();
     while let Some(t) = previous
         && t.is_trivia()
     {
         match t.kind() {
-            K::LineTerminator => return false,
-            kind if is_comment(kind) => return true,
+            K::LineTerminator => return (total > 0).then_some(total),
+            kind if is_comment(kind) => total += width(t.text()) + 1,
             _ => {}
         }
         previous = t.prev_token();
     }
-    false
+    previous
+        .filter(|&p| total > 0 && !comment_on_line_after(p))
+        .map(|_| total)
 }
 
 /// Whether `node` printed flat is at most `limit` wide, as near as the first rule's spacing
