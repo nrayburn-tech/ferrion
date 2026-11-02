@@ -10,9 +10,9 @@
 //! Files javac reports language errors in are left out whole, and so are files it never analyzed
 //! (counted apart) and Lombok-annotated types; what processors report is no language error, and
 //! is counted, not a reason to leave a file out. The names in B2's part ([`compare`]) of the rest
-//! are matched with Ferrion's by range and compared by key. Until Ferrion resolves names, [`ferrion`]
-//! has a stand-in with no results, and the report counts javac's side: files run, files left out
-//! by cause, and names by context and kind of symbol.
+//! are matched with Ferrion's ([`ferrion`]) by range and compared by key. The report counts files
+//! run, files left out by cause, names by context and kind of symbol, and the comparison's
+//! matches, known differences, and mismatches by category.
 
 mod compare;
 pub mod ferrion;
@@ -31,7 +31,7 @@ use corpus::project::Project;
 use ferrion_diagnostics::SourceText;
 
 use self::compare::{Known, Part, javac_key, key_kind};
-use self::ferrion::{Offsets, Resolver, SetNames, StandIn};
+use self::ferrion::{Ferrion, Offsets, Resolved, Resolver, StandIn};
 use self::oracle::{NamesOracle, Ran};
 use self::plan::SourceSet;
 use self::report::{MismatchRow, Report, SetRow, Tally};
@@ -42,8 +42,8 @@ usage: oracle names [<option>...] [<project>...]
 Compiles each source set of the corpus projects (by default all of them) with javac as its build
 does, running the build's annotation processors, and compares what each name in B2's part resolves
 to with Ferrion's resolution. Files with javac errors, files javac never analyzed, and
-Lombok-annotated types are left out. Until Ferrion resolves names, nothing is compared, and the
-report counts javac's side.
+Lombok-annotated types are left out. Fails on a mismatch that isn't a known difference
+(tools/oracle-check/differences/names-known.txt).
 
 options:
   --source-set <id>    only this source set of each project, such as `main` or `common/config/test`
@@ -55,6 +55,8 @@ options:
                        find annotation processors on these jars and directories (separated as
                        on a classpath) for every source set, instead of the build's processor
                        path or its classpath: an experiment
+  --threads <N>        resolve Ferrion's names on N threads (default: 4)
+  --javac-only         run javac's side alone, and compare nothing
   --limit <N>          show the first N failures (default: 10)
   --json <file>        also write the full report as JSON
   --oracle-jar <file>  the javac oracle (default: tools/javac-oracle/target/javac-oracle.jar)
@@ -70,6 +72,8 @@ pub struct Options {
     pub jobs: usize,
     pub heap: String,
     pub processor_path: Vec<PathBuf>,
+    pub threads: usize,
+    pub javac_only: bool,
     pub limit: usize,
     pub json: Option<PathBuf>,
     pub jar: PathBuf,
@@ -83,6 +87,8 @@ pub fn parse_args(args: impl Iterator<Item = String>, usage: fn(&str) -> !) -> O
         jobs: 2,
         heap: "4g".to_owned(),
         processor_path: Vec::new(),
+        threads: 4,
+        javac_only: false,
         limit: 10,
         json: None,
         jar: repository.join("tools/javac-oracle/target/javac-oracle.jar"),
@@ -108,6 +114,11 @@ pub fn parse_args(args: impl Iterator<Item = String>, usage: fn(&str) -> !) -> O
                 let paths = value("--processor-path");
                 options.processor_path = std::env::split_paths(&paths).collect();
             }
+            "--threads" => {
+                let text = value("--threads");
+                options.threads = number("--threads", text).max(1);
+            }
+            "--javac-only" => options.javac_only = true,
             "--limit" => {
                 let text = value("--limit");
                 options.limit = number("--limit", text);
@@ -122,10 +133,6 @@ pub fn parse_args(args: impl Iterator<Item = String>, usage: fn(&str) -> !) -> O
 }
 
 pub fn run(options: Options) -> Result<bool> {
-    run_with(options, &StandIn)
-}
-
-fn run_with(options: Options, resolver: &dyn Resolver) -> Result<bool> {
     let start = Instant::now();
     let dirs = Dirs::new()?;
     let projects = Project::load_all(&dirs.projects_file())?;
@@ -168,6 +175,21 @@ fn run_with(options: Options, resolver: &dyn Resolver) -> Result<bool> {
         }
         groups.push(sets);
     }
+    let ferrion;
+    let resolver: &dyn Resolver = if options.javac_only {
+        &StandIn
+    } else {
+        let counts: Vec<(String, usize)> = groups
+            .iter()
+            .enumerate()
+            .map(|(g, _)| {
+                let project = selected[g].name.clone();
+                (project, work.iter().filter(|&&(w, _)| w == g).count())
+            })
+            .collect();
+        ferrion = Ferrion::new(&counts, scratch.clone(), options.threads)?;
+        &ferrion
+    };
     let files: usize = work.iter().map(|&(g, i)| groups[g][i].files.len()).sum();
     eprintln!(
         "running javac on {} source sets ({files} files), {} at a time",
@@ -378,8 +400,11 @@ fn run_set(context: &Shared, sets: &[SourceSet], i: usize) -> Result<SetResult> 
     for run in &output.set.processor_runs {
         tally.add_processor_run(run);
     }
-    let ferrion: Result<Option<SetNames>, String> =
+    let ferrion: Result<Option<Resolved>, String> =
         context.resolver.resolve(sets, set, context.corpus);
+    if let Ok(Some(resolved)) = &ferrion {
+        tally.ferrion_seconds = resolved.seconds;
+    }
     for file in &output.files {
         let display = display(&file.file);
         tally.files += 1;
@@ -433,7 +458,7 @@ fn run_set(context: &Shared, sets: &[SourceSet], i: usize) -> Result<SetResult> 
             tally.add_part(part, &name.context, key_kind(javac_key(name)));
         }
         let b2 = parts.iter().filter(|&&p| p == Part::B2).count() as u64;
-        let Ok(Some(names)) = &ferrion else {
+        let Ok(Some(Resolved { names, .. })) = &ferrion else {
             tally.comparison.not_compared += b2;
             continue;
         };
@@ -445,6 +470,7 @@ fn run_set(context: &Shared, sets: &[SourceSet], i: usize) -> Result<SetResult> 
         let compared = compare::compare(file, &parts, ours, &offsets);
         tally.comparison.matched += compared.matched;
         tally.comparison.extra += compared.extra;
+        tally.comparison.left_to_b3 += compared.left_to_b3;
         for mismatch in compared.mismatches {
             if let Some(category) = context.known.category(&display, &mismatch) {
                 *tally

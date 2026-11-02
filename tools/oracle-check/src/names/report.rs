@@ -49,6 +49,8 @@ pub struct Tally {
     pub processor_runs: BTreeMap<String, ProcessorTally>,
     /// The oracle's own time for the source sets it ran, and the time to read cached ones.
     pub javac_seconds: f64,
+    /// Ferrion's time: loading each project and its symbols, and each source set's names.
+    pub ferrion_seconds: f64,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
@@ -88,10 +90,12 @@ pub struct Comparison {
     pub mismatched: BTreeMap<&'static str, u64>,
     /// Mismatches listed in `differences/names-known.txt`, by category.
     pub known: BTreeMap<String, u64>,
-    /// Names in B2's part in source sets Ferrion has no results for yet.
+    /// Names in B2's part in source sets Ferrion has no results for (`--javac-only`).
     pub not_compared: u64,
-    /// Ferrion's names where javac has none in B2's part.
+    /// Ferrion's names where javac has none in B2's part, but those it leaves to B3.
     pub extra: u64,
+    /// Ferrion's names left to B3 where javac has none in B2's part.
+    pub left_to_b3: u64,
 }
 
 impl Tally {
@@ -165,6 +169,7 @@ impl Tally {
         }
         c.not_compared += o.not_compared;
         c.extra += o.extra;
+        c.left_to_b3 += o.left_to_b3;
         for (code, count) in &other.error_codes {
             *self.error_codes.entry(code.clone()).or_default() += count;
         }
@@ -176,6 +181,7 @@ impl Tally {
             ours.errors += run.errors;
         }
         self.javac_seconds += other.javac_seconds;
+        self.ferrion_seconds += other.ferrion_seconds;
     }
 
     pub fn mismatches(&self) -> u64 {
@@ -183,7 +189,7 @@ impl Tally {
     }
 
     pub fn failures(&self) -> u64 {
-        self.mismatches() + self.jvm_failures
+        self.mismatches() + self.jvm_failures + self.excluded.ferrion_failures
     }
 
     fn b2_names(&self) -> u64 {
@@ -243,7 +249,7 @@ impl Report {
     pub fn text(&self, limit: usize) -> String {
         let mut out = String::new();
         let header = format!(
-            "{:<16} {:>5} {:>7} {:>6} {:>8} {:>7} {:>6} {:>6} {:>7} {:>9} {:>8} {:>9} {:>8}",
+            "{:<16} {:>5} {:>7} {:>6} {:>8} {:>7} {:>6} {:>6} {:>7} {:>9} {:>8} {:>9} {:>8} {:>9}",
             "project",
             "sets",
             "files",
@@ -256,7 +262,8 @@ impl Report {
             "B2 names",
             "B3",
             "other",
-            "javac s"
+            "javac s",
+            "Ferrion s"
         );
         writeln!(out, "{header}").unwrap();
         let row = |out: &mut String, name: &str, t: &Tally| {
@@ -268,7 +275,8 @@ impl Report {
                 .sum();
             writeln!(
                 out,
-                "{:<16} {:>5} {:>7} {:>6} {:>8} {:>7} {:>6} {:>6} {:>7} {:>9} {:>8} {:>9} {:>8.1}",
+                "{:<16} {:>5} {:>7} {:>6} {:>8} {:>7} {:>6} {:>6} {:>7} {:>9} {:>8} {:>9} {:>8.1} \
+                 {:>9.1}",
                 name,
                 t.source_sets,
                 t.files,
@@ -282,6 +290,7 @@ impl Report {
                 t.names.get(Part::B3.name()).copied().unwrap_or(0),
                 other,
                 t.javac_seconds,
+                t.ferrion_seconds,
             )
             .unwrap();
         };
@@ -296,8 +305,8 @@ impl Report {
             out,
             "\nfiles: {} of the source sets and {} generated, {} of them module declarations; \
              left out: {} with javac errors ({} of them generated, {} module declarations), {} \
-             javac never analyzed, {} javac crashed on, {} module declarations not compiled; {} \
-             Lombok types left out",
+             javac never analyzed, {} javac crashed on, {} module declarations not compiled, {} in \
+             source sets Ferrion failed on; {} Lombok types left out",
             t.files - t.generated_files,
             t.generated_files,
             t.module_declarations,
@@ -307,6 +316,7 @@ impl Report {
             t.excluded.unanalyzed,
             t.excluded.crashes,
             t.excluded.module_declarations,
+            t.excluded.ferrion_failures,
             t.lombok_types
         )
         .unwrap();
@@ -335,12 +345,13 @@ impl Report {
         writeln!(
             out,
             "\ncomparison: {} matched, {} mismatched, {} known, {} not compared (no Ferrion \
-             results yet), {} extra on Ferrion's side",
+             results); on Ferrion's side, {} extra and {} more left to B3",
             c.matched,
             t.mismatches(),
             c.known.values().sum::<u64>(),
             c.not_compared,
-            c.extra
+            c.extra,
+            c.left_to_b3
         )
         .unwrap();
         for (category, count) in &c.mismatched {

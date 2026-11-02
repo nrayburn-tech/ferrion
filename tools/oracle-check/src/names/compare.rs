@@ -2,7 +2,7 @@
 //!
 //! The rules are in docs/design/semantic-oracle-normalization.md, "What is compared".
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use anyhow::{Context, Result, bail};
 
@@ -16,8 +16,8 @@ pub enum Part {
     B2,
     /// Qualified by an expression's type, or a method a call on an expression chooses: B3's.
     B3,
-    /// A tree javac made up, with no end: the default constructor's `super()`, an enum constant's
-    /// `new`, a record's implicit members.
+    /// A tree javac made up, with no end or an empty range: the default constructor's `super()`,
+    /// an enum constant's `new`, a record's implicit members.
     Implicit,
     /// `this`, `super`, or `class`, which javac's trees have as names and Ferrion's don't.
     Keyword,
@@ -86,7 +86,9 @@ pub fn parts(file: &FileOutput) -> Vec<Part> {
     let mut parts = vec![Part::B3; file.names.len()];
     for i in (0..file.names.len()).rev() {
         let name = &file.names[i];
-        parts[i] = if name.start < 0 || name.end < 0 {
+        // A tree javac made up has no end, or for the superclass of an anonymous class that a
+        // qualified `new` creates (`o.new Inner() {}`), an empty range after the name.
+        parts[i] = if name.start < 0 || name.end <= name.start {
             Part::Implicit
         } else if name.context == "keyword" {
             Part::Keyword
@@ -135,6 +137,8 @@ pub enum Category {
     Origin,
     /// Another symbol of the same kind.
     Symbol,
+    /// Ferrion leaves the name to B3 (`b3 <why>`): it needs a type B2 doesn't attribute.
+    LeftToB3,
 }
 
 impl Category {
@@ -144,6 +148,7 @@ impl Category {
             Category::Kind => "kind",
             Category::Origin => "origin",
             Category::Symbol => "symbol",
+            Category::LeftToB3 => "b3",
         }
     }
 }
@@ -152,6 +157,9 @@ pub fn categorize(javac: &str, ferrion: Option<&str>) -> Category {
     let Some(ferrion) = ferrion else {
         return Category::Missing;
     };
+    if ferrion.starts_with("b3 ") {
+        return Category::LeftToB3;
+    }
     if key_kind(javac) != key_kind(ferrion) {
         return Category::Kind;
     }
@@ -179,8 +187,11 @@ pub struct Mismatch {
 pub struct Compared {
     pub matched: u64,
     pub mismatches: Vec<Mismatch>,
-    /// Ferrion's names at a range where javac has no name in B2's part.
+    /// Ferrion's names at a range where javac has no name in B2's part, but those it leaves to
+    /// B3.
     pub extra: u64,
+    /// Ferrion's names left to B3 at a range where javac has no name in B2's part.
+    pub left_to_b3: u64,
 }
 
 /// Compares the names in B2's part with Ferrion's.
@@ -195,13 +206,15 @@ pub fn compare(
         by_range.insert(offsets.range(name.span), &name.key);
     }
     let mut compared = Compared::default();
-    let mut used = 0;
+    let mut used = HashSet::new();
     for (name, &part) in file.names.iter().zip(parts) {
         if part != Part::B2 {
             continue;
         }
         let ours = by_range.get(&(name.start, name.end)).copied();
-        used += u64::from(ours.is_some());
+        if ours.is_some() {
+            used.insert((name.start, name.end));
+        }
         let theirs = javac_key(name);
         if ours == Some(theirs) {
             compared.matched += 1;
@@ -216,7 +229,16 @@ pub fn compare(
             });
         }
     }
-    compared.extra = (by_range.len() as u64).saturating_sub(used);
+    for (range, key) in &by_range {
+        if used.contains(range) {
+            continue;
+        }
+        if key.starts_with("b3 ") {
+            compared.left_to_b3 += 1;
+        } else {
+            compared.extra += 1;
+        }
+    }
     compared
 }
 

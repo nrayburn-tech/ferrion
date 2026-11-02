@@ -27,9 +27,22 @@ impl Snapshot {
         threads: usize,
         each: impl Fn(FileId) -> Result<(), Cancelled> + Sync,
     ) -> Result<(), Cancelled> {
-        let files = self.run_symbols(threads)?;
+        let mut files = self.run_symbols(threads)?;
+        files.reverse();
+        self.run_names(threads, &files, each)
+    }
+
+    /// The batch's last phase for `files` alone, in their order: each file's names in
+    /// declarations and in bodies, then `each`, after which they are dropped. What the javac
+    /// comparison runs per source set, once [`Snapshot::run_symbols`] has run.
+    pub fn run_names(
+        &self,
+        threads: usize,
+        files: &[FileId],
+        each: impl Fn(FileId) -> Result<(), Cancelled> + Sync,
+    ) -> Result<(), Cancelled> {
         parallel(self, threads, files.len(), |i| {
-            let file = files[files.len() - 1 - i];
+            let file = files[i];
             // Held while both are resolved, so that a tree the cache didn't keep is parsed once
             // for both.
             let _tree = self.tree(file)?;
