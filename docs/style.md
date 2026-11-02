@@ -374,7 +374,10 @@ its expressions.
 ### Blocks
 
 A block's statements go on their own lines at +2, and the `}` on a line of its own. Blank lines
-between statements are kept, at most one, and a blank line before the `}` is removed.
+between statements are kept, at most one, and a blank line before the `}` is removed, as GJF
+does, except in two places where GJF keeps it: before a `}` the statement goes on after
+(`} catch`, `} finally`, `} else`, and a `do`'s `} while`), and after a comment on a line of its
+own.
 
 ```java
 void m() {
@@ -382,6 +385,12 @@ void m() {
   int a = 1;
 
   int b = 2;
+}
+try {
+  a();
+
+} catch (E e) {
+  b(); // why
 }
 ```
 
@@ -407,6 +416,9 @@ if (a) {
 {
 }
 ```
+
+An empty block on two lines keeps a blank line between them, if it has one, when it is one whose
+blank line after the `{` is kept.
 
 An empty block with comments prints them on their own lines inside it, except a line comment on
 the `{`'s line, which stays there:
