@@ -18,6 +18,10 @@ p -> package p
 p.A$B.C -> type p/A$B$C class first.jar
 p.A$B -> type p/A$B class first.jar
 p -> package p
+j.first -> b3 method-of-expression
+j -> field q/U.j
+s.fromSource -> b3 method-of-expression
+s -> field q/U.s
 # type q/U source q/U.java
   superclass type java/lang/Object class platform
   field j Lp/J;
@@ -66,6 +70,8 @@ X -> type p/X class first.jar
 In -> type p/Outer$In class first.jar
 m.Foo -> type m/Foo source m/Foo.java
 m -> package m
+foo.fromMain -> b3 method-of-expression
+foo -> local t/T.java:88
 # type t/T source t/T.java
   superclass type p/Outer class first.jar
   member In: type p/Outer$In class first.jar
@@ -77,6 +83,8 @@ m -> package m
 t -> package t
 p.Outer -> type p/Outer class first.jar
 p -> package p
+Object -> type java/lang/Object class platform
+X -> error not-found X
 X -> error not-found X
 # type t/Private source t/Private.java
   superclass type p/Outer class first.jar

@@ -1,0 +1,58 @@
+// Local variables (JLS 6.3, 6.4): parameters, locals and their initializers, `for` variables,
+// enhanced `for` variables (not in scope in their own expression), resources (not in scope in
+// `catch` or `finally`), exception parameters, lambda parameters, and a local shadowing a
+// field. javac compiles every file.
+//- set main 27
+//- file main p/Locals.java
+package p;
+
+import java.util.List;
+import java.util.function.Function;
+
+class Locals {
+    int i;
+    String[] items;
+
+    int params(int i, String... items) { return i + items.length; }
+
+    int locals() {
+        int a = 1, b = a + 1;
+        int i = b;
+        return i;
+    }
+
+    int loops(List<String> list) {
+        int sum = 0;
+        for (int k = 0, n = k + 1; k < n; k++) { sum += k; }
+        for (String items : items) { sum += items.length(); }
+        for (String s : list) { sum += s.length(); }
+        return sum + i;
+    }
+
+    void resources() throws Exception {
+        try (AutoCloseable c = null; AutoCloseable d = c) {
+            d.close();
+        } catch (RuntimeException e) {
+            e.getMessage();
+        } finally {
+            i++;
+        }
+    }
+
+    Function<Integer, Integer> lambdas(int base) {
+        Function<Integer, Integer> f = x -> x + base;
+        Function<Integer, Integer> g = (Integer y) -> { int z = y; return z + i; };
+        return f.andThen(g);
+    }
+
+    void labels() {
+        outer:
+        for (int k = 0; k < 3; k++) {
+            inner:
+            while (true) {
+                if (k == 1) continue outer;
+                break inner;
+            }
+        }
+    }
+}

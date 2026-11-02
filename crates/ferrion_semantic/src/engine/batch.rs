@@ -18,8 +18,7 @@ impl Snapshot {
     /// 3. the type entry of every type each file declares, with the supertypes and member types
     ///    they read;
     /// 4. for every file, last first, so that the trees the first phase left in the cache are
-    ///    used before they are evicted: its names in declarations, then `each`. W5 adds the
-    ///    names in bodies.
+    ///    used before they are evicted: its names in declarations and in bodies, then `each`.
     ///
     /// Stops with `Err(Cancelled)` once the revision moves, or as soon as `each` returns it.
     /// With one thread, everything runs on the calling thread.
@@ -32,10 +31,12 @@ impl Snapshot {
         parallel(self, threads, files.len(), |i| {
             let file = files[files.len() - 1 - i];
             self.decl_names(file)?;
+            self.body_names(file)?;
             each(file)?;
-            // Like body results, a file's names are for its rules, and are dropped once they
-            // have run (semantic-incremental.md#body-results); asking again computes them.
+            // A file's names are for its rules, and are dropped once they have run
+            // (semantic-incremental.md#body-results); asking again computes them.
             self.shared().file_names.remove(&file);
+            self.shared().body_names.remove(&file);
             Ok(())
         })
     }

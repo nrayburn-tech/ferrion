@@ -4,11 +4,13 @@
 //! files) and everything derived from them, in layers: each file's [`summary`] of its
 //! declarations; then each source set's [`packages`] table, its [`view`] of sources, classpath,
 //! and platform, and the [`symbols`] of its types; then each file's [`decl_names`], the names in
-//! its declarations resolved. Results are kept between edits and checked by what they read, so a
-//! change inside a method body costs that file's work only. Queries go through a [`Snapshot`],
-//! and return [`Cancelled`] once an input changes under them. docs/design/semantic-incremental.md
-//! describes the engine, and docs/design/semantic-names.md what it computes.
+//! its declarations resolved, and its [`body`] names, those inside its bodies. Results are kept
+//! between edits and checked by what they read, so a change inside a method body costs that
+//! file's work only. Queries go through a [`Snapshot`], and return [`Cancelled`] once an input
+//! changes under them. docs/design/semantic-incremental.md describes the engine, and
+//! docs/design/semantic-names.md what it computes.
 
+pub mod body;
 mod classes;
 pub mod decl_names;
 mod engine;

@@ -1,0 +1,68 @@
+// Type names inside bodies and the local and anonymous classes they declare: a local class
+// shadows a member type, which shadows an import; a local class is in scope from its
+// declaration, in its own body, and has its own members and supertypes; an anonymous class's
+// fields, declared or inherited, shadow the enclosing method's locals; a local record reads an
+// enclosing local, and javac reports `non-static variable x cannot be referenced from a static
+// context` for it rather than finding the static field `x` (observations "local-types" and
+// "local-record-and-enclosing-local"). javac compiles every file but p/Records.java, which is in
+// a source set of its own.
+//- set main 27
+//- set records 27
+//- file main p/Types.java
+package p;
+
+import java.util.List;
+
+class Types {
+    static class Member { void fromMember() {} }
+    static class List { void fromMemberList() {} }
+
+    void local() {
+        new Member().fromMember();
+        class Member extends Base { int own; void fromLocal() { own = inherited + own; } }
+        new Member().fromLocal();
+        Member m = new Member();
+        m.own = m.inherited;
+        List l = new List();
+        l.fromMemberList();
+    }
+
+    <T> T generic(T t) {
+        class Box<U> { T held; U other; }
+        Box<String> box = new Box<>();
+        return box.held;
+    }
+
+    void anonymous() {
+        int inherited = 0;
+        int value = 1;
+        int other = 2;
+        Base b = new Base() {
+            int own = value;
+            int get() { return inherited + own + other; }
+        };
+        Runnable r = new Runnable() { public void run() { int x = value; } };
+    }
+
+    void nested() {
+        class Outer { class Inner { int deep; } Inner make() { return new Inner(); } }
+        Outer.Inner inner = new Outer().make();
+        inner.deep = 1;
+    }
+}
+//- file main p/Base.java
+package p;
+
+public class Base { public int inherited; }
+//- file records p/Records.java
+package p;
+
+class Records {
+    static int x = 1;
+
+    void m() {
+        int x = 2;
+        record R(int y) { int f() { return x + y; } }
+        enum E { A; int g() { return x; } }
+    }
+}

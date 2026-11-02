@@ -1,0 +1,49 @@
+== main p/q.java
+p -> package p
+# type p/q source p/q.java
+  superclass type java/lang/Object class platform
+  member In: type p/q$In source p/q.java
+  field Z I
+  method q()V implicit
+# type p/q$In source p/q.java
+  superclass type java/lang/Object class platform
+  field W I
+  method In()V implicit
+== main q/Z.java
+q -> package q
+# type q/Z source q/Z.java
+  superclass type java/lang/Object class platform
+  field Y I
+  method Z()V implicit
+== main p/U.java
+p -> package p
+q.Z -> field p/q.Z
+q -> type p/q source p/q.java
+q.In.W -> field p/q$In.W
+q.In -> type p/q$In source p/q.java
+q -> type p/q source p/q.java
+String -> type java/lang/String class platform
+Math.length -> b3 method-of-expression
+Math -> local p/U.java:163
+java.lang.Math.abs -> method java/lang/Math.abs(I)I
+java.lang.Math -> type java/lang/Math class platform
+java.lang -> package java.lang
+java -> package java
+Object -> type java/lang/Object class platform
+String -> type java/lang/String class platform
+q.In -> type p/q$In source p/q.java
+q -> type p/q source p/q.java
+q.In -> type p/q$In source p/q.java
+q -> type p/q source p/q.java
+java.lang.Integer.MAX_VALUE -> field java/lang/Integer.MAX_VALUE
+java.lang.Integer -> type java/lang/Integer class platform
+java.lang -> package java.lang
+java -> package java
+# type p/U source p/U.java
+  superclass type java/lang/Object class platform
+  method typeObscuresPackage()I
+  method memberTypeField()I
+  method variableObscuresType()I
+  method typeContext()Ljava/lang/Object;
+  method packageQualified()I
+  method U()V implicit

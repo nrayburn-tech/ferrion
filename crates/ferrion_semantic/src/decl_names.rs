@@ -24,7 +24,8 @@ use crate::engine::derived::Reads;
 use crate::resolve::{FileScope, Resolver, Scope};
 use crate::summary::{Header, ImportKind, QualifiedName, UnitKind, qualified};
 use crate::symbols::{
-    Cause, ClassSourceId, ErrorSymbol, SymbolKey, Ty, TyPart, TypeKey, TypeResolution, TypeVarOwner,
+    Cause, ClassSourceId, ErrorSymbol, LeftToB3, MethodRef, SymbolKey, Ty, TyPart, TypeKey,
+    TypeResolution, TypeVarOwner,
 };
 use crate::{Cancelled, FileId, Interner, Name, Snapshot, SourceSetId};
 
@@ -44,7 +45,7 @@ pub struct ResolvedName {
     pub symbol: Symbol,
 }
 
-/// What a name in a declaration is.
+/// What a name is, in a declaration or a body.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Symbol {
     Package(Name),
@@ -62,6 +63,27 @@ pub enum Symbol {
         owner: TypeKey,
         name: Name,
     },
+    /// A local variable, parameter, exception parameter, resource, or pattern binding of
+    /// `file`: the node declaring it, and the offset of its name, valid for one tree.
+    Local {
+        file: FileId,
+        node: NodeId,
+        at: u32,
+    },
+    /// A field or enum constant, by the type declaring it.
+    Field {
+        owner: TypeKey,
+        name: Name,
+    },
+    /// A method name: the type whose members are searched (JLS 15.12.1), and its member
+    /// methods of the name, declared or inherited, among which B3 chooses.
+    Methods {
+        search: TypeKey,
+        name: Name,
+        candidates: Arc<[MethodRef]>,
+    },
+    /// A name whose meaning needs types, which B3 attributes.
+    LeftToB3(LeftToB3),
     Error(ErrorSymbol),
 }
 
@@ -98,8 +120,10 @@ impl Snapshot {
 
     /// The key the javac comparison matches `symbol` by (semantic.md, "The
     /// javac oracle"): `package java.util`, `module java.base`, `type java/util/Map$Entry class
-    /// <entry>` or `... source <file>`, `typevar <owner> T`, `member p/A.m`, `method
-    /// p/A.value()I`, or `error <cause> <name>`.
+    /// <entry>` or `... source <file>`, `type local <file>:<offset>`, `typevar <owner> T`,
+    /// `member p/A.m`, `field p/A.f`, `method p/A.value()I`, `local <file>:<offset>`, or
+    /// `error <cause> <name>`. A method name with several candidates is `methods p/A.m:` and
+    /// their keys; one left to B3 is `b3 <why>`.
     pub fn symbol_key(&self, symbol: &Symbol) -> Result<SymbolKey, Cancelled> {
         let names = self.names().clone();
         Ok(SymbolKey(match symbol {
@@ -131,6 +155,32 @@ impl Snapshot {
                     names.text(*name)
                 )
             }
+            Symbol::Local { file, at, .. } => {
+                format!("local {}:{at}", self.file(*file)?.path.display())
+            }
+            Symbol::Field { owner, name } => {
+                format!("field {}.{}", self.binary_text(*owner)?, names.text(*name))
+            }
+            Symbol::Methods {
+                search,
+                name,
+                candidates,
+            } => match &candidates[..] {
+                [one] => self.method_text(one.owner, one.index)?,
+                _ => {
+                    let mut keys = Vec::with_capacity(candidates.len());
+                    for candidate in candidates.iter() {
+                        keys.push(self.method_text(candidate.owner, candidate.index)?);
+                    }
+                    format!(
+                        "methods {}.{}: {}",
+                        self.binary_text(*search)?,
+                        names.text(*name),
+                        keys.join(" | ")
+                    )
+                }
+            },
+            Symbol::LeftToB3(why) => format!("b3 {}", why.describe()),
             Symbol::Error(error) => {
                 format!(
                     "error {} {}",
@@ -141,10 +191,22 @@ impl Snapshot {
         }))
     }
 
-    /// A type's binary name in internal form: `java/util/Map$Entry`.
+    /// Where a local or anonymous class is declared, as its key names it: `local <file>:<offset>`.
+    fn local_text(&self, key: TypeKey) -> Result<String, Cancelled> {
+        let TypeKey::Local { file, .. } = key else {
+            return Ok(String::new());
+        };
+        let at = self.local_type(key)?.map_or(u32::MAX, |t| t.at);
+        Ok(format!("local {}:{at}", self.file(file)?.path.display()))
+    }
+
+    /// A type's binary name in internal form: `java/util/Map$Entry`. A local or anonymous
+    /// class's, whose binary name has digits javac chooses, is where it is declared:
+    /// `local <file>:<offset>`.
     pub fn binary_text(&self, key: TypeKey) -> Result<String, Cancelled> {
         let names = self.names();
         Ok(match key {
+            TypeKey::Local { .. } => self.local_text(key)?,
             TypeKey::Source { package, path, .. } => {
                 let path = names.path_text(path, "$");
                 if package.is_empty() {
@@ -171,6 +233,9 @@ impl Snapshot {
 
     fn type_key_text(&self, key: TypeKey) -> Result<String, Cancelled> {
         let binary = self.binary_text(key)?;
+        if let TypeKey::Local { .. } = key {
+            return Ok(format!("type {binary}"));
+        }
         let origin = match key {
             TypeKey::Source { .. } | TypeKey::Compact { .. } => {
                 let mut reads = Reads::untracked(self);
@@ -182,6 +247,7 @@ impl Snapshot {
                 }
             }
             TypeKey::Class { source, .. } => self.class_source_text(source),
+            TypeKey::Local { .. } => unreachable!("handled above"),
         };
         Ok(format!("type {binary} {origin}"))
     }

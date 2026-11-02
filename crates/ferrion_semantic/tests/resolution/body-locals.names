@@ -1,0 +1,79 @@
+== main p/Locals.java
+p -> package p
+java.util.List -> type java/util/List class platform
+java.util -> package java.util
+java -> package java
+java.util.function.Function -> type java/util/function/Function class platform
+java.util.function -> package java.util.function
+java.util -> package java.util
+java -> package java
+String -> type java/lang/String class platform
+String -> type java/lang/String class platform
+i -> local p/Locals.java:138
+items.length -> b3 array
+items -> local p/Locals.java:151
+a -> local p/Locals.java:219
+b -> local p/Locals.java:226
+i -> local p/Locals.java:249
+List<String> -> type java/util/List class platform
+String -> type java/lang/String class platform
+k -> local p/Locals.java:354
+k -> local p/Locals.java:354
+n -> local p/Locals.java:361
+k -> local p/Locals.java:354
+sum -> local p/Locals.java:328
+k -> local p/Locals.java:354
+String -> type java/lang/String class platform
+items -> field p/Locals.items
+sum -> local p/Locals.java:328
+items.length -> b3 method-of-expression
+items -> local p/Locals.java:418
+String -> type java/lang/String class platform
+list -> local p/Locals.java:308
+sum -> local p/Locals.java:328
+s.length -> b3 method-of-expression
+s -> local p/Locals.java:480
+sum -> local p/Locals.java:328
+i -> field p/Locals.i
+Exception -> type java/lang/Exception class platform
+AutoCloseable -> type java/lang/AutoCloseable class platform
+AutoCloseable -> type java/lang/AutoCloseable class platform
+c -> local p/Locals.java:611
+d.close -> b3 method-of-expression
+d -> local p/Locals.java:635
+RuntimeException -> type java/lang/RuntimeException class platform
+e.getMessage -> b3 method-of-expression
+e -> local p/Locals.java:701
+i -> field p/Locals.i
+Function<Integer, Integer> -> type java/util/function/Function class platform
+Integer -> type java/lang/Integer class platform
+Integer -> type java/lang/Integer class platform
+Function<Integer, Integer> -> type java/util/function/Function class platform
+Integer -> type java/lang/Integer class platform
+Integer -> type java/lang/Integer class platform
+x -> local p/Locals.java:878
+base -> local p/Locals.java:831
+Function<Integer, Integer> -> type java/util/function/Function class platform
+Integer -> type java/lang/Integer class platform
+Integer -> type java/lang/Integer class platform
+Integer -> type java/lang/Integer class platform
+y -> local p/Locals.java:941
+z -> local p/Locals.java:953
+i -> field p/Locals.i
+f.andThen -> b3 method-of-expression
+f -> local p/Locals.java:874
+g -> local p/Locals.java:928
+k -> local p/Locals.java:1065
+k -> local p/Locals.java:1065
+k -> local p/Locals.java:1065
+# type p/Locals source p/Locals.java
+  superclass type java/lang/Object class platform
+  field i I
+  field items [Ljava/lang/String;
+  method params(I[Ljava/lang/String;)I
+  method locals()I
+  method loops(Ljava/util/List;)I
+  method resources()V
+  method lambdas(I)Ljava/util/function/Function;
+  method labels()V
+  method Locals()V implicit

@@ -7,6 +7,9 @@ T -> typevar type p/Generic source p/Generic.java T
 T -> type p/Generic$T source p/Generic.java
 T -> type p/Generic$T source p/Generic.java
 T -> type p/Generic$T source p/Generic.java
+p.member -> b3 method-of-expression
+p -> local p/Generic.java:130
+p -> local p/Generic.java:130
 # type p/Generic source p/Generic.java
   superclass type java/util/ArrayList class platform
   member T: type p/Generic$T source p/Generic.java
@@ -41,6 +44,8 @@ java -> package java
 p.Base -> type p/Base source p/Base.java
 p -> package p
 Entry -> type p/Base$Entry source p/Base.java
+e.fromBase -> b3 method-of-expression
+e -> field q/Sub.e
 # type q/Sub source q/Sub.java
   superclass type p/Base source p/Base.java
   member Entry: type p/Base$Entry source p/Base.java
@@ -61,6 +66,8 @@ java.util -> package java.util
 java -> package java
 List<String> -> type java/util/List class platform
 String -> type java/lang/String class platform
+l.size -> b3 method-of-expression
+l -> field p/Imports.l
 # type p/Imports source p/Imports.java
   superclass type java/lang/Object class platform
   field l Ljava/util/List;
@@ -71,6 +78,8 @@ p -> package p
 java.util -> package java.util
 java -> package java
 List -> type p/List source p/List.java
+l.mine -> b3 method-of-expression
+l -> field p/OnDemand.l
 # type p/OnDemand source p/OnDemand.java
   superclass type java/lang/Object class platform
   field l Lp/List;
@@ -81,6 +90,8 @@ q -> package q
 p.Base -> type p/Base source p/Base.java
 p -> package p
 X -> type p/Base$X source p/Base.java
+x.fromBase -> b3 method-of-expression
+x -> field q/Outer$Inner.x
 # type q/Outer source q/Outer.java
   superclass type java/lang/Object class platform
   member Inner: type q/Outer$Inner source q/Outer.java

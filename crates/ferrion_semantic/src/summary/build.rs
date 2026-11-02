@@ -79,6 +79,35 @@ pub fn summarize(tree: &SyntaxTree, is_package_info: bool, names: &Interner) -> 
     }
 }
 
+/// The summary of a local class, interface, enum, or record declared in a body, as for a member
+/// type, but without its member types, which are local types of their own.
+pub(crate) fn local_type(decl: ast::TypeDecl<'_>, names: &Interner) -> TypeSummary {
+    let mut builder = Builder {
+        names,
+        types: Vec::new(),
+        pending: Vec::new(),
+    };
+    builder.add_type(decl, None);
+    builder.types.swap_remove(0)
+}
+
+/// The summary of an anonymous class: its body's members, without a name or a constructor of
+/// its own (JLS 15.9.5.1's anonymous constructor isn't a member anything names).
+pub(crate) fn anonymous_type<'t>(
+    members: impl Iterator<Item = ast::Member<'t>>,
+    names: &'t Interner,
+) -> TypeSummary {
+    let mut builder = Builder {
+        names,
+        types: vec![TypeSummary::new(TypeKind::Class, Name::EMPTY, None)],
+        pending: Vec::new(),
+    };
+    builder.add_members(0, members);
+    let mut ty = builder.types.swap_remove(0);
+    ty.implicit.clear();
+    ty
+}
+
 struct Builder<'t> {
     names: &'t Interner,
     types: Vec<TypeSummary>,
@@ -491,7 +520,10 @@ fn types(types: Option<AstChildren<'_, ast::Type<'_>>>, names: &Interner) -> Box
     })
 }
 
-fn modifiers(node: Option<ast::Modifiers<'_>>, names: &Interner) -> (Modifiers, Box<[Annotation]>) {
+pub(crate) fn modifiers(
+    node: Option<ast::Modifiers<'_>>,
+    names: &Interner,
+) -> (Modifiers, Box<[Annotation]>) {
     let Some(node) = node else {
         return (Modifiers::default(), Box::default());
     };

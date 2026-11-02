@@ -19,7 +19,7 @@ use std::sync::Arc;
 use crate::{Fingerprint, Interner, Name};
 
 pub use build::summarize;
-pub(crate) use build::{Header, name_text, qualified};
+pub(crate) use build::{Header, anonymous_type, local_type, modifiers, name_text, qualified};
 pub use written::{Primitive, TypeAnnotation, TypePart, TypeRef, WildcardBound};
 
 /// A file's summary.

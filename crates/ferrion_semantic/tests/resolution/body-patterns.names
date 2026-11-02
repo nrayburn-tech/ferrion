@@ -1,0 +1,140 @@
+== main p/Patterns.java
+p -> package p
+String -> type java/lang/String class platform
+Object -> type java/lang/Object class platform
+o -> local p/Patterns.java:84
+String -> type java/lang/String class platform
+s.length -> b3 method-of-expression
+s -> local p/Patterns.java:123
+Object -> type java/lang/Object class platform
+o -> local p/Patterns.java:192
+String -> type java/lang/String class platform
+System.out.println -> b3 method-of-expression
+System.out -> field java/lang/System.out
+System -> type java/lang/System class platform
+s.length -> b3 method-of-expression
+s -> field p/Patterns.s
+Object -> type java/lang/Object class platform
+o -> local p/Patterns.java:308
+String -> type java/lang/String class platform
+s.length -> b3 method-of-expression
+s -> local p/Patterns.java:345
+s.isEmpty -> b3 method-of-expression
+s -> local p/Patterns.java:345
+s.isEmpty -> b3 method-of-expression
+s -> field p/Patterns.s
+Object -> type java/lang/Object class platform
+o -> local p/Patterns.java:431
+String -> type java/lang/String class platform
+s.isEmpty -> b3 method-of-expression
+s -> local p/Patterns.java:470
+s.length -> b3 method-of-expression
+s -> local p/Patterns.java:470
+Object -> type java/lang/Object class platform
+o -> local p/Patterns.java:547
+String -> type java/lang/String class platform
+s.isEmpty -> b3 method-of-expression
+s -> local p/Patterns.java:586
+s.length -> b3 method-of-expression
+s -> local p/Patterns.java:586
+Object -> type java/lang/Object class platform
+o -> local p/Patterns.java:665
+String -> type java/lang/String class platform
+o -> local p/Patterns.java:665
+s.length -> b3 method-of-expression
+s -> local p/Patterns.java:707
+Object -> type java/lang/Object class platform
+o -> local p/Patterns.java:777
+String -> type java/lang/String class platform
+o -> local p/Patterns.java:777
+o -> local p/Patterns.java:777
+s.length -> b3 method-of-expression
+s -> field p/Patterns.s
+Object -> type java/lang/Object class platform
+o -> local p/Patterns.java:911
+String -> type java/lang/String class platform
+s.length -> b3 method-of-expression
+s -> local p/Patterns.java:951
+s.length -> b3 method-of-expression
+s -> field p/Patterns.s
+Object -> type java/lang/Object class platform
+o -> local p/Patterns.java:1010
+String -> type java/lang/String class platform
+o -> local p/Patterns.java:1010
+s.length -> b3 method-of-expression
+s -> local p/Patterns.java:1052
+Object -> type java/lang/Object class platform
+o -> local p/Patterns.java:1119
+o -> local p/Patterns.java:1119
+String -> type java/lang/String class platform
+s.length -> b3 method-of-expression
+s -> local p/Patterns.java:1176
+Object -> type java/lang/Object class platform
+o -> local p/Patterns.java:1236
+String -> type java/lang/String class platform
+s.length -> b3 method-of-expression
+s -> local p/Patterns.java:1273
+Object -> type java/lang/Object class platform
+o -> local p/Patterns.java:1347
+String -> type java/lang/String class platform
+RuntimeException -> type java/lang/RuntimeException class platform
+s.length -> b3 method-of-expression
+s -> local p/Patterns.java:1400
+s.length -> b3 method-of-expression
+s -> field p/Patterns.s
+Object -> type java/lang/Object class platform
+o -> local p/Patterns.java:1521
+String -> type java/lang/String class platform
+s.length -> b3 method-of-expression
+s -> local p/Patterns.java:1578
+s.length -> b3 method-of-expression
+s -> local p/Patterns.java:1578
+Integer -> type java/lang/Integer class platform
+n -> local p/Patterns.java:1640
+s.length -> b3 method-of-expression
+s -> field p/Patterns.s
+Object -> type java/lang/Object class platform
+o -> local p/Patterns.java:1730
+String -> type java/lang/String class platform
+t.length -> b3 method-of-expression
+t -> local p/Patterns.java:1780
+s.length -> b3 method-of-expression
+s -> field p/Patterns.s
+Object -> type java/lang/Object class platform
+Object -> type java/lang/Object class platform
+o -> local p/Patterns.java:1967
+Point -> type p/Patterns$Point source p/Patterns.java
+String -> type java/lang/String class platform
+x -> local p/Patterns.java:2007
+y.length -> b3 method-of-expression
+y -> local p/Patterns.java:2017
+# type p/Patterns source p/Patterns.java
+  superclass type java/lang/Object class platform
+  member Point: type p/Patterns$Point source p/Patterns.java
+  field s Ljava/lang/String;
+  method notThenReturn(Ljava/lang/Object;)V
+  method thenCompletes(Ljava/lang/Object;)V
+  method and(Ljava/lang/Object;)V
+  method or(Ljava/lang/Object;)V
+  method notAnd(Ljava/lang/Object;)V
+  method whileNot(Ljava/lang/Object;)V
+  method whileBreak(Ljava/lang/Object;)V
+  method conditional(Ljava/lang/Object;)I
+  method forNot(Ljava/lang/Object;)V
+  method doNot(Ljava/lang/Object;)V
+  method elseReturns(Ljava/lang/Object;)V
+  method nested(Ljava/lang/Object;)V
+  method switchExpr(Ljava/lang/Object;)I
+  method switchGroups(Ljava/lang/Object;)V
+  method recordPattern(Ljava/lang/Object;)I
+  method Patterns()V implicit
+# type p/Patterns$Point source p/Patterns.java
+  superclass type java/lang/Record class platform
+  field x I
+  field y Ljava/lang/Object;
+  method Point(ILjava/lang/Object;)V implicit
+  method x()I implicit
+  method y()Ljava/lang/Object; implicit
+  method equals(Ljava/lang/Object;)Z implicit
+  method hashCode()I implicit
+  method toString()Ljava/lang/String; implicit

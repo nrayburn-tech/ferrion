@@ -1,0 +1,96 @@
+// Pattern bindings by the flow-scoping rules of JLS 6.3.1 and 6.3.2, with a field `s` that every
+// use of `s` outside a binding's scope finds instead (observation "pattern-bindings"). javac
+// compiles every file.
+//- set main 27
+//- file main p/Patterns.java
+package p;
+
+class Patterns {
+    String s = "field";
+
+    void notThenReturn(Object o) {
+        if (!(o instanceof String s)) return;
+        s.length();
+    }
+
+    void thenCompletes(Object o) {
+        if (!(o instanceof String s)) { System.out.println(); }
+        s.length();
+    }
+
+    void and(Object o) {
+        if (o instanceof String s && s.length() > 0) { s.isEmpty(); } else { s.isEmpty(); }
+    }
+
+    void or(Object o) {
+        if (!(o instanceof String s) || s.isEmpty()) return;
+        s.length();
+    }
+
+    void notAnd(Object o) {
+        if (!(o instanceof String s && s.isEmpty())) return;
+        s.length();
+    }
+
+    void whileNot(Object o) {
+        while (!(o instanceof String s)) { o = ""; }
+        s.length();
+    }
+
+    void whileBreak(Object o) {
+        while (!(o instanceof String s)) { if (o == null) break; o = ""; }
+        s.length();
+    }
+
+    int conditional(Object o) {
+        return o instanceof String s ? s.length() : s.length();
+    }
+
+    void forNot(Object o) {
+        for (; !(o instanceof String s); ) { o = ""; }
+        s.length();
+    }
+
+    void doNot(Object o) {
+        do { o = ""; } while (!(o instanceof String s));
+        s.length();
+    }
+
+    void elseReturns(Object o) {
+        if (o instanceof String s) { } else { return; }
+        s.length();
+    }
+
+    void nested(Object o) {
+        {
+            if (!(o instanceof String s)) throw new RuntimeException();
+            s.length();
+        }
+        s.length();
+    }
+
+    int switchExpr(Object o) {
+        return switch (o) {
+            case String s when s.length() > 1 -> s.length();
+            case Integer n -> n;
+            default -> s.length();
+        };
+    }
+
+    void switchGroups(Object o) {
+        switch (o) {
+            case String t:
+                t.length();
+                break;
+            default:
+                s.length();
+        }
+    }
+
+    record Point(int x, Object y) {}
+
+    int recordPattern(Object o) {
+        if (o instanceof Point(int x, String y)) return x + y.length();
+        return 0;
+    }
+}

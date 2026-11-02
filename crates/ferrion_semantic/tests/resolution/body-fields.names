@@ -1,0 +1,112 @@
+== main q/C.java
+q -> package q
+# type q/C source q/C.java
+  superclass type java/lang/Object class platform
+  field X I
+  field Y I
+  field W I
+  method m()V
+  method only()V
+  method C()V implicit
+== main q/D.java
+q -> package q
+# type q/D source q/D.java
+  superclass type java/lang/Object class platform
+  field W I
+  field V I
+  method D()V implicit
+== main p/Base.java
+p -> package p
+Base -> type p/Base source p/Base.java
+# type p/Base source p/Base.java
+  superclass type java/lang/Object class platform
+  field X I
+  field count I
+  field next Lp/Base;
+  method m()V
+  method Base()V implicit
+== main p/Sub.java
+p -> package p
+q.C.X -> member q/C.X
+q.C -> type q/C source q/C.java
+q -> package q
+q.C.W -> member q/C.W
+q.C -> type q/C source q/C.java
+q -> package q
+q.C.only -> member q/C.only
+q.C -> type q/C source q/C.java
+q -> package q
+q.C -> type q/C source q/C.java
+q -> package q
+q.D -> type q/D source q/D.java
+q -> package q
+Base -> type p/Base source p/Base.java
+X -> field p/Base.X
+Y -> field q/C.Y
+V -> field q/D.V
+W -> field q/C.W
+m -> method p/Base.m()V
+only -> method q/C.only()V
+count -> local p/Sub.java:337
+this.count -> field p/Sub.count
+super.count -> field p/Base.count
+Base -> type p/Base source p/Base.java
+b.count -> field p/Base.count
+b -> local p/Sub.java:413
+b.next.count -> field p/Base.count
+b.next -> field p/Base.next
+b -> local p/Sub.java:413
+Base.X -> field p/Base.X
+Base -> type p/Base source p/Base.java
+Sub.X -> field p/Base.X
+Sub -> type p/Sub source p/Sub.java
+Sub -> type p/Sub source p/Sub.java
+Sub -> type p/Sub source p/Sub.java
+count -> local p/Sub.java:499
+s.count -> field p/Sub.count
+s -> local p/Sub.java:522
+make().count -> b3 expression-type
+make -> method p/Sub.make()Lp/Sub;
+new Sub().count -> b3 expression-type
+Sub -> type p/Sub source p/Sub.java
+Sub -> type p/Sub source p/Sub.java
+count -> field p/Sub$Inner.count
+Sub.this.count -> field p/Sub.count
+Sub -> type p/Sub source p/Sub.java
+# type p/Sub source p/Sub.java
+  superclass type p/Base source p/Base.java
+  member Inner: type p/Sub$Inner source p/Sub.java
+  field count I
+  method inherited()I
+  method onDemand()I
+  method singleOverOnDemand()I
+  method calls()V
+  method shadow(I)I
+  method qualified(Lp/Base;)I
+  method local()I
+  method deferred()I
+  method make()Lp/Sub;
+  method Sub()V implicit
+# type p/Sub$Inner source p/Sub.java
+  superclass type java/lang/Object class platform
+  field count I
+  method outer()I
+  method Inner()V implicit
+== main p/Outer.java
+p -> package p
+A -> type p/Outer$A source p/Outer.java
+x -> field p/Outer.x
+# type p/Outer source p/Outer.java
+  superclass type java/lang/Object class platform
+  member A: type p/Outer$A source p/Outer.java
+  member B: type p/Outer$B source p/Outer.java
+  field x I
+  method Outer()V implicit
+# type p/Outer$A source p/Outer.java
+  superclass type java/lang/Object class platform
+  field x I
+  method A()V implicit
+# type p/Outer$B source p/Outer.java
+  superclass type p/Outer$A source p/Outer.java
+  method f()I
+  method B()V implicit

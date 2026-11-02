@@ -1,0 +1,69 @@
+== main p/Methods.java
+p -> package p
+java.util.Objects.requireNonNull -> member java/util/Objects.requireNonNull
+java.util.Objects -> type java/util/Objects class platform
+java.util -> package java.util
+java -> package java
+String -> type java/lang/String class platform
+String -> type java/lang/String class platform
+Parent -> type p/Parent source p/Methods.java
+Greeter -> type p/Greeter source p/Methods.java
+String -> type java/lang/String class platform
+Color -> type p/Color source p/Methods.java
+m -> methods p/Methods.m: method p/Methods.m(Ljava/lang/String;)V | method p/Parent.m()V | method p/Parent.m(I)V
+m -> methods p/Methods.m: method p/Methods.m(Ljava/lang/String;)V | method p/Parent.m()V | method p/Parent.m(I)V
+s -> method p/Parent.s()Ljava/lang/String;
+Parent.s -> method p/Parent.s()Ljava/lang/String;
+Parent -> type p/Parent source p/Methods.java
+super.m -> methods p/Parent.m: method p/Parent.m()V | method p/Parent.m(I)V
+this.m -> methods p/Methods.m: method p/Methods.m(Ljava/lang/String;)V | method p/Parent.m()V | method p/Parent.m(I)V
+Greeter.super.greet -> method p/Greeter.greet()Ljava/lang/String;
+Greeter -> type p/Greeter source p/Methods.java
+requireNonNull -> method java/util/Objects.requireNonNull(Ljava/lang/Object;)Ljava/lang/Object;
+c -> local p/Methods.java:339
+Runnable -> type java/lang/Runnable class platform
+Parent::s -> method p/Parent.s()Ljava/lang/String;
+Parent -> type p/Parent source p/Methods.java
+java.util.function.Supplier<String> -> type java/util/function/Supplier class platform
+java.util.function -> package java.util.function
+java.util -> package java.util
+java -> package java
+String -> type java/lang/String class platform
+this::greet -> method p/Greeter.greet()Ljava/lang/String;
+toString().length -> b3 method-of-expression
+toString -> method java/lang/Object.toString()Ljava/lang/String;
+c -> local p/Methods.java:339
+RED -> field p/Color.RED
+m -> methods p/Methods.m: method p/Methods.m(Ljava/lang/String;)V | method p/Parent.m()V | method p/Parent.m(I)V
+GREEN -> field p/Color.GREEN
+m -> methods p/Methods.m: method p/Methods.m(Ljava/lang/String;)V | method p/Parent.m()V | method p/Parent.m(I)V
+m -> methods p/Methods.m: method p/Methods.m(Ljava/lang/String;)V | method p/Parent.m()V | method p/Parent.m(I)V
+greet -> method p/Greeter.greet()Ljava/lang/String;
+Methods.this.m -> methods p/Methods.m: method p/Methods.m(Ljava/lang/String;)V | method p/Parent.m()V | method p/Parent.m(I)V
+Methods -> type p/Methods source p/Methods.java
+# type p/Greeter source p/Methods.java
+  method greet()Ljava/lang/String;
+# type p/Parent source p/Methods.java
+  superclass type java/lang/Object class platform
+  method m()V
+  method m(I)V
+  method s()Ljava/lang/String;
+  method Parent()V implicit
+# type p/Color source p/Methods.java
+  superclass type java/lang/Enum class platform
+  field RED Lp/Color;
+  field GREEN Lp/Color;
+  method Color()V implicit
+  method values()[Lp/Color; implicit
+  method valueOf(Ljava/lang/String;)Lp/Color; implicit
+# type p/Methods source p/Methods.java
+  superclass type p/Parent source p/Methods.java
+  interface type p/Greeter source p/Methods.java
+  member Inner: type p/Methods$Inner source p/Methods.java
+  method m(Ljava/lang/String;)V
+  method calls(Lp/Color;)V
+  method Methods()V implicit
+# type p/Methods$Inner source p/Methods.java
+  superclass type java/lang/Object class platform
+  method n()V
+  method Inner()V implicit
