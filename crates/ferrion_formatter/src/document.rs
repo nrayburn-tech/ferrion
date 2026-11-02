@@ -203,13 +203,23 @@ impl DocumentBuilder {
         self.elements.push(Element::Token { token, len, width });
     }
 
+    /// A space, unless one or a `Line` was just pushed: they print one space, so they're
+    /// measured as one.
     pub fn space(&mut self) {
+        if matches!(self.elements.last(), Some(Element::Space | Element::Line)) {
+            return;
+        }
         self.position += 1;
         self.elements.push(Element::Space);
     }
 
+    /// A `Line`, which replaces a space just pushed, as the two print one space.
     pub fn line(&mut self) {
-        self.position += 1;
+        if matches!(self.elements.last(), Some(Element::Space)) {
+            self.elements.pop();
+        } else {
+            self.position += 1;
+        }
         self.elements.push(Element::Line);
     }
 
