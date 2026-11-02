@@ -193,14 +193,21 @@ pub(super) fn modifiers<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, layout:
         _ => 0,
     };
     let parameter = layout == Layout::Parameter && placed > 0;
+    // A field's annotations on a line of their own, in a group of their own that breaks them one
+    // per line, as a line comment between two of them does (observed).
+    let together = layout == Layout::LineAfter && placed > 1;
     for (i, item) in items.iter().enumerate() {
         if i > 0 {
             match layout {
                 _ if i <= own_lines => {}
                 Layout::LineAfter if i == placed => f.line(),
+                Layout::LineAfter if together && i < placed => f.line(),
                 Layout::Parameter if i <= placed => f.line(),
                 _ => f.space(),
             }
+        }
+        if together && i == 0 {
+            f.start_group();
         }
         // A parameter's annotations after the first are at +4, and so is the rest of the
         // parameter.
@@ -216,6 +223,9 @@ pub(super) fn modifiers<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, layout:
             f.end();
             f.end();
             f.start_indent(IndentKind::Continuation);
+        }
+        if together && i + 1 == placed {
+            f.end();
         }
         if i < own_lines {
             // A block comment after the annotation, on its line, stays there.
