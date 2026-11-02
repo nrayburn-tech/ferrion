@@ -154,13 +154,25 @@ pub(super) fn method<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         f.end();
         f.end();
     }
-    let tail = |f: &mut Formatter<'t>| method_tail(f, after_name);
+    let body_at = after_name
+        .iter()
+        .position(|part| matches!(part.kind(), K::Block | K::Semi | K::DefaultValue))
+        .unwrap_or(after_name.len());
+    let (header, body) = after_name.split_at(body_at);
+    let tail = |f: &mut Formatter<'t>| method_tail(f, header);
     match (type_parameters, named) {
         (Some(outer), Some(inner)) => {
             f.indent_if_broken(outer, |f| f.indent_if_broken(inner, tail));
         }
         (Some(group), None) | (None, Some(group)) => f.indent_if_broken(group, tail),
         (None, None) => tail(f),
+    }
+    // The body is indented from the header's first line, outside the header's indents.
+    for &part in body {
+        if part.kind() != K::Semi {
+            f.space();
+        }
+        emit(f, part);
     }
 }
 
@@ -174,15 +186,10 @@ fn method_layout(node: SyntaxNode<'_>) -> Layout {
     }
 }
 
-/// Emits a method header from its parameters on, and its body: `parts`. `throws` goes on the
+/// Emits a method header from its parameters on, before its body: `header`. `throws` goes on the
 /// next line at +4 when the parameters went one per line, and otherwise when it doesn't fit on
 /// the line of the `)`.
-fn method_tail<'t>(f: &mut Formatter<'t>, parts: &[NodeOrToken<'t>]) {
-    let body_at = parts
-        .iter()
-        .position(|part| matches!(part.kind(), K::Block | K::Semi | K::DefaultValue))
-        .unwrap_or(parts.len());
-    let (header, body) = parts.split_at(body_at);
+fn method_tail<'t>(f: &mut Formatter<'t>, header: &[NodeOrToken<'t>]) {
     let mut parameters = None;
     for &part in header {
         match part {
@@ -208,12 +215,6 @@ fn method_tail<'t>(f: &mut Formatter<'t>, parts: &[NodeOrToken<'t>]) {
             // The dimensions after the parameters of an old-style array method, with no spaces.
             _ => emit(f, part),
         }
-    }
-    for &part in body {
-        if part.kind() != K::Semi {
-            f.space();
-        }
-        emit(f, part);
     }
 }
 
