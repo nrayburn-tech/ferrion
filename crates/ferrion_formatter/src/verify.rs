@@ -9,9 +9,12 @@ use std::sync::Arc;
 
 use ferrion_diagnostics::SourceText;
 use ferrion_parser::{Parse, ParseOptions, Severity, parse};
+use ferrion_syntax::comments::CommentMap;
 use ferrion_syntax::{SyntaxKind, SyntaxTree};
 
+use crate::format::adds_space_after_slashes;
 use crate::printer::{Lines, trim_end};
+use crate::regions;
 use crate::{FormatOptions, Formatted, format_tree, modifiers};
 
 /// A safety property.
@@ -23,8 +26,8 @@ pub enum Property {
     /// reordering).
     Equivalence,
     /// The input's and the output's comments are the same, in the same order, apart from what
-    /// the formatter may change: trailing whitespace and the indentation of a block comment's
-    /// later lines.
+    /// the formatter may change: trailing whitespace, the indentation of a block comment's
+    /// later lines, and the space it adds after a line comment's `//`.
     Comments,
     /// The output has no syntax or version errors.
     NoNewErrors,
@@ -254,21 +257,35 @@ fn tokens(tree: &SyntaxTree) -> Vec<TokenSignature<'_>> {
 }
 
 /// Compares the two trees' comments in order, by kind and by text apart from trailing
-/// whitespace and the indentation of later lines.
+/// whitespace and the indentation of later lines. The input's line comments outside disable
+/// regions compare with the space the formatter adds after their `//`, so the output's must have
+/// it.
 fn comments(before: &SyntaxTree, after: &SyntaxTree, bom: usize) -> Result<(), Violation> {
-    let list = |tree: &SyntaxTree| -> Vec<(SyntaxKind, String, usize)> {
+    let list = |tree: &SyntaxTree, input: bool| -> Vec<(SyntaxKind, String, usize)> {
+        let regions = if input && tree.text().contains("@formatter:") {
+            regions::find(tree, &CommentMap::new(tree))
+        } else {
+            Vec::new()
+        };
+        let mut regions = regions.into_iter().peekable();
         tree.tokens()
             .filter(|t| ferrion_syntax::comments::is_comment(t.kind()))
             .map(|t| {
+                // The comments come in order, so the regions they're past are dropped.
+                while regions
+                    .next_if(|r| r.end.is_some_and(|end| end < t.id()))
+                    .is_some()
+                {}
+                let in_region = regions.peek().is_some_and(|r| r.start <= t.id());
                 (
                     t.kind(),
-                    normalize_comment(t.text()),
+                    normalize_comment(t.text(), input && !in_region),
                     t.span().start as usize,
                 )
             })
             .collect()
     };
-    let (a, b) = (list(before), list(after));
+    let (a, b) = (list(before, true), list(after, false));
     let strip = |list: &[(SyntaxKind, String, usize)]| -> Vec<(SyntaxKind, String)> {
         list.iter().map(|(k, t, _)| (*k, t.clone())).collect()
     };
@@ -291,8 +308,13 @@ fn comments(before: &SyntaxTree, after: &SyntaxTree, bom: usize) -> Result<(), V
 }
 
 /// A comment's text as the comparison sees it: each line without trailing whitespace, later
-/// lines also without leading whitespace, joined with LF.
-fn normalize_comment(text: &str) -> String {
+/// lines also without leading whitespace, joined with LF. With `add_space`, a line comment has
+/// the space the formatter adds after its `//`.
+fn normalize_comment(text: &str, add_space: bool) -> String {
+    let trimmed = trim_end(text);
+    if add_space && adds_space_after_slashes(trimmed) {
+        return format!("// {}", &trimmed[2..]);
+    }
     let mut lines = Lines::new(text);
     let mut normalized = trim_end(lines.next().unwrap_or_default()).to_owned();
     for line in lines {

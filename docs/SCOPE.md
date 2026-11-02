@@ -194,7 +194,10 @@ behaves as follows:
     - modifiers are reordered into the standard JLS order;
     - long string literals are **not** split;
     - text blocks are **not** re-indented (for now);
-    - `//` comments are **not** wrapped (for now).
+    - `//` comments are **not** wrapped (for now);
+    - a comment's text is never changed, with one exception: a space is added after the `//` of a
+      line comment, as Google Java Format does (`//x` becomes `// x`). Comments in disable regions,
+      formatter markers, and `ferrion-disable*` suppression comments are left as written.
 - **Documentation comments:**
     - Javadoc and Markdown doc comments are reformatted;
     - comments that can't be reflowed safely (for example, unclosed `<pre>`, `<code>`, or `<table>`
@@ -236,7 +239,7 @@ behaves as follows:
   1. formatting twice changes nothing;
   2. the output is equivalent to the input, allowing only the formatter's intended rewrites (import
      sorting and removal, modifier reordering, doc comment reflow);
-  3. every comment appears exactly once (modulo reflow);
+  3. every comment appears exactly once (modulo reflow, and the space added after `//`);
   4. the output has no syntax errors the input didn't have.
 
   With `--verify`, a file that fails any property is not written, and the run exits 3.
