@@ -392,6 +392,22 @@ fn javac_range(tree: &SyntaxTree, name: &decl_names::ResolvedName) -> Span {
     };
     let node = tree.node(name.node);
     if node.kind() != SyntaxKind::ClassType {
+        // A resource that is a variable (`try (r; ...)`) ends after its `;` in javac's tree.
+        let resource = node
+            .parent()
+            .is_some_and(|p| p.kind() == SyntaxKind::ResourceSpecification);
+        if resource
+            && name.end == node.span().end
+            && let Some(semicolon) = node
+                .last_token()
+                .next_non_trivia()
+                .filter(|t| t.kind() == SyntaxKind::Semi)
+        {
+            return Span {
+                start: span.start,
+                end: semicolon.span().end,
+            };
+        }
         return span;
     }
     let identifier = node
