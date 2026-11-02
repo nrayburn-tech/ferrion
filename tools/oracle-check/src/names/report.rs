@@ -26,6 +26,8 @@ pub struct Tally {
     pub generated_files: u64,
     /// `module-info.java` files compiled on their own.
     pub module_declarations: u64,
+    /// Files a processor reported an error at, which leaves them in.
+    pub files_with_processor_errors: u64,
     /// Files left out of the comparison, by cause.
     pub excluded: Excluded,
     /// Files compared: every file not left out.
@@ -42,8 +44,8 @@ pub struct Tally {
     /// Annotation processors registered on the processor path (or the classpath).
     pub processors: BTreeSet<String>,
     /// Each processor that ran, by class: the source sets it ran in, the files it created, and
-    /// the errors it reported, which the oracle keeps from javac. One that never creates a file
-    /// only checks code.
+    /// the errors it reported (not language errors). One that never creates a file only checks
+    /// code.
     pub processor_runs: BTreeMap<String, ProcessorTally>,
     /// The oracle's own time for the source sets it ran, and the time to read cached ones.
     pub javac_seconds: f64,
@@ -60,8 +62,8 @@ pub struct ProcessorTally {
 #[derive(Clone, Debug, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Excluded {
-    /// javac reported an error in the file: a language error, since what processors report is
-    /// kept from javac.
+    /// javac reported a language error in the file: an error other than the ones processors
+    /// report (`compiler.err.proc.messager`).
     pub javac_errors: u64,
     /// Of those, generated files.
     pub generated_with_errors: u64,
@@ -112,7 +114,7 @@ impl Tally {
         tally.errors += run.errors;
     }
 
-    /// Errors processors reported, which the oracle kept from javac.
+    /// Errors processors reported, which leave no file out.
     pub fn processor_errors(&self) -> u64 {
         self.processor_runs.values().map(|p| p.errors).sum()
     }
@@ -133,6 +135,7 @@ impl Tally {
         self.files += other.files;
         self.generated_files += other.generated_files;
         self.module_declarations += other.module_declarations;
+        self.files_with_processor_errors += other.files_with_processor_errors;
         let (e, o) = (&mut self.excluded, &other.excluded);
         e.javac_errors += o.javac_errors;
         e.generated_with_errors += o.generated_with_errors;
@@ -358,9 +361,10 @@ impl Report {
         if !t.processor_runs.is_empty() {
             writeln!(
                 out,
-                "\nannotation processors run: source sets, files created, errors kept from javac \
-                 ({} in all)",
-                t.processor_errors()
+                "\nannotation processors run: source sets, files created, errors reported ({} in \
+                 all, at {} files, which are compared)",
+                t.processor_errors(),
+                t.files_with_processor_errors
             )
             .unwrap();
             for (name, run) in &t.processor_runs {
