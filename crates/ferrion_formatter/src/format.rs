@@ -431,9 +431,17 @@ impl<'t> Formatter<'t> {
     }
 
     fn before_comment(&mut self, comment: Comment, token: SyntaxToken<'t>) {
+        // A one-line block comment with code after it on its line, in an expression, a list, or
+        // a declarator, joins the line before, as GJF prints it (`f(0,` then `/* b= */ 1);`
+        // gives `f(0, /* b= */ 1);`): the whitespace before it is the rules' (observed).
+        let joins = comment.line_breaks_before == 1
+            && comment.line_breaks_after == 0
+            && one_line_block_comment(token)
+            && in_expression(self.tree.node(comment.enclosing).kind());
         match comment.line_breaks_before {
             // A doc comment starts its line, as GJF prints it (observed).
             0 if token.kind() == SyntaxKind::DocComment => self.hard_line(),
+            _ if joins => {}
             0 => {
                 if token
                     .prev_token()
@@ -456,6 +464,16 @@ impl<'t> Formatter<'t> {
                 token.kind(),
                 SyntaxKind::LineComment | SyntaxKind::DocLineComment
             );
+        // A one-line block comment trailing code other than an opening delimiter isn't followed
+        // by the input's line break, as GJF prints it (`int x = /* c */` then `1;` gives
+        // `int x = /* c */ 1;`): what follows it is the rules' (observed).
+        if comment.line_breaks_after == 1
+            && comment.placement == Placement::Trailing
+            && one_line_block_comment(token)
+            && !after_opening_delimiter(token)
+        {
+            return;
+        }
         let breaks = if doc_comment && !comment_follows(token) {
             comment.line_breaks_after.min(1)
         } else {
@@ -568,6 +586,36 @@ pub(crate) fn adds_space_after_slashes(comment: &str) -> bool {
         && !rest.starts_with("ferrion-enable")
         && !rest.contains(regions::OFF)
         && !rest.contains(regions::ON)
+}
+
+/// Whether `token` is a block comment on one line.
+fn one_line_block_comment(token: SyntaxToken<'_>) -> bool {
+    token.kind() == SyntaxKind::BlockComment && !token.text().contains(['\n', '\r'])
+}
+
+/// Whether `comment` follows an opening `(`, `[`, or `{`.
+fn after_opening_delimiter(comment: SyntaxToken<'_>) -> bool {
+    comment.prev_non_trivia().is_some_and(|t| {
+        matches!(
+            t.kind(),
+            SyntaxKind::LParen | SyntaxKind::LBracket | SyntaxKind::LBrace
+        )
+    })
+}
+
+/// Whether a comment in a node of `kind` is inside an expression, a list, or a declarator,
+/// where the line breaks are the rules'.
+fn in_expression(kind: SyntaxKind) -> bool {
+    rules::area(kind) == Some(rules::Area::Expressions)
+        || matches!(
+            kind,
+            SyntaxKind::VariableDeclarator
+                | SyntaxKind::FormalParameters
+                | SyntaxKind::TypeArguments
+                | SyntaxKind::TypeParameters
+                | SyntaxKind::AnnotationArguments
+                | SyntaxKind::ElementValueArray
+        )
 }
 
 /// Whether the next token after `token` other than whitespace and line terminators is a comment.

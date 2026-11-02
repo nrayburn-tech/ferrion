@@ -20,7 +20,17 @@ differences` checks against GJF and Ferrion both.
   input's choice; each construct below says where blank lines are kept, required, or removed.
 - **Comments** stay where they are relative to the code: a comment that leads a token stays before
   it, and one that trails a token stays after it. The line breaks around a comment come from the
-  input, at most one blank line. Block comments that span lines are re-indented to their new
+  input, at most one blank line, with two exceptions for a block comment on one line, as GJF
+  does: one that trails code, other than an opening `(`, `[`, or `{`, isn't followed by the
+  input's line break, and one with code after it on its line, inside an expression, a list, or
+  a declarator, isn't preceded by one. Where a line breaks there is then the rules' choice:
+
+  ```java
+  f(0, /* a= */ 0, /* b= */ 1);
+  int x = /* why */ 5;
+  ```
+
+  Block comments that span lines are re-indented to their new
   column, with their stars aligned one column after the `/` when every later line starts with
   `*`. Otherwise the later lines keep their indentation relative to each other, the least
   indented at the comment's column, not counting empty lines. A doc comment (`/**`) aligns the
