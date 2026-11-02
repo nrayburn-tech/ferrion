@@ -1,0 +1,24 @@
+== api module-info.java
+api -> module api
+java.sql -> module java.sql
+a -> package a
+== api a/A.java
+a -> package a
+# type a/A source a/A.java
+  superclass type java/lang/Object class platform
+  method A()V implicit
+== main module-info.java
+m -> module m
+api -> module api
+== main p/U.java
+p -> package p
+a.A -> type a/A source a/A.java
+a -> package a
+java.sql.Connection -> type java/sql/Connection class platform
+java.sql -> package java.sql
+java -> package java
+# type p/U source p/U.java
+  superclass type java/lang/Object class platform
+  field a La/A;
+  field c Ljava/sql/Connection;
+  method U()V implicit

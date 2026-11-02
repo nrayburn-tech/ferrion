@@ -1,9 +1,12 @@
-// What the corpus comparison found (observations 16 to 20 in semantic-names.md): where javac
-// keys local and anonymous classes (the `class` keyword, after modifiers, and the body's `{`)
-// and a compact constructor's parameters (the component's type); `Object`'s methods as members
-// of an interface; a local of one `switch` group in scope in the later ones; a type variable
-// bounded by another erased to that one's bound; and a member type of what a `new` creates,
-// named by a qualified `new`. javac compiles every file.
+// What the corpus comparison found (observations 16 and 18 to 21, 23, and 24 in
+// semantic-names.md): where javac keys local and anonymous classes (the `class` keyword, after
+// modifiers, and the body's `{`) and a compact constructor's parameters (the component's type);
+// `Object`'s methods as members of an interface; a local of one `switch` group in scope in the
+// later ones; a type variable bounded by another erased to that one's bound; a member type of
+// what a `new` creates, named by a qualified `new`; a resource that is a variable; `case`
+// labels of selectors whose type needs attribution, with a field of the name in scope that
+// can't be a constant (left to B3) and one that can; and `C::new` with a field `C` in scope.
+// javac compiles every file.
 //- set main 27
 //- file main p/Keys.java
 package p;
@@ -54,6 +57,43 @@ class Switches {
             default:
         }
         return 0;
+    }
+
+    static final Object ONE = null;
+    static final int LOW = 1;
+    enum Kind { ONE, TWO }
+    static class Made {}
+    static final Object Made = null;
+
+    Kind kind() { return Kind.ONE; }
+
+    int labels() {
+        switch (kind()) {
+            case ONE:
+                return 1;
+            default:
+                return 0;
+        }
+    }
+
+    int constants() {
+        switch (count(2)) {
+            case LOW:
+                return 1;
+            default:
+                return 0;
+        }
+    }
+
+    java.util.function.Supplier<Object> made() {
+        return Made::new;
+    }
+
+    void resources(AutoCloseable first) throws Exception {
+        AutoCloseable second = first;
+        try (first; second; AutoCloseable third = second) {
+            third.close();
+        }
     }
 }
 //- file main p/Bounds.java

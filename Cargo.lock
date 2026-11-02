@@ -358,6 +358,7 @@ dependencies = [
  "ferrion_lexer",
  "ferrion_parser",
  "ferrion_project",
+ "ferrion_semantic",
  "ferrion_stack",
  "ferrion_syntax",
  "serde",

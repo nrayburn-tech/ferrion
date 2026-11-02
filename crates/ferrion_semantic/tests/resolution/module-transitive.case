@@ -1,0 +1,29 @@
+// A named module reads what the modules it requires require transitively, when those aren't
+// the platform's (observation 22 in semantic-names.md): helidon's `requires transitive
+// jakarta.persistence` makes `java.sql` readable, since jakarta.persistence requires it
+// transitively. Here the module required is a dependency's module declaration. javac compiles
+// `api` (`javac -d out/api api/module-info.java api/a/A.java`), then `main` with `--module-path
+// out/api`; without `transitive` in api's declaration, it reports `package java.sql is not
+// visible` for the field `c`.
+//- set api 27
+//- set main 27 api
+//- file api module-info.java
+module api {
+    requires transitive java.sql;
+    exports a;
+}
+//- file api a/A.java
+package a;
+
+public class A {}
+//- file main module-info.java
+module m {
+    requires api;
+}
+//- file main p/U.java
+package p;
+
+class U {
+    a.A a;
+    java.sql.Connection c;
+}
