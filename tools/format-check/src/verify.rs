@@ -34,7 +34,7 @@ struct Stats {
 }
 
 impl Stats {
-    fn add(&mut self, other: &Stats) {
+    fn add(&mut self, other: Stats) {
         self.files += other.files;
         self.formats += other.formats;
         self.bytes += other.bytes;
@@ -43,6 +43,7 @@ impl Stats {
         self.changed += other.changed;
         self.skipped += other.skipped;
         self.not_utf8 += other.not_utf8;
+        self.failures.extend(other.failures);
     }
 
     fn print(&self, name: &str) {
@@ -73,24 +74,22 @@ impl Stats {
 pub fn run(targets: Vec<(String, Vec<Source>)>, options: &Options) -> bool {
     let verbose = options.verbose;
     let mut total = Stats::default();
-    let mut failures = Vec::new();
     for (name, sources) in targets {
         let stats = on_small_stack(move || check_all(&sources, verbose));
         stats.print(&name);
-        total.add(&stats);
-        failures.extend(stats.failures);
+        total.add(stats);
     }
     total.print("total");
     if let Some(bytes) = peak_rss() {
         println!("peak RSS: {:.1} MB", bytes as f64 / 1e6);
     }
-    for failure in failures.iter().take(options.limit) {
+    for failure in total.failures.iter().take(options.limit) {
         println!("FAILED {failure}");
     }
-    if failures.len() > options.limit {
-        println!("... and {} more", failures.len() - options.limit);
+    if total.failures.len() > options.limit {
+        println!("... and {} more", total.failures.len() - options.limit);
     }
-    failures.is_empty()
+    total.failures.is_empty()
 }
 
 fn check_all(sources: &[Source], verbose: bool) -> Stats {
