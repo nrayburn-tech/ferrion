@@ -41,4 +41,16 @@ class Chains {
         // between links
         .b();
   }
+
+  // With one call, the dot after a field that follows a type's name breaks if the one before
+  // the field does.
+  void typeThenField() {
+    RepositoryQueryMethodBenchmarks_BenchmarkParameters_jmhTypeAAAAAAAAAAAAAAAAAAAA.setupIterationMutexUpdater.f2.f3.get(l_benchmarkparameters1_G);
+    RepositoryQueryMethodBenchmarks_BenchmarkParameters_jmhTypeAAAAAAAAAAAAAAAAAAAA.setupIterationMutexUpdater.get(l_benchmarkparameters1_G, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa);
+    while (RepositoryQueryMethodBenchmarks_BenchmarkParameters_jmhType.setupIterationMutexUpdater.get(l_benchmarkparameters1_G) == 1) {}
+    org.example.RepositoryQueryMethodBenchmarks_BenchmarkParameters_jmhType.setupIterationMutexUpdaterAAAAAAA.get(l_benchmarkparameters1_G);
+    RepositoryQueryMethodBenchmarksBenchmarkParametersJmhTypeAAAAAAAA.Inner.setupIterationMutexUpdater.get(l_benchmarkparameters1_G);
+    repositoryQueryMethodBenchmarks_BenchmarkParameters_jmhTypeAAAAAAAAAAAAAAAAAAAA.setupIterationMutexUpdater.get(l_benchmarkparameters1_G);
+    ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOP.setupIterationMutexUpdater.get(l_benchmarkparameters1_G);
+  }
 }

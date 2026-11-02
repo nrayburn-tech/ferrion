@@ -117,66 +117,114 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
 /// call's arguments.
 ///
 /// When `attached`, the root is already emitted, and the first link follows it on its line.
+///
+/// The dot after a field that follows a type's name, `.get` in `Type.field.get(x)`, breaks if
+/// the dot before the field does (observed), so the type and the field are a group, and the
+/// links before and after them fills of their own.
 fn filled_dots<'t>(
     f: &mut Formatter<'t>,
     root: SyntaxNode<'t>,
     links: &[SyntaxNode<'t>],
     attached: bool,
 ) {
-    let Some((&last, fields)) = links.split_last() else {
+    let Some(&last) = links.last() else {
         call_link(f, root, Hugs::Lambdas);
         return;
     };
-    let indentation = Indentation::start(f, IndentKind::Continuation);
-    f.fill(|f| {
-        let mut first = attached;
-        if !attached {
-            f.node(root);
+    // Link `i`, the name only for the last.
+    let link = |f: &mut Formatter<'t>, i: usize| {
+        if i + 1 == links.len() {
+            link_name(f, last);
+        } else {
+            link_after_receiver(f, links[i], Hugs::None);
         }
-        for &link in fields {
-            if !std::mem::take(&mut first) {
-                f.fill_break(true);
+    };
+    // The links in `range` filled, each after a break, except the first when `first` is false.
+    let filled = |f: &mut Formatter<'t>, range: std::ops::Range<usize>, first: bool| {
+        f.fill(|f| {
+            for i in range.clone() {
+                if first || i != range.start {
+                    f.fill_break(true);
+                }
+                link(f, i);
             }
-            link_after_receiver(f, link, Hugs::None);
+        });
+    };
+    let tied = if attached {
+        None
+    } else {
+        last_type_name(root, links).filter(|&t| t + 1 < links.len())
+    };
+    let indentation = Indentation::start(f, IndentKind::Continuation);
+    match tied {
+        Some(t) => {
+            f.fill(|f| {
+                f.node(root);
+                for i in 0..t {
+                    f.fill_break(true);
+                    link(f, i);
+                }
+            });
+            let field = f.group(|f| {
+                f.soft_line();
+                link(f, t);
+            });
+            f.group_breaking_with(field, |f| f.soft_line());
+            filled(f, t + 1..links.len(), false);
         }
-        if !first {
-            f.fill_break(true);
+        None if attached => filled(f, 0..links.len(), false),
+        None => {
+            f.fill(|f| {
+                f.node(root);
+                for i in 0..links.len() {
+                    f.fill_break(true);
+                    link(f, i);
+                }
+            });
         }
-        link_name(f, last);
-    });
+    }
     indentation.end(f);
     if let Some(list) = ast::MethodCallExpr::cast(last).and_then(|c| c.arguments()) {
         arguments(f, list.syntax(), Hugs::Lambdas);
     }
 }
 
+/// The leading field accesses of a name: 2 for `a.b.c` in `a.b.c.d()`, and 0 for a root that
+/// isn't a name.
+fn leading_names(root: SyntaxNode<'_>, links: &[SyntaxNode<'_>]) -> usize {
+    if root.kind() != K::NameExpr {
+        return 0;
+    }
+    links
+        .iter()
+        .take_while(|l| l.kind() == K::FieldAccessExpr && !has_annotations(**l))
+        .count()
+}
+
+/// Of the root and its leading field accesses, the last that is a type's name (see
+/// [`is_type_name`]): 0 for the root, `i` for `links[i - 1]`.
+fn last_type_name(root: SyntaxNode<'_>, links: &[SyntaxNode<'_>]) -> Option<usize> {
+    if root.kind() != K::NameExpr {
+        return None;
+    }
+    let names = leading_names(root, links);
+    std::iter::once(root)
+        .chain(links[..names].iter().copied())
+        .map(|n| n.last_token().text())
+        .enumerate()
+        .filter(|(_, name)| is_type_name(name))
+        .map(|(i, _)| i)
+        .last()
+}
+
 /// How many links stay with the root on the chain's first line (see [`chain`]).
 fn prefix_len(root: SyntaxNode<'_>, links: &[SyntaxNode<'_>], calls: usize) -> usize {
-    // The leading field accesses of a name: `a.b.c` in `a.b.c.d()`.
-    let names = if root.kind() == K::NameExpr {
-        links
-            .iter()
-            .take_while(|l| l.kind() == K::FieldAccessExpr && !has_annotations(**l))
-            .count()
-    } else {
-        0
-    };
     if calls == 1 {
         // One call, with links after it: the name before it is one unit.
-        return names;
+        return leading_names(root, links);
     }
-    if root.kind() == K::NameExpr {
-        let segment_names = std::iter::once(root)
-            .chain(links[..names].iter().copied())
-            .map(|n| n.last_token().text());
-        if let Some(last_type) = segment_names
-            .enumerate()
-            .filter(|(_, name)| is_type_name(name))
-            .map(|(i, _)| i)
-            .last()
-        {
-            return (last_type + 1).min(links.len());
-        }
+    if let Some(last_type) = last_type_name(root, links) {
+        return (last_type + 1).min(links.len());
     }
     let short = match root.kind() {
         K::NameExpr => root.first_token().text().chars().count() <= 4,
