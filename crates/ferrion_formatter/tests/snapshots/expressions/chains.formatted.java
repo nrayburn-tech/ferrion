@@ -179,6 +179,36 @@ class Chains {
             .foo();
   }
 
+  // On a root that breaks like a longer chain, the links after it are a group of their own,
+  // and the links after a `.stream()` break at a further +4.
+  void undottedStream() {
+    final List<Object> values =
+        ((Map<?, ?>) m0)
+            .entrySet().stream().flatMap(e -> Stream.of(e.getKey(), e.getValue())).toList();
+    final double weight7 =
+        ((CompoundRule) kit.find("body", new StringReader("kotlin|20 version|3")))
+            .members().stream()
+                .map(CompoundEntry::scope)
+                .map(WeightRule.class::cast)
+                .mapToDouble(WeightRule::getScale)
+                .sum();
+    Set<String> segFiles =
+        new HashSet<>(writer.cloneSegmentInfos().files(true))
+            .stream().filter(filter).collect(Collectors.toSet());
+    Set<String> segFiles =
+        new HashSet<>(writer.cloneSegmentInfos().files(true))
+            .foo()
+            .filter(filter)
+            .collect(Collectors.toSet());
+    Set<String> segFiles =
+        ((Foo) writer)
+            .stream()
+                .filter(filterAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
+                .collect(Collectors.toSet());
+    Set<String> segFiles =
+        ((Foo) writer).a().stream().filter(filterAAAAAAAAAAAAAAAAAA).collect(Collectors.toSet());
+  }
+
   // A call's type arguments stay with the dot, and the name breaks after them at +4.
   void typeArguments() {
     legs =
