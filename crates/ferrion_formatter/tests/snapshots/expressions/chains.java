@@ -54,6 +54,18 @@ class Chains {
     ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOP.setupIterationMutexUpdater.get(l_benchmarkparameters1_G);
   }
 
+  // A chain's only call, with fields after it, is in the prefix, and so is a `.stream(...)`,
+  // each breaking from the root only if the line up to its `(` doesn't fit.
+  void singleCall() {
+    result = lookup.lookup(span("name", "a", "z", T, T, RangeSelection.INCLUSIVE_BOUNDS_FAST_ITERATOR), 1000).hitsFound;
+    result = lookup.lookup(span("name", "a", "z", T, T, RangeSelection.INCLUSIVE_BOUNDS_EXACT), 1).hitsFound.length;
+    byte[] bytes = contentRef.getContent().bytes; // safe here to just use the bytes, otherwise we should use offset, length
+    byte[] bytes = contentRef.getContentAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA().bytes;
+    best = a.b.closest(openSession(r, false), "place", 2, 45.0f, 50.0f, aaaaaaaaaaaaaaaaaaaaaaa).hitsFound;
+    codePointWidth = foooooAAAAAAAAAAAAAAAAAAAAA.stream(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, bbbbbbbbbbbbbbbbbbbb).flatMapToInt(Arrays::stream).toArray();
+    x = explorerAAAAAAAAAAAAAAAAAA.lookup(span("name", "a", "z", T, T, RangeSelection.EXCLUDED), 1000).hitsFound.length.foo();
+  }
+
   // A call's type arguments stay with the dot, and the name breaks after them at +4.
   void typeArguments() {
     legs = this.<ShipmentRoutingRegressionIT.LegRecord, QShipmentRoutingRegressionIT_LegRecord>createList("legs", ShipmentRoutingRegressionIT.LegRecord.class, QShipmentRoutingRegressionIT_LegRecord.class, PathInits.DIRECT2);

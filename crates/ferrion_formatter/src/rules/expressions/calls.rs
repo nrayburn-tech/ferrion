@@ -75,14 +75,23 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     // Everything up to a `.stream()` is a group of its own, kept on the first line if it fits
     // there, and otherwise broken before each of its dots (observed).
     let stream = links.iter().position(|&l| is_stream(l));
-    let prefix = match stream {
-        Some(_) => usize::from(body_root),
-        None if body_root => 1,
-        None => prefix_len(root, &links, calls),
+    // A chain's only call, with fields after it, is in the prefix, `a.b(x).c`, and breaks from
+    // the root only if the line up to its `(` doesn't fit (observed). The group up to it ends
+    // before its arguments, as the one up to a `.stream()` does.
+    let single_call = if stream.is_none() && calls == 1 && !root_is_call && dotted_root {
+        links.iter().position(|l| l.kind() == K::MethodCallExpr)
+    } else {
+        None
+    };
+    let prefix = match (stream, single_call) {
+        (Some(_), _) => usize::from(body_root),
+        (None, _) if body_root => 1,
+        (None, Some(call)) => call + 1,
+        (None, None) => prefix_len(root, &links, calls),
     };
     f.start_group();
     let indentation = Indentation::start(f, IndentKind::Continuation);
-    if stream.is_some() {
+    if stream.is_some() || single_call.is_some() {
         f.start_group();
     }
     if body_root {
@@ -108,7 +117,7 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         f.node(root);
     }
     for (i, &link) in links.iter().enumerate() {
-        if i >= prefix {
+        if i >= prefix || single_call == Some(i) {
             f.soft_line();
         }
         let in_prefix = stream.map_or(i < prefix, |s| i <= s);
@@ -117,9 +126,12 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         } else {
             Hugs::Lambdas
         };
-        link_after_receiver(f, link, hugs);
-        if stream == Some(i) {
+        if stream == Some(i) || single_call == Some(i) {
+            let typed = link_name(f, link);
             f.end();
+            link_arguments(f, link, typed, hugs);
+        } else {
+            link_after_receiver(f, link, hugs);
         }
     }
     indentation.end(f);
@@ -280,6 +292,11 @@ fn is_type_name(name: &str) -> bool {
 /// hugging as `hugs` says.
 fn link_after_receiver<'t>(f: &mut Formatter<'t>, link: SyntaxNode<'t>, hugs: Hugs) {
     let typed = link_name(f, link);
+    link_arguments(f, link, typed, hugs);
+}
+
+/// A link's arguments, if it is a call, after [`link_name`] gave `typed`.
+fn link_arguments<'t>(f: &mut Formatter<'t>, link: SyntaxNode<'t>, typed: Option<u32>, hugs: Hugs) {
     if link.kind() == K::MethodCallExpr
         && let Some(list) = ast::MethodCallExpr::cast(link).and_then(|c| c.arguments())
     {
