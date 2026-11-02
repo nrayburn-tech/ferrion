@@ -178,4 +178,21 @@ class Lists {
         4,
         5);
   }
+
+  // A comment on a comma's line trails the comma, even with an item after it on the line; one
+  // that starts an item's line counts toward the item's width.
+  Object trailsComma = {
+    d, //
+    4, /**/ 9
+  };
+  Object trailsCommaWide = {
+    d, //
+    4, /*cccccccccccc*/ 9, 10
+  };
+  Object startsLineWide = {
+    d, //
+    4,
+    /*cccccccccccc*/ 9,
+    10
+  };
 }
