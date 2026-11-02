@@ -451,8 +451,9 @@ them, and `Snapshot::file_names` the names of declarations and bodies together, 
   never), a field inherited as two different fields being ambiguous. Every method of the name is
   kept, overridden ones too, since choosing is B3's.
 - **Method names** (JLS 15.12.1): for `m()`, the innermost class around with a member method
-  `m`, declared or inherited, is the type to search, else the types the static imports of `m`
-  name; for `Q.m()`, `this.m()`, `Q::m`, and `this::m`, `Q`'s or this class's; for `super.m()`
+  `m`, declared or inherited, is the type to search, else, for a statically imported method
+  (for which JLS 15.12.1 has no type to search), the type declaring its candidates, as the
+  oracle has it, or the first import's when several types declare them; for `Q.m()`, `this.m()`, `Q::m`, and `this::m`, `Q`'s or this class's; for `super.m()`
   and `Q.super.m()`, the superclass of this class or of `Q`, or for a superinterface `Q`, `Q`. The
   name records the type and its candidates. A call on any other expression, and a constructor
   reference, are B3's.

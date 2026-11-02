@@ -1965,7 +1965,13 @@ impl Walker<'_, '_, '_> {
                     }
                 }
             }
-            if let Some(search) = search {
+            if let Some(mut search) = search {
+                // JLS 15.12.1 has no type to search for a statically imported method; when its
+                // candidates are one type's, that type is the one the method is found in, as
+                // the javac comparison has it (semantic-oracle-normalization.md).
+                if candidates.iter().all(|m| m.owner == candidates[0].owner) {
+                    search = candidates[0].owner;
+                }
                 return Ok(Symbol::Methods {
                     search,
                     name,
