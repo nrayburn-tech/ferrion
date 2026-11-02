@@ -92,7 +92,15 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         let short = ast::MethodCallExpr::cast(root)
             .and_then(|call| call.name())
             .is_some_and(|name| name.text().chars().count() <= 4);
-        call_link(f, root, if short { Hugs::Sole } else { Hugs::None });
+        call_link(
+            f,
+            root,
+            if short {
+                Hugs::Sole
+            } else {
+                Hugs::ExpressionLambdas
+            },
+        );
     } else if root.kind() == K::NewExpr {
         f.comments_before(root.first_token().id());
         new_with(f, root, Hugs::None);
@@ -104,7 +112,12 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             f.soft_line();
         }
         let in_prefix = stream.map_or(i < prefix, |s| i <= s);
-        link_after_receiver(f, link, if in_prefix { Hugs::None } else { Hugs::Lambdas });
+        let hugs = if in_prefix {
+            Hugs::ExpressionLambdas
+        } else {
+            Hugs::Lambdas
+        };
+        link_after_receiver(f, link, hugs);
         if stream == Some(i) {
             f.end();
         }
@@ -362,9 +375,11 @@ fn call_link<'t>(f: &mut Formatter<'t>, call: SyntaxNode<'t>, hugs: Hugs) {
 /// Which only argument a call's arguments hug (observed).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Hugs {
-    /// None: the calls in the prefix of a chain that breaks before its other links,
-    /// `foo(x -> {...}).bar()`.
+    /// None: an anonymous class's arguments at the root of a chain, and fields.
     None,
+    /// A lambda with an expression body: the calls in the prefix of a chain that breaks before
+    /// its other links, `foo(x ->` then the body, but `foo(` then `x -> {...}).bar()`.
+    ExpressionLambdas,
     /// A lambda: other calls.
     Lambdas,
     /// Anything but a lambda: a call of a short name, up to four characters, at the root of
@@ -380,6 +395,9 @@ pub fn arguments<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>, hugs: Hugs) {
     let hug = match (children.next(), children.next()) {
         (Some(only), None) => match hugs {
             Hugs::None => false,
+            Hugs::ExpressionLambdas => {
+                only.kind() == K::LambdaExpr && !super::lambdas::has_block_body(only)
+            }
             Hugs::Lambdas => only.kind() == K::LambdaExpr,
             Hugs::Sole => only.kind() != K::LambdaExpr,
         },
