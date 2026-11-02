@@ -83,8 +83,14 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     }
     // A chain's only call, with fields after it, is in the prefix, `a.b(x).c`, and breaks from
     // the root only if the line up to its `(` doesn't fit (observed). The group up to it ends
-    // before its arguments, as the one up to a `.stream()` does.
-    let single_call = if stream.is_none() && calls == 1 && !root_is_call && dotted_root {
+    // before its arguments, as the one up to a `.stream()` does. An array access after the
+    // chain counts as a field after its last call: `a.b(x).c()[0]` (observed).
+    let indexed = last_is_call
+        && node
+            .parent()
+            .is_some_and(|p| p.kind() == K::ArrayAccessExpr && p.first_child() == Some(node));
+    let single_calls = if indexed { 2 } else { 1 };
+    let single_call = if stream.is_none() && calls == single_calls && !root_is_call && dotted_root {
         links.iter().position(|l| l.kind() == K::MethodCallExpr)
     } else {
         None

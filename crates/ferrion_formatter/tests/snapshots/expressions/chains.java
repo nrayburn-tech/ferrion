@@ -64,6 +64,10 @@ class Chains {
     best = a.b.closest(openSession(r, false), "place", 2, 45.0f, 50.0f, aaaaaaaaaaaaaaaaaaaaaaa).hitsFound;
     codePointWidth = foooooAAAAAAAAAAAAAAAAAAAAA.stream(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, bbbbbbbbbbbbbbbbbbbb).flatMapToInt(Arrays::stream).toArray();
     x = explorerAAAAAAAAAAAAAAAAAA.lookup(span("name", "a", "z", T, T, RangeSelection.EXCLUDED), 1000).hitsFound.length.foo();
+    // An array access after the last call counts as a field.
+    parameterType = HasTypeVariablesAAAAAAAA.class.getDeclaredMethod(methodName, List.class).getGenericParameterTypes()[0];
+    parameterType = HasTypeVariablesAAAAAAAA.class.getDeclaredMethod(methodName, List.class).getGenericParameterTypes();
+    parameterType = withGenericBoundAAAAAAAA.getDeclaredMethod(methodName, List.class).getGenericParameterTypes().aaa()[0];
   }
 
   // On a root that breaks like a longer chain, the links after it are a group of their own,
