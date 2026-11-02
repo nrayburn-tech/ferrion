@@ -300,3 +300,21 @@ After W4, the user accepted the project symbols as built and settled the questio
    reader's view, as a class file's are.
 2. **A qualified name of more than 1,024 segments** is resolved up to the first 1,024 and is an
    error after them (`Cause::TooLong`), so the parser's stress patterns stay linear.
+
+### The oracle review
+
+After W3, the user accepted the oracle as built and settled the questions W3 raised, all for the
+corpus run (W6):
+
+1. **The lock and the project model record each build's annotation processor path** (Maven's
+   `annotationProcessorPaths`, Gradle's `annotationProcessor` configurations) **and the generated
+   source roots of other plugins**, such as Helidon's templates, so the oracle runs the build's
+   processors and the code that uses generated sources resolves.
+2. **The model records how a source set is compiled:** `--release` or `-source` and `-target`, and
+   flags that change what it sees (`--enable-preview`, `--add-modules`, `--add-exports`). Ferrion
+   uses them too, to choose the platform API a source set sees.
+3. **Only language errors leave a file out.** A file javac never analyzed is counted on its own,
+   apart from files with errors, and processors that only check code and generate nothing (such
+   as Helidon's API stability checks) aren't run.
+4. **Module declarations are compared**, through a separate modular compile of each source set
+   with a `module-info.java`.
