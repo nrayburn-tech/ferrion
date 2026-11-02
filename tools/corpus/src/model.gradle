@@ -44,15 +44,25 @@ allprojects { p ->
                     release = compile?.sourceCompatibility
                 }
 
-                // Other source sets in this project whose output is on this one's classpath.
                 def classpathFiles = s.compileClasspath.files
+                def taskFiles = compile == null ? classpathFiles : compile.classpath.files
                 def classpath = []
-                sourceSets.each { other ->
-                    if (other != s && other.output.classesDirs.files.any { classpathFiles.contains(it) }) {
-                        classpath << [project: p.path, sourceSet: other.name]
+                // A modular compile moves some of the source set's classpath to the module path,
+                // which the compile task's options give; only a classpath with files the source
+                // set's lacks is the build's own.
+                if (taskFiles.every { classpathFiles.contains(it) }) {
+                    // Other source sets in this project whose output is on this one's classpath.
+                    sourceSets.each { other ->
+                        if (other != s && other.output.classesDirs.files.any { classpathFiles.contains(it) }) {
+                            classpath << [project: p.path, sourceSet: other.name]
+                        }
                     }
+                    classpath.addAll(entries(p.configurations.getByName(s.compileClasspathConfigurationName)))
+                } else {
+                    // The build gave the compile task a classpath of its own (caffeine's codeGen
+                    // compiles against main's runtime classpath): its files, in order.
+                    taskFiles.each { f -> classpath << [file: f.absolutePath] }
                 }
-                classpath.addAll(entries(p.configurations.getByName(s.compileClasspathConfigurationName)))
                 def processors = p.configurations.findByName(s.annotationProcessorConfigurationName)
                 def processorOutput = compile?.options?.generatedSourceOutputDirectory?.getAsFile()?.getOrNull()
 

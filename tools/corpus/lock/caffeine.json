@@ -214,7 +214,18 @@
             "caffeine/build/generated/sources/node",
             "caffeine/build/generated/sources/local-cache"
           ],
-          "classpath": [],
+          "classpath": [
+            {
+              "module": "caffeine",
+              "sourceSet": "main"
+            },
+            {
+              "jar": "org/jspecify/jspecify/1.0.1/jspecify-1.0.1.jar"
+            },
+            {
+              "jar": "com/google/errorprone/error_prone_annotations/2.50.0/error_prone_annotations-2.50.0.jar"
+            }
+          ],
           "processorPath": [
             {
               "file": "caffeine/build/errorprone/caffeine-3.3.0.jar"

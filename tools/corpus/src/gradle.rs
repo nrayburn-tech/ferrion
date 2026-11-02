@@ -15,7 +15,7 @@ use serde::Deserialize;
 use crate::Dirs;
 use crate::lock::{
     ClasspathEntry, Jars, Module, PlatformKind, SourceSet, compile_options, javac_options,
-    jdk_modules, parse_java_version, relative, release_options, run,
+    jdk_modules, module_path, parse_java_version, relative, release_options, run,
 };
 
 const INIT_SCRIPT: &str = include_str!("model.gradle");
@@ -131,12 +131,16 @@ pub fn resolve(checkout: &Path, dirs: &Dirs, jars: &mut Jars) -> Result<Vec<Modu
                             let path = repository_path(&group, &module, &version, &file);
                             jars.add(path, &file)?
                         }
-                        GradleEntry::File { file } => {
-                            match classify(checkout, &module_dirs, &file) {
+                        GradleEntry::File { file } => match cached_module(&file) {
+                            Some((group, module, version)) => {
+                                let path = repository_path(&group, &module, &version, &file);
+                                jars.add(path, &file)?
+                            }
+                            None => match classify(checkout, &module_dirs, &file) {
                                 Some(entry) => entry,
                                 None => continue,
-                            }
-                        }
+                            },
+                        },
                     };
                     // A module's Java and Kotlin output directories both map to its source set.
                     if !classpath.contains(&entry) {
@@ -177,6 +181,15 @@ pub fn resolve(checkout: &Path, dirs: &Dirs, jars: &mut Jars) -> Result<Vec<Modu
                 }))
             })?;
             let options_of = javac_options(args);
+            let module_path = module_path(args, |file| {
+                Ok(match cached_module(file) {
+                    Some((group, module, version)) => {
+                        let path = repository_path(&group, &module, &version, file);
+                        Some(jars.add(path, file)?)
+                    }
+                    None => classify(checkout, &module_dirs, file),
+                })
+            })?;
             source_sets.push(SourceSet {
                 name: source_set.name,
                 java_release,
@@ -198,6 +211,7 @@ pub fn resolve(checkout: &Path, dirs: &Dirs, jars: &mut Jars) -> Result<Vec<Modu
                     .filter(|(option, _)| option == "-A")
                     .filter_map(|(_, value)| value)
                     .collect(),
+                module_path,
             });
         }
         modules.push(Module {
@@ -223,6 +237,23 @@ fn repository_path(group: &str, module: &str, version: &str, file: &Path) -> Str
         .and_then(|metadata| metadata_url(&metadata, &name))
         .unwrap_or(name);
     resolve_url(group, module, version, &url)
+}
+
+/// The group, module, and version of a jar in Gradle's module cache, which keeps it at
+/// `files-2.1/<group>/<module>/<version>/<hash>/<file>`, for a classpath that lists files rather
+/// than resolved artifacts.
+fn cached_module(file: &Path) -> Option<(String, String, String)> {
+    let parts: Vec<String> = file
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy().into_owned())
+        .collect();
+    let at = parts.iter().rposition(|part| part == "files-2.1")?;
+    match &parts[at + 1..] {
+        [group, module, version, _hash, _file] => {
+            Some((group.clone(), module.clone(), version.clone()))
+        }
+        _ => None,
+    }
 }
 
 fn cached_metadata(dir: &Path, name: &str) -> Option<String> {
@@ -365,6 +396,23 @@ mod tests {
         );
         assert_eq!(metadata_url(METADATA, "other.jar"), None);
         assert_eq!(metadata_url("not json", "guava-33.4.3-jre.jar"), None);
+    }
+
+    #[test]
+    fn jars_in_gradles_cache() {
+        let jar = Path::new(
+            "/home/me/.gradle/caches/modules-2/files-2.1/org.jspecify/jspecify/1.0.0/7425a6/\
+             jspecify-1.0.0.jar",
+        );
+        assert_eq!(
+            cached_module(jar),
+            Some((
+                "org.jspecify".to_owned(),
+                "jspecify".to_owned(),
+                "1.0.0".to_owned()
+            ))
+        );
+        assert_eq!(cached_module(Path::new("/p/build/classes/java/main")), None);
     }
 
     #[test]
