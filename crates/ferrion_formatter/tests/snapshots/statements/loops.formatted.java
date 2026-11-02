@@ -61,5 +61,12 @@ class Loops {
     }
     for (Map.Entry<String, SomeVeryLongTypeNameForTestingXYZWVUTS> entryWithLongNameXYZWVUTSRQPOAB :
         m) {}
+    for (final ConcurrentContainer<? extends ObservableResult<? extends ValueT>>
+        resultsAwaitingMergingA : list) {}
+    for (ConcurrentContainer<? extends ObservableResult<? extends ValueT>> resultsAwaitingMerging :
+        list) {}
+    for (int aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa = 1,
+            bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb = 2;
+        ; ) {}
   }
 }
