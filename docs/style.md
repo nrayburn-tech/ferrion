@@ -587,6 +587,20 @@ union type stays on the `(`'s line instead and breaks before its `|`s (see
         exception) {
 ```
 
+Annotations before a `catch` parameter's or a resource's first keyword modifier stay on the line,
+unless one of them has arguments. Then each goes on a line of its own, as GJF does: a `catch`
+breaks after its `(` and puts them and the type at +4, and a resource puts the lines after its
+first at +4 from it. A union type keeps its annotations on the line.
+
+```java
+} catch (
+    @SuppressWarnings("unused")
+    UnsupportedOperationException e) {
+}
+try (@SuppressWarnings("unused")
+    InputStream in = open()) {
+```
+
 ### `switch`
 
 A switch block's rules or groups go on their own lines at +2. Blank lines between them are kept,

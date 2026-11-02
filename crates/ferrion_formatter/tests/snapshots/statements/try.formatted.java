@@ -80,4 +80,50 @@ class Try {
       c();
     }
   }
+
+  void annotations() {
+    try {
+      b();
+    } catch (
+        @SuppressWarnings("unused")
+        UnsupportedOperationException e) {
+      c();
+    }
+    try {
+      b();
+    } catch (
+        @A("x")
+        @B
+        final E e) {
+      c();
+    }
+    try {
+      b();
+    } catch (@A @B E e) {
+      c();
+    }
+    try {
+      b();
+    } catch (final @A("x") E e) {
+      c();
+    }
+    try {
+      b();
+    } catch (@A("x") E | F e) {
+      c();
+    }
+    try (@SuppressWarnings("unused")
+        R r = open()) {
+      b();
+    }
+    try (@A("x")
+            @B
+            R r = open();
+        S s = open()) {
+      b();
+    }
+    try (@A @B R r = open()) {
+      b();
+    }
+  }
 }
