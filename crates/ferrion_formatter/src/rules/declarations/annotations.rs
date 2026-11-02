@@ -10,6 +10,8 @@
 //!   of their own before it.
 //! - **Locals:** on their own lines if there are two or more, if one has arguments, or if the
 //!   declaration doesn't fit on its line; otherwise inline, `@A int x = 1;`.
+//! - **`catch` parameters and resources:** on their own lines if one has arguments, otherwise
+//!   inline; a resource's lines after the first at +4.
 //! - **Parameters and record components:** inline; when the parameter doesn't fit, the
 //!   annotations break onto their own lines at +4 as a group, then the rest of the parameter.
 //!
@@ -101,8 +103,17 @@ pub(crate) fn local_variable<'t>(
         .and_then(|local| local.parent())
         .is_some_and(|p| matches!(p.kind(), K::Block | K::SwitchGroup));
     let leading = leading_annotations(node);
+    // A resource's annotations go on their own lines if one has arguments, and the rest of the
+    // resource at +4 (observed in GJF).
+    let resource = node
+        .parent()
+        .and_then(|local| local.parent())
+        .is_some_and(|p| p.kind() == K::ResourceSpecification)
+        && leading.iter().any(|&a| has_arguments(a));
     // Type-use annotations right before the type stay on its line (observed).
-    let layout = if !in_block || leading.len() == type_use_annotations(f, node) {
+    let layout = if resource {
+        Layout::OwnLines
+    } else if !in_block || leading.len() == type_use_annotations(f, node) {
         Layout::Inline
     } else if leading.len() > 1 || leading.iter().any(|&a| has_arguments(a)) {
         Layout::BeforeType
@@ -114,11 +125,14 @@ pub(crate) fn local_variable<'t>(
     if layout == Layout::LineAfter {
         f.start_group();
     }
+    if resource {
+        f.start_indent(IndentKind::Continuation);
+    }
     if modifiers(f, node, layout) == After::Space {
         f.space();
     }
     declaration(f);
-    if layout == Layout::LineAfter {
+    if layout == Layout::LineAfter || resource {
         f.end();
     }
 }
