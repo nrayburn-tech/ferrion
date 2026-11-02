@@ -1,0 +1,6 @@
+/**
+ * A doc comment whose second line is empty.
+
+ * Ferrion aligns the stars it has and adds none.
+ */
+class DocCommentStars {}
