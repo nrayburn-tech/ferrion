@@ -214,6 +214,8 @@ pub(crate) fn delimited<'t>(
                         if let Some(next) = next_item(comma, close) {
                             if comment_on_line_after(comma) {
                                 f.comments_before(next.id());
+                                // No blank line after it, unless before a comment (observed).
+                                f.no_blank_line();
                             }
                             if broken && one_per_line {
                                 f.hard_line();
@@ -250,6 +252,7 @@ pub(crate) fn delimited<'t>(
                             && let Some(next) = next_item(comma, close)
                         {
                             f.comments_before(next.id());
+                            f.no_blank_line();
                         }
                         break;
                     }
@@ -633,6 +636,7 @@ fn in_rows<'t>(
                 {
                     if comment_on_line_after(comma) {
                         f.comments_before(next.id());
+                        f.no_blank_line();
                     }
                     // The item after a text block starts a line (observed).
                     if comma
@@ -657,6 +661,7 @@ fn in_rows<'t>(
             if let Some(next) = next_item(comma, close) {
                 if comment_on_line_after(comma) {
                     f.comments_before(next.id());
+                    f.no_blank_line();
                 }
                 f.hard_line();
             }

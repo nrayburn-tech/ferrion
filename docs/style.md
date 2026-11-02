@@ -820,7 +820,8 @@ foo(
 
 Comments: a block comment in empty parentheses keeps a space before the `)`, `foo(/* none */ )`.
 A block comment on the line of a comma stays after the comma when the list breaks, except one
-naming a parameter, `/* name= */`, which stays with the argument after it. A comment on a line of
+naming a parameter, `/* name= */`, which stays with the argument after it. A blank line after a
+comment on a comma's line is removed, unless another comment follows it. A comment on a line of
 its own before the first argument doesn't break the arguments onto lines of their own.
 
 ```java
