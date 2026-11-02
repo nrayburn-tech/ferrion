@@ -168,7 +168,7 @@ pub(super) fn class_body<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     }
     let mut previous_spaced = None;
     for &member in members {
-        let spaced = spaced_member(member);
+        let spaced = spaced_member(f, member);
         match previous_spaced {
             None => {
                 let first = first_token(member);
@@ -216,14 +216,14 @@ pub(super) fn member_break<'t>(
 
 /// Whether GJF puts blank lines around a member: any member but a field and `;`, and a field with
 /// a doc comment or with annotations on their own lines.
-pub(super) fn spaced_member(member: NodeOrToken<'_>) -> bool {
+pub(super) fn spaced_member(f: &Formatter<'_>, member: NodeOrToken<'_>) -> bool {
     match member {
         NodeOrToken::Token(_) => false,
         NodeOrToken::Node(field) if field.kind() == K::FieldDecl => {
             doc_comment_before(field.first_token())
                 || field.first_child().is_some_and(|modifiers| {
                     modifiers.kind() == K::Modifiers
-                        && match annotations::field_layout(modifiers) {
+                        && match annotations::field_layout(f, modifiers) {
                             Layout::OwnLines | Layout::BeforeType => true,
                             // A line comment that breaks the field doesn't make GJF space it (observed).
                             Layout::LineAfter => !fits_on_line(field, false),
@@ -281,7 +281,7 @@ pub(super) fn enum_body<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             _ => {
                 // The constants end with a `;` before any member, in a tree without errors.
                 constants = false;
-                let spaced = spaced_member(part);
+                let spaced = spaced_member(f, part);
                 member_break(f, previous_spaced, part, spaced);
                 emit(f, part);
                 previous_spaced = spaced;

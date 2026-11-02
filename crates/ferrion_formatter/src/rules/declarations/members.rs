@@ -26,7 +26,7 @@ pub(super) fn field<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     if let [NodeOrToken::Node(modifiers), tail @ ..] = rest
         && modifiers.kind() == K::Modifiers
     {
-        let layout = annotations::field_layout(*modifiers);
+        let layout = annotations::field_layout(f, *modifiers);
         if layout == Layout::LineAfter {
             f.start_group();
             group = true;
@@ -249,7 +249,9 @@ pub(super) fn parameter<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         && modifiers.kind() == K::Modifiers
     {
         rest = tail;
-        if annotations::leading_annotations(*modifiers).is_empty() {
+        if annotations::leading_annotations(*modifiers).len()
+            == annotations::type_use_annotations(f, *modifiers)
+        {
             annotations::modifiers(f, *modifiers, Layout::Inline);
             f.space();
         } else {
