@@ -431,17 +431,9 @@ impl<'t> Formatter<'t> {
     }
 
     fn before_comment(&mut self, comment: Comment, token: SyntaxToken<'t>) {
-        // A one-line block comment with code after it on its line, in an expression, a list, or
-        // a declarator, joins the line before, as GJF prints it (`f(0,` then `/* b= */ 1);`
-        // gives `f(0, /* b= */ 1);`): the whitespace before it is the rules' (observed).
-        let joins = comment.line_breaks_before == 1
-            && comment.line_breaks_after == 0
-            && one_line_block_comment(token)
-            && in_expression(self.tree.node(comment.enclosing).kind());
         match comment.line_breaks_before {
             // A doc comment starts its line, as GJF prints it (observed).
             0 if token.kind() == SyntaxKind::DocComment => self.hard_line(),
-            _ if joins => {}
             // A space goes between code and a comment after it on its line, as GJF puts one
             // (`f(x);// c` gives `f(x); // c`), except after a `(`, `.`, or `<`, where the space
             // goes after the comment instead (`f( /* c */x)` gives `f(/* c */ x)`; observed).
@@ -618,21 +610,6 @@ fn after_opening_delimiter(comment: SyntaxToken<'_>) -> bool {
                 SyntaxKind::LParen | SyntaxKind::LBracket | SyntaxKind::LBrace
             )
         })
-}
-
-/// Whether a comment in a node of `kind` is inside an expression, a list, or a declarator,
-/// where the line breaks are the rules'.
-fn in_expression(kind: SyntaxKind) -> bool {
-    rules::area(kind) == Some(rules::Area::Expressions)
-        || matches!(
-            kind,
-            SyntaxKind::VariableDeclarator
-                | SyntaxKind::FormalParameters
-                | SyntaxKind::TypeArguments
-                | SyntaxKind::TypeParameters
-                | SyntaxKind::AnnotationArguments
-                | SyntaxKind::ElementValueArray
-        )
 }
 
 /// Whether the next token after `token` other than whitespace and line terminators is a comment.

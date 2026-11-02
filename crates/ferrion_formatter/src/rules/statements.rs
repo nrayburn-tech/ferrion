@@ -100,9 +100,24 @@ fn body<'t>(f: &mut Formatter<'t>, body: SyntaxNode<'t>, before: SyntaxToken<'t>
             if leads_on_code_line(body.first_token()) {
                 f.comments_before(body.first_token().id());
             }
+            // A comment with code after it on its line has the space after it already, so the
+            // line element adds none, and isn't measured twice.
+            let spaced = body
+                .first_token()
+                .prev_token()
+                .is_some_and(|t| t.kind() == K::Whitespace)
+                && body
+                    .first_token()
+                    .prev_token()
+                    .and_then(|t| t.prev_token())
+                    .is_some_and(|t| ferrion_syntax::comments::is_comment(t.kind()));
             f.group(|f| {
                 f.indent(IndentKind::Block, |f| {
-                    f.line();
+                    if spaced {
+                        f.soft_line();
+                    } else {
+                        f.line();
+                    }
                     trailed(f, body);
                 });
             });
