@@ -432,8 +432,8 @@ enum Context {
     Type,
     /// A `case` label's constant, where the selector's type is this enum.
     Case(TypeKey),
-    /// A `case` label's constant, where the selector's type needs attribution: an enum
-    /// constant of it if no variable of the name is in scope.
+    /// A `case` label's constant, where the selector's type needs attribution: a variable in
+    /// scope that could be a constant of the label, or B3's.
     CaseOfUnknown,
 }
 
@@ -1629,6 +1629,14 @@ impl Walker<'_, '_, '_> {
                 Some(Context::Type | Context::PackageOrType) => Context::PackageOrType,
                 _ => Context::Ambiguous,
             },
+            // `C::new` names a class type (JLS 15.13), which a variable `C` doesn't obscure.
+            SyntaxKind::MethodRefExpr
+                if ast::MethodRefExpr::cast(parent)
+                    .and_then(|r| r.new_kw())
+                    .is_some() =>
+            {
+                Context::Type
+            }
             SyntaxKind::MethodCallExpr | SyntaxKind::MethodRefExpr => Context::Ambiguous,
             SyntaxKind::ClassLiteralExpr | SyntaxKind::ThisExpr | SyntaxKind::SuperExpr => {
                 Context::Type
@@ -1669,16 +1677,7 @@ impl Walker<'_, '_, '_> {
                     None => self.expression_name(name)?,
                 }
             }
-            Context::CaseOfUnknown => {
-                let (symbol, meaning) = self.expression_name(name)?;
-                match &symbol {
-                    Symbol::Error(ErrorSymbol {
-                        cause: Cause::NotFound | Cause::Incomplete { .. },
-                        ..
-                    }) => (Symbol::LeftToB3(LeftToB3::ExpressionType), Meaning::Unknown),
-                    _ => (symbol, meaning),
-                }
-            }
+            Context::CaseOfUnknown => self.case_of_unknown(name)?,
             Context::Ambiguous => {
                 let (symbol, meaning) = self.expression_name(name)?;
                 match &symbol {
@@ -1695,6 +1694,28 @@ impl Walker<'_, '_, '_> {
         self.record(node, symbol);
         self.store(node, meaning);
         Ok(())
+    }
+
+    /// A `case` label's simple name where the selector's type needs attribution: an enum
+    /// constant of that type, if it is an enum, or else a constant variable in scope (JLS
+    /// 14.11.1). A variable in scope that could be a `case` constant, of a primitive type, of
+    /// `String`, or of an enum type, is taken; any other (helidon's `case ENTITY ->` on an enum,
+    /// with a `TypeName ENTITY` inherited) is left to B3 with names no variable has.
+    fn case_of_unknown(&mut self, name: Name) -> Result<(Symbol, Meaning), Cancelled> {
+        let (symbol, meaning) = self.expression_name(name)?;
+        let constant = match &meaning {
+            Meaning::Value(VarTy::Primitive) => true,
+            Meaning::Value(VarTy::Class(key)) => {
+                let string = self.names.intern("java/lang/String");
+                self.r.reads.find_binary(self.set, string)? == Some(*key)
+                    || self.kind_of(*key)? == Some(TypeKind::Enum)
+            }
+            _ => false,
+        };
+        if constant && !matches!(symbol, Symbol::Error(_)) {
+            return Ok((symbol, meaning));
+        }
+        Ok((Symbol::LeftToB3(LeftToB3::ExpressionType), Meaning::Unknown))
     }
 
     /// A simple expression name (JLS 6.5.6.1): the innermost local, or field of a local or

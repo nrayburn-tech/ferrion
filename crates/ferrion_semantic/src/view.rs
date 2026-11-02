@@ -63,6 +63,8 @@ pub struct ModuleView {
     pub reads: Box<[Name]>,
     /// For a named module, its `exports` directives' packages, for `import module` of it.
     pub exports: Box<[Name]>,
+    /// For a named module, the modules it `requires transitive`, for the modules that read it.
+    pub transitive: Box<[Name]>,
 }
 
 /// A platform's modules, read once from its descriptors.
@@ -243,16 +245,35 @@ fn module_view(reads: &mut Reads<'_>, set: SourceSetId) -> Result<ModuleView, Ca
     let java_base = names.intern("java.base");
     let mut required = vec![java_base];
     let mut exports = Vec::new();
+    let mut transitive = Vec::new();
     for directive in &module.directives {
         match directive {
-            Directive::Requires { module, .. } => required.push(module.name()),
+            Directive::Requires {
+                module,
+                transitive: t,
+                ..
+            } => {
+                required.push(module.name());
+                if *t {
+                    transitive.push(module.name());
+                }
+            }
             Directive::Exports { package, .. } => exports.push(package.name()),
             _ => {}
         }
     }
-    for module in required {
+    // A platform module brings the platform modules it requires transitively; a module of the
+    // classpath or module path, or a dependency's module declaration, brings those it requires
+    // transitively, platform modules among them (observation 22 in semantic-names.md:
+    // `requires transitive jakarta.persistence` makes `java.sql` readable).
+    let mut seen = BTreeSet::new();
+    while let Some(module) = required.pop() {
+        if !seen.insert(module) {
+            continue;
+        }
         match &modules {
-            Some(modules) => modules.transitive(module, &mut read),
+            Some(modules) if modules.has(module) => modules.transitive(module, &mut read),
+            Some(_) => required.extend(reads.requires_transitive(set, module)?),
             None => {
                 read.insert(module);
             }
@@ -262,7 +283,24 @@ fn module_view(reads: &mut Reads<'_>, set: SourceSetId) -> Result<ModuleView, Ca
         name: Some(module.name.name()),
         reads: read.into_iter().collect(),
         exports: exports.into_boxed_slice(),
+        transitive: transitive.into_boxed_slice(),
     })
+}
+
+/// `requires transitive` in a `module-info` class (JVMS 4.7.25).
+const ACC_TRANSITIVE: u16 = 0x0020;
+
+/// The module descriptor of a classpath or module path entry's `module-info.class`, if it has
+/// one that can be read.
+fn module_descriptor(input: &crate::ClassesInput) -> Option<ModuleDescriptor> {
+    let class = input
+        .entry
+        .find(&ferrion_classfile::ClassName::new("module-info"))
+        .ok()??;
+    ferrion_classfile::class::ClassFile::parse(class.bytes)
+        .ok()?
+        .module_descriptor()
+        .ok()
 }
 
 /// How a qualified name's package is written for class sources: `java/util`.
@@ -577,6 +615,51 @@ pub(crate) enum ModuleImport {
 }
 
 impl Reads<'_> {
+    /// The modules `module` requires transitively, when it isn't the platform's: a dependency's
+    /// module declaration's, or those of the `module-info.class` of a classpath or module path
+    /// entry. None for an automatic module, or one not found.
+    fn requires_transitive(
+        &mut self,
+        set: SourceSetId,
+        module: Name,
+    ) -> Result<Vec<Name>, Cancelled> {
+        let snapshot = self.snapshot;
+        let names = snapshot.names().clone();
+        let text = names.text(module);
+        let config = snapshot.config(set).clone();
+        for entry in config.classpath.iter() {
+            match *entry {
+                SetEntry::SourceSet(dependency) => {
+                    let other = self.module_view(dependency)?;
+                    if other.name == Some(module) {
+                        return Ok(other.transitive.to_vec());
+                    }
+                }
+                SetEntry::Classes(source) => {
+                    let ClassSource::Entry(input) = snapshot.shared().classes.source(source) else {
+                        continue;
+                    };
+                    if input.module.as_deref().is_some_and(|m| m != &*text) {
+                        continue;
+                    }
+                    let Some(descriptor) = module_descriptor(input) else {
+                        continue;
+                    };
+                    if descriptor.name != *text {
+                        continue;
+                    }
+                    return Ok(descriptor
+                        .requires
+                        .iter()
+                        .filter(|r| r.flags & ACC_TRANSITIVE != 0)
+                        .map(|r| names.intern(&r.module))
+                        .collect());
+                }
+            }
+        }
+        Ok(Vec::new())
+    }
+
     pub(crate) fn module_import(
         &mut self,
         set: SourceSetId,

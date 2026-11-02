@@ -73,10 +73,56 @@ p -> package p
 k -> local p/Switches.java:47
 seen -> local p/Switches.java:113
 seen -> local p/Switches.java:113
+Object -> type java/lang/Object class platform
+Object -> type java/lang/Object class platform
+Kind -> type p/Switches$Kind source p/Switches.java
+Kind.ONE -> field p/Switches$Kind.ONE
+Kind -> type p/Switches$Kind source p/Switches.java
+kind -> method p/Switches.kind()Lp/Switches$Kind;
+ONE -> b3 expression-type
+count -> method p/Switches.count(I)I
+LOW -> field p/Switches.LOW
+java.util.function.Supplier<Object> -> type java/util/function/Supplier class platform
+java.util.function -> package java.util.function
+java.util -> package java.util
+java -> package java
+Object -> type java/lang/Object class platform
+Made::new -> b3 method-of-expression
+Made -> type p/Switches$Made source p/Switches.java
+AutoCloseable -> type java/lang/AutoCloseable class platform
+Exception -> type java/lang/Exception class platform
+AutoCloseable -> type java/lang/AutoCloseable class platform
+first -> local p/Switches.java:905
+first -> local p/Switches.java:905
+second -> local p/Switches.java:953
+AutoCloseable -> type java/lang/AutoCloseable class platform
+second -> local p/Switches.java:953
+third.close -> b3 method-of-expression
+third -> local p/Switches.java:1011
 # type p/Switches source p/Switches.java
   superclass type java/lang/Object class platform
+  member Kind: type p/Switches$Kind source p/Switches.java
+  member Made: type p/Switches$Made source p/Switches.java
+  field ONE Ljava/lang/Object;
+  field LOW I
+  field Made Ljava/lang/Object;
   method count(I)I
+  method kind()Lp/Switches$Kind;
+  method labels()I
+  method constants()I
+  method made()Ljava/util/function/Supplier;
+  method resources(Ljava/lang/AutoCloseable;)V
   method Switches()V implicit
+# type p/Switches$Kind source p/Switches.java
+  superclass type java/lang/Enum class platform
+  field ONE Lp/Switches$Kind;
+  field TWO Lp/Switches$Kind;
+  method Kind()V implicit
+  method values()[Lp/Switches$Kind; implicit
+  method valueOf(Ljava/lang/String;)Lp/Switches$Kind; implicit
+# type p/Switches$Made source p/Switches.java
+  superclass type java/lang/Object class platform
+  method Made()V implicit
 == main p/Bounds.java
 p -> package p
 Enum<T> -> type java/lang/Enum class platform
