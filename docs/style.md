@@ -159,7 +159,8 @@ void m(@Nullable String name, final @Deprecated int count) {
 
 A `catch` parameter's annotations go on their own lines if one of them has arguments, which breaks
 the `catch (` as well, and otherwise stay on its line. A parameter that catches several types keeps
-them on its line either way (observed).
+them on the `(`'s line, and breaks after them when its types break (see
+[`try`, `catch`, `finally`](#try-catch-finally)) (observed).
 
 ```java
 } catch (
@@ -604,16 +605,12 @@ first at +4 from it. Before a union type, they stay on the `(`'s line, and the l
 after them when the alternatives break.
 
 ```java
-} catch (@SuppressWarnings("unused")
-    ReflectiveOperationException
-    | RuntimeExceptionWithALongName e) {
-}
-```
-
-```java
 } catch (
     @SuppressWarnings("unused")
     UnsupportedOperationException e) {
+} catch (@SuppressWarnings("unused")
+    ReflectiveOperationException
+    | RuntimeExceptionWithALongName e) {
 }
 try (@SuppressWarnings("unused")
     InputStream in = open()) {
