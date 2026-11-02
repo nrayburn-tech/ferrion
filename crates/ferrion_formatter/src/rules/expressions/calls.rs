@@ -75,6 +75,12 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     // Everything up to a `.stream()` is a group of its own, kept on the first line if it fits
     // there, and otherwise broken before each of its dots (observed).
     let stream = links.iter().position(|&l| is_stream(l));
+    if let Some(stream) = stream
+        && !dotted_root
+    {
+        undotted_stream(f, root, &links, stream);
+        return;
+    }
     // A chain's only call, with fields after it, is in the prefix, `a.b(x).c`, and breaks from
     // the root only if the line up to its `(` doesn't fit (observed). The group up to it ends
     // before its arguments, as the one up to a `.stream()` does.
@@ -134,6 +140,50 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             link_after_receiver(f, link, hugs);
         }
     }
+    indentation.end(f);
+    f.end();
+}
+
+/// A chain with a `.stream()` link `stream` on a root that breaks like a longer chain, such as
+/// `new Foo(x)` or `((Foo) x)`: the root, then the rest on the next line at +4 if it doesn't
+/// fit, as a group of its own, in which the links up to the `.stream()` are kept together and
+/// the links after it break at a further +4 (observed).
+fn undotted_stream<'t>(
+    f: &mut Formatter<'t>,
+    root: SyntaxNode<'t>,
+    links: &[SyntaxNode<'t>],
+    stream: usize,
+) {
+    f.start_group();
+    if root.kind() == K::NewExpr {
+        f.comments_before(root.first_token().id());
+        new_with(f, root, Hugs::None);
+    } else {
+        f.node(root);
+    }
+    let indentation = Indentation::start(f, IndentKind::Continuation);
+    f.soft_line();
+    f.start_group();
+    f.start_group();
+    for (i, &link) in links[..=stream].iter().enumerate() {
+        if i > 0 {
+            f.soft_line();
+        }
+        if i == stream {
+            let typed = link_name(f, link);
+            f.end();
+            link_arguments(f, link, typed, Hugs::ExpressionLambdas);
+        } else {
+            link_after_receiver(f, link, Hugs::ExpressionLambdas);
+        }
+    }
+    let rest = Indentation::start(f, IndentKind::Continuation);
+    for &link in &links[stream + 1..] {
+        f.soft_line();
+        link_after_receiver(f, link, Hugs::Lambdas);
+    }
+    rest.end(f);
+    f.end();
     indentation.end(f);
     f.end();
 }

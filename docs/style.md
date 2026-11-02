@@ -794,6 +794,22 @@ new Foo()
     .bar(argumentNumberOneAAAAAAAAAAA, argumentNumberTwoBBBBBBBBBBBBB, argumentNumberThreeCCCC);
 ```
 
+On such a root, a chain with a `.stream()` link puts what follows the root on the next line at
++4 when it doesn't fit, as a group of its own: on one line, or the links up to the `.stream()`
+on that line and the ones after it at a further +4.
+
+```java
+values =
+    ((Map<?, ?>) m0)
+        .entrySet().stream().flatMap(e -> Stream.of(e.getKey(), e.getValue())).toList();
+weight7 =
+    ((CompoundRule) kit.find("body", new StringReader("kotlin|20 version|3")))
+        .members().stream()
+            .map(CompoundEntry::scope)
+            .mapToDouble(WeightRule::getScale)
+            .sum();
+```
+
 The exception is a field after a type's name: when the dot before the field breaks, so does the
 one after it.
 
