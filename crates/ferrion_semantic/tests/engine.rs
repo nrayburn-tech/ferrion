@@ -351,6 +351,123 @@ fn the_tree_cache_keeps_to_its_budget() {
 }
 
 /// A splitmix64 stream, for choices that are random but repeat.
+/// Two packages whose bodies name each other's types and members.
+fn bodies() -> Engine {
+    Engine::new(project(&[
+        (
+            "a/Base.java",
+            "package a;\npublic class Base {\n    public int f;\n    public void m() {}\n}\n",
+        ),
+        (
+            "a/Use.java",
+            "package a;\nclass Use extends Base {\n    int g(int x) { m(); return x; }\n}\n",
+        ),
+        (
+            "b/Other.java",
+            "package b;\nclass Other {\n    int h(a.Base b) { return b.f; }\n}\n",
+        ),
+        (
+            "c/C.java",
+            "package c;\nclass C {\n    void n() { int y = 1; y++; }\n}\n",
+        ),
+    ]))
+}
+
+/// Every file's names, in declarations and bodies, as text.
+fn names_text(engine: &Engine) -> Vec<String> {
+    let snapshot = engine.snapshot();
+    snapshot
+        .files(MAIN)
+        .unwrap()
+        .iter()
+        .map(|&file| {
+            let text = snapshot.text(file).unwrap();
+            let names = snapshot.file_names(file).unwrap();
+            names
+                .names
+                .iter()
+                .map(|n| {
+                    let key = snapshot.symbol_key(&n.symbol).unwrap();
+                    format!("{} -> {key}\n", &text[n.start as usize..n.end as usize])
+                })
+                .collect()
+        })
+        .collect()
+}
+
+fn ask_for_bodies(engine: &Engine) -> Stats {
+    let before = engine.stats();
+    let snapshot = engine.snapshot();
+    for &file in snapshot.files(MAIN).unwrap().iter() {
+        snapshot.body_names(file).unwrap();
+    }
+    engine.stats() - before
+}
+
+#[test]
+fn a_body_edit_recomputes_its_own_body_names_only() {
+    let engine = bodies();
+    ask_for_bodies(&engine);
+    let c = file(&engine, 3);
+    engine.set_text(
+        c,
+        Arc::from("package c;\nclass C {\n    void n() { int y = 1; y++; y--; }\n}\n"),
+    );
+    let stats = ask_for_bodies(&engine);
+    assert_eq!(stats.body_names, computed(1, 0, 3));
+    assert_eq!(stats.type_entries.computed, 0);
+}
+
+#[test]
+fn body_names_follow_the_members_they_read() {
+    let engine = bodies();
+    ask_for_bodies(&engine);
+    let base = file(&engine, 0);
+    engine.set_text(
+        base,
+        Arc::from(
+            "package a;\npublic class Base {\n    public int f;\n    public void n() {}\n}\n",
+        ),
+    );
+    let stats = ask_for_bodies(&engine);
+    // `Base`'s own and the two bodies that read its entry are computed again; `C`'s isn't.
+    assert_eq!(stats.body_names, computed(3, 2, 1));
+    let fresh = Engine::new(project(&[
+        (
+            "a/Base.java",
+            "package a;\npublic class Base {\n    public int f;\n    public void n() {}\n}\n",
+        ),
+        (
+            "a/Use.java",
+            "package a;\nclass Use extends Base {\n    int g(int x) { m(); return x; }\n}\n",
+        ),
+        (
+            "b/Other.java",
+            "package b;\nclass Other {\n    int h(a.Base b) { return b.f; }\n}\n",
+        ),
+        (
+            "c/C.java",
+            "package c;\nclass C {\n    void n() { int y = 1; y++; }\n}\n",
+        ),
+    ]));
+    assert_eq!(names_text(&engine), names_text(&fresh));
+    assert!(names_text(&engine)[1].contains("m -> error"));
+}
+
+#[test]
+fn a_new_type_reaches_only_the_bodies_that_look_up_its_name() {
+    let engine = bodies();
+    ask_for_bodies(&engine);
+    let c = file(&engine, 3);
+    // A type `Base` in package `c` is looked up by no body but its own file's.
+    engine.set_text(
+        c,
+        Arc::from("package c;\nclass C {\n    void n() { int y = 1; y++; }\n}\nclass Base {}\n"),
+    );
+    let stats = ask_for_bodies(&engine);
+    assert_eq!(stats.body_names, computed(1, 1, 3));
+}
+
 fn random_bytes(seed: u64, len: usize) -> Vec<u8> {
     let mut state = seed;
     (0..len)
