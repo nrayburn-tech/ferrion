@@ -398,6 +398,93 @@ variable, annotation element, or a single-static import's member name) or an err
 `Snapshot::symbol_key` gives the key of semantic.md's table: the exchange with W3's oracle is left
 for integration.
 
+## Names in bodies
+
+Every name inside a body has a resolution too, per file and keyed by `NodeId` of its current tree
+(`ferrion_semantic::body`): in method, constructor, and initializer bodies, field initializers,
+lambdas, enum constants' arguments and bodies, annotation arguments (of declarations too, whose
+annotation names are the declaration's), annotation elements' defaults, and every local and
+anonymous class those declare, its header and members included. `Snapshot::body_names` gives
+them, and `Snapshot::file_names` the names of declarations and bodies together, in node order.
+
+- **The walk** is the tree's flat pre-order walk. Outside bodies it follows the summary's types
+  (it meets them in the summary's order) and their methods, for the type parameters' owners;
+  inside, it keeps an explicit stack of scopes, each opened by a node and closed when the walk
+  leaves it. A scope's declarations are bindings in maps by name, innermost last, so a lookup is
+  one map read however deep the scopes are: locals, parameters, exception and lambda parameters,
+  resources, and pattern bindings; local classes and the type parameters of local classes and of
+  the methods around; and the fields, member types, and methods of each local or anonymous class
+  around, declared and inherited, bound when its body is entered. What the bindings don't have,
+  the summary's class around the body and its outer classes answer, then the file's imports,
+  through the lookups of declarations (a scope in a body asks the body first, `BodyTypes`).
+- **Local scopes** (JLS 6.3, 6.4): a local is in scope from its declarator, its own initializer
+  included; an enhanced `for` variable in the body only, not its expression; a resource in the
+  rest of the resources and the `try` block, not in `catch` or `finally`; a local class from its
+  declaration, its own declaration included. A local shadows a field; a field of a local or
+  anonymous class shadows a local of the method around the class.
+- **Pattern bindings** (JLS 6.3.1, 6.3.2): what an expression introduces when true and when
+  false is worked out as the walk leaves it (`instanceof`, `!`, `&&`, `||`, parentheses), and
+  bound in the right operand of `&&` and `||`, the branches of `?:` and `if`, a `while` or `for`
+  body and update, a `case` label's guard and body (with the guard's when true), and after an
+  `if`, `while`, `for`, or `do` in a block where the rules introduce them. Whether a statement can
+  complete normally follows JLS 14.22 as far as the rules need: `return`, `throw`, `break`,
+  `continue`, and `yield`, blocks ending in one, `if`-`else` and `try` whose parts all can't, and
+  loops on `true` with no `break` (observation 10).
+- **Contexts** (JLS 6.5.1) come from the parent: the qualifier of a field access or a call, and of
+  `::`, is an ambiguous name; of `.class`, `.this`, and `.super` a type name, its own qualifiers
+  then package-or-type names; a name in a class type is a type name, and `var` there isn't one
+  (JLS 14.4). Ambiguous names are classified as each node is left (JLS 6.5.2): a variable, else
+  a type, else a package, so a variable obscures a type and a type a package (observation 11).
+  After a package, a type or a subpackage; after a type, a field, or a member type where a type
+  can be; after a variable, `this`, or `super`, a field of its class. A qualified name of more
+  than 1,024 segments is `Cause::TooLong` after them, as in declarations.
+- **Expression names** (JLS 6.5.6): the innermost local, or field of a local or anonymous class
+  around; then a field of the summary's classes around, declared or inherited, innermost first;
+  then a single-static import; then a static-import-on-demand, two different fields being
+  ambiguous. An inherited field wins over a single-static import (observation 12), and a
+  superclass's private field isn't inherited, even within one top-level class (observation 13).
+  A `case` label's simple name is an enum constant of the selector's type when it is an enum;
+  when the selector's type needs attribution, a name no variable has is left to B3.
+- **Fields and methods by name** are worked out once per body result for each type asked
+  about, its supertypes first, by a loop: declared ones, then the non-private ones each
+  supertype has (package-access ones only in the same package, an interface's static methods
+  never), a field inherited as two different fields being ambiguous. Every method of the name is
+  kept, overridden ones too, since choosing is B3's.
+- **Method names** (JLS 15.12.1): for `m()`, the innermost class around with a member method
+  `m`, declared or inherited, is the type to search, else the types the static imports of `m`
+  name; for `Q.m()`, `this.m()`, `Q::m`, and `this::m`, `Q`'s or this class's; for `super.m()`
+  and `Q.super.m()`, the superclass of this class or of `Q`, or for a superinterface `Q`, `Q`. The
+  name records the type and its candidates. A call on any other expression, and a constructor
+  reference, are B3's.
+- **Local and anonymous classes** get what a summary's types have, made the same way: a summary
+  of their declaration (`summary::local_type`, `summary::anonymous_type`), a type entry resolved
+  with `resolve::members_of` in the scope of their body, erased supertypes, and member types
+  declared and inherited, kept in the body result and keyed `TypeKey::Local` (the file and the
+  index in its result). An anonymous class extends its class, or implements its interface and
+  extends `Object`; an enum constant's body extends its enum. Member types of a local class are
+  registered before the walk reaches them, so a field's type can name them. A local record,
+  enum, or interface is static, but a local of the method around it is still found there:
+  javac finds it and reports an error rather than looking further (observation 14). A field
+  inherited by an anonymous class shadows the method's local of the name (observation 15).
+- **Keys:** a local is `local <file>:<offset of its name>`; a local or anonymous class is `type
+  local <file>:<offset>`, of its name, or of its `new` or enum constant's name for an anonymous
+  class, a member type of one included (javac's binary names for them have digits it chooses);
+  its members are keyed by that, `field local <file>:<offset>.f`. A field is `field <declaring
+  type>.f`, a method name with one candidate `method <type>.m<descriptor>`, and one with several
+  `methods <type searched>.m:` and its candidates' keys. A compact constructor's parameters are
+  its record's components, keyed at their names. How javac's positions are matched with these
+  is for the comparison's normalization (W6).
+- **Errors and B3:** a name that doesn't resolve is an error symbol as in declarations, and a
+  name qualified by one, or by a variable whose type didn't resolve, has the same error. A name
+  whose meaning needs types is `Symbol::LeftToB3` with a reason: a member of an expression whose
+  type needs attribution (a call's result, `var`, an implicitly typed lambda parameter, an array
+  element, a parenthesized or created value), of a type variable, or of an array, and the method
+  of a call on an expression.
+
+Labels aren't names javac gives elements for, so they aren't recorded; they are followed for the
+statements a `break` leaves. Not done: inherited members of a local class's member type named
+before the walk reaches that member's header resolve its declared members only.
+
 ## What B2 leaves to B3
 
 - the field in `e.f` where `e` is any expression but a resolved variable of a non-generic declared
@@ -409,6 +496,11 @@ for integration.
 
 The javac comparison in B2 covers B2's part only; the other names are recorded by the oracle from
 the start, and compared from B3.
+
+As built, `e.f` is looked up in `e`'s declared class type whether or not it was written with
+type arguments, since which field a name is doesn't depend on them; a field whose type is a type
+variable then leaves what follows it to B3. `this.m()` and `this::m` are searched in this class,
+like `super.m()`. The calls left to B3 are those on any other expression.
 
 ## Observations
 
@@ -480,3 +572,53 @@ case's files run through javac when written).
    java.util.function.Supplier<A.In> { ... static class In {} }` compiles.
 9. **Binary names with `$`.** A library with a top-level `p.A$B` (with a member `C`) and a `p.A`:
    `p.A$B ab; p.A$B.C c;` compiles, and `p.A.B b;` is `cannot find symbol`.
+
+Observations 10 to 15 were made for the names in bodies. Each case's files were written out per
+source set and compiled with `javac --release 27 -implicit:none -d out <files>` (dependency sets on
+`-sourcepath`), and which variable each use read was read from `javap -c -p` of the classes:
+`getfield`/`getstatic` and their owner for a field, a load of a local slot for a local.
+
+10. **Pattern bindings** (`body-patterns.case`). A class with a field `String s` and methods using
+    `s` after or inside each form: `if (!(o instanceof String s)) return; s.length();` reads the
+    binding; with a then-branch that completes normally, the field (`getfield s`); `o instanceof
+    String s && s.length() > 0` the binding in the right operand and the then-branch, the field
+    in the else-branch; `!(o instanceof String s) || s.isEmpty()` the binding after the `return`;
+    `!(o instanceof String s && s.isEmpty())` too; after `while (!(o instanceof String s))`, the
+    binding, and the field when the body has a `break`; `?:` the binding in the then-expression and
+    the field in the else; `for (; !(o instanceof String s); )` and `do ... while (!(o instanceof
+    String s))` the binding after; `if (o instanceof String s) {} else { return; }` the binding
+    after; one introduced in a nested block, the field after the block; `case String s when
+    s.length() > 1 -> s.length()` the binding, and `default -> s.length()` the field; a `case
+    String t:` group's statements the binding; a record pattern's `int x, String y` their
+    bindings. Every file compiles.
+11. **Obscuring in bodies** (`body-obscuring.case`). With a class `p.q` that has a static field `Z`
+    and a member `In`, and a package `q` with a class `Z`, `q.Z` in package `p` is `getstatic
+    p/q.Z` (the type obscures the package); `q.In.W` is `p/q$In.W`; a local `String Math` makes
+    `Math.length()` a call on the local and `java.lang.Math.abs(-1)` still `java/lang/Math.abs`;
+    with a local `String q`, `q.In in` and `q.In.class` are the type, since a type context looks
+    for types and packages only. Compiles.
+12. **A single-static import and an inherited field** (`body-fields.case`). `class Sub extends
+    p.Base` with `import static q.C.X;` and `import static q.C.*;`, where `Base` and `C` both have
+    a static `X` and a method `m`: `X` is `getstatic X` through `Sub`, `Base`'s, and `m()` is
+    `invokevirtual m` on `Sub`, `Base`'s, over `q.C.m` from the on-demand import; a name only
+    `C` and `D` have through on-demand imports is theirs, and `W`, which `C` has by a single-static
+    import and `D` on demand, is `q/C.W`. `this.count`, `super.count`, `Sub.this.count`, `b.count`,
+    and `b.next.count` read the fields of the types as declared. Compiles.
+13. **Private members aren't inherited** (`body-fields.case`, p/Outer.java). In `class Outer { int
+    x; static class A { private int x; } class B extends A { int f() { return x; } } }`, `x` is
+    `getfield p/Outer.x` through `this$0`, not `A`'s private `x`, though both are in one top-level
+    class. With `A` declaring a private `m()` and `Outer` an `m(int)`, a call `m()` in a subclass
+    of `A` is `method m in class Outer cannot be applied to given types`: the type searched is
+    `Outer`.
+14. **A local record and the method's local** (`body-types.case`, p/Records.java). In a method
+    with a local `int x` of a class with a static field `x`, a local record's method returning `x`,
+    and a local enum's, are both `non-static variable x cannot be referenced from a static
+    context`: javac finds the local, not the field.
+15. **Local and anonymous classes** (`body-types.case`). A local `class Member extends Base`
+    shadows the member type `Member` after its declaration (`new p/Types$1Member`) and not before
+    (`p/Types$Member.fromMember`); its body reads `Base`'s inherited field (`getfield inherited`);
+    a member type `List` shadows the import `java.util.List` in a body. In an anonymous `new
+    Base() { ... }` in a method with a local `inherited`, `inherited` is the inherited field
+    (`getfield inherited` in `p.Types$1`), and the method's other locals are captured (`val$value`,
+    `val$other`). A generic local class's field of the method's type variable `T`, and a local
+    class's member class used as `Outer.Inner`, compile.

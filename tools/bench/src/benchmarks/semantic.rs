@@ -69,8 +69,8 @@ fn edits(inputs: &Inputs) -> Result<Prepared> {
         Edit::Supertype,
     ]
     .into_iter()
-        .filter_map(|edit| apply(&original, edit).map(Arc::from))
-        .collect();
+    .filter_map(|edit| apply(&original, edit).map(Arc::from))
+    .collect();
     drop(snapshot);
     Ok(Prepared {
         input: format!("{description}; edits to {}", path.display()),
@@ -333,12 +333,15 @@ fn apply(text: &str, edit: Edit) -> Option<String> {
 fn rename_local(tree: &SyntaxTree, text: &str) -> Option<String> {
     let block = tree.nodes().find(|n| {
         n.kind() == SyntaxKind::Block
-            && n.parent().is_some_and(|p| p.kind() == SyntaxKind::MethodDecl)
-            && n.descendants().any(|d| d.kind() == SyntaxKind::LocalVarDecl)
+            && n.parent()
+                .is_some_and(|p| p.kind() == SyntaxKind::MethodDecl)
+            && n.descendants()
+                .any(|d| d.kind() == SyntaxKind::LocalVarDecl)
     })?;
     let declarator = block.descendants().find(|d| {
         d.kind() == SyntaxKind::VariableDeclarator
-            && d.parent().is_some_and(|p| p.kind() == SyntaxKind::LocalVarDecl)
+            && d.parent()
+                .is_some_and(|p| p.kind() == SyntaxKind::LocalVarDecl)
     })?;
     let name = declarator
         .direct_tokens()

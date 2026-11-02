@@ -1,6 +1,6 @@
 // Ambiguous names in bodies (JLS 6.5.2, 6.4.2): a variable obscures a type, and a type a
 // package, in a qualified name; in a type context only types and packages are looked for
-// (observation "obscuring"). javac compiles every file.
+// (observation 11 in semantic-names.md). javac compiles every file.
 //- set main 27
 //- file main p/q.java
 package p;

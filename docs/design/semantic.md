@@ -50,7 +50,8 @@ listings, and class files read as class entries), `view` (lookups by name, packa
 `symbols` (keys, resolved types, error symbols, and the entries' values), `resolve` (file scopes,
 the lookups, and the supertypes, member types, and type entries), `decl_names` (each file's names
 in declarations, and their keys for the javac comparison), and `testing` (a stand-in platform and
-resolution cases, for tests and the fuzz target). `body` is W5's.
+resolution cases, for tests and the fuzz target). `body`, built in W5, has each file's names in
+bodies, and the local and anonymous classes they declare, keyed `TypeKey::Local`.
 
 ```rust
 /// One per process. Holds the inputs and every memo table.
@@ -104,9 +105,13 @@ impl Snapshot {
     pub fn decl_names(&self, file: FileId) -> Result<Arc<FileNames>, Cancelled>;
     pub fn symbol_key(&self, symbol: &Symbol) -> Result<SymbolKey, Cancelled>;
 
-    // W5:
-    /// Every name in the file resolved, keyed by `NodeId` of `tree`.
-    pub fn names(&self, file: FileId) -> Result<Arc<FileNames>, Cancelled>;
+    // Built in W5 (`names` as planned is `file_names`, since `Snapshot::names` gives the
+    // interner):
+    /// Every name in the file's bodies resolved, keyed by `NodeId` of its tree, with the local
+    /// and anonymous classes they declare.
+    pub fn body_names(&self, file: FileId) -> Result<Arc<BodyNames>, Cancelled>;
+    /// Every name in the file, in declarations and bodies, keyed by `NodeId` of its tree.
+    pub fn file_names(&self, file: FileId) -> Result<Arc<FileNames>, Cancelled>;
 }
 ```
 
