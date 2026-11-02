@@ -25,6 +25,11 @@ const EXPECTED: &str = ".formatted.java";
 /// `.java`, with the reason.
 const NOT_GJF: &[(&str, &str)] = &[
     (
+        "core/comments-doc-text",
+        "a comment's text doesn't change: GJF adds a star to a doc comment's lines without one \
+         (docs/style.md)",
+    ),
+    (
         "core/copied-text",
         "a text block's content isn't re-indented (docs/style.md)",
     ),

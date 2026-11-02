@@ -283,8 +283,10 @@ impl Printer<'_> {
     /// starts at (docs/design/formatter.md, "Copied text"). If every later line starts with `*`,
     /// the stars go one column after the `/`. Otherwise each later line moves by the amount that
     /// puts the least indented of them at the comment's column, keeping their indentation
-    /// relative to each other. Trailing whitespace is removed, and lines of only whitespace are
-    /// left empty.
+    /// relative to each other. A doc comment, which GJF rewrites with a star on every line, puts
+    /// the stars it has one column after the `/` too, and moves its other lines by the amount that
+    /// puts the least indented star there. Trailing whitespace is removed, and lines of only
+    /// whitespace are left empty and don't count as the least indented.
     fn comment(&mut self, text: &str) {
         self.start_text(text, None);
         let column = self.column;
@@ -294,32 +296,35 @@ impl Printer<'_> {
         self.out.extend_from_slice(first.as_bytes());
         self.column += width(first);
         let later = lines;
-        let starred = later.clone().all(|line| trim_start(line).starts_with('*'));
-        // In characters of leading whitespace.
-        let least = if starred {
-            0
+        let is_starred = |line: &str| trim_start(line).starts_with('*');
+        let is_blank = |line: &str| trim_start(line).is_empty();
+        let doc = text.starts_with("/**");
+        // Whether the lines that start with `*` have their stars aligned.
+        let align_stars = later.clone().all(is_starred) || doc && later.clone().any(is_starred);
+        // The other lines move from `from` characters of leading whitespace to `to` columns.
+        let (from, to) = if align_stars {
+            let stars = later.clone().filter(|&line| is_starred(line));
+            (stars.map(leading_whitespace).min().unwrap_or(0), column + 1)
         } else {
-            later
-                .clone()
-                .filter(|line| !trim_start(line).is_empty())
-                .map(leading_whitespace)
-                .min()
-                .unwrap_or(0)
+            let least = later.clone().filter(|&line| !is_blank(line));
+            (least.map(leading_whitespace).min().unwrap_or(0), column)
         };
         for line in later {
             self.out.extend_from_slice(ending);
-            let rest = if starred {
-                trim_start(line)
+            let (pad, rest) = if align_stars && is_starred(line) {
+                (column + 1, trim_start(line))
             } else {
-                let skip: usize = line.chars().take(least).map(char::len_utf8).sum();
-                &line[skip..]
+                // Whitespace past `from` stays as written, so tabs keep their place.
+                let skip = leading_whitespace(line).min(from);
+                let bytes: usize = line.chars().take(skip).map(char::len_utf8).sum();
+                let pad = (u64::from(to) + skip as u64).saturating_sub(from as u64);
+                (u32::try_from(pad).unwrap_or(u32::MAX), &line[bytes..])
             };
             let rest = trim_end(rest);
             if rest.is_empty() {
                 self.column = 0;
                 continue;
             }
-            let pad = if starred { column + 1 } else { column };
             self.out.resize(self.out.len() + pad as usize, b' ');
             self.out.extend_from_slice(rest.as_bytes());
             self.column = pad + width(rest);
