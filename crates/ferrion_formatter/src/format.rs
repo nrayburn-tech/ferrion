@@ -10,8 +10,8 @@
 //!   comment's own line breaks in the input, merged with what the rules ask for (see
 //!   [`Formatter::comment`]).
 //! - **Order:** debug builds assert that tokens are emitted in source order, each once, and that
-//!   no token other than trivia is skipped. Modifier reordering is the one exception, through
-//!   [`Formatter::reordered_run`].
+//!   no token other than trivia is skipped. Modifier reordering and the import section are the
+//!   exceptions, through [`Formatter::reordered_run`] and [`Formatter::rewritten_imports`].
 //! - **Disable regions:** at a region's `off` comment it emits the region's text as written, and
 //!   until the region's `on` comment, tokens, comments, and whitespace emit nothing.
 
@@ -19,6 +19,7 @@ use ferrion_syntax::comments::{Comment, CommentMap, Element as CommentElement, P
 use ferrion_syntax::{SyntaxKind, SyntaxNode, SyntaxToken, SyntaxTree, TokenId};
 
 use crate::document::{Document, DocumentBuilder, IndentKind, Verbatim, VerbatimKind, width};
+use crate::imports;
 use crate::printer::{Lines, trim_end};
 use crate::regions::{self, Region};
 use crate::rules;
@@ -134,6 +135,66 @@ impl<'t> Formatter<'t> {
         }
         self.last_token = Some(last);
         self.trailing_comments(last);
+    }
+
+    /// The import plan for the compilation unit's import section, `imports`
+    /// (docs/design/formatter-completeness.md, "Imports"), or `None` when the section is emitted
+    /// as written: nothing to change, or pinned by a disable region or a directive.
+    pub fn plan_imports(&self, imports: &[SyntaxNode<'t>]) -> Option<imports::Rewrite<'t>> {
+        imports::plan(self.tree, &self.comments, &self.regions, imports)
+    }
+
+    /// Emits a rewritten import section from its plan, out of the input's order, as
+    /// [`Formatter::reordered_run`] emits a modifier run: one [`Formatter::start_rewrite`] over
+    /// the section, then `emit` lays it out with [`SectionWriter`]'s comments and imports, then
+    /// the token and comment cursors move past the whole section. Debug builds check that each
+    /// kept import is emitted once, no removed one is, and each comment of the section once.
+    pub fn rewritten_imports(
+        &mut self,
+        plan: &imports::Rewrite<'t>,
+        emit: impl FnOnce(&mut SectionWriter<'_, 't>),
+    ) {
+        debug_assert!(
+            self.in_region.is_none(),
+            "an import section rewritten in a region"
+        );
+        self.start_rewrite(plan.first, plan.last);
+        let mut writer = SectionWriter {
+            f: self,
+            imports: Vec::new(),
+            comments: Vec::new(),
+        };
+        emit(&mut writer);
+        let SectionWriter {
+            mut imports,
+            mut comments,
+            ..
+        } = writer;
+        self.doc.end();
+        if cfg!(debug_assertions) {
+            imports.sort();
+            let removed: Vec<TokenId> = plan.removed.iter().map(|n| n.first_token().id()).collect();
+            assert!(
+                imports.windows(2).all(|w| w[0] != w[1]),
+                "an import was emitted twice"
+            );
+            assert!(
+                imports.iter().all(|i| !removed.contains(i)),
+                "a removed import was emitted"
+            );
+            assert_eq!(
+                imports.len() + removed.len(),
+                plan.imports,
+                "a kept import wasn't emitted"
+            );
+            comments.sort_unstable();
+            assert!(
+                comments.iter().copied().eq(plan.comments.clone()),
+                "the section's comments weren't each emitted once"
+            );
+        }
+        self.last_token = Some(plan.last_code);
+        self.next_comment = plan.comments.end;
     }
 
     /// Starts a rewrite of the input's tokens from `first` to `last`, which the rule then emits in
@@ -616,6 +677,59 @@ impl<'t> Formatter<'t> {
             _ => self.doc().token(token.id(), text.len() as u32, width(text)),
         }
         self.comment_break = false;
+    }
+}
+
+/// What a rule lays out a rewritten import section with, in [`Formatter::rewritten_imports`]:
+/// the section's comments and imports in any order, each once, and the line breaks between them.
+pub struct SectionWriter<'f, 't> {
+    f: &'f mut Formatter<'t>,
+    /// The first token of each import emitted, for the debug checks.
+    imports: Vec<TokenId>,
+    /// The index of each comment emitted, for the debug checks.
+    comments: Vec<usize>,
+}
+
+impl<'t> SectionWriter<'_, 't> {
+    /// Emits the comment at `index` in the comment map as the comment rules place it, but with
+    /// `before` and `after` line breaks around it (0 for a space, 1, or 2 for a blank line)
+    /// instead of the input's, since its neighbors are new.
+    pub fn comment(&mut self, index: usize, before: u32, after: u32) {
+        let comment = Comment {
+            placement: Placement::Leading,
+            line_breaks_before: before,
+            line_breaks_after: after,
+            ..self.f.comments.comments()[index]
+        };
+        self.comments.push(index);
+        self.f.comment(comment);
+    }
+
+    /// Emits `import` with its rule, with the comments inside it and those trailing it, which the
+    /// token helper places as it would in place.
+    pub fn import(&mut self, import: SyntaxNode<'t>) {
+        let first = import.first_token();
+        self.f.last_token = first.prev_non_trivia().map(|t| t.id());
+        let start = self
+            .f
+            .comments
+            .comments()
+            .partition_point(|c| c.token < first.id());
+        self.f.next_comment = start;
+        self.f.node(import);
+        self.imports.push(first.id());
+        self.comments.extend(start..self.f.next_comment);
+    }
+
+    /// A line break between two imports of a group: never a blank line, even one owed to a
+    /// comment.
+    pub fn line_break(&mut self) {
+        self.f.no_blank_line();
+        self.f.hard_line();
+    }
+
+    pub fn blank_line(&mut self) {
+        self.f.blank_line();
     }
 }
 

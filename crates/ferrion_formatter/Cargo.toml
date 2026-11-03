@@ -8,7 +8,12 @@ publish.workspace = true
 
 [dependencies]
 ferrion_diagnostics.workspace = true
+# For the references in doc comments that count as uses of imports
+# (docs/design/formatter-completeness.md, "Removal").
+ferrion_doc_comments.workspace = true
 ferrion_java_version.workspace = true
+# For names with Unicode escapes translated, as imports compare them.
+ferrion_lexer.workspace = true
 # For `format` and `verify`, which parse around the tree-based core (docs/design/formatter.md,
 # "The crate").
 ferrion_parser.workspace = true

@@ -135,20 +135,90 @@ fn text_blocks_compare_apart_from_line_terminators() {
 }
 
 #[test]
-fn imports_are_compared_apart_from_the_rest() {
-    let input = "import b.B;\nimport a.A;\n\nclass C {}\n";
-    check(input, input).unwrap();
-    // Until A2's import rewrites, imports must come out as they went in.
-    let violation = check(input, "import a.A;\nimport b.B;\n\nclass C {}\n").unwrap_err();
+fn imports_compare_as_a_set() {
+    let input = "import b.B;\nimport a.A;\n\nclass C {\n  A a;\n  B b;\n}\n";
+    check(
+        input,
+        "import a.A;\nimport b.B;\n\nclass C {\n  A a;\n  B b;\n}\n",
+    )
+    .unwrap();
+    // An import that isn't the input's.
+    let violation = check(
+        input,
+        "import a.A;\nimport c.B;\n\nclass C {\n  A a;\n  B b;\n}\n",
+    )
+    .unwrap_err();
     assert_eq!(violation.property, Property::Equivalence);
-    assert!(violation.message.starts_with("import 0"), "{violation}");
-    assert_eq!(
-        property(input, "import b.B;\n\nclass C {}\n"),
-        Property::Equivalence
-    );
+    assert!(violation.message.starts_with("import c.B;"), "{violation}");
     // The rest of the tree is still compared, with its node indices past the imports.
     assert_eq!(
-        property(input, "import b.B;\nimport a.A;\n\nclass D {}\n"),
+        property(
+            input,
+            "import a.A;\nimport b.B;\n\nclass D {\n  A a;\n  B b;\n}\n"
+        ),
         Property::Equivalence
     );
+}
+
+#[test]
+fn a_wrong_removal_fails() {
+    // `B` is used, so removing its import breaks the program.
+    let violation = check(
+        "import a.A;\nimport b.B;\n\nclass C {\n  B b;\n}\n",
+        "class C {\n  B b;\n}\n",
+    )
+    .unwrap_err();
+    assert_eq!(violation.property, Property::Equivalence);
+    assert!(
+        violation.message.contains("import b.B; was removed"),
+        "{violation}"
+    );
+    // So is removing one named in any doc comment, or one on demand.
+    assert_eq!(
+        property(
+            "import b.B;\n\n/** See {@link B}. */\nclass C {}\n",
+            "/** See {@link B}. */\nclass C {}\n"
+        ),
+        Property::Equivalence
+    );
+    assert_eq!(
+        property("import b.*;\n\nclass C {}\n", "class C {}\n"),
+        Property::Equivalence
+    );
+    // Unused, duplicate, and own-package imports may go.
+    check(
+        "package p;\n\nimport a.A;\nimport b.B;\nimport b.B;\nimport p.D;\n\nclass C {\n  B b;\n  D d;\n}\n",
+        "package p;\n\nimport b.B;\n\nclass C {\n  B b;\n  D d;\n}\n",
+    )
+    .unwrap();
+}
+
+#[test]
+fn a_lost_or_moved_import_comment_fails() {
+    let input = "import b.B; // why B\nimport a.A;\n\nclass C {\n  A a;\n  B b;\n}\n";
+    check(
+        input,
+        "import a.A;\nimport b.B; // why B\n\nclass C {\n  A a;\n  B b;\n}\n",
+    )
+    .unwrap();
+    let lost = check(
+        input,
+        "import a.A;\nimport b.B;\n\nclass C {\n  A a;\n  B b;\n}\n",
+    )
+    .unwrap_err();
+    assert_eq!(lost.property, Property::Comments);
+    // Left behind with the other import.
+    let moved = check(
+        input,
+        "import a.A; // why B\nimport b.B;\n\nclass C {\n  A a;\n  B b;\n}\n",
+    )
+    .unwrap_err();
+    assert_eq!(moved.property, Property::Comments);
+    assert!(moved.message.contains("aren't with it"), "{moved}");
+    // A comment of no import may go to the top.
+    check(
+        "import b.B;\n\n// header\n\nimport a.A;\n\nclass C {\n  A a;\n  B b;\n}\n",
+        "// header\n\nimport a.A;\nimport b.B;\n\nclass C {\n  A a;\n  B b;\n}\n",
+    )
+    .unwrap();
 }
