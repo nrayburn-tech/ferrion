@@ -258,7 +258,8 @@ impl Snapshot {
     /// class's origin.
     fn class_source_text(&self, source: ClassSourceId, binary: &str) -> String {
         match self.shared().classes.source(source) {
-            ClassSource::Platform(platform) => match platform.patched_from(&ClassName::new(binary)) {
+            ClassSource::Platform(platform) => match platform.patched_from(&ClassName::new(binary))
+            {
                 Some(path) => format!("class {}", path.display()),
                 None => "class platform".to_owned(),
             },
