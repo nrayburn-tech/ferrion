@@ -17,7 +17,7 @@ use crate::printer::{Lines, trim_end};
 use crate::regions;
 use crate::{FormatOptions, Formatted, format_tree, modifiers};
 
-mod doc_comments;
+pub(crate) mod doc_comments;
 mod imports;
 
 /// A safety property.
@@ -327,16 +327,16 @@ fn comments(before: &SyntaxTree, after: &SyntaxTree, bom: usize) -> Result<(), V
             let text = if t.kind() == SyntaxKind::DocComment && !in_region {
                 doc_comments::normalize(t.text())
             } else {
-                normalize_comment(
+                doc_comments::Compared::text(normalize_comment(
                     t.text(),
                     input && !in_region && t.kind() == SyntaxKind::LineComment,
-                )
+                ))
             };
             if section.contains(&t.id().index()) {
                 in_section.push(imports::SectionComment {
                     token: t.id(),
                     kind: t.kind(),
-                    text,
+                    text: text.key(),
                     start: t.span().start as usize,
                 });
             } else {
@@ -346,13 +346,12 @@ fn comments(before: &SyntaxTree, after: &SyntaxTree, bom: usize) -> Result<(), V
         (rest, in_section)
     };
     let ((a, a_section), (b, b_section)) = (list(before, true), list(after, false));
-    let strip = |list: &[(SyntaxKind, String, usize)]| -> Vec<(SyntaxKind, String)> {
-        list.iter().map(|(k, t, _)| (*k, t.clone())).collect()
-    };
     if let Some(i) = first_difference(&strip(&a), &strip(&b)) {
-        let describe = |list: &[(SyntaxKind, String, usize)]| {
+        let describe = |list: &[(SyntaxKind, doc_comments::Compared, usize)]| {
             list.get(i)
-                .map_or("nothing".to_owned(), |(_, text, _)| format!("{text:?}"))
+                .map_or("nothing".to_owned(), |(_, compared, _)| {
+                    format!("{:?}", compared.text)
+                })
         };
         return Err(violation(
             Property::Comments,
@@ -382,6 +381,13 @@ fn normalize_comment(text: &str, add_space: bool) -> String {
         normalized.push_str(trim_end(line).trim_start_matches([' ', '\t', '\x0c']));
     }
     normalized
+}
+
+/// The comments of a list, as the check compares them: by kind and normalized text.
+fn strip(
+    list: &[(SyntaxKind, doc_comments::Compared, usize)],
+) -> Vec<(SyntaxKind, &doc_comments::Compared)> {
+    list.iter().map(|(k, t, _)| (*k, t)).collect()
 }
 
 fn first_difference<T: PartialEq>(a: &[T], b: &[T]) -> Option<usize> {
