@@ -6,7 +6,8 @@
 //! input and its output. Every piece of text in the output is a token of the input, copied from
 //! the source; the formatter writes only whitespace of its own, and reorders tokens only to put
 //! modifiers in order. [`format_edits`] gives the same output as edits of the input
-//! (docs/design/formatter-completeness.md, "Edits").
+//! (docs/design/formatter-completeness.md, "Edits"), and [`format_range`] the edits that format
+//! part of a file, which may have syntax errors elsewhere ("Ranges").
 
 mod doc_comments;
 mod document;
@@ -17,6 +18,7 @@ mod imports;
 pub mod invariants;
 mod modifiers;
 mod printer;
+mod range;
 mod regions;
 mod rules;
 mod verify;
@@ -28,6 +30,7 @@ use ferrion_parser::{ParseDiagnostic, ParseOptions, Severity, parse};
 use ferrion_syntax::SyntaxTree;
 
 pub use edits::{Edit, apply_edits};
+pub use range::{RangeError, format_range};
 pub use verify::{Property, Violation, verify, verify_parsed};
 
 /// How to format a file. There are no style options.
