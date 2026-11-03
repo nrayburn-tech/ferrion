@@ -13,9 +13,9 @@
 # unchanged, before the formatter, gave 1,747,623, most of lucene's in a few generated files.
 
 [jedis]
-compared = 1077
-identical = 1038
-differing-lines = 321
+compared = 1060
+identical = 1013
+differing-lines = 296
 
 [guava]
 compared = 1531
@@ -23,8 +23,8 @@ identical = 1520
 differing-lines = 71
 
 [caffeine]
-compared = 708
-identical = 678
+compared = 707
+identical = 677
 differing-lines = 488
 
 [spring-data-jpa]
