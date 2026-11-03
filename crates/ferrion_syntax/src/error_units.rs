@@ -74,7 +74,12 @@ impl SyntaxTree {
 /// lexer couldn't make a token of, doesn't make itself a unit.
 fn reported_for_error_children(list: SyntaxNode<'_>) -> bool {
     let closed = match list.kind() {
-        K::Block | K::ClassBody => list.last_token().kind() == K::RBrace,
+        // Its own `}`, not one ending its last statement.
+        K::Block | K::ClassBody => list
+            .children_with_tokens()
+            .last()
+            .and_then(|last| last.as_token())
+            .is_some_and(|t| t.kind() == K::RBrace),
         K::SwitchGroup | K::CompilationUnit => true,
         _ => return false,
     };
