@@ -155,12 +155,13 @@ pub fn run(options: Options) -> Result<bool> {
     for project in &selected {
         let sets = plan::source_sets(&dirs, project)?;
         let jdk = corpus::model::lock_jdk(&dirs, project)?;
-        if !jdks.contains_key(&jdk) {
-            let home = corpus::jdks::find(jdk)
-                .with_context(|| format!("{}'s lock names JDK {jdk}", project.name))?;
-            jdks.insert(jdk, home);
-        }
-        project_jdks.insert(project.name.clone(), jdks[&jdk].clone());
+        let home = match jdks.get(&jdk) {
+            Some(home) => home.clone(),
+            None => corpus::jdks::find(jdk)
+                .with_context(|| format!("{}'s lock names JDK {jdk}", project.name))?,
+        };
+        jdks.insert(jdk, home.clone());
+        project_jdks.insert(project.name.clone(), home);
         if let Some(newest) = sets.iter().map(|s| s.release).max()
             && newest > jdk
         {
