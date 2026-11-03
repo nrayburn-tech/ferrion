@@ -8,8 +8,10 @@
 #
 # then the entries that show them, by the file as reports name it (its project, then its path),
 # the aspect (expression, constant, call, or variable), and javac's range in UTF-16 offsets (a
-# variable's offset twice):
+# variable's offset twice), or for a relation query the source set as reports name it, `relation`,
+# and the query's index twice:
 #
 #   <category> <file> <aspect> <start>-<end>
 #
-# None yet: Ferrion's side of the comparison comes with B3's attribution.
+# None: B3a's relation queries have no known differences (docs/design/types-oracle-normalization.md,
+# "Known differences"); B3b's attribution adds the first.

@@ -261,8 +261,9 @@ jobs:
         run: cargo oracle names --replay jedis
         env:
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
-      # javac's side alone until B3's attribution exists: about 15 seconds for the same project.
-      - name: Compare type attribution with javac
-        run: cargo oracle types --javac-only jedis
+      # The relation queries (B3a), with Ferrion's side, for the same project: about 15 seconds,
+      # nearly all of it javac's. Attribution's entries are counted, and compared from B3b.
+      - name: Compare type relations with javac
+        run: cargo oracle types --relations jedis
         env:
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle

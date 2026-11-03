@@ -346,10 +346,11 @@ jobs:
         run: cargo corpus generate
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
-      # javac's side alone until B3's attribution exists: every source set compiles, and the
-      # report gives the entries, the relation queries, and javac's analysis time per file.
-      - name: Compare type attribution with javac
-        run: cargo oracle types --javac-only --jobs 2 --heap 5g --json types-report.json
+      # The relation queries (B3a), with Ferrion's side: every source set compiles, and the report
+      # gives the entries, the relation queries, and javac's analysis time per file. Attribution's
+      # entries are compared from B3b.
+      - name: Compare type relations with javac
+        run: cargo oracle types --relations --jobs 2 --heap 5g --json types-report.json
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
