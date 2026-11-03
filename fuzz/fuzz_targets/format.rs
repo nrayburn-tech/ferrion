@@ -1,6 +1,7 @@
 //! Reads arbitrary bytes as a source file, parses it at a few releases, and wherever it parses
 //! without errors, formats it and checks the four safety properties, and that the edits give the
-//! same output.
+//! same output. At every release, errors or not, it also formats a range picked from the bytes and
+//! checks it with `verify_range`.
 
 #![no_main]
 

@@ -15,7 +15,7 @@ use super::{
     Property, Violation, doc_comments, equivalence, first_difference, has_errors, imports,
     normalize_comment, violation,
 };
-use crate::range::{Expanded, expand};
+use crate::range::{Expanded, Ranges};
 use crate::{Edit, FormatOptions, apply_edits, format_range, regions};
 
 /// Checks `edits`, which [`crate::format_range`] gave for `range` of `input` at
@@ -37,8 +37,7 @@ pub fn verify_range(
     };
     let before = parse(Arc::from(input.text()), parse_options);
     let text = input.text();
-    let comments = CommentMap::new(&before.tree);
-    let expanded = expand(&before.tree, &comments, range.clone());
+    let expanded = Ranges::new(&before.tree, input).expand(range.clone());
     let bom = if input.has_bom() { 3 } else { 0 };
     let mut at = 0;
     for edit in edits {

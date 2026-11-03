@@ -13,9 +13,10 @@ fn tree(text: &str) -> SyntaxTree {
 /// before and after them.
 fn expanded(text: &str, needle: &str) -> Option<(String, String, String)> {
     let tree = tree(text);
+    let source = SourceText::decode(text).unwrap();
     let start = text.find(needle).unwrap() as u32;
     let range = start..start + needle.len() as u32;
-    let e = expand(&tree, &CommentMap::new(&tree), range)?;
+    let e = Ranges::new(&tree, &source).expand(range)?;
     let part = |r: Range<u32>| text[r.start as usize..r.end as usize].to_owned();
     Some((
         part(e.before..e.units.start),

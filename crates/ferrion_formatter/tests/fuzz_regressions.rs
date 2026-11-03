@@ -1,7 +1,8 @@
 //! Runs every reduced failure of the `format` fuzz target in `tests/fuzz-regressions/`, and every
 //! source file the parser's tests use, through the fuzz target's checks: at each release where the
-//! input parses without errors, the four safety properties hold. The `javadoc` target's reflow
-//! failures in `tests/javadoc-regressions/` go through its reflow check.
+//! input parses without errors, the four safety properties hold, and at every release, errors or
+//! not, a range picked from the input formats as `verify_range` checks. The `javadoc` target's
+//! reflow failures in `tests/javadoc-regressions/` go through its reflow check.
 
 use std::fs;
 use std::panic;
