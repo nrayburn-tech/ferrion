@@ -71,6 +71,8 @@ checks:
                 options: `names --help`)
   types         compare type attribution with javac's, source set by source set (its own
                 options: `types --help`)
+  attribute     attribute every file without javac, and report panics, fuel, time, and arena
+                sizes (its own options: `attribute --help`)
 
 options:
   --release <N>        compare every file at release N (repeatable); by default, each file is
@@ -144,7 +146,7 @@ fn parse_args(args: impl Iterator<Item = String>) -> Options {
     let mut args = args.peekable();
     if args
         .peek()
-        .is_some_and(|a| a == "classfile" || a == "names" || a == "types")
+        .is_some_and(|a| a == "classfile" || a == "names" || a == "types" || a == "attribute")
     {
         let check = args.next().unwrap_or_default();
         return Options {
@@ -269,6 +271,20 @@ fn run() -> Result<bool> {
                 return Ok(true);
             }
             types::run(types::parse_args(options.classfile.into_iter(), usage))
+        }
+        "attribute" => {
+            let usage = |message: &str| -> ! {
+                eprintln!("oracle attribute: {message}\n\n{}", types::attribute::USAGE);
+                std::process::exit(2);
+            };
+            if options.classfile.iter().any(|a| a == "-h" || a == "--help") {
+                println!("{}", types::attribute::USAGE);
+                return Ok(true);
+            }
+            types::attribute::run(types::attribute::parse_args(
+                options.classfile.into_iter(),
+                usage,
+            ))
         }
         "tokens" => run_check(&tokens::Tokens, &options),
         "syntax" => run_check(&syntax::Syntax(ferrion::Ferrion), &options),
