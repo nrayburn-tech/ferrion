@@ -14,7 +14,7 @@ components add their benchmarks to the same harness.
 3. **Regressions are judged by counts that repeat exactly:** callgrind's instruction count and the
    heap counts. Times and RSS are measured and reported, but don't fail a check.
 4. **CI runs the pull request's base and head in the same job**, on the same inputs, and compares
-   them. No baseline is committed.
+   them. No baseline is committed. It runs only the benchmarks the change can affect.
 5. **Inputs come from the corpus and a JDK**, as the other tools' do. Nothing a benchmark reads is
    committed.
 
@@ -66,7 +66,11 @@ passed, at least 5 of them.
 
 Instructions are counted with `--callgrind`: the benchmark's process runs under valgrind with
 collection off except inside the one function that runs the measured iteration
-(`--toggle-collect`), so setup and warm-up aren't counted. The profiles are kept in
+(`--toggle-collect`), so setup and warm-up aren't counted. Counting starts once every benchmark is
+timed, and runs as many benchmarks under valgrind at once as there are CPUs (`--jobs`): timing needs
+the machine to itself, but the counts don't depend on its load. Valgrind runs a process many times
+slower, setup and warm-up included, so counting takes most of a run; in parallel, it takes about
+as long as the slowest benchmark's count. The profiles are kept in
 `target/release/bench-callgrind/`, for `callgrind_annotate` to show where a change went. Valgrind
 runs on Linux (and on Intel Macs, but not Apple silicon), so locally this needs Linux or a Linux
 container.
@@ -97,11 +101,15 @@ valgrind invocation.
 
 The `bench` job in `ci.yml` runs on pull requests:
 
-1. fetches and checks out jedis, and installs JDK 27 and valgrind;
-2. runs `cargo benchmark run --callgrind --no-skip` on the head (the merge commit);
-3. checks out the base commit in a worktree and runs the base's harness the same way, in the same
-   target directory;
-4. runs the head's `cargo benchmark compare --markdown` and adds the table to the job summary.
+1. runs `cargo benchmark affected` with the base commit, which prints the components whose
+   benchmarks the change can affect (below); when there are none, the job ends there and says so
+   in its summary;
+2. fetches and checks out jedis, and installs JDK 27 and valgrind;
+3. runs `cargo benchmark run --callgrind --no-skip` on the head (the merge commit), for those
+   components;
+4. checks out the base commit in a worktree and runs the base's harness the same way, in the same
+   target directory, for those of the components it has benchmarks for;
+5. runs the head's `cargo benchmark compare --markdown` and adds the table to the job summary.
 
 A metric that grows past its threshold in `tools/bench/thresholds.toml` fails the job. A
 regression that's intended (a feature that costs time) is accepted in review: say why in the pull
@@ -109,9 +117,35 @@ request. Thresholds come from the head, so a change to them shows in the diff.
 
 When the base has no harness yet, the comparison is skipped.
 
+### Which benchmarks run
+
+A benchmark measures one component's crate, so a change to code that crate isn't built from can't
+change what it measures. `benchmark affected` compares the working tree with a commit, and reads
+which packages the harness is built from out of `cargo tree` (normal and build dependencies, with
+features resolved as building only the harness resolves them). Then:
+
+- a file in one of those packages runs the benchmarks of every component built from it, so a change
+  to `ferrion_diagnostics` runs every component's but class file reading's. A package no component
+  is built from (the harness itself, and `corpus`, which chooses the inputs) runs every benchmark.
+  Files under a package's `tests`, `benches`, and `examples` don't count: only test targets are
+  built from them. Test modules in `src` do count, since nothing tells them apart from the rest.
+- a dependency that the base's `Cargo.lock` doesn't lock at the same version, and an entry of the
+  root manifest's `[workspace.dependencies]` that changed, count as that package. Comparing the
+  dependencies the harness is built from, rather than the files, keeps a lock file change for a
+  crate the harness doesn't use from running anything.
+- `rust-toolchain.toml`, `.cargo/config.toml`, `ci.yml` (where the job is defined), and the rest
+  of the root manifest, such as its profiles, run every benchmark. The workspace's members and
+  lints don't change what's built.
+- anything else runs nothing: documentation, the other tools, and the crates the harness isn't built
+  from, such as the CLI's and the configuration's.
+
+Each component's crate is listed in `affected.rs`, and a test checks that every benchmark's
+component is there.
+
 ## Adding a component
 
-Add a module to `tools/bench/src/benchmarks/` with its benchmarks and list them in `all()`. A
+Add a module to `tools/bench/src/benchmarks/` with its benchmarks and list them in `all()`, and
+add the component and the crate it measures to `COMPONENTS` in `affected.rs`. A
 benchmark's setup reads and prepares its input, outside the measurement, and returns a closure that
 runs one iteration; results go through `black_box`. Keep an iteration between a millisecond and a
 second, so timing gets enough iterations and callgrind finishes in a reasonable time. A new
