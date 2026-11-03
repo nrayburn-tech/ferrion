@@ -385,7 +385,10 @@ this section first left open, and corrected two, marked):
 - **The range becomes tokens:** a range that touches no token (a blank line, indentation, the
   space inside `int  a`) changes nothing. A comment counts with the code it is placed with: a
   comment trailing code on its line (`a(); // c`) with that code, any other with the code after it
-  (corrected: not always the token after).
+  (corrected: not always the token after). A comment on the last line of a unit is formatted with
+  it, even one before more code on that line: with `a();` in range, `a();   /* c */ b();` gives
+  `a(); /* c */` and `b();` on the next line, and with `class A {` in range,
+  `class A { /* c */ int x;` gives the comment and `int x;` lines of their own.
 - **It expands to units:** a statement in a block or a `switch` group, a `switch` label (`case 1:`)
   or rule (`case 1 -> f();`), a member, an enum constant, an import, the package declaration.
   Lambda bodies, anonymous class bodies, and `switch` expressions in a unit are part of it: a range
