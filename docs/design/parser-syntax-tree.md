@@ -174,6 +174,9 @@ Invariants, checked by a debug validator and by the parser fuzz target:
   that is below the parent's. Nodes are sorted by start offset, so the node at an offset is found by
   binary search and a short walk down.
 - `CONTAINS_ERROR` is set on every node whose subtree holds an `ERROR` node or a missing child.
+  `OWN_ERROR` is set on the node the error is in: the `ERROR` node, the node lacking a token or
+  child, or the node a token with a lexical error is in. Error units
+  ([error recovery](parser-error-recovery.md#what-a-syntax-error-affects)) start from these.
 
 Consumers use cursors, not the arrays: `SyntaxNode<'t>` and `SyntaxToken<'t>` are a `&'t SyntaxTree`
 and an index, and are `Copy`. They offer kind, span, text, parent, ancestors, children, children

@@ -99,8 +99,11 @@ fn check_nodes(tree: &SyntaxTree) -> Result<(), String> {
         if node.token_end <= node.first_token {
             return fail("is empty".to_owned());
         }
-        if node.kind == SyntaxKind::Error && node.flags & flags::CONTAINS_ERROR == 0 {
-            return fail("an Error node without CONTAINS_ERROR".to_owned());
+        if node.kind == SyntaxKind::Error && node.flags & flags::OWN_ERROR == 0 {
+            return fail("an Error node without OWN_ERROR".to_owned());
+        }
+        if node.flags & flags::OWN_ERROR != 0 && node.flags & flags::CONTAINS_ERROR == 0 {
+            return fail("OWN_ERROR without CONTAINS_ERROR".to_owned());
         }
         if i == 0 {
             continue;
@@ -147,6 +150,22 @@ fn check_nodes(tree: &SyntaxTree) -> Result<(), String> {
         }
         *previous_end = node.token_end;
         open.push((i, node.first_token));
+    }
+    // A node contains an error only if the error is its own or a child's.
+    // Children come after their parent, so in reverse every child is seen first.
+    let mut child_has_error = vec![false; nodes.len()];
+    for (i, node) in nodes.iter().enumerate().rev() {
+        if node.flags & flags::CONTAINS_ERROR != 0 {
+            if node.flags & flags::OWN_ERROR == 0 && !child_has_error[i] {
+                return Err(format!(
+                    "node {i}, {:?}: CONTAINS_ERROR without an error of its own or a child's",
+                    node.kind
+                ));
+            }
+            if i > 0 {
+                child_has_error[node.parent.index()] = true;
+            }
+        }
     }
     Ok(())
 }

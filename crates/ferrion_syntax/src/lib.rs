@@ -13,6 +13,7 @@
 
 pub mod ast;
 pub mod comments;
+mod error_units;
 #[doc(hidden)]
 pub mod invariants;
 mod syntax_kind;

@@ -70,8 +70,12 @@ pub mod flags {
     /// The node's subtree holds an `Error` node, a missing child, or a token with a lexical
     /// error.
     pub const CONTAINS_ERROR: u16 = 1;
+    /// The error is the node's own, not only its children's: it is an `Error` node, it lacks a
+    /// token or a child, or one of its direct tokens has a lexical error. Always with
+    /// [`CONTAINS_ERROR`]. `SyntaxTree::error_units` starts from these nodes.
+    pub const OWN_ERROR: u16 = 2;
     /// Every flag bit in use.
-    pub const ALL: u16 = CONTAINS_ERROR;
+    pub const ALL: u16 = CONTAINS_ERROR | OWN_ERROR;
 }
 
 /// One entry of a tree's node array: 20 bytes. The parser's builder makes these; everything else
