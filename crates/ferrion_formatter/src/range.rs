@@ -105,6 +105,8 @@ pub struct Ranges<'t> {
     /// The span of an import section whose imports formatting all removes, from its first piece
     /// of text to its last.
     removed_section: Option<Range<u32>>,
+    /// The end of a rewritten import section's last piece of text.
+    section_end: Option<u32>,
     /// The imports a rewritten import section keeps, in output order.
     kept_imports: Option<Vec<&'t str>>,
 }
@@ -129,6 +131,7 @@ impl<'t> Ranges<'t> {
             tree,
             source,
             owners: Owners::new(tree, section.as_ref().map(|s| s.first)),
+            section_end: section.as_ref().map(|s| s.span.end),
             removed_section: section
                 .as_ref()
                 .filter(|s| s.kept.is_empty())
@@ -153,6 +156,7 @@ impl<'t> Ranges<'t> {
             self.edits(),
             &expanded,
             self.removed_section.as_ref(),
+            self.section_end,
         ))
     }
 
@@ -565,6 +569,7 @@ fn keep(
     edits: &[Edit],
     expanded: &Expanded,
     section: Option<&Range<u32>>,
+    section_end: Option<u32>,
 ) -> Vec<Edit> {
     let (units, before, after) = (&expanded.units, expanded.before, expanded.after);
     let cut_before = section.is_some_and(|s| s.end == before && s.start < before);
@@ -579,7 +584,11 @@ fn keep(
         // In the gap after the units, an insertion at their end included; inside them, or in
         // the gap before them.
         if range.start >= units.end && range.end <= after {
-            if !cut_after {
+            if section_end == Some(units.end) {
+                // A rewritten section ending the units can end with a line comment it moved
+                // there, so the gap after it is the whole-file output's, line break and all.
+                kept.push(edit.clone());
+            } else if !cut_after {
                 kept.extend(line_breaks(
                     text,
                     units.end..after,
