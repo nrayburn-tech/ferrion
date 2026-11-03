@@ -116,7 +116,8 @@ fn a_model_becomes_the_engine_inputs() {
         .iter()
         .map(|f| {
             let path = f.path.strip_prefix(&dir).unwrap();
-            (path.display().to_string(), f.generated)
+            // With `/` between the parts on every platform.
+            (path.display().to_string().replace('\\', "/"), f.generated)
         })
         .collect();
     assert_eq!(
