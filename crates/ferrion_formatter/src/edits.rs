@@ -56,14 +56,19 @@ pub fn from_pieces(input: &str, output: &[u8], bom: usize, pieces: &[Piece]) -> 
     edits
 }
 
-/// Adds the edit for one gap, if it changed: its bytes after the prefix and before the suffix it
-/// shares with the output. Gaps hold only whitespace and line terminators, which are ASCII, so
-/// trimming never splits a character.
+/// Adds the edit for one gap, if it changed (see [`gap_edit`]).
 fn gap(edits: &mut Vec<Edit>, input: &str, output: &[u8], from: Range<u32>, to: Range<usize>) {
-    let before = &input.as_bytes()[from.start as usize..from.end as usize];
-    let after = &output[to];
+    let before = &input[from.start as usize..from.end as usize];
+    edits.extend(gap_edit(before, &output[to], from.start));
+}
+
+/// The edit that turns `before`, a gap of the input at `start`, into `after`, or `None` if they
+/// are the same: the bytes after the prefix and before the suffix they share. Gaps hold only
+/// whitespace and line terminators, which are ASCII, so trimming never splits a character.
+pub(crate) fn gap_edit(before: &str, after: &[u8], start: u32) -> Option<Edit> {
+    let before = before.as_bytes();
     if before == after {
-        return;
+        return None;
     }
     let prefix = before.iter().zip(after).take_while(|(a, b)| a == b).count();
     let suffix = before[prefix..]
@@ -72,10 +77,10 @@ fn gap(edits: &mut Vec<Edit>, input: &str, output: &[u8], from: Range<u32>, to: 
         .zip(after[prefix..].iter().rev())
         .take_while(|(a, b)| a == b)
         .count();
-    edits.push(Edit {
-        range: from.start + prefix as u32..from.end - suffix as u32,
+    Some(Edit {
+        range: start + prefix as u32..start + (before.len() - suffix) as u32,
         text: text(&after[prefix..after.len() - suffix]),
-    });
+    })
 }
 
 fn text(bytes: &[u8]) -> String {
