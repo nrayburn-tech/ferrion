@@ -205,8 +205,8 @@ behaves as follows:
     - `///` comments below Java 23 are plain line comments and are not reflowed.
 - **Imports:**
     - sorted into groups, with `import module` statements in their own group;
-    - unused single-type imports are removed. Usage is detected from syntax, and Javadoc references
-      count as usage;
+    - unused single-type imports and single static imports are removed. Usage is detected from
+      syntax, and Javadoc references count as usage;
     - single-type imports of the file's own package are removed;
     - module imports, wildcard imports, and `java.lang` imports are never added, removed, or expanded by
       the formatter, because doing so safely needs type information. Linter rules handle them (see the
