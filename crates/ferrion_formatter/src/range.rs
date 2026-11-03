@@ -104,6 +104,9 @@ pub struct Ranges<'t> {
     pins_region: Option<Range<u32>>,
     /// Whole-file formatting's edits, error units copied.
     edits: OnceCell<Vec<Edit>>,
+    /// The span of an import section whose imports formatting all removes, from its first piece
+    /// of text to its last.
+    removed_section: Option<Range<u32>>,
     /// The imports a rewritten import section keeps, in output order.
     kept_imports: Option<Vec<&'t str>>,
 }
@@ -127,8 +130,12 @@ impl<'t> Ranges<'t> {
         Ranges {
             tree,
             source,
-            owners: Owners::new(tree, section.as_ref().map(|(first, _)| *first)),
-            kept_imports: section.map(|(_, kept)| kept),
+            owners: Owners::new(tree, section.as_ref().map(|s| s.first)),
+            removed_section: section
+                .as_ref()
+                .filter(|s| s.kept.is_empty())
+                .map(|s| s.span.clone()),
+            kept_imports: section.map(|s| s.kept),
             comments,
             error_units: units.into_iter().map(span).collect(),
             pins_region,
@@ -144,7 +151,12 @@ impl<'t> Ranges<'t> {
         if let Some(error) = self.affected(&expanded) {
             return Err(RangeError::Affected { error });
         }
-        Ok(keep(self.source.text(), self.edits(), &expanded))
+        Ok(keep(
+            self.source.text(),
+            self.edits(),
+            &expanded,
+            self.removed_section.as_ref(),
+        ))
     }
 
     /// The error unit that keeps `expanded` from being formatted, if any: one overlapping its
@@ -451,7 +463,7 @@ fn rewritten_section<'t>(
     tree: &'t SyntaxTree,
     comments: &CommentMap,
     regions: &[Region],
-) -> Option<(NodeId, Vec<&'t str>)> {
+) -> Option<Section<'t>> {
     let imports: Vec<SyntaxNode<'t>> = tree
         .root()
         .children()
@@ -471,7 +483,18 @@ fn rewritten_section<'t>(
         .flatten()
         .map(|e| e.import.text())
         .collect();
-    Some((imports[0].id(), kept))
+    Some(Section {
+        first: imports[0].id(),
+        span: tree.token(plan.first).span().start..piece_end(tree.token(plan.last)),
+        kept,
+    })
+}
+
+/// A rewritten import section, for [`Ranges`].
+struct Section<'t> {
+    first: NodeId,
+    span: Range<u32>,
+    kept: Vec<&'t str>,
 }
 
 /// Whether a node of `kind` is an expression, whose statements and members are part of the unit
@@ -512,8 +535,20 @@ fn is_unit(node: SyntaxNode<'_>) -> bool {
 
 /// The edits of `edits`, whole-file formatting's for `text`, that `expanded` keeps (see the
 /// module's documentation).
-fn keep(text: &str, edits: &[Edit], expanded: &Expanded) -> Vec<Edit> {
+///
+/// Next to an import section outside the expanded range whose imports formatting all removes,
+/// the gap's output is for the section gone, which takes the blank lines around it, not for the
+/// section left as written: the gap before the units keeps its line breaks and gets only the
+/// units' indentation, and the gap after them is left alone.
+fn keep(
+    text: &str,
+    edits: &[Edit],
+    expanded: &Expanded,
+    section: Option<&Range<u32>>,
+) -> Vec<Edit> {
     let (units, before, after) = (&expanded.units, expanded.before, expanded.after);
+    let cut_before = section.is_some_and(|s| s.end == before && s.start < before);
+    let cut_after = section.is_some_and(|s| s.start == after && after > before);
     let first = edits.partition_point(|e| e.range.end < before);
     let mut kept = Vec::new();
     for edit in &edits[first..] {
@@ -524,17 +559,45 @@ fn keep(text: &str, edits: &[Edit], expanded: &Expanded) -> Vec<Edit> {
         // In the gap after the units, an insertion at their end included; inside them, or in
         // the gap before them.
         if range.start >= units.end && range.end <= after {
-            kept.extend(line_breaks(
-                text,
-                units.end..after,
-                edit,
-                expanded.comment_after,
-            ));
+            if !cut_after {
+                kept.extend(line_breaks(
+                    text,
+                    units.end..after,
+                    edit,
+                    expanded.comment_after,
+                ));
+            }
+        } else if cut_before && range.start >= before && range.end <= units.start {
+            kept.extend(indentation(text, before..units.start, edit));
         } else if range.start >= before && range.end <= units.end {
             kept.push(edit.clone());
         }
     }
     kept
+}
+
+/// The part of `edit`, in the gap `gap` before the expanded range, that gives the units their
+/// indentation, the input's line breaks kept: nothing when either has no line break.
+fn indentation(text: &str, gap: Range<u32>, edit: &Edit) -> Option<Edit> {
+    let (input, output) = gap_texts(text, &gap, edit);
+    let after_last_break = |s: &str| s.rfind(['\n', '\r']).map(|i| i + 1);
+    let (Some(i), Some(o)) = (after_last_break(input), after_last_break(&output)) else {
+        return None;
+    };
+    let wanted = [&input[..i], &output[o..]].concat();
+    edits::gap_edit(input, wanted.as_bytes(), gap.start)
+}
+
+/// The input's text of `gap`, and the output's, which `edit`, in it, gives.
+fn gap_texts<'a>(text: &'a str, gap: &Range<u32>, edit: &Edit) -> (&'a str, String) {
+    let input = &text[gap.start as usize..gap.end as usize];
+    let output = [
+        &text[gap.start as usize..edit.range.start as usize],
+        edit.text.as_str(),
+        &text[edit.range.end as usize..gap.end as usize],
+    ]
+    .concat();
+    (input, output)
 }
 
 /// The part of `edit`, in the gap `gap` after the expanded range, that the range keeps: the
@@ -545,13 +608,7 @@ fn keep(text: &str, edits: &[Edit], expanded: &Expanded) -> Vec<Edit> {
 /// them, `before` one, stays there, since it belongs to the code after it, whose layout it
 /// decides.
 fn line_breaks(text: &str, gap: Range<u32>, edit: &Edit, before: bool) -> Option<Edit> {
-    let input = &text[gap.start as usize..gap.end as usize];
-    let output = [
-        &text[gap.start as usize..edit.range.start as usize],
-        edit.text.as_str(),
-        &text[edit.range.end as usize..gap.end as usize],
-    ]
-    .concat();
+    let (input, output) = gap_texts(text, &gap, edit);
     let after_last_break = |s: &str| s.rfind(['\n', '\r']).map(|i| i + 1);
     let wanted = match (after_last_break(input), after_last_break(&output)) {
         (Some(i), Some(o)) => [&output[..o], &input[i..]].concat(),
