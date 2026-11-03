@@ -15,6 +15,7 @@ use super::{
     Property, Violation, doc_comments, equivalence, first_difference, has_errors, imports,
     normalize_comment, violation,
 };
+use crate::printer::trim_end;
 use crate::range::{Expanded, Ranges};
 use crate::{Edit, FormatOptions, apply_edits, format_range, regions};
 
@@ -125,12 +126,11 @@ fn check_place(
     if edit.range.start < expanded.before || edit.range.end > expanded.after {
         return fail("is outside the range's units and the gaps around them");
     }
-    let replaced = &tree.text()[edit.range.start as usize..edit.range.end as usize];
     let whitespace = |s: &str| {
         s.bytes()
             .all(|b| matches!(b, b' ' | b'\t' | b'\x0c' | b'\n' | b'\r'))
     };
-    if whitespace(replaced) && whitespace(&edit.text) {
+    if whitespace(&edit.text) && only_gap(tree, edit.range.clone()) {
         return Ok(());
     }
     if edit.range.start < expanded.units.start || edit.range.end > expanded.units.end {
@@ -149,8 +149,32 @@ fn check_place(
     Ok(())
 }
 
-/// Compares the two trees' comments in order: by kind, and by text as written, except those in
-/// the range's units outside disable regions, which compare as [`super::verify`] compares them.
+/// Whether `range` of `tree`'s text holds only what goes between pieces of text: whitespace and
+/// line terminators, a line terminator written as a Unicode escape included, and a line
+/// comment's trailing whitespace, which the printer doesn't write.
+fn only_gap(tree: &SyntaxTree, range: Range<u32>) -> bool {
+    let text = tree.text();
+    let mut token = tree.token_at_offset(range.start);
+    while let Some(t) = token
+        && t.span().start < range.end
+    {
+        let span = t.span();
+        let part = &text[span.start.max(range.start) as usize..span.end.min(range.end) as usize];
+        let gap = matches!(
+            t.kind(),
+            SyntaxKind::Whitespace | SyntaxKind::LineTerminator
+        ) || part.bytes().all(|b| matches!(b, b' ' | b'\t' | b'\x0c'));
+        if !gap {
+            return false;
+        }
+        token = t.next_token();
+    }
+    true
+}
+
+/// Compares the two trees' comments in order: by kind, and by text as written, apart from a line
+/// comment's trailing whitespace, except those in the range's units outside disable regions,
+/// which compare as [`super::verify`] compares them.
 fn compare_comments(
     before: &SyntaxTree,
     after: &SyntaxTree,
@@ -177,7 +201,16 @@ fn compare_comments(
         .collect();
     let normalized = |i: usize, (kind, text, start): (SyntaxKind, &str, u32), input: bool| {
         let in_units = expanded.is_some_and(|e| e.units.contains(&start));
-        if !in_units || in_region(ids[i]) {
+        if in_region(ids[i]) {
+            return (kind, text.to_owned());
+        }
+        if !in_units {
+            // The gap before the units starts after the line before's code, and a line
+            // comment's trailing whitespace is in it.
+            let text = match kind {
+                SyntaxKind::LineComment | SyntaxKind::DocLineComment => trim_end(text),
+                _ => text,
+            };
             return (kind, text.to_owned());
         }
         let text = if kind == SyntaxKind::DocComment {
