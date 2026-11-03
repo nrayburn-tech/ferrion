@@ -1,8 +1,5 @@
 class A {
-  /**
-   * Stars at different columns
-   * all go one column after the slash.
-   */
+  /** Stars at different columns all go one column after the slash. */
   int a;
 
   /*

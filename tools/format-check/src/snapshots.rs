@@ -25,9 +25,9 @@ const EXPECTED: &str = ".formatted.java";
 /// `.java`, with the reason.
 const NOT_GJF: &[(&str, &str)] = &[
     (
-        "core/comments-doc-text",
-        "a block comment's text doesn't change: GJF adds a star to a doc comment's lines without \
-         one (docs/style.md)",
+        "core/comments-slash-space",
+        "a `///` doc comment isn't reflowed as Markdown yet (docs/design/formatter-completeness.md, \
+         \"Markdown\")",
     ),
     (
         "core/copied-text",

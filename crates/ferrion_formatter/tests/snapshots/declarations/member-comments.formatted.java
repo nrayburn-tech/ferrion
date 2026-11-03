@@ -1,6 +1,4 @@
-/**
- * A doc comment before the package, then a blank line.
- */
+/** A doc comment before the package, then a blank line. */
 package p;
 
 /** A doc comment, then a blank line. */
