@@ -187,3 +187,37 @@ fn removing_every_import_leaves_one_blank_line() {
     );
     assert_eq!(formatted("\nimport x.A;\n\nclass T {}\n"), "class T {}\n");
 }
+
+/// Formats `text`, checks that formatting the result changes nothing, and returns it.
+fn stable(text: &str) -> String {
+    let once = formatted(text);
+    assert_eq!(formatted(&once), once, "formatting the output changes it");
+    once
+}
+
+#[test]
+fn removing_every_import_leaves_a_doc_comment_next_to_the_class() {
+    // Found in javac's tests: the blank line after the section was left behind.
+    assert_eq!(
+        stable("/** Doc. */\n\nimport x.A;\n\nclass T {}\n"),
+        "/** Doc. */\nclass T {}\n"
+    );
+}
+
+#[test]
+fn a_floating_doc_comment_has_one_line_break_before_an_import() {
+    assert_eq!(
+        stable(
+            "import b.B;\n\n/** Floating. */\n\n// Above C.\nimport c.C;\nimport a.A;\nclass T { A \
+             a; B b; C c; }\n"
+        ),
+        "/** Floating. */\nimport a.A;\nimport b.B;\n// Above C.\nimport c.C;\n\nclass T {\n  A \
+         a;\n  B b;\n  C c;\n}\n"
+    );
+}
+
+#[test]
+fn a_comment_after_the_last_import_at_the_end_of_the_file_pins_the_section() {
+    let input = "import u.Unused; // Kept.\nimport a.Doc;\n// The end of the file.\n";
+    assert_eq!(stable(input), input);
+}

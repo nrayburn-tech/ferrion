@@ -194,6 +194,17 @@ pub fn plan<'t>(
     ) {
         return None;
     }
+    // The comment map has a comment after the last import trail it, on a later line, when the
+    // file ends there. The import's rule emits it with the import, but it isn't on the import's
+    // line, so a second run would see it above the next import: such a section is left as is.
+    if planned.iter().any(|i| {
+        let last = i.node.last_token();
+        list[index(last.id())..i.owned.end]
+            .iter()
+            .any(|c| !same_line(last, tree.token(c.token)))
+    }) {
+        return None;
+    }
 
     let kept = kept(tree, comments, &planned);
     let mut order: Vec<usize> = (0..planned.len()).filter(|&k| kept[k]).collect();
@@ -210,7 +221,16 @@ pub fn plan<'t>(
     }
 
     // Each floating comment on a line of its own, keeping a blank line only between two that had
-    // one, with a blank line after the last.
+    // one, with a blank line after the last. A doc comment that code follows in the output gets
+    // one line break after it, as the comment rules give it in place (docs/style.md, "General").
+    let next_is_comment = match order.first() {
+        Some(&k) => planned[k].above < planned[k].gap.end,
+        None => list.get(section_comments.end).is_some_and(|c| {
+            last.last_token()
+                .next_non_trivia()
+                .is_none_or(|t| c.token < t.id())
+        }),
+    };
     let mut placed_floating: Vec<Placed> = Vec::with_capacity(floating.len());
     for i in &planned {
         for index in i.gap.clone().take(i.above - i.gap.start) {
@@ -228,6 +248,12 @@ pub fn plan<'t>(
                 after: 2,
             });
         }
+    }
+    if let Some(last) = placed_floating.last_mut()
+        && !next_is_comment
+        && tree.token(list[last.index].token).kind() == K::DocComment
+    {
+        last.after = 1;
     }
     let mut groups: Vec<Vec<Entry<'t>>> = Vec::new();
     let mut group = None;
@@ -299,6 +325,16 @@ fn name(node: SyntaxNode<'_>) -> (Group, String, bool) {
 pub(crate) fn cooked(token: SyntaxToken<'_>) -> std::borrow::Cow<'_, str> {
     let tree = token.tree();
     ferrion_lexer::cooked_text(tree.text(), tree.lexer_tokens()[token.id().index()])
+}
+
+/// Whether `to` is on the line where `from` ends: no line terminator, and no comment that spans
+/// lines, from one to the other.
+fn same_line(from: SyntaxToken<'_>, to: SyntaxToken<'_>) -> bool {
+    let tree = from.tree();
+    (from.id().index()..to.id().index()).all(|i| {
+        let token = tree.token(TokenId::from_index(i));
+        token.kind() != K::LineTerminator && !token.text().contains(['\n', '\r'])
+    })
 }
 
 /// Whether `element` ends at `token`.
