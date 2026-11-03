@@ -559,9 +559,9 @@ impl Reads<'_> {
         splits.extend(simple.match_indices('$').map(|(i, _)| i));
         for split in splits {
             let (top, rest) = simple.split_at(split);
-            let Some(top_name) = names.lookup(top) else {
-                continue;
-            };
+            // Interned, not looked up: before the package's summaries are read, its types'
+            // names may not be interned yet.
+            let top_name = names.intern(top);
             if self
                 .package_type(set, package, top_name)?
                 .is_none_or(|d| d.len() > 1)

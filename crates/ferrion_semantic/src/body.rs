@@ -49,7 +49,7 @@ use crate::{Cancelled, FileId, Interner, Name, Snapshot, SourceSetId};
 /// rotate, xor, and multiply per word. SipHash, the default, was a fifth of the walk's time, and
 /// its resistance to chosen keys isn't needed for maps that last one computation.
 #[derive(Clone, Copy, Default)]
-struct IdHasher(u64);
+pub(crate) struct IdHasher(u64);
 
 impl IdHasher {
     fn add(&mut self, word: u64) {
@@ -91,8 +91,8 @@ impl Hasher for IdHasher {
     }
 }
 
-type Map<K, V> = HashMap<K, V, BuildHasherDefault<IdHasher>>;
-type Set<K> = HashSet<K, BuildHasherDefault<IdHasher>>;
+pub(crate) type Map<K, V> = HashMap<K, V, BuildHasherDefault<IdHasher>>;
+pub(crate) type Set<K> = HashSet<K, BuildHasherDefault<IdHasher>>;
 
 /// A file's names inside bodies, and the local and anonymous classes they declare.
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]

@@ -256,21 +256,23 @@ fn cancelled(_: Cancelled) -> String {
     "cancelled".to_owned()
 }
 
-impl Resolver for Ferrion {
-    fn resolve(
+impl Ferrion {
+    /// Runs `f` with the engine of `set`'s project, the source set's id in it, and with
+    /// `--replay` the replayed engine: the engine is loaded for the project's first source set in
+    /// the run, its generated sources brought up to date with what the oracle wrote for `set`,
+    /// and it is dropped after the project's last.
+    pub fn with_set<T>(
         &self,
-        _: &[SourceSet],
         set: &SourceSet,
-        corpus: &Path,
-    ) -> Result<Option<Resolved>, String> {
+        f: impl FnOnce(&Engine, SourceSetId, Option<&Engine>) -> Result<T, String>,
+    ) -> Result<T, String> {
         let Some(state) = self.states.get(&set.project) else {
             return Err(format!("{} isn't one of the run's projects", set.project));
         };
         // One source set of a project at a time: a generated file added for one would cancel
         // the other's snapshot.
         let mut state = state.lock().unwrap_or_else(|e| e.into_inner());
-        let start = Instant::now();
-        let mut resolve = || -> Result<SetNames, String> {
+        let run = || -> Result<T, String> {
             if state.loaded.is_none() {
                 state.loaded = Some(self.load(&set.project)?);
             }
@@ -280,21 +282,38 @@ impl Resolver for Ferrion {
                 .get(&set.id)
                 .ok_or_else(|| format!("the project model has no source set {}", set.id))?;
             sync_generated(&loaded.engine, id, &set.generated)?;
-            let names = set_names(&loaded.engine.snapshot(), id, corpus, self.threads)
-                .map_err(cancelled)?;
             if let Some(replayed) = &loaded.replayed {
                 sync_generated(replayed, id, &set.generated)?;
+            }
+            f(&loaded.engine, id, loaded.replayed.as_ref())
+        };
+        let result = run();
+        state.remaining = state.remaining.saturating_sub(1);
+        if state.remaining == 0 {
+            state.loaded = None;
+        }
+        result
+    }
+}
+
+impl Resolver for Ferrion {
+    fn resolve(
+        &self,
+        _: &[SourceSet],
+        set: &SourceSet,
+        corpus: &Path,
+    ) -> Result<Option<Resolved>, String> {
+        let start = Instant::now();
+        let names = self.with_set(set, |engine, id, replayed| {
+            let names =
+                set_names(&engine.snapshot(), id, corpus, self.threads).map_err(cancelled)?;
+            if let Some(replayed) = replayed {
                 let again =
                     set_names(&replayed.snapshot(), id, corpus, self.threads).map_err(cancelled)?;
                 compare_replayed(&names, &again)?;
             }
             Ok(names)
-        };
-        let names = resolve();
-        state.remaining = state.remaining.saturating_sub(1);
-        if state.remaining == 0 {
-            state.loaded = None;
-        }
+        });
         Ok(Some(Resolved {
             names: names?,
             seconds: start.elapsed().as_secs_f64(),
@@ -546,7 +565,7 @@ fn javac_range(tree: &SyntaxTree, name: &decl_names::ResolvedName) -> Span {
 
 /// `key` with the byte offsets of locals and local classes declared in the file at `path`
 /// (`local <path>:<offset>`) in UTF-16 code units, as javac counts them.
-fn local_offsets(key: &str, path: &str, offsets: &Offsets) -> String {
+pub fn local_offsets(key: &str, path: &str, offsets: &Offsets) -> String {
     let marker = format!("local {path}:");
     if !key.contains(&marker) {
         return key.to_owned();

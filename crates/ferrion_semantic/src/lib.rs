@@ -25,6 +25,7 @@ pub mod summary;
 pub mod symbols;
 #[doc(hidden)]
 pub mod testing;
+pub mod types;
 pub mod view;
 
 pub use engine::{

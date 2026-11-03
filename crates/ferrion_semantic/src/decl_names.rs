@@ -267,7 +267,7 @@ impl Snapshot {
         }
     }
 
-    fn type_param_name(
+    pub(crate) fn type_param_name(
         &self,
         key: TypeKey,
         method: Option<u32>,
@@ -297,7 +297,7 @@ impl Snapshot {
     }
 
     /// `method p/A.m(I)V` for a method of a type's entry.
-    fn method_text(&self, key: TypeKey, method: u32) -> Result<String, Cancelled> {
+    pub(crate) fn method_text(&self, key: TypeKey, method: u32) -> Result<String, Cancelled> {
         let names = self.names().clone();
         let owner = self.binary_text(key)?;
         if let Some(entry) = self.type_entry(key)? {

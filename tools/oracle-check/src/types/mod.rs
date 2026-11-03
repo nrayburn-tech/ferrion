@@ -10,6 +10,7 @@
 //! counted as not compared.
 
 mod compare;
+mod ferrion;
 mod oracle;
 mod report;
 
@@ -23,9 +24,10 @@ use corpus::project::Project;
 use ferrion_diagnostics::SourceText;
 
 use self::compare::{Known, Mismatch, StandIn, Typer, compare, compare_relations};
+use self::ferrion::FerrionTyper;
 use self::oracle::{FORMAT, Output, is_switch_error};
 use self::report::{FileTime, MismatchRow, Report, SetRow, Tally};
-use crate::names::ferrion::Offsets;
+use crate::names::ferrion::{Ferrion, Offsets};
 use crate::names::oracle::{NamesOracle, OracleCommand, Ran};
 use crate::names::plan::{self, SourceSet};
 use crate::names::{display, schedule};
@@ -143,6 +145,8 @@ pub fn run(options: Options) -> Result<bool> {
     let mut groups: Vec<Vec<SourceSet>> = Vec::new();
     let mut work: Vec<(usize, usize)> = Vec::new();
     let mut jdks: BTreeMap<u32, PathBuf> = BTreeMap::new();
+    let mut project_jdks: std::collections::HashMap<String, PathBuf> =
+        std::collections::HashMap::new();
     for project in &selected {
         let sets = plan::source_sets(&dirs, project)?;
         let jdk = corpus::model::lock_jdk(&dirs, project)?;
@@ -152,6 +156,7 @@ pub fn run(options: Options) -> Result<bool> {
                     .with_context(|| format!("{}'s lock names JDK {jdk}", project.name))?,
             );
         }
+        project_jdks.insert(project.name.clone(), jdks[&jdk].clone());
         let group = groups.len();
         for i in plan::order(&sets) {
             let set = &sets[i];
@@ -180,12 +185,29 @@ pub fn run(options: Options) -> Result<bool> {
         Vec::new(),
         &jdks,
     )?;
-    // B3's attribution doesn't exist yet: Ferrion's side gives nothing, with `--javac-only` or
-    // without.
-    if !options.javac_only {
-        eprintln!("Ferrion's type attribution doesn't exist yet: javac's side runs alone");
-    }
-    let typer: &dyn Typer = &StandIn;
+    // Ferrion's side answers the relation queries (B3a); attribution of the files' entries
+    // comes with B3b.
+    let ferrion;
+    let typer: &dyn Typer = if options.javac_only {
+        &StandIn
+    } else {
+        let counts: Vec<(String, usize)> = groups
+            .iter()
+            .enumerate()
+            .map(|(g, sets)| {
+                let project = sets.first().map(|s| s.project.clone()).unwrap_or_default();
+                (project, work.iter().filter(|&&(w, _)| w == g).count())
+            })
+            .collect();
+        ferrion = FerrionTyper::new(Ferrion::new(
+            &counts,
+            &project_jdks,
+            scratch.clone(),
+            1,
+            false,
+        )?);
+        &ferrion
+    };
     let files: usize = work.iter().map(|&(g, i)| groups[g][i].files.len()).sum();
     eprintln!(
         "running javac on {} source sets ({files} files), {} at a time",
@@ -345,9 +367,14 @@ fn run_set(context: &Shared, group: usize, i: usize) -> Result<SetResult> {
         .attribute(sets, set, context.corpus, &output.relations);
     if let Ok(Some(attributed)) = &ferrion {
         tally.ferrion_seconds = attributed.seconds;
+        tally.relation_fuel = attributed.fuel;
+        tally.relation_fuel_query = format!("{}: {}", row.source_set, attributed.fuel_query);
+        tally.relation_arena = attributed.arena;
         let compared = compare_relations(&output.relations, &attributed.relations);
         tally.comparison.matched += compared.matched;
         tally.comparison.extra += compared.extra;
+        tally.comparison.left += compared.left;
+        tally.comparison.unresolved += compared.unresolved;
         for mismatch in compared.mismatches {
             record(
                 context,
