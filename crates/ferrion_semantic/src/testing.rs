@@ -28,7 +28,8 @@ use crate::{Engine, FileInput, ProjectInput, Snapshot, SourceSetId, SourceSetInp
 /// `abstract`, `final`), its binary name, then any of `extends X`, `implements X,Y`,
 /// `member Simple Binary` and `private-member Simple Binary` (an `InnerClasses` entry for a
 /// member of this class), `outer Binary Simple` (this class is a member of that one), `local`
-/// (a local class), `field name descriptor`, `method name descriptor` (public),
+/// (a local class), `field name descriptor`, `constant name descriptor value` (a public static
+/// final field with a `ConstantValue`), `method name descriptor` (public),
 /// `protected-method name descriptor`, and `signature text`.
 /// The whole line is split on spaces.
 pub fn class_file(spec: &str) -> (String, Vec<u8>) {
@@ -56,6 +57,7 @@ pub fn class_file(spec: &str) -> (String, Vec<u8>) {
     }
     let mut inner: Vec<(String, Option<String>, Option<String>, u16)> = Vec::new();
     let mut fields = Vec::new();
+    let mut constants = Vec::new();
     let mut methods = Vec::new();
     let mut signature = None;
     while let Some(word) = words.next() {
@@ -79,6 +81,11 @@ pub fn class_file(spec: &str) -> (String, Vec<u8>) {
             }
             "local" => inner.push((name.to_owned(), None, Some("Local".to_owned()), 0)),
             "field" => fields.push((words.next().unwrap(), words.next().unwrap())),
+            "constant" => constants.push((
+                words.next().unwrap(),
+                words.next().unwrap(),
+                words.next().unwrap(),
+            )),
             "method" => methods.push((0x0001, words.next().unwrap(), words.next().unwrap())),
             "protected-method" => {
                 methods.push((0x0004, words.next().unwrap(), words.next().unwrap()));
@@ -111,6 +118,17 @@ pub fn class_file(spec: &str) -> (String, Vec<u8>) {
     }
     for (field, descriptor) in fields {
         b.field(0x0001, field, descriptor, &[]);
+    }
+    for (field, descriptor, value) in constants {
+        let index = match descriptor {
+            "J" => b.long(value.parse().unwrap()),
+            "F" => b.float(value.parse::<f32>().unwrap().to_bits()),
+            "D" => b.double(value.parse::<f64>().unwrap().to_bits()),
+            "Ljava/lang/String;" => b.string(value),
+            _ => b.integer(value.parse().unwrap()),
+        };
+        let attribute = b.attribute("ConstantValue", &index.to_be_bytes());
+        b.field(0x0019, field, descriptor, &[attribute]);
     }
     for (access, method, descriptor) in methods {
         b.method(access, method, descriptor, &[]);
@@ -603,8 +621,8 @@ pub const RELATIONS_JDK: &[&str] = &[
     "interface java/lang/constant/Constable",
     "interface java/lang/constant/ConstantDesc",
     "abstract java/lang/Number implements java/io/Serializable",
-    "final java/lang/Integer extends java/lang/Number signature Ljava/lang/Number;Ljava/lang/Comparable<Ljava/lang/Integer;>;Ljava/lang/constant/Constable;Ljava/lang/constant/ConstantDesc;",
-    "final java/lang/Long extends java/lang/Number signature Ljava/lang/Number;Ljava/lang/Comparable<Ljava/lang/Long;>;Ljava/lang/constant/Constable;Ljava/lang/constant/ConstantDesc;",
+    "final java/lang/Integer extends java/lang/Number constant MAX_VALUE I 2147483647 constant MIN_VALUE I -2147483648 signature Ljava/lang/Number;Ljava/lang/Comparable<Ljava/lang/Integer;>;Ljava/lang/constant/Constable;Ljava/lang/constant/ConstantDesc;",
+    "final java/lang/Long extends java/lang/Number constant MAX_VALUE J 9223372036854775807 signature Ljava/lang/Number;Ljava/lang/Comparable<Ljava/lang/Long;>;Ljava/lang/constant/Constable;Ljava/lang/constant/ConstantDesc;",
     "final java/lang/Double extends java/lang/Number signature Ljava/lang/Number;Ljava/lang/Comparable<Ljava/lang/Double;>;Ljava/lang/constant/Constable;Ljava/lang/constant/ConstantDesc;",
     "final java/lang/Float extends java/lang/Number signature Ljava/lang/Number;Ljava/lang/Comparable<Ljava/lang/Float;>;Ljava/lang/constant/Constable;Ljava/lang/constant/ConstantDesc;",
     "final java/lang/Short extends java/lang/Number signature Ljava/lang/Number;Ljava/lang/Comparable<Ljava/lang/Short;>;Ljava/lang/constant/Constable;",
@@ -616,6 +634,8 @@ pub const RELATIONS_JDK: &[&str] = &[
     "final java/lang/StringBuilder extends java/lang/AbstractStringBuilder signature Ljava/lang/AbstractStringBuilder;Ljava/lang/Appendable;Ljava/io/Serializable;Ljava/lang/Comparable<Ljava/lang/StringBuilder;>;Ljava/lang/CharSequence;",
     "abstract java/lang/Enum signature <E:Ljava/lang/Enum<TE;>;>Ljava/lang/Object;Ljava/lang/constant/Constable;Ljava/lang/Comparable<TE;>;Ljava/io/Serializable;",
     "abstract java/lang/Record",
+    "final java/lang/Void",
+    "interface java/lang/Runnable method run ()V",
     "final java/lang/Class signature <T:Ljava/lang/Object;>Ljava/lang/Object;Ljava/io/Serializable;",
     "interface java/lang/Iterable signature <T:Ljava/lang/Object;>Ljava/lang/Object;",
     "interface java/util/Collection signature <E:Ljava/lang/Object;>Ljava/lang/Object;Ljava/lang/Iterable<TE;>;",

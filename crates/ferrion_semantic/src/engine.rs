@@ -38,14 +38,17 @@ use ferrion_syntax::SyntaxTree;
 
 use self::derived::{Dep, DerivedTable, Memo, Reads, read, write};
 use self::trees::TreeCache;
+use crate::attr::BodyTypes;
 use crate::body::BodyNames;
 use crate::classes::{Cache, ClassSource, ClassSources};
+use crate::constants::Constant;
 use crate::decl_names::FileNames;
 use crate::input::ClassPathInput;
+use crate::members::Members;
 use crate::packages::{Package, PackageIndex, TopLevel};
 use crate::resolve::FileScope;
 use crate::summary::{Summary, summarize};
-use crate::symbols::{ClassSourceId, MemberTypes, Supertypes, TypeEntry, TypeKey};
+use crate::symbols::{ClassSourceId, FieldRef, MemberTypes, Supertypes, TypeEntry, TypeKey};
 use crate::view::{ModuleView, PlatformModules, SetConfig, SetEntry};
 use crate::{FileId, FileInput, Fingerprint, Interner, Name, ProjectInput, SourceSetId};
 
@@ -103,6 +106,9 @@ pub(crate) struct Shared {
     pub(crate) type_entries: DerivedTable<TypeKey, TypeEntry>,
     pub(crate) file_names: DerivedTable<FileId, FileNames>,
     pub(crate) body_names: DerivedTable<FileId, BodyNames>,
+    pub(crate) members: DerivedTable<(SourceSetId, TypeKey), Members>,
+    pub(crate) constants: DerivedTable<FieldRef, Option<Constant>>,
+    pub(crate) body_types: DerivedTable<FileId, BodyTypes>,
     pub(crate) names: Arc<Interner>,
     /// Each source set's classpath and platform, by its index.
     pub(crate) configs: Box<[SetConfig]>,
@@ -166,6 +172,9 @@ pub struct Stats {
     pub type_entries: TableStats,
     pub file_names: TableStats,
     pub body_names: TableStats,
+    pub members: TableStats,
+    pub constants: TableStats,
+    pub body_types: TableStats,
 }
 
 /// What one table's entries did.
@@ -195,6 +204,9 @@ impl std::ops::Sub for Stats {
             type_entries: self.type_entries - earlier.type_entries,
             file_names: self.file_names - earlier.file_names,
             body_names: self.body_names - earlier.body_names,
+            members: self.members - earlier.members,
+            constants: self.constants - earlier.constants,
+            body_types: self.body_types - earlier.body_types,
         }
     }
 }
@@ -225,6 +237,9 @@ pub struct Sizes {
     pub type_entries: usize,
     pub file_names: usize,
     pub body_names: usize,
+    pub members: usize,
+    pub constants: usize,
+    pub body_types: usize,
     pub class_entries: usize,
     pub names: usize,
 }
@@ -301,6 +316,9 @@ impl Engine {
                 type_entries: DerivedTable::new(),
                 file_names: DerivedTable::new(),
                 body_names: DerivedTable::new(),
+                members: DerivedTable::tracked(|(view, key)| Dep::Members(*view, *key)),
+                constants: DerivedTable::tracked(|field| Dep::Constant(*field)),
+                body_types: DerivedTable::new(),
                 names: Arc::new(Interner::new()),
                 configs: configs.into_boxed_slice(),
                 classes: ClassSources::with_sources(sources),
@@ -405,6 +423,9 @@ impl Engine {
             type_entries: self.shared.type_entries.stats(),
             file_names: self.shared.file_names.stats(),
             body_names: self.shared.body_names.stats(),
+            members: self.shared.members.stats(),
+            constants: self.shared.constants.stats(),
+            body_types: self.shared.body_types.stats(),
         }
     }
 
@@ -425,6 +446,9 @@ impl Engine {
             type_entries: self.shared.type_entries.len(),
             file_names: self.shared.file_names.len(),
             body_names: self.shared.body_names.len(),
+            members: self.shared.members.len(),
+            constants: self.shared.constants.len(),
+            body_types: self.shared.body_types.len(),
             class_entries: self.shared.classes.entries_read(),
             names: self.shared.names.len(),
         }
@@ -656,6 +680,26 @@ impl Snapshot {
                 .member_types_memo(*view, *key)?
                 .map_or(Fingerprint::CYCLE, |m| m.fingerprint),
             Dep::TypeEntry(key) => self.type_entry_memo(*key)?.fingerprint,
+            Dep::DeclNames(file) => {
+                if self.file_exists(*file)? {
+                    self.decl_names_memo(*file)?.fingerprint
+                } else {
+                    Fingerprint::ABSENT
+                }
+            }
+            Dep::BodyNames(file) => {
+                if self.file_exists(*file)? {
+                    self.body_memo(*file)?.fingerprint
+                } else {
+                    Fingerprint::ABSENT
+                }
+            }
+            Dep::Members(view, key) => self
+                .members_memo(*view, *key)?
+                .map_or(Fingerprint::CYCLE, |m| m.fingerprint),
+            Dep::Constant(field) => self
+                .constant_memo(*field)?
+                .map_or(Fingerprint::CYCLE, |m| m.fingerprint),
         })
     }
 }

@@ -41,7 +41,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, OnceLock, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use super::{Cancelled, Snapshot, TableStats};
-use crate::symbols::TypeKey;
+use crate::symbols::{FieldRef, TypeKey};
 use crate::{FileId, Fingerprint, Name, SourceSetId};
 
 /// Something a derived entry can read. [`Snapshot::current`] gives each one's fingerprint now.
@@ -77,6 +77,14 @@ pub(crate) enum Dep {
     MemberTypes(SourceSetId, TypeKey),
     /// A source type's entry.
     TypeEntry(TypeKey),
+    /// A file's names in declarations.
+    DeclNames(FileId),
+    /// A file's names in bodies, with its local and anonymous classes.
+    BodyNames(FileId),
+    /// A type's member fields and methods, in a view (the type's own set for a source type).
+    Members(SourceSetId, TypeKey),
+    /// A field's constant value.
+    Constant(FieldRef),
 }
 
 thread_local! {
@@ -232,6 +240,12 @@ impl<'s> Reads<'s> {
 
     pub(crate) fn record(&mut self, dep: Dep, fingerprint: Fingerprint) {
         self.deps.push((dep, fingerprint));
+    }
+
+    /// Records what another recorder read: a type context's reads, made on the computation's
+    /// behalf.
+    pub(crate) fn extend(&mut self, deps: impl IntoIterator<Item = (Dep, Fingerprint)>) {
+        self.deps.extend(deps);
     }
 
     /// Whether the computation has read an entry that, through others, reads it: it is in a

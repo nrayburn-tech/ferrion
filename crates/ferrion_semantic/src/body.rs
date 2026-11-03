@@ -542,6 +542,8 @@ struct Walker<'f, 'r, 's> {
     /// The local and anonymous classes whose bodies the walk is in, innermost last.
     classes: Vec<(NodeId, TypeKey)>,
     next_check: usize,
+    /// The one body to walk, if not all of them.
+    target: Option<NodeId>,
 }
 
 /// A scope for a name in a body: the body's declarations, then the summary's class around it.
@@ -559,6 +561,28 @@ macro_rules! scope {
 
 fn compute(reads: &mut Reads<'_>, file: FileId) -> Result<BodyNames, Cancelled> {
     let (tree, _) = reads.tree(file)?;
+    walk_names(reads, file, &tree, None)
+}
+
+/// The names in one field initializer of `file`'s `tree`, `target`, alone, as the whole file's
+/// walk resolves them: for a constant's value, which reads the file's summary and not its text
+/// (docs/design/semantic-attribution.md#constants). Its local classes, which no constant has,
+/// aren't numbered as the file's are.
+pub(crate) fn initializer_names(
+    reads: &mut Reads<'_>,
+    file: FileId,
+    tree: &SyntaxTree,
+    target: NodeId,
+) -> Result<Box<[ResolvedName]>, Cancelled> {
+    Ok(walk_names(reads, file, tree, Some(target))?.names)
+}
+
+fn walk_names(
+    reads: &mut Reads<'_>,
+    file: FileId,
+    tree: &SyntaxTree,
+    target: Option<NodeId>,
+) -> Result<BodyNames, Cancelled> {
     let set = reads.snapshot.file(file)?.set;
     let fs = reads.file_scope(file)?;
     let names = reads.snapshot.names().clone();
@@ -604,8 +628,9 @@ fn compute(reads: &mut Reads<'_>, file: FileId) -> Result<BodyNames, Cancelled> 
         candidates: Map::default(),
         classes: Vec::new(),
         next_check: 0,
+        target,
     };
-    w.walk(&tree)?;
+    w.walk(tree)?;
     let mut out = std::mem::take(&mut w.out);
     out.sort_by_key(|n| n.node);
     out.dedup_by_key(|n| n.node);
@@ -869,6 +894,21 @@ impl Walker<'_, '_, '_> {
             return Ok(true);
         }
         let summary = self.summary_types.last().map(|t| t.index);
+        if let Some(target) = self.target {
+            let starts = match kind {
+                SyntaxKind::Block => {
+                    is_method_like(parent.kind()) || parent.kind() == SyntaxKind::Initializer
+                }
+                SyntaxKind::DefaultValue | SyntaxKind::AnnotationArguments => true,
+                SyntaxKind::Arguments | SyntaxKind::ClassBody => {
+                    parent.kind() == SyntaxKind::EnumConstant
+                }
+                _ => parent.kind() == SyntaxKind::VariableDeclarator && kind != SyntaxKind::Dim,
+            };
+            if starts && node.id() != target {
+                return Ok(false);
+            }
+        }
         match kind {
             SyntaxKind::Block if is_method_like(parent.kind()) => {
                 self.start_region(node, summary, false);

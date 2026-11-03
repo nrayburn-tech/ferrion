@@ -23,6 +23,7 @@ mod decl;
 mod lub;
 mod print;
 mod relations;
+mod support;
 #[cfg(test)]
 mod tests;
 
@@ -36,9 +37,10 @@ pub use self::relations::{Member, MethodType};
 
 use self::decl::{Body, Decl};
 use crate::body::{Map, Set};
+use crate::engine::derived::Dep;
 use crate::summary::{Primitive, TypeKind};
 use crate::symbols::{Cause, ErrorSymbol, Ty, TyPart, TypeKey, TypeVarOwner};
-use crate::{Cancelled, Interner, Name, Snapshot, SourceSetId};
+use crate::{Cancelled, Fingerprint, Interner, Name, Snapshot, SourceSetId};
 
 /// A three-valued answer: `Yes` with what was found, `No`, or `Unknown` with why.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -157,6 +159,17 @@ pub struct TypeContext<'s> {
     next_check: u64,
     init: Name,
     texts: print::Texts,
+    /// What the context read of derived entries, for a derived entry computed with it; `None`
+    /// when not recorded.
+    recorded: Option<Vec<(Dep, Fingerprint)>>,
+}
+
+/// A context's fuel and use, kept while something else draws on it.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct Fuel {
+    fuel: u64,
+    used: u64,
+    next_check: u64,
 }
 
 impl Snapshot {
@@ -188,7 +201,23 @@ impl Snapshot {
             used: 0,
             next_check: 4096,
             texts: print::Texts::default(),
+            recorded: None,
         }
+    }
+
+    /// A context whose types are those of `arena`, a result's: for reading and printing them.
+    pub fn types_in(&self, view: SourceSetId, arena: Arena) -> TypeContext<'_> {
+        let mut cx = self.types(view);
+        cx.arena = arena;
+        cx
+    }
+
+    /// A context for a derived entry's computation, which records the entries it reads
+    /// ([`TypeContext::take_reads`]).
+    pub(crate) fn recording_types(&self, view: SourceSetId) -> TypeContext<'_> {
+        let mut cx = self.types(view);
+        cx.recorded = Some(Vec::new());
+        cx
     }
 }
 
@@ -228,6 +257,61 @@ impl<'s> TypeContext<'s> {
     /// The steps taken since the last [`TypeContext::refuel`].
     pub fn fuel_used(&self) -> u64 {
         self.used.min(self.fuel)
+    }
+
+    /// Whether the fuel has run out since the last [`TypeContext::refuel`].
+    pub fn out_of_fuel(&self) -> bool {
+        self.used > self.fuel
+    }
+
+    pub(crate) fn save_fuel(&self) -> Fuel {
+        Fuel {
+            fuel: self.fuel,
+            used: self.used,
+            next_check: self.next_check,
+        }
+    }
+
+    pub(crate) fn restore_fuel(&mut self, fuel: Fuel) {
+        self.fuel = fuel.fuel;
+        self.used = fuel.used;
+        self.next_check = fuel.next_check;
+    }
+
+    /// The entries read since the context was made or this was last called, for a derived
+    /// entry's dependencies.
+    pub(crate) fn take_reads(&mut self) -> Vec<(Dep, Fingerprint)> {
+        match &mut self.recorded {
+            Some(reads) => std::mem::take(reads),
+            None => Vec::new(),
+        }
+    }
+
+    /// Records a read of a derived entry, if the context records them.
+    pub(crate) fn record(&mut self, dep: Dep, fingerprint: Fingerprint) {
+        if let Some(reads) = &mut self.recorded {
+            reads.push((dep, fingerprint));
+        }
+    }
+
+    /// A source type's entry, or a local class's, recorded.
+    fn entry(&mut self, key: TypeKey) -> Result<Option<Arc<crate::symbols::TypeEntry>>, Cancelled> {
+        match key {
+            TypeKey::Source { .. } | TypeKey::Compact { .. } if self.recorded.is_some() => {
+                let memo = self.snapshot.type_entry_memo(key)?;
+                self.record(Dep::TypeEntry(key), memo.fingerprint);
+                Ok(Some(memo.value.clone()))
+            }
+            TypeKey::Local { file, .. } if self.recorded.is_some() => {
+                let entry = self.snapshot.type_entry(key)?;
+                if self.snapshot.file_exists(file)? {
+                    let memo = self.snapshot.body_memo(file)?;
+                    self.record(Dep::BodyNames(file), memo.fingerprint);
+                }
+                Ok(entry)
+            }
+            _ => self.snapshot.type_entry(key),
+        }
     }
 
     /// One step of a relation's recursion.
@@ -316,7 +400,7 @@ impl<'s> TypeContext<'s> {
                 init: self.init,
             }));
         }
-        let Some(entry) = self.snapshot.type_entry(key)? else {
+        let Some(entry) = self.entry(key)? else {
             return Ok(None);
         };
         let enclosing = match key {
@@ -336,7 +420,7 @@ impl<'s> TypeContext<'s> {
             && !entry.modifiers.contains(crate::summary::Modifiers::STATIC);
         if inner && let Some(outer) = enclosing {
             // A member of an interface is static (JLS 9.5).
-            let outer = self.snapshot.type_entry(outer)?;
+            let outer = self.entry(outer)?;
             inner = outer
                 .is_some_and(|o| !matches!(o.kind, TypeKind::Interface | TypeKind::Annotation));
         }

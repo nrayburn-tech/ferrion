@@ -784,14 +784,16 @@ fn conversions() {
              List<Integer> li; T t; Long bl; }}"
         ),
         |cx| {
-            let steps = |cx: &mut TypeContext<'_>, context, from: &str, to: &str, constant| {
-                let (a, b) = (f(cx, from), f(cx, to));
-                match cx.convert(context, a, b, constant).unwrap() {
-                    Tri::Yes(steps) => Some(steps.as_slice().to_vec()),
-                    Tri::No => None,
-                    Tri::Unknown(why) => panic!("unknown {why:?}"),
-                }
-            };
+            let steps =
+                |cx: &mut TypeContext<'_>, context, from: &str, to: &str, constant: Option<i32>| {
+                    let (a, b) = (f(cx, from), f(cx, to));
+                    let constant = constant.map(crate::constants::Constant::Int);
+                    match cx.convert(context, a, b, constant.as_ref()).unwrap() {
+                        Tri::Yes(steps) => Some(steps.as_slice().to_vec()),
+                        Tri::No => None,
+                        Tri::Unknown(why) => panic!("unknown {why:?}"),
+                    }
+                };
             let a = Context::Assignment;
             assert_eq!(
                 steps(cx, a, "i", "b", Some(42)),

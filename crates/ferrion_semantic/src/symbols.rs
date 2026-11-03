@@ -17,6 +17,7 @@
 use std::fmt;
 use std::sync::Arc;
 
+use crate::constants::Constant;
 use crate::summary::{MethodKind, Modifiers, Primitive, TypeKind, WildcardBound};
 use crate::{FileId, Interner, Name, Path, SourceSetId};
 
@@ -78,6 +79,14 @@ impl TypeKey {
 /// class entry's methods.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub struct MethodRef {
+    pub owner: TypeKey,
+    pub index: u32,
+}
+
+/// A field or enum constant of a type: the `index`th of its source entry's, local entry's, or
+/// class entry's fields.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+pub struct FieldRef {
     pub owner: TypeKey,
     pub index: u32,
 }
@@ -448,6 +457,9 @@ pub struct ClassField {
     pub name: Name,
     pub access: u16,
     pub ty: Ty,
+    /// A `final` field's `ConstantValue` attribute, typed as the field is: the value javac
+    /// compiled for a constant variable.
+    pub constant: Option<Constant>,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]

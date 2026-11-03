@@ -5,6 +5,7 @@
 use super::relations::primitive_subtype;
 use super::{R, Tri, Type, TypeArg, TypeContext, TypeId, Why};
 use crate::Cancelled;
+use crate::constants::Constant;
 use crate::summary::{Primitive, WildcardBound};
 use crate::symbols::TypeKey;
 
@@ -141,15 +142,16 @@ impl TypeContext<'_> {
     }
 
     /// The conversions that take a value of type `from` to `to` in `context`, in the order
-    /// applied; `constant` is the value of a constant expression of type `int`, `short`, `char`,
-    /// or `byte`, for assignment's narrowing of constants (JLS 5.2).
+    /// applied; `constant` is the value of `from`'s expression if it is a constant expression,
+    /// whose value assignment narrows to `byte`, `short`, or `char` when it fits (JLS 5.2).
     pub fn convert(
         &mut self,
         context: Context,
         from: TypeId,
         to: TypeId,
-        constant: Option<i32>,
+        constant: Option<&Constant>,
     ) -> Result<Tri<Steps>, Cancelled> {
+        let constant = constant.and_then(Constant::int_value);
         self.top(
             |_| Tri::Unknown(Why::Limit),
             |cx| cx.convert_(context, from, to, constant),
