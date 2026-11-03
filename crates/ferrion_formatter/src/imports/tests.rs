@@ -79,7 +79,7 @@ fn unused_own_package_and_duplicate_imports_go() {
 #[test]
 fn wildcards_modules_and_java_lang_stay() {
     let input = "package p;\n\nimport static a.B.*;\n\nimport module java.base;\n\nimport \
-                 java.lang.String;\nimport java.util.*;\nimport p.*;\n\nclass T {\n  String s;\n}\n";
+                 java.lang.Deprecated;\nimport java.lang.String;\nimport java.util.*;\nimport p.*;\n\nclass T {\n  String s;\n}\n";
     assert_eq!(formatted(input), input);
 }
 
