@@ -512,10 +512,13 @@ exception, and none differ otherwise.
 With the import section one unit (decision 11), the test compares the section as one run when
 the clean file's is rewritten. Which imports the section keeps depends on the code that uses them,
 which the change can delete, so a difference in a copy whose kept imports aren't the clean file's
-is counted with the type-use exception. With the same seed and count: 2.84 million runs, 3.6%
-affected, 6.3% of the rest shifted (26.4% after a broken brace; a section rewritten in one file
-and not in the other doesn't match), 2,569,980 the same, 239 in the import exception, and none
-differ otherwise.
+is counted with the type-use exception, and the gaps next to a section whose imports are all
+removed, or before a comment that goes with the code after, aren't compared, since the range
+leaves them to that code. With the same seed and count, and comments counted by the output
+(above): 2.85 million runs, 3.6% affected, 6.5% of the rest shifted (27.9% after a broken brace;
+a section rewritten in one file and not in the other doesn't match), 2,570,309 the same, 151 in
+the import exception, and none differ otherwise. On javac's tests: 334,681 runs, 245,559 the
+same, 51 in the import exception, none differing.
 
 **Parser follow-ups,** after A2 (decided in review, 12), found by the range test:
 

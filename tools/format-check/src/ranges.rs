@@ -692,7 +692,9 @@ fn compare(
     }
     // The line breaks after, when the code after is the clean file's.
     let after = units.end..expanded.after;
+    // A comment after the units goes with the code after it, which formats the gap before it.
     if after_matches
+        && !expanded.comment_after
         && !mutation.touches(after.clone())
         && mutation.to_clean(after.end) == Some(clean_expanded.after)
     {
