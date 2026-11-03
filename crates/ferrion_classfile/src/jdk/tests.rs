@@ -261,6 +261,31 @@ fn own_release_from_ctsym() {
             .unwrap()
             .is_none()
     );
+
+    // Without `--release`, javac sees the image: every module, internal packages included.
+    let image = jdk.image_platform().unwrap();
+    assert!(Arc::ptr_eq(&image, &jdk.image_platform().unwrap()));
+    assert_eq!(image.source(), PlatformSource::Image);
+    assert_eq!(image.release(), 25);
+    let listing = image
+        .package(&PackageName::new("jdk/internal/misc"))
+        .unwrap()
+        .unwrap();
+    assert_eq!(listing.names().collect::<Vec<_>>(), ["Unsafe"]);
+    assert_eq!(
+        image.module_of(&ClassName::new("jdk/internal/misc/Unsafe")),
+        Some("java.base".to_owned())
+    );
+    assert!(
+        image
+            .find(&ClassName::new("jdk/swing/interop/X"))
+            .unwrap()
+            .is_some()
+    );
+    assert_eq!(image.modules().len(), 3);
+    // Found, but the module graph doesn't export it.
+    assert!(!image.is_visible(&PackageName::new("jdk/internal/misc")));
+    assert!(image.is_visible(&PackageName::new("java/lang")));
 }
 
 #[test]
@@ -342,6 +367,7 @@ fn jdk_8_reads_rt_jar_through_ct_sym() {
     assert_eq!(jdk.platform(11).unwrap_err().kind(), ErrorKind::Usage);
     let platform = jdk.platform(8).unwrap();
     assert_eq!(platform.source(), PlatformSource::BootClassPath);
+    assert!(Arc::ptr_eq(&platform, &jdk.image_platform().unwrap()));
     let object = platform
         .find(&ClassName::new("java/lang/Object"))
         .unwrap()

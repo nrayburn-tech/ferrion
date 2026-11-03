@@ -106,6 +106,8 @@ pub struct Jdk {
     version: u32,
     layout: Layout,
     platforms: Mutex<HashMap<u32, Weak<PlatformApi>>>,
+    /// [`Jdk::image_platform`]'s, shared like `platforms`.
+    image_platform: Mutex<Weak<PlatformApi>>,
 }
 
 impl std::fmt::Debug for Jdk {
@@ -187,6 +189,7 @@ impl Jdk {
             version,
             layout,
             platforms: Mutex::new(HashMap::new()),
+            image_platform: Mutex::new(Weak::new()),
         })
     }
 
@@ -320,6 +323,29 @@ impl Jdk {
             return Ok(found);
         }
         platforms.insert(release, Arc::downgrade(&platform));
+        Ok(platform)
+    }
+
+    /// The platform API javac sees without `--release` (with `-source` and `-target`, or
+    /// neither): the JDK's own image, every module of it, internal packages included, at the
+    /// JDK's own release. It differs from `platform(<the JDK's version>)` when `ct.sym` has the
+    /// JDK's own release, as from JDK 25: `ct.sym` has only what the modules export (observed
+    /// with javac 27: `-source 17 --add-exports java.base/sun.security.jca=ALL-UNNAMED` finds
+    /// `sun.security.jca.Providers`, which `--release 17` doesn't have, and `-source 8` finds it
+    /// without the option). JDK 8's is its `platform(8)`. Shared while anyone holds it.
+    pub fn image_platform(&self) -> Result<Arc<PlatformApi>> {
+        if matches!(self.layout, Layout::Jdk8 { .. }) {
+            return self.platform(8);
+        }
+        let mut slot = self
+            .image_platform
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if let Some(found) = slot.upgrade() {
+            return Ok(found);
+        }
+        let platform = Arc::new(self.build(self.version, Choice::Image(None))?);
+        *slot = Arc::downgrade(&platform);
         Ok(platform)
     }
 

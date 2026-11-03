@@ -28,7 +28,7 @@ pub struct TypeInputs {
 pub struct SourceSetTypes {
     pub jdk: Arc<Jdk>,
     /// The platform API at the source set's release, or, for [`PlatformKind::Jdk`], the JDK's
-    /// own whole API. Which packages code sees in it is the module graph's, which the source
+    /// own image, internal packages included (`Jdk::image_platform`). Which packages code sees in it is the module graph's, which the source
     /// set's compile options change (`ferrion_semantic` applies them).
     pub platform: Arc<PlatformApi>,
     /// The `--patch-module` entries, by module, in the model's order: jars and directories whose
@@ -215,12 +215,12 @@ fn open_platform(
         );
         return None;
     }
-    // `-source` and `-target` see the JDK's own API, whatever the release.
-    let api = match set.compile.platform {
-        PlatformKind::Release => release,
-        PlatformKind::Jdk => jdk.feature_version(),
+    // `-source` and `-target` see the JDK's own image, whatever the release.
+    let platform = match set.compile.platform {
+        PlatformKind::Release => jdk.platform(release),
+        PlatformKind::Jdk => jdk.image_platform(),
     };
-    match jdk.platform(api) {
+    match platform {
         Ok(platform) => Some((jdk, platform)),
         Err(e) => {
             problems.push(InputError::error(e.to_string(), home.origin.clone()));
