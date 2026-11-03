@@ -4,12 +4,15 @@
 //! Each file is formatted by Ferrion at the newest release it's meant for, and by GJF to a fixed
 //! point (see [`crate::gjf`]). Files GJF rejects, files with `@formatter:off` or `@formatter:on`
 //! (which GJF doesn't recognize), files whose GJF output doesn't settle, and files Ferrion skips
-//! are left out, and counted. For the rest, the measure is the number of lines that differ: a line
-//! diff's insertions plus deletions (see [`crate::diff`]).
+//! are left out, and counted. A file Ferrion panics on is left out too, and fails the run. For the
+//! rest, the measure is the number of lines that differ: a line diff's insertions plus deletions
+//! (see [`crate::diff`]).
 //!
 //! The totals per project are tracked in `gjf-diff.toml`. `--check` fails if a project's
-//! differing lines are above the committed number, and `--update` writes the new numbers.
+//! differing lines are above the committed number, or its files compared below it, since a file
+//! left out takes its differing lines with it. `--update` writes the new numbers.
 
+use std::panic::{self, AssertUnwindSafe};
 use std::path::Path;
 use std::time::{Duration, Instant};
 
@@ -41,6 +44,8 @@ struct Stats {
     skipped: usize,
     /// Files that aren't UTF-8 or ASCII, which Ferrion skips before parsing.
     not_utf8: usize,
+    /// Files Ferrion's formatter panicked on.
+    panicked: usize,
     /// Files GJF changed again on its second run, so that they settled only on the third.
     slow_to_settle: usize,
     ferrion_time: Duration,
@@ -57,6 +62,7 @@ impl Stats {
         self.unsettled += other.unsettled;
         self.skipped += other.skipped;
         self.not_utf8 += other.not_utf8;
+        self.panicked += other.panicked;
         self.slow_to_settle += other.slow_to_settle;
         self.ferrion_time += other.ferrion_time;
         self.gjf_time += other.gjf_time;
@@ -70,7 +76,7 @@ impl Stats {
         println!(
             "{name}: {} files compared, {} identical ({}), {} lines differ{tracked}; left out: {} \
              rejected by GJF, {} with formatter markers, {} that didn't settle, {} skipped by \
-             Ferrion, {} not UTF-8; {} needed a second GJF pass; Ferrion in {:.2} s, GJF \
+             Ferrion, {} not UTF-8, {} Ferrion panicked on; {} needed a second GJF pass; Ferrion in {:.2} s, GJF \
              in {:.1} s",
             self.compared,
             self.identical,
@@ -81,6 +87,7 @@ impl Stats {
             self.unsettled,
             self.skipped,
             self.not_utf8,
+            self.panicked,
             self.slow_to_settle,
             self.ferrion_time.as_secs_f64(),
             self.gjf_time.as_secs_f64(),
@@ -106,8 +113,8 @@ pub struct Entry {
 }
 
 /// Compares every target's files, prints a line per target, a total, the largest differences, and
-/// a sample of hunks, and returns whether the run passed: always, unless `--check` finds a target
-/// above its committed number.
+/// a sample of hunks, and returns whether the run passed: unless Ferrion panicked on a file, or
+/// `--check` finds a target above its committed differing lines or below its files compared.
 pub fn run(targets: Vec<(String, Vec<Source>)>, options: &Options) -> Result<bool> {
     let dirs = corpus::Dirs::new()?;
     let gjf = Gjf::new(&dirs, options.jobs, options.batch)?;
@@ -137,6 +144,7 @@ pub fn run(targets: Vec<(String, Vec<Source>)>, options: &Options) -> Result<boo
         rejected,
         unsettled,
         slow,
+        panicked,
     } = found;
     differing.sort_by(|a, b| b.lines.cmp(&a.lines).then(a.display.cmp(&b.display)));
     if !differing.is_empty() && options.largest > 0 {
@@ -158,6 +166,7 @@ pub fn run(targets: Vec<(String, Vec<Source>)>, options: &Options) -> Result<boo
         }
     }
     for (title, list) in [
+        ("Ferrion panicked on", &panicked),
         ("rejected by GJF", &rejected),
         ("didn't settle", &unsettled),
         ("needed a second GJF pass", &slow),
@@ -173,7 +182,7 @@ pub fn run(targets: Vec<(String, Vec<Source>)>, options: &Options) -> Result<boo
         }
     }
 
-    let mut passed = true;
+    let mut passed = panicked.is_empty();
     if options.check {
         println!();
         for (name, entry) in &results {
@@ -183,6 +192,13 @@ pub fn run(targets: Vec<(String, Vec<Source>)>, options: &Options) -> Result<boo
                     println!(
                         "{name}: {} lines differ, more than the {} committed",
                         entry.differing_lines, committed.differing_lines
+                    );
+                    passed = false;
+                }
+                Some(committed) if entry.compared < committed.compared => {
+                    println!(
+                        "{name}: {} files compared, fewer than the {} committed",
+                        entry.compared, committed.compared
                     );
                     passed = false;
                 }
@@ -213,6 +229,7 @@ struct Found {
     rejected: Vec<String>,
     unsettled: Vec<String>,
     slow: Vec<String>,
+    panicked: Vec<String>,
 }
 
 /// Compares one target's files, adding to `stats` and `found`.
@@ -232,11 +249,17 @@ fn compare(gjf: &Gjf, sources: &[Source], stats: &mut Stats, found: &mut Found) 
         }
         let release = *source.releases.last().unwrap();
         let start = Instant::now();
-        let output = ferrion_output(&text, release);
+        let output = panic::catch_unwind(AssertUnwindSafe(|| ferrion_output(&text, release)));
         stats.ferrion_time += start.elapsed();
         match output {
-            Some(output) => files.push((source, bytes, output)),
-            None => stats.skipped += 1,
+            Ok(Some(output)) => files.push((source, bytes, output)),
+            Ok(None) => stats.skipped += 1,
+            Err(_) => {
+                stats.panicked += 1;
+                found
+                    .panicked
+                    .push(format!("{} at {release}", source.display));
+            }
         }
     }
 
