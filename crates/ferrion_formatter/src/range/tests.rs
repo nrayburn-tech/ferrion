@@ -98,6 +98,14 @@ fn the_gap_after_keeps_the_next_lines_indentation() {
 }
 
 #[test]
+fn a_comment_after_the_units_keeps_its_line() {
+    // Moving the comment to the next line would leave `/* c */ int x;`, which formatting the
+    // whole file keeps on one line, where it formats the input with the comment alone.
+    let text = "class A { /* c */ int x;\n}\n";
+    assert_eq!(formatted(text, "class").unwrap(), text);
+}
+
+#[test]
 fn a_clean_files_edits_are_whole_file_formattings() {
     let source = SourceText::decode(METHOD).unwrap();
     let tree = tree(METHOD);

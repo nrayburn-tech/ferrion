@@ -233,14 +233,14 @@ impl<'t> Ranges<'t> {
             .and_then(|t| t.prev_token())
             .and_then(piece_before)
             .map_or(0, piece_end);
-        let after = tree
+        let next = tree
             .token_at_offset(units_end)
-            .and_then(|t| piece_after(t, units_end))
-            .map_or(text_len, |t| t.span().start);
+            .and_then(|t| piece_after(t, units_end));
         Some(Expanded {
             units: units_start..units_end,
             before,
-            after,
+            after: next.map_or(text_len, |t| t.span().start),
+            comment_after: next.is_some_and(|t| is_comment(t.kind())),
         })
     }
 
@@ -282,6 +282,8 @@ pub struct Expanded {
     /// The start of the piece after the units, or the end of the text: the gap after them ends
     /// here.
     pub after: u32,
+    /// Whether the piece after the units is a comment, which leads the code after it.
+    pub comment_after: bool,
 }
 
 /// A run of a unit's own tokens, which a range touching any of them formats.
@@ -460,11 +462,17 @@ fn keep(text: &str, edits: &[Edit], expanded: &Expanded) -> Vec<Edit> {
         if range.start > after {
             break;
         }
-        // Inside the units, or in the gap before them.
-        if range.start >= before && range.end <= units.end {
+        // In the gap after the units, an insertion at their end included; inside them, or in
+        // the gap before them.
+        if range.start >= units.end && range.end <= after {
+            kept.extend(line_breaks(
+                text,
+                units.end..after,
+                edit,
+                expanded.comment_after,
+            ));
+        } else if range.start >= before && range.end <= units.end {
             kept.push(edit.clone());
-        } else if range.start >= units.end && range.end <= after {
-            kept.extend(line_breaks(text, units.end..after, edit));
         }
     }
     kept
@@ -474,8 +482,11 @@ fn keep(text: &str, edits: &[Edit], expanded: &Expanded) -> Vec<Edit> {
 /// output's line breaks, and the whitespace before them, with the input's indentation of the
 /// line after. When either has no line break there, all of the output's gap: code on the line
 /// after the units moves up onto it, as GJF moves an enum's `;` up after its last constant, and
-/// code on their last line moves to a line of its own (observed).
-fn line_breaks(text: &str, gap: Range<u32>, edit: &Edit) -> Option<Edit> {
+/// code on their last line moves to a line of its own (observed). A comment after them, `before`
+/// one, stays on its line, since it belongs to the code after it, whose layout it decides: the
+/// whole file formats `{ /* c */ int x;` with the comment on a line of its own, but `{` then
+/// `/* c */ int x;` with the comment and `int x;` on one line.
+fn line_breaks(text: &str, gap: Range<u32>, edit: &Edit, before: bool) -> Option<Edit> {
     let input = &text[gap.start as usize..gap.end as usize];
     let output = [
         &text[gap.start as usize..edit.range.start as usize],
@@ -486,6 +497,7 @@ fn line_breaks(text: &str, gap: Range<u32>, edit: &Edit) -> Option<Edit> {
     let after_last_break = |s: &str| s.rfind(['\n', '\r']).map(|i| i + 1);
     let wanted = match (after_last_break(input), after_last_break(&output)) {
         (Some(i), Some(o)) => [&output[..o], &input[i..]].concat(),
+        _ if before => return None,
         _ => output,
     };
     edits::gap_edit(input, wanted.as_bytes(), gap.start)
