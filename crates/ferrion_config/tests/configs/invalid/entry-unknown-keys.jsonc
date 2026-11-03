@@ -1,0 +1,10 @@
+// schema: rejects
+{
+  "configs": [
+    { "files": ["src/**"] },
+    { "name": "legacy",
+      "ignore": ["**/legacy/**"],
+      "plugins": ["example"],
+      "severity": "warn" }
+  ]
+}

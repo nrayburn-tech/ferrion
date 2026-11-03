@@ -12,6 +12,7 @@ publish = false
 [workspace.dependencies]
 corpus = { path = "tools/corpus" }
 ferrion_classfile = { path = "crates/ferrion_classfile" }
+ferrion_config = { path = "crates/ferrion_config" }
 ferrion_diagnostics = { path = "crates/ferrion_diagnostics" }
 ferrion_doc_comments = { path = "crates/ferrion_doc_comments" }
 ferrion_formatter = { path = "crates/ferrion_formatter" }
@@ -24,6 +25,8 @@ ferrion_stack = { path = "crates/ferrion_stack" }
 ferrion_syntax = { path = "crates/ferrion_syntax" }
 
 anyhow = "1"
+# Without the default `log` feature.
+globset = { version = "0.4.20", default-features = false }
 miniz_oxide = "0.9.1"
 nix = { version = "0.31", features = ["resource"] }
 # Only the parser: the default features add an HTML renderer and a command-line option parser.

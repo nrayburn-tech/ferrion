@@ -1,0 +1,19 @@
+{
+  "$schema": "https://example.com/ferrion.schema.json",
+  "linterOptions": { "reportUnusedDisableDirectives": "warn" },
+  "configs": [
+    { "ignores": ["**/legacy/**"] },
+    {
+      "files": ["**/*.java"],
+      "rules": {
+        "no-equals-without-hashcode": "error",
+        "no-unused-variable": { "level": "warn", "options": { "ignorePattern": "^_" } }
+      }
+    },
+    {
+      "files": ["src/test/**"],
+      "rules": { "no-unused-variable": "off" },
+      "format": { "enabled": false }
+    }
+  ]
+}

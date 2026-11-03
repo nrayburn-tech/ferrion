@@ -1,0 +1,809 @@
+=== duplicate-key.jsonc
+error: duplicate key `files`
+ --> ferrion.jsonc:4:60
+  |
+4 |     { "files": ["src/**"], "format": { "enabled": false }, "files": ["test/**"] }
+  |       ------- first given here
+  |                                                            ^^^^^^^ given again here
+  = help: only one of them would be used: remove the other
+
+error: duplicate key `configs`
+ --> ferrion.jsonc:6:3
+  |
+3 |   "configs": [
+  |   --------- first given here
+...
+6 |   "configs": []
+  |   ^^^^^^^^^ given again here
+  = help: only one of them would be used: remove the other
+
+=== entry-not-an-object.jsonc
+error: `configs[0]` must be an object
+ --> ferrion.jsonc:2:15
+  |
+2 | { "configs": ["src/**", null] }
+  |               ^^^^^^^^ found a string
+  = help: an entry is an object with `files`, `ignores`, `rules`, or `format`
+
+error: `configs[1]` must be an object
+ --> ferrion.jsonc:2:25
+  |
+2 | { "configs": ["src/**", null] }
+  |                         ^^^^ found null
+  = help: an entry is an object with `files`, `ignores`, `rules`, or `format`
+
+=== entry-unknown-keys.jsonc
+error: unknown key `ignore` in configs[1] "legacy"
+ --> ferrion.jsonc:6:7
+  |
+6 |       "ignore": ["**/legacy/**"],
+  |       ^^^^^^^^ did you mean `ignores`?
+
+error: unknown key `plugins` in configs[1] "legacy"
+ --> ferrion.jsonc:7:7
+  |
+7 |       "plugins": ["example"],
+  |       ^^^^^^^^^
+  = help: `plugins` goes in the config's root object, not in an entry
+
+error: unknown key `severity` in configs[1] "legacy"
+ --> ferrion.jsonc:8:7
+  |
+8 |       "severity": "warn" }
+  |       ^^^^^^^^^^
+  = help: the keys here are `name`, `files`, `ignores`, `rules`, and `format`
+
+=== entry-wrong-types.jsonc
+error: `name` must be a string
+ --> ferrion.jsonc:4:15
+  |
+4 |     { "name": 1, "files": "src/**", "ignores": { "a": 1 } },
+  |               ^ found a number
+
+error: `files` must be an array of globs
+ --> ferrion.jsonc:4:27
+  |
+4 |     { "name": 1, "files": "src/**", "ignores": { "a": 1 } },
+  |                           ^^^^^^^^ found a string
+
+error: `ignores` must be an array of globs
+ --> ferrion.jsonc:4:48
+  |
+4 |     { "name": 1, "files": "src/**", "ignores": { "a": 1 } },
+  |                                                ^^^^^^^^^^ found an object
+
+error: `rules` must be an object
+ --> ferrion.jsonc:5:16
+  |
+5 |     { "rules": ["no-unused-variable"], "format": false }
+  |                ^^^^^^^^^^^^^^^^^^^^^^ found an array
+
+error: `format` must be an object
+ --> ferrion.jsonc:5:50
+  |
+5 |     { "rules": ["no-unused-variable"], "format": false }
+  |                                                  ^^^^^ found a boolean
+
+=== files-empty.jsonc
+error: `files` can't be empty
+ --> ferrion.jsonc:2:26
+  |
+2 | { "configs": [{ "files": [], "format": { "enabled": false } }] }
+  |                          ^^ this entry would apply to no file
+  = help: to apply the entry to every `*.java` file, leave `files` out
+
+=== format-errors.jsonc
+error: `format.enabled` must be true or false
+ --> ferrion.jsonc:6:30
+  |
+6 |       "format": { "enabled": "no" } },
+  |                              ^^^^ found a string
+
+error: unknown key `enable` in configs[2].format
+ --> ferrion.jsonc:7:19
+  |
+7 |     { "format": { "enable": false } }
+  |                   ^^^^^^^^ did you mean `enabled`?
+
+=== glob-empty.jsonc
+error: a glob can't be empty
+ --> ferrion.jsonc:2:27
+  |
+2 | { "configs": [{ "files": [""] }] }
+  |                           ^^
+
+=== glob-errors.jsonc
+error: a glob can't start with `!`
+ --> ferrion.jsonc:4:17
+  |
+4 |     { "files": ["!**/generated/**"] },
+  |                 ^^^^^^^^^^^^^^^^^^ negation isn't supported
+  = help: to leave files out of an entry, put a glob for them in its `ignores`
+
+error: a glob can't be an absolute path
+ --> ferrion.jsonc:5:17
+  |
+5 |     { "files": ["/src/**"] },
+  |                 ^^^^^^^^^ globs are relative to the working directory
+
+error: a glob can't be an absolute path
+ --> ferrion.jsonc:6:17
+  |
+6 |     { "files": ["C:\\src\\**"] },
+  |                 ^^^^^^^^^^^^^ globs are relative to the working directory
+
+error: a glob can't contain `..`
+ --> ferrion.jsonc:7:17
+  |
+7 |     { "files": ["../shared/**"] },
+  |                 ^^^^^^^^^^^^^^ globs are relative to the working directory, and can't match
+  |                                outside it
+
+error: a glob can't contain `..`
+ --> ferrion.jsonc:8:17
+  |
+8 |     { "files": ["src/../shared/**"] },
+  |                 ^^^^^^^^^^^^^^^^^^ globs are relative to the working directory, and can't match
+  |                                    outside it
+
+error: `\m` isn't an escape in a glob
+ --> ferrion.jsonc:9:17
+  |
+9 |     { "files": ["src\\main\\**"] },
+  |                 ^^^^^^^^^^^^^^^ `\` makes the character after it literal, and this one needs no
+  |                                 escaping
+  = help: folders are separated by `/`: `src/main/**`
+
+error: a glob can't end with `\`
+  --> ferrion.jsonc:10:17
+   |
+10 |     { "files": ["a\\"] },
+   |                 ^^^^^ `\` makes the character after it literal, and there is none
+
+error: unclosed `[` in a glob
+  --> ferrion.jsonc:11:17
+   |
+11 |     { "files": ["src/[a.java"] },
+   |                 ^^^^^^^^^^^^^ a character class needs a closing `]`
+   = help: to match `[` itself, write `\[`
+
+error: unclosed `{` in a glob
+  --> ferrion.jsonc:12:17
+   |
+12 |     { "files": ["src/{main,test/**"] },
+   |                 ^^^^^^^^^^^^^^^^^^^ alternatives need a closing `}`
+   = help: to match `{` itself, write `\{`
+
+error: unmatched `}` in a glob
+  --> ferrion.jsonc:13:17
+   |
+13 |     { "files": ["src/main}/**"] },
+   |                 ^^^^^^^^^^^^^^ there is no `{` before it
+   = help: to match `}` itself, write `\}`
+
+error: invalid range `z-a` in a glob
+  --> ferrion.jsonc:14:17
+   |
+14 |     { "files": ["src/[z-a].java"] }
+   |                 ^^^^^^^^^^^^^^^^ a range goes from the lower character to the higher
+
+=== glob-not-a-string.jsonc
+error: `files[1]` must be a string
+ --> ferrion.jsonc:2:37
+  |
+2 | { "configs": [{ "files": ["src/**", 7], "ignores": [null] }] }
+  |                                     ^ found a number
+
+error: `ignores[0]` must be a string
+ --> ferrion.jsonc:2:53
+  |
+2 | { "configs": [{ "files": ["src/**", 7], "ignores": [null] }] }
+  |                                                     ^^^^ found null
+
+=== linter-options-levels.jsonc
+error: unknown level `wrn`
+ --> ferrion.jsonc:3:55
+  |
+3 |   "linterOptions": { "reportUnusedDisableDirectives": "wrn" }
+  |                                                       ^^^^^ did you mean `warn`?
+
+=== linter-options.jsonc
+error: unknown key `reportUnusedDisableDirective` in linterOptions
+ --> ferrion.jsonc:4:5
+  |
+4 |     "reportUnusedDisableDirective": "warn",
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ did you mean `reportUnusedDisableDirectives`?
+
+error: `linterOptions.reportUnusedDisableDirectives` must be a level
+ --> ferrion.jsonc:5:38
+  |
+5 |     "reportUnusedDisableDirectives": 2,
+  |                                      ^ found a number
+  = help: the levels are `off`, `info`, `warn`, and `error`
+
+error: unknown key `other` in linterOptions
+ --> ferrion.jsonc:6:5
+  |
+6 |     "other": true
+  |     ^^^^^^^
+  = help: the only key here is `reportUnusedDisableDirectives`
+
+=== many-errors.jsonc
+error: `format.enabled` must be true or false
+ --> ferrion.jsonc:4:30
+  |
+4 |     { "format": { "enabled": 0 } },
+  |                              ^ found a number
+
+error: `format.enabled` must be true or false
+ --> ferrion.jsonc:5:30
+  |
+5 |     { "format": { "enabled": 1 } },
+  |                              ^ found a number
+
+error: `format.enabled` must be true or false
+ --> ferrion.jsonc:6:30
+  |
+6 |     { "format": { "enabled": 2 } },
+  |                              ^ found a number
+
+error: `format.enabled` must be true or false
+ --> ferrion.jsonc:7:30
+  |
+7 |     { "format": { "enabled": 3 } },
+  |                              ^ found a number
+
+error: `format.enabled` must be true or false
+ --> ferrion.jsonc:8:30
+  |
+8 |     { "format": { "enabled": 4 } },
+  |                              ^ found a number
+
+error: `format.enabled` must be true or false
+ --> ferrion.jsonc:9:30
+  |
+9 |     { "format": { "enabled": 5 } },
+  |                              ^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:10:30
+   |
+10 |     { "format": { "enabled": 6 } },
+   |                              ^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:11:30
+   |
+11 |     { "format": { "enabled": 7 } },
+   |                              ^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:12:30
+   |
+12 |     { "format": { "enabled": 8 } },
+   |                              ^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:13:30
+   |
+13 |     { "format": { "enabled": 9 } },
+   |                              ^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:14:30
+   |
+14 |     { "format": { "enabled": 10 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:15:30
+   |
+15 |     { "format": { "enabled": 11 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:16:30
+   |
+16 |     { "format": { "enabled": 12 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:17:30
+   |
+17 |     { "format": { "enabled": 13 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:18:30
+   |
+18 |     { "format": { "enabled": 14 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:19:30
+   |
+19 |     { "format": { "enabled": 15 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:20:30
+   |
+20 |     { "format": { "enabled": 16 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:21:30
+   |
+21 |     { "format": { "enabled": 17 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:22:30
+   |
+22 |     { "format": { "enabled": 18 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:23:30
+   |
+23 |     { "format": { "enabled": 19 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:24:30
+   |
+24 |     { "format": { "enabled": 20 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:25:30
+   |
+25 |     { "format": { "enabled": 21 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:26:30
+   |
+26 |     { "format": { "enabled": 22 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:27:30
+   |
+27 |     { "format": { "enabled": 23 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:28:30
+   |
+28 |     { "format": { "enabled": 24 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:29:30
+   |
+29 |     { "format": { "enabled": 25 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:30:30
+   |
+30 |     { "format": { "enabled": 26 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:31:30
+   |
+31 |     { "format": { "enabled": 27 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:32:30
+   |
+32 |     { "format": { "enabled": 28 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:33:30
+   |
+33 |     { "format": { "enabled": 29 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:34:30
+   |
+34 |     { "format": { "enabled": 30 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:35:30
+   |
+35 |     { "format": { "enabled": 31 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:36:30
+   |
+36 |     { "format": { "enabled": 32 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:37:30
+   |
+37 |     { "format": { "enabled": 33 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:38:30
+   |
+38 |     { "format": { "enabled": 34 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:39:30
+   |
+39 |     { "format": { "enabled": 35 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:40:30
+   |
+40 |     { "format": { "enabled": 36 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:41:30
+   |
+41 |     { "format": { "enabled": 37 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:42:30
+   |
+42 |     { "format": { "enabled": 38 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:43:30
+   |
+43 |     { "format": { "enabled": 39 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:44:30
+   |
+44 |     { "format": { "enabled": 40 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:45:30
+   |
+45 |     { "format": { "enabled": 41 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:46:30
+   |
+46 |     { "format": { "enabled": 42 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:47:30
+   |
+47 |     { "format": { "enabled": 43 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:48:30
+   |
+48 |     { "format": { "enabled": 44 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:49:30
+   |
+49 |     { "format": { "enabled": 45 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:50:30
+   |
+50 |     { "format": { "enabled": 46 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:51:30
+   |
+51 |     { "format": { "enabled": 47 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:52:30
+   |
+52 |     { "format": { "enabled": 48 } },
+   |                              ^^ found a number
+
+error: `format.enabled` must be true or false
+  --> ferrion.jsonc:53:30
+   |
+53 |     { "format": { "enabled": 49 } },
+   |                              ^^ found a number
+
+and 5 more errors
+
+=== plugins-not-strings.jsonc
+error: `plugins[1]` must be a string
+ --> ferrion.jsonc:2:26
+  |
+2 | { "plugins": ["example", { "name": "other" }] }
+  |                          ^^^^^^^^^^^^^^^^^^^ found an object
+
+=== root-not-an-object.jsonc
+error: the config must be an object
+ --> ferrion.jsonc:2:1
+  |
+2 | [{ "files": ["src/**"] }]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^ found an array
+
+=== root-unknown-keys.jsonc
+error: unknown key `config` in the config
+ --> ferrion.jsonc:3:3
+  |
+3 |   "config": [],
+  |   ^^^^^^^^ did you mean `configs`?
+
+error: unknown key `rules` in the config
+ --> ferrion.jsonc:4:3
+  |
+4 |   "rules": { "no-unused-variable": "warn" },
+  |   ^^^^^^^
+  = help: `rules` goes in an entry of `configs`
+
+error: unknown key `version` in the config
+ --> ferrion.jsonc:5:3
+  |
+5 |   "version": 1
+  |   ^^^^^^^^^
+  = help: the keys here are `$schema`, `configs`, `plugins`, `linterOptions`, and `baseline`
+
+=== root-wrong-types.jsonc
+error: `$schema` must be a string
+ --> ferrion.jsonc:3:14
+  |
+3 |   "$schema": 1,
+  |              ^ found a number
+
+error: `configs` must be an array of entries
+ --> ferrion.jsonc:4:14
+  |
+4 |   "configs": { "files": ["src/**"] },
+  |              ^^^^^^^^^^^^^^^^^^^^^^^ found an object
+
+error: `plugins` must be an array of names
+ --> ferrion.jsonc:5:14
+  |
+5 |   "plugins": "example",
+  |              ^^^^^^^^^ found a string
+
+error: `linterOptions` must be an object
+ --> ferrion.jsonc:6:20
+  |
+6 |   "linterOptions": ["warn"],
+  |                    ^^^^^^^^ found an array
+
+error: `baseline` must be a string
+ --> ferrion.jsonc:7:15
+  |
+7 |   "baseline": false
+  |               ^^^^^ found a boolean
+
+=== rules-errors.jsonc
+error: the setting for rule `a` must be a level or an object
+ --> ferrion.jsonc:6:14
+  |
+6 |         "a": 2,
+  |              ^ found a number
+  = help: a rule's setting is a level (`off`, `info`, `warn`, or `error`), or `{ "level": ..., "options": { ... } }`
+
+error: unknown level `wan`
+ --> ferrion.jsonc:7:14
+  |
+7 |         "b": "wan",
+  |              ^^^^^ did you mean `warn`?
+
+error: unknown level `fatal`
+ --> ferrion.jsonc:8:14
+  |
+8 |         "c": "fatal",
+  |              ^^^^^^^
+  = help: the levels are `off`, `info`, `warn`, and `error`
+
+error: the setting for rule `d` has no `level`
+ --> ferrion.jsonc:9:14
+  |
+9 |         "d": { "options": {} },
+  |              ^^^^^^^^^^^^^^^^^
+  = help: add `"level": "error"`, or another level: `off`, `info`, `warn`, or `error`
+
+error: unknown key `option` in the setting for rule `e`
+  --> ferrion.jsonc:10:33
+   |
+10 |         "e": { "level": "warn", "option": {} },
+   |                                 ^^^^^^^^ did you mean `options`?
+
+error: the options of rule `f` must be an object
+  --> ferrion.jsonc:11:44
+   |
+11 |         "f": { "level": "warn", "options": ["x"] },
+   |                                            ^^^^^ found an array
+
+error: the level of rule `g` must be a string
+  --> ferrion.jsonc:12:25
+   |
+12 |         "g": { "level": 3 },
+   |                         ^ found a number
+   = help: the levels are `off`, `info`, `warn`, and `error`
+
+error: unknown level `Error`
+  --> ferrion.jsonc:13:25
+   |
+13 |         "h": { "level": "Error" }
+   |                         ^^^^^^^ did you mean `error`?
+
+=== syntax-bad-escape.jsonc
+error: `\q` isn't an escape
+ --> ferrion.jsonc:2:31
+  |
+2 | { "configs": [{ "files": ["src\qx"] }] }
+  |                               ^^
+  = help: the escapes are `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t`, and `\u` with four hexadecimal digits
+
+=== syntax-capitalized-literal.jsonc
+error: expected a value
+ --> ferrion.jsonc:2:40
+  |
+2 | { "configs": [{ "format": { "enabled": False } }] }
+  |                                        ^^^^^ found `False`
+  = help: did you mean `false`?
+
+=== syntax-control-character.jsonc
+error: a string can't contain a control character
+ --> ferrion.jsonc:2:27
+  |
+2 | { "configs": [{ "name": "a    b" }] }
+  |                           ^^^^ escape it as `\u0009`
+
+=== syntax-empty.jsonc
+error: the config file is empty
+ --> ferrion.jsonc:3:1
+  |
+3 |
+  | ^
+  = help: a config that changes nothing is `{}`
+
+=== syntax-expected-value.jsonc
+error: expected a value
+ --> ferrion.jsonc:2:40
+  |
+2 | { "configs": [{ "format": { "enabled": } }] }
+  |                                        ^ found `}`
+
+=== syntax-invalid-number.jsonc
+error: `007` isn't a valid number
+ --> ferrion.jsonc:2:72
+  |
+2 | { "configs": [{ "rules": { "x": { "level": "warn", "options": { "max": 007 } } } }] }
+  |                                                                        ^^^
+  = help: numbers are written as in JSON: no leading zeros, `+`, hexadecimal, or `.` without digits on both sides
+
+=== syntax-lone-surrogate.jsonc
+error: a string can't contain half of a surrogate pair
+ --> ferrion.jsonc:2:26
+  |
+2 | { "configs": [{ "name": "\ud800" }] }
+  |                          ^^^^^^ this escape is half of a UTF-16 surrogate pair, without its
+  |                                 other half
+
+=== syntax-missing-close.jsonc
+error: expected `,` or `}` after this value
+ --> ferrion.jsonc:2:35
+  |
+2 | { "configs": [{ "files": ["a/**"] ]
+  |                                   ^ found `]`
+
+=== syntax-missing-colon.jsonc
+error: expected `:` after this key
+ --> ferrion.jsonc:2:13
+  |
+2 | { "configs" [] }
+  |   --------- the key
+  |             ^ found `[`
+
+=== syntax-missing-comma-in-array.jsonc
+error: expected `,` or `]` after this value
+ --> ferrion.jsonc:2:34
+  |
+2 | { "configs": [{ "files": ["a/**" "b/**"] }] }
+  |                                 - add `,` here
+  |                                  ^ the next value starts here
+
+=== syntax-missing-comma.jsonc
+error: expected `,` or `}` after this value
+ --> ferrion.jsonc:7:7
+  |
+6 |       "rules": { "no-unused-variable": "warn" }
+  |                                                - add `,` here
+7 |       "format": { "enabled": false }
+  |       ^ the next key starts here
+
+=== syntax-nan.jsonc
+error: expected a value
+ --> ferrion.jsonc:2:72
+  |
+2 | { "configs": [{ "rules": { "x": { "level": "warn", "options": { "max": NaN } } } }] }
+  |                                                                        ^^^ found `NaN`
+  = help: `NaN` isn't a JSON value
+
+=== syntax-short-unicode-escape.jsonc
+error: a `\u` escape needs four hexadecimal digits
+ --> ferrion.jsonc:2:26
+  |
+2 | { "configs": [{ "name": "\u12" }] }
+  |                          ^^
+
+=== syntax-single-quoted-key.jsonc
+error: expected a key or `}`
+ --> ferrion.jsonc:2:3
+  |
+2 | { 'configs': [] }
+  |   ^ found `'`
+  = help: keys must be in double quotes, not single quotes
+
+=== syntax-single-quotes.jsonc
+error: expected a value
+ --> ferrion.jsonc:2:27
+  |
+2 | { "configs": [{ "files": ['src/**'] }] }
+  |                           ^ found `'`
+  = help: strings must be in double quotes, not single quotes
+
+=== syntax-text-after-the-config.jsonc
+error: expected the end of the file
+ --> ferrion.jsonc:3:1
+  |
+2 | { "configs": [] }
+  |                  - the config ends here
+3 | { "configs": [] }
+  | ^ found `{`
+
+=== syntax-unquoted-key.jsonc
+error: expected a key or `}`
+ --> ferrion.jsonc:2:3
+  |
+2 | { configs: [] }
+  |   ^^^^^^^ found `configs`
+  = help: keys must be in double quotes
+
+=== syntax-unterminated-comment.jsonc
+error: unterminated comment
+ --> ferrion.jsonc:2:19
+  |
+2 | { "configs": [] } /* the end
+  |                   ^^ this comment has no `*/`
+
+=== syntax-unterminated-string.jsonc
+error: unterminated string
+ --> ferrion.jsonc:2:27
+  |
+2 | { "configs": [{ "files": ["src/**] }] }
+  |                           ^^^^^^^^^^^^^ this string has no closing `"` on its line
+
+=== too-deep.jsonc
+error: values can't nest more than 64 deep
+ --> ferrion.jsonc:2:128
+  |
+2 | { "configs": [{ "rules": { "x": { "level": "warn", "options": { "a": [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]] } } } }] }
+  |                                                                                                                                ^ this is level 65
+
+=== not UTF-8
+error: can't read the config file ferrion.jsonc: the file is not valid UTF-8 (invalid byte at offset 14); only UTF-8 and ASCII are supported

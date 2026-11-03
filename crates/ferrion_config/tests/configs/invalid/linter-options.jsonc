@@ -1,0 +1,8 @@
+// schema: rejects
+{
+  "linterOptions": {
+    "reportUnusedDisableDirective": "warn",
+    "reportUnusedDisableDirectives": 2,
+    "other": true
+  }
+}

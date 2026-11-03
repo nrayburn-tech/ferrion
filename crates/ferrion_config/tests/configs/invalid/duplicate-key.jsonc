@@ -1,0 +1,7 @@
+// schema: accepts
+{
+  "configs": [
+    { "files": ["src/**"], "format": { "enabled": false }, "files": ["test/**"] }
+  ],
+  "configs": []
+}

@@ -1,0 +1,16 @@
+// schema: accepts
+{
+  "configs": [
+    { "files": ["!**/generated/**"] },
+    { "files": ["/src/**"] },
+    { "files": ["C:\\src\\**"] },
+    { "files": ["../shared/**"] },
+    { "files": ["src/../shared/**"] },
+    { "files": ["src\\main\\**"] },
+    { "files": ["a\\"] },
+    { "files": ["src/[a.java"] },
+    { "files": ["src/{main,test/**"] },
+    { "files": ["src/main}/**"] },
+    { "files": ["src/[z-a].java"] }
+  ]
+}
