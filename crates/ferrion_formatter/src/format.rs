@@ -567,7 +567,8 @@ impl<'t> Formatter<'t> {
             }
             SyntaxKind::LineComment | SyntaxKind::DocLineComment => {
                 let trimmed = trim_end(text);
-                if adds_space_after_slashes(trimmed) {
+                // Only a plain line comment: `//\u002f` is `///`, a doc line comment.
+                if token.kind() == SyntaxKind::LineComment && adds_space_after_slashes(trimmed) {
                     // The `//`, a space, then the rest of the comment, copied.
                     let start = token.span().start;
                     self.doc().token(token.id(), 2, 2);
@@ -593,7 +594,8 @@ impl<'t> Formatter<'t> {
     }
 }
 
-/// Whether a space goes after the `//` of `comment`, a line comment without its trailing
+/// Whether a space goes after the `//` of `comment`, a plain line comment (not a doc line
+/// comment, which a `/` written as a Unicode escape can make one) without its trailing
 /// whitespace, as GJF puts one (docs/style.md, "General"): when the `//` is followed by text
 /// that doesn't start with whitespace or another `/`. GJF leaves IntelliJ's `noinspection` and
 /// Eclipse's `$NON-NLS-n$` without one, and Ferrion also leaves its own directives, formatter

@@ -279,7 +279,10 @@ fn comments(before: &SyntaxTree, after: &SyntaxTree, bom: usize) -> Result<(), V
                 let in_region = regions.peek().is_some_and(|r| r.start <= t.id());
                 (
                     t.kind(),
-                    normalize_comment(t.text(), input && !in_region),
+                    normalize_comment(
+                        t.text(),
+                        input && !in_region && t.kind() == SyntaxKind::LineComment,
+                    ),
                     t.span().start as usize,
                 )
             })
