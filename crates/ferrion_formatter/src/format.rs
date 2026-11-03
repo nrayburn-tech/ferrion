@@ -160,7 +160,8 @@ impl<'t> Formatter<'t> {
 
     /// The import plan for the compilation unit's import section, `imports`
     /// (docs/design/formatter-completeness.md, "Imports"), or `None` when the section is emitted
-    /// as written: nothing to change, or pinned by a disable region or a directive.
+    /// as written: nothing to change, a syntax error in it, or pinned by a disable region or a
+    /// directive.
     pub fn plan_imports(&self, imports: &[SyntaxNode<'t>]) -> Option<imports::Rewrite<'t>> {
         imports::plan(self.tree, &self.comments, &self.regions, imports)
     }

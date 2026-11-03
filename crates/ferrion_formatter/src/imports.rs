@@ -131,6 +131,11 @@ pub fn plan<'t>(
     imports: &[SyntaxNode<'t>],
 ) -> Option<Rewrite<'t>> {
     let (first, last) = (imports.first()?, *imports.last()?);
+    // A section with a syntax error is emitted as written, as the error's unit is copied, so a
+    // range format of a broken file never rewrites it.
+    if imports.iter().any(|n| n.contains_error()) {
+        return None;
+    }
     // Imports split by an empty declaration (`;`), which older releases allow, aren't one
     // section, and sorting across the `;` would move it.
     let unit = first.parent()?;
