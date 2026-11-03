@@ -438,6 +438,12 @@ decided at the start:
   import section is one unit, so in practice no rewrite is cut. The modifiers are rewritten
   whenever the header is in range, where GJF reorders them only when the range given holds all of
   them (a departure, decided in review, 10).
+- **Comments** go with the code formatting puts them beside: one the whole-file output keeps on
+  the line of the code before it (`a(); // c`, `a(); /* c */` then `b();`) with that code, any
+  other with the code after it. Deciding by the input, as GJF does, takes the file where
+  whole-file formatting doesn't: with `class A { /* c */ int x;` and only `int x;` in range, the
+  comment would stay on the `{` line, where formatting the whole result keeps it, though the
+  whole input's formatting gives it a line of its own (a departure, proposed in docs/style.md).
 - **A disable region** is copied as written, in a range as in a file.
 - **Errors:** a range is formatted unless an error's unit overlaps its expanded range (below),
   where GJF refuses any file with an error.

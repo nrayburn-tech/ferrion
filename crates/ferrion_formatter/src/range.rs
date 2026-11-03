@@ -14,10 +14,9 @@
 //! of their own. Each run is formatted on its own, as GJF formats a `}` alone, or `} else {`.
 //!
 //! **The expanded range** is the runs of the tokens the range touches, everything between them,
-//! the comments before the first that don't trail the code before them and aren't on its line,
-//! and the comments after the last that trail it or are on its line (`a(); /* c */ b();` with
-//! `a();`, as GJF counts it). A comment the range touches counts with the code it is placed
-//! with: one trailing code or on its line with that code, any other with the code after it.
+//! and the comments that go with them: those formatting puts on the line of the code before them
+//! go with that code, the others with the code after them (see `Ranges::with_code_before`). A
+//! comment the range touches counts with the code it goes with.
 //!
 //! **The edits kept** are those inside the expanded range (gaps, re-indented comments, and
 //! rewrites whose whole span is inside it), the edit of the gap before it, which gives the unit
@@ -30,7 +29,7 @@ use std::fmt;
 use std::ops::Range;
 
 use ferrion_diagnostics::SourceText;
-use ferrion_syntax::comments::{CommentMap, Placement, is_comment};
+use ferrion_syntax::comments::{CommentMap, is_comment};
 use ferrion_syntax::{
     NodeId, SyntaxKind as K, SyntaxKind, SyntaxNode, SyntaxToken, SyntaxTree, TokenId,
 };
@@ -96,7 +95,6 @@ pub fn format_range(
 pub struct Ranges<'t> {
     tree: &'t SyntaxTree,
     source: &'t SourceText,
-    comments: CommentMap,
     owners: Owners,
     /// The error units' spans, in order.
     error_units: Vec<Range<u32>>,
@@ -136,7 +134,6 @@ impl<'t> Ranges<'t> {
                 .filter(|s| s.kept.is_empty())
                 .map(|s| s.span.clone()),
             kept_imports: section.map(|s| s.kept),
-            comments,
             error_units: units.into_iter().map(span).collect(),
             pins_region,
             edits: OnceCell::new(),
@@ -194,7 +191,7 @@ impl<'t> Ranges<'t> {
     /// `range` expanded to its units (see the module's documentation), or `None` if it touches
     /// no token.
     pub fn expand(&self, range: Range<u32>) -> Option<Expanded> {
-        let (tree, comments) = (self.tree, &self.comments);
+        let tree = self.tree;
         let text_len = tree.text().len() as u32;
         let (start, end) = (range.start.min(text_len), range.end.min(text_len));
         if start >= end {
@@ -205,7 +202,7 @@ impl<'t> Ranges<'t> {
         while let Some(t) = token
             && t.span().start < end
         {
-            if let Some(anchor) = anchor(comments, t) {
+            if let Some(anchor) = self.anchor(t) {
                 let (first, last) = anchors.get_or_insert((anchor, anchor));
                 if anchor.id() < first.id() {
                     *first = anchor;
@@ -219,43 +216,32 @@ impl<'t> Ranges<'t> {
         let (first, last) = anchors?;
         let first = self.owners.run_start(first);
         let last = self.owners.run_end(last);
-        let trailing = |token: SyntaxToken<'_>| {
-            comments
-                .get(token.id())
-                .is_some_and(|c| c.placement == Placement::Trailing)
-        };
 
-        // The comments before the first token that lead it, other than those on the line of the
-        // code before, which go with that code, as below.
+        // The comments before the first token that go with it, and those after the last that go
+        // with it (see `Ranges::with_code_before`).
         let mut units_start = first.span().start;
         let mut t = first.prev_token();
         while let Some(token) = t
             && token.is_trivia()
         {
             if is_comment(token.kind()) {
-                if trailing(token) || on_code_line(token) {
+                if self.with_code_before(token) {
                     break;
                 }
                 units_start = token.span().start;
             }
             t = token.prev_token();
         }
-        // A comment on the last line of the units goes with them, as GJF counts it, even one
-        // leading code after it on that line (`a(); /* c */ b();`).
         let mut units_end = last.span().end;
-        let mut same_line = true;
         let mut t = last.next_token();
         while let Some(token) = t
             && token.is_trivia()
         {
-            if token.kind() == K::LineTerminator {
-                same_line = false;
-            } else if is_comment(token.kind()) {
-                if !same_line && !trailing(token) {
+            if is_comment(token.kind()) {
+                if !self.with_code_before(token) {
                     break;
                 }
                 units_end = piece_end(token);
-                same_line &= !token.text().contains(['\n', '\r']);
             }
             t = token.next_token();
         }
@@ -274,6 +260,59 @@ impl<'t> Ranges<'t> {
             after: next.map_or(text_len, |t| t.span().start),
             comment_after: next.is_some_and(|t| is_comment(t.kind())),
         })
+    }
+
+    /// The code token a token the range touches stands for: itself for code, the code a comment
+    /// goes with ([`Ranges::with_code_before`]), and nothing for whitespace or the end of the
+    /// file.
+    fn anchor(&self, token: SyntaxToken<'t>) -> Option<SyntaxToken<'t>> {
+        match token.kind() {
+            K::Whitespace | K::LineTerminator | K::Eof => None,
+            kind if is_comment(kind) => {
+                let next = token.next_non_trivia().filter(|t| t.kind() != K::Eof);
+                if self.with_code_before(token) {
+                    token.prev_non_trivia().or(next)
+                } else {
+                    next.or_else(|| token.prev_non_trivia())
+                }
+            }
+            _ => Some(token),
+        }
+    }
+
+    /// Whether `comment` goes with the code before it rather than the code after: whether
+    /// whole-file formatting puts it on the line of the code before, as a comment trailing it
+    /// (`a(); // c`, `a(); /* c */` then `b();` on the next line), directly or after other
+    /// comments that do. Deciding by the output rather than the input keeps it the same when the
+    /// range is formatted again: `class A { /* c */ int x;` gives the comment a line of its own,
+    /// so it goes with `int x;`, and `a(); /* c */ b();` keeps it after `a();`, so it goes with
+    /// that. GJF counts a comment with the code on its line in the input.
+    fn with_code_before(&self, comment: SyntaxToken<'t>) -> bool {
+        let Some(previous) = comment.prev_token().and_then(piece_before) else {
+            return false;
+        };
+        let start = piece_end(previous);
+        let end = comment.span().start;
+        let text = self.tree.text();
+        let edits = self.edits();
+        let first = edits.partition_point(|e| e.range.end < start);
+        let gap = edits[first..]
+            .iter()
+            .take_while(|e| e.range.start <= end)
+            .find(|e| e.range.start >= start && e.range.end <= end);
+        let output = match gap {
+            Some(e) => [
+                &text[start as usize..e.range.start as usize],
+                e.text.as_str(),
+                &text[e.range.end as usize..end as usize],
+            ]
+            .concat(),
+            None => text[start as usize..end as usize].to_owned(),
+        };
+        if output.contains(['\n', '\r']) {
+            return false;
+        }
+        !is_comment(previous.kind()) || self.with_code_before(previous)
     }
 
     /// Every run of a unit's own tokens in the tree, in order (see the module's documentation).
@@ -326,50 +365,6 @@ pub struct Run {
     /// The unit, and its kind: the root's for tokens in no unit.
     pub owner: NodeId,
     pub kind: SyntaxKind,
-}
-
-/// The code token a token the range touches stands for: itself for code, the code a comment is
-/// placed with (the code before it when it is on that code's line), and nothing for whitespace
-/// or the end of the file.
-fn anchor<'t>(comments: &CommentMap, token: SyntaxToken<'t>) -> Option<SyntaxToken<'t>> {
-    match token.kind() {
-        K::Whitespace | K::LineTerminator | K::Eof => None,
-        kind if is_comment(kind) => {
-            let trailing = on_code_line(token)
-                || comments
-                    .get(token.id())
-                    .is_some_and(|c| c.placement == Placement::Trailing);
-            let next = token.next_non_trivia().filter(|t| t.kind() != K::Eof);
-            if trailing {
-                token.prev_non_trivia().or(next)
-            } else {
-                next.or_else(|| token.prev_non_trivia())
-            }
-        }
-        _ => Some(token),
-    }
-}
-
-/// Whether `comment` is on the line of the code before it, after only whitespace and comments
-/// since: it goes with that code, as GJF counts it, whichever code the comment map attaches it
-/// to. Formatting moves the code after it to a line of its own (`a(); /* c */ b();` gives
-/// `a(); /* c */` and `b();`), so counting it with that code would change with formatting.
-fn on_code_line(comment: SyntaxToken<'_>) -> bool {
-    let mut t = comment.prev_token();
-    while let Some(token) = t {
-        match token.kind() {
-            K::Whitespace => {}
-            K::LineTerminator => return false,
-            kind if is_comment(kind) => {
-                if token.text().contains(['\n', '\r']) {
-                    return false;
-                }
-            }
-            _ => return true,
-        }
-        t = token.prev_token();
-    }
-    false
 }
 
 /// Where the piece of text `token` is ends: a line comment's trailing whitespace is the gap's

@@ -1,4 +1,2 @@
-class Comments {
-  /* inline */
-  int x;
+class Comments { /* inline */ int x;
 }
