@@ -509,7 +509,7 @@ error, and of the rest 5.7% shifted (25.6% after a broken brace, 3 to 8% for oth
 2,673,257 the same as in the clean file; 30, in copies whose imports changed, are the type-use
 exception, and none differ otherwise.
 
-With the import section one unit (decision 11), the test compares the section as one run when
+With the import section one unit (decision 13), the test compares the section as one run when
 the clean file's is rewritten. Which imports the section keeps depends on the code that uses them,
 which the change can delete, so a difference in a copy whose kept imports aren't the clean file's
 is counted with the type-use exception, and the gaps next to a section whose imports are all
