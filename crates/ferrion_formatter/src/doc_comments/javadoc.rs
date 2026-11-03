@@ -159,7 +159,7 @@ pub fn render(layout: &Layout, text: &str, column: u32) -> Vec<String> {
 /// layout, which cuts words from the source, would see only text. Escapes are found without the
 /// even-backslash rule, so `\\u0020`, which isn't one, counts too: that only re-indents a comment
 /// that could have been reflowed.
-fn has_escape(comment: &str) -> bool {
+pub(super) fn has_escape(comment: &str) -> bool {
     let bytes = comment.as_bytes();
     let mut i = 0;
     while let Some(at) = comment[i..].find('\\') {
@@ -653,7 +653,7 @@ impl Structure {
 }
 
 /// Whether `word` ends with a hyphen after a letter or digit, as `well-` does.
-fn ends_with_hyphen(word: &str) -> bool {
+pub(super) fn ends_with_hyphen(word: &str) -> bool {
     word.strip_suffix('-')
         .and_then(|before| before.chars().next_back())
         .is_some_and(char::is_alphanumeric)

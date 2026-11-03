@@ -165,6 +165,7 @@ fn fill_breaks_only_where_glue_allows() {
         ],
         lines: Vec::new(),
         tags: false,
+        prefixes: Vec::new(),
     };
     let lines = fill(
         &layout,

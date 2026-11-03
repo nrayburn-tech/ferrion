@@ -29,6 +29,9 @@ pub struct Line {
     /// Whether it starts with a copied line of a [`WordText::Lines`] word, which goes right
     /// after the decoration's star, as written.
     pub copied: bool,
+    /// The index of the paragraph it is a line of, or, for a blank line between paragraphs, of
+    /// the paragraph after it.
+    pub paragraph: u32,
 }
 
 /// Fills `layout`, whose source is `text`, at `columns`. The lines between paragraphs are blank
@@ -38,12 +41,14 @@ pub fn fill(layout: &Layout, text: &str, columns: Columns) -> Vec<Line> {
     let mut lines = Vec::new();
     let limit = u64::from(columns.limit);
     for (index, paragraph) in layout.paragraphs.iter().enumerate() {
+        let number = index as u32;
         if index > 0 {
             for _ in 1..paragraph.gap {
                 lines.push(Line {
                     indent: 0,
                     text: String::new(),
                     copied: false,
+                    paragraph: number,
                 });
             }
         }
@@ -52,6 +57,7 @@ pub fn fill(layout: &Layout, text: &str, columns: Columns) -> Vec<Line> {
             indent: paragraph.indent,
             text: String::new(),
             copied: false,
+            paragraph: number,
         };
         let mut column = u64::from(columns.text) + u64::from(paragraph.indent);
         // Whether the line holds no text yet.
@@ -80,6 +86,7 @@ pub fn fill(layout: &Layout, text: &str, columns: Columns) -> Vec<Line> {
                     indent: paragraph.hanging,
                     text: String::new(),
                     copied: false,
+                    paragraph: number,
                 };
                 column = u64::from(columns.text) + u64::from(paragraph.hanging);
                 separator = 0;
@@ -112,6 +119,7 @@ pub fn fill(layout: &Layout, text: &str, columns: Columns) -> Vec<Line> {
                                     indent: 0,
                                     text: part.to_owned(),
                                     copied: true,
+                                    paragraph: number,
                                 };
                                 column = u64::from(columns.copied) + u64::from(width(part));
                             }
