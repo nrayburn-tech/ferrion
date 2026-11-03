@@ -5,7 +5,8 @@
 //! normalization in docs/design/lexer-oracle-normalization.md, and must reproduce every file byte
 //! for byte. `oracle syntax` and `oracle tree` are the parser's checks (see [`syntax`] and
 //! [`ferrion`]). Later phases add their own checks (see [`Check`]); `oracle names` compares name
-//! resolution source set by source set (see [`names`]). `oracle differences` checks the known
+//! resolution source set by source set (see [`names`]), and `oracle types` type attribution (see
+//! [`types`]). `oracle differences` checks the known
 //! differences the corpus doesn't exercise (see [`differences`]), and `oracle parser-cases` the
 //! snapshots of javac's parser output (see [`parser_cases`]).
 //!
@@ -31,6 +32,7 @@ mod report;
 mod run;
 mod syntax;
 mod tokens;
+mod types;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -67,6 +69,8 @@ checks:
                 javap's output for them against their snapshots (takes only --bless)
   names         compare name resolution with javac's, source set by source set (its own
                 options: `names --help`)
+  types         compare type attribution with javac's, source set by source set (its own
+                options: `types --help`)
 
 options:
   --release <N>        compare every file at release N (repeatable); by default, each file is
@@ -140,7 +144,7 @@ fn parse_args(args: impl Iterator<Item = String>) -> Options {
     let mut args = args.peekable();
     if args
         .peek()
-        .is_some_and(|a| a == "classfile" || a == "names")
+        .is_some_and(|a| a == "classfile" || a == "names" || a == "types")
     {
         let check = args.next().unwrap_or_default();
         return Options {
@@ -254,6 +258,17 @@ fn run() -> Result<bool> {
                 return Ok(true);
             }
             names::run(names::parse_args(options.classfile.into_iter(), usage))
+        }
+        "types" => {
+            let usage = |message: &str| -> ! {
+                eprintln!("oracle types: {message}\n\n{}", types::USAGE);
+                std::process::exit(2);
+            };
+            if options.classfile.iter().any(|a| a == "-h" || a == "--help") {
+                println!("{}", types::USAGE);
+                return Ok(true);
+            }
+            types::run(types::parse_args(options.classfile.into_iter(), usage))
         }
         "tokens" => run_check(&tokens::Tokens, &options),
         "syntax" => run_check(&syntax::Syntax(ferrion::Ferrion), &options),
