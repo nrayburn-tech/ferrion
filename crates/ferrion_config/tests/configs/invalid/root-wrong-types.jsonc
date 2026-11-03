@@ -1,0 +1,8 @@
+// schema: rejects
+{
+  "$schema": 1,
+  "configs": { "files": ["src/**"] },
+  "plugins": "example",
+  "linterOptions": ["warn"],
+  "baseline": false
+}

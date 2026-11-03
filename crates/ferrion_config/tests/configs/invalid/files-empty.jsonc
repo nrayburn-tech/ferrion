@@ -1,0 +1,2 @@
+// schema: rejects
+{ "configs": [{ "files": [], "format": { "enabled": false } }] }

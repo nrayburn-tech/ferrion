@@ -1,0 +1,2 @@
+// schema: rejects
+{ "plugins": ["example", { "name": "other" }] }

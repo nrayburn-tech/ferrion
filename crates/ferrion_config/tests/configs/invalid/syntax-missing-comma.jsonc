@@ -1,0 +1,10 @@
+// schema: n/a
+{
+  "configs": [
+    {
+      "files": ["src/**"],
+      "rules": { "no-unused-variable": "warn" }
+      "format": { "enabled": false }
+    }
+  ]
+}

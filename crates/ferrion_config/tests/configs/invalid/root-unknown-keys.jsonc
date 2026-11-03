@@ -1,0 +1,6 @@
+// schema: rejects
+{
+  "config": [],
+  "rules": { "no-unused-variable": "warn" },
+  "version": 1
+}

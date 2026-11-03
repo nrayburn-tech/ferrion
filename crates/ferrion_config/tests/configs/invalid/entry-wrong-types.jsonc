@@ -1,0 +1,7 @@
+// schema: rejects
+{
+  "configs": [
+    { "name": 1, "files": "src/**", "ignores": { "a": 1 } },
+    { "rules": ["no-unused-variable"], "format": false }
+  ]
+}

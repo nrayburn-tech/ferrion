@@ -1,0 +1,24 @@
+// Every key, with comments and trailing commas.
+{
+  "$schema": "./schemas/ferrion.schema.json",
+  "plugins": ["example",],
+  "linterOptions": { "reportUnusedDisableDirectives": "off" },
+  "baseline": "ferrion-baseline.json",
+  "configs": [
+    /* A global ignore with a name. */
+    { "name": "generated", "ignores": ["build/", "./target/**"] },
+    {
+      "name": "everything",
+      "files": ["**/*.java", "src/{main,test}/**/[A-Z]*.java", "esc\\*aped"],
+      "ignores": [],
+      "rules": {
+        "a": "off", "b": "info", "c": "warn", "d": "error",
+        "e": { "level": "warn" },
+        "f": { "level": "error", "options": { "nested": [1, -2.5e3, true, null, { "x": "y" }] } },
+      },
+      "format": {},
+    },
+    { "format": { "enabled": true } },
+    {},
+  ],
+}

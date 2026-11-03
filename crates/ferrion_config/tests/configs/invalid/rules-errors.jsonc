@@ -1,0 +1,17 @@
+// schema: rejects
+{
+  "configs": [
+    {
+      "rules": {
+        "a": 2,
+        "b": "wan",
+        "c": "fatal",
+        "d": { "options": {} },
+        "e": { "level": "warn", "option": {} },
+        "f": { "level": "warn", "options": ["x"] },
+        "g": { "level": 3 },
+        "h": { "level": "Error" }
+      }
+    }
+  ]
+}
