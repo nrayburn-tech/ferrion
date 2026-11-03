@@ -7,8 +7,8 @@ name: Oracle
 # javac's tests, and its diff against Google Java Format on every corpus project.
 # The class file comparison runs on every JDK of the matrix and on every corpus project's jars;
 # pull requests check one JDK's own release and one project's jars.
-# The name resolution comparison compiles every source set of every corpus project; pull
-# requests run one small project.
+# The name resolution and type attribution comparisons compile every source set of every corpus
+# project; pull requests run one small project.
 
 on:
   schedule:
@@ -307,4 +307,56 @@ jobs:
         with:
           name: names-report
           path: names-report.json
+          if-no-files-found: ignore
+
+  types:
+    name: type attribution on every corpus project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      # As in the names job: each project's javac runs on the JDK its lock names; 27, set up
+      # last, builds the oracle.
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "21" # matrix
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "25" # matrix
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "26" # matrix
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "27"
+          cache: maven
+      - name: Build the javac oracle
+        working-directory: tools/javac-oracle
+        run: mvn --batch-mode --no-transfer-progress package
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: Fetch the corpus
+        run: cargo corpus fetch
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Generate the corpus's sources
+        run: cargo corpus generate
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      # javac's side alone until B3's attribution exists: every source set compiles, and the
+      # report gives the entries, the relation queries, and javac's analysis time per file.
+      - name: Compare type attribution with javac
+        run: cargo oracle types --javac-only --jobs 2 --heap 5g --json types-report.json
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+          FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: types-report
+          path: types-report.json
           if-no-files-found: ignore

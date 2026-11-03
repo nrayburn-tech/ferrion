@@ -188,6 +188,18 @@ jobs:
           and (.[0].names | any(.[4] == "type java/lang/IllegalArgumentException platform"))
           and (.[0].names | any(.[2] == "expression" and (.[4] | startswith("local "))))
           and (.[1].sourceSet | has("millis"))'
+      # A call's chosen method, a constant, a parameter's finality, the relations, and the
+      # summary line; the constant and the finality come from javac's internals.
+      - name: Check the javac oracle's types
+        run: >-
+          java -jar tools/javac-oracle/target/javac-oracle.jar types --release 17
+          tools/javac-oracle/src/test/resources/Sample.java
+          | jq --exit-status --slurp '.[0].diagnostics == []
+          and (.[0].calls | any(.[3] == "method java/lang/IllegalArgumentException.<init>()V"))
+          and (.[0].constants | any(.[2] == "int 2"))
+          and (.[0].variables | any(.[1] == "PARAMETER" and .[2] == "effectively-final"))
+          and (.[1].relations.queries | length) > 0
+          and (.[2].sourceSet | has("millis"))'
       - run: rustup toolchain install
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - name: Fetch a corpus project
@@ -247,5 +259,10 @@ jobs:
       # given every file as an edit must resolve the same names as a cold one.
       - name: Compare name resolution with javac
         run: cargo oracle names --replay jedis
+        env:
+          FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
+      # javac's side alone until B3's attribution exists: about 15 seconds for the same project.
+      - name: Compare type attribution with javac
+        run: cargo oracle types --javac-only jedis
         env:
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
