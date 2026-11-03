@@ -973,6 +973,26 @@ gen.withArgument(configuredRetryRule ->
 
 Elsewhere, an expression body is on the arrow's line, or on the next line at +4.
 
+Parameters in parentheses stay on one line if `(params) ->` fits there, and the body breaks
+first. Otherwise they go one per line at +4, the first after the `(`, and an expression body stays
+on the line of the arrow if it fits there.
+
+```java
+Selector selector =
+    (ctx, preamble, cookies, outputBuffer, threadId, localOverrides, peerParameters, mapper) ->
+        new Answer(true, handler);
+foo.bar()
+    .call(
+        (ScopedReleaser keeper,
+            FakeResources v1,
+            FakeResources v2,
+            String v3,
+            String v4,
+            String v5) -> {
+          keeper.close();
+        });
+```
+
 ### Method references
 
 On one line, or a line break before the `::` at +4.
