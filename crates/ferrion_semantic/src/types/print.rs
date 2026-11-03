@@ -19,8 +19,9 @@ pub enum Printed {
     Captures,
     /// As the wildcards they captured, the way `javax.lang.model`'s `asMemberOf` and
     /// `directSupertypes` substitute a wildcard-parameterized type's arguments without capture
-    /// (observations 16 and 17): `? extends java/lang/Number`, and inside `? extends`, the
-    /// wildcard's bound, or for `?` its type parameter's declared bound.
+    /// (observations 16 and 17, and W1's observation 9 in
+    /// docs/design/semantic-type-relations.md): `? extends java/lang/Number`, and inside
+    /// `? extends`, the wildcard's bound, or for `?` its type parameter's declared bound.
     Wildcards,
 }
 

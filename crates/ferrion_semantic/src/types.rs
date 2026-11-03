@@ -84,11 +84,11 @@ impl Tri {
     }
 }
 
-/// The fuel a context starts with, and [`TypeContext::refuel`] gives it: per query in the
-/// relations comparison, per body in attribution. Provisional, ten times above the most any
-/// query of the corpus's relations comparison used (docs/design/semantic-type-relations.md,
-/// "Results"), until B3c's review sets the limits.
-pub const DEFAULT_FUEL: u64 = 100_000;
+/// The fuel a context starts with, and that the relations comparison gives each query
+/// ([`TypeContext::refuel`]). Provisional: the most a query of the corpus's relations comparison
+/// used is 145 steps (docs/design/semantic-type-relations.md, "Results"), well under a tenth of
+/// it; attribution sets its own per body (W2), and B3c's review sets the limits.
+pub const DEFAULT_FUEL: u64 = 10_000;
 
 /// Why a computation stopped before its answer.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -227,7 +227,7 @@ impl<'s> TypeContext<'s> {
 
     /// The steps taken since the last [`TypeContext::refuel`].
     pub fn fuel_used(&self) -> u64 {
-        self.used
+        self.used.min(self.fuel)
     }
 
     /// One step of a relation's recursion.
@@ -544,11 +544,16 @@ impl<'s> TypeContext<'s> {
                 .and_then(|m| m.throws.get(i as usize)),
             Slot::Bound(method, p, b) => decl.params_of(method).bounds(p as usize).get(b as usize),
         };
+        let cycles = self.cycles;
         let t = match ty {
             Some(ty) => self.translate(ty, &decl)?,
             None => self.arena.unknown(Why::Incomplete(key)),
         };
-        self.translated.insert((key, slot), t);
+        // A translation that met a cycle (an implicit outer type found while finding it) is
+        // this query's only.
+        if self.cycles == cycles {
+            self.translated.insert((key, slot), t);
+        }
         Ok(t)
     }
 
@@ -713,10 +718,13 @@ impl<'s> TypeContext<'s> {
         if !self.enter(query) {
             return Ok(Rc::from([self.arena.unknown(Why::Limit)]));
         }
+        let cycles = self.cycles;
         let result = self.load_bounds(key, method, index);
         self.leave(query);
         let bounds: Rc<[TypeId]> = Rc::from(result?);
-        self.bounds.insert((owner, index), bounds.clone());
+        if self.cycles == cycles {
+            self.bounds.insert((owner, index), bounds.clone());
+        }
         Ok(bounds)
     }
 
