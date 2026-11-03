@@ -47,6 +47,10 @@ pub struct MethodType {
     pub throws: Vec<TypeId>,
 }
 
+/// A capture variable just made: the index of the argument it captured, the variable, and the
+/// wildcard's bound.
+type NewCapture = (u32, TypeId, Option<(WildcardBound, TypeId)>);
+
 /// How a member is seen from a type.
 enum View {
     /// As declared: a static member, or one of the type itself.
@@ -96,10 +100,13 @@ impl TypeContext<'_> {
         if !self.enter(query) {
             return Ok(Rc::from([self.arena.unknown(Why::Limit)]));
         }
+        let cycles = self.cycles;
         let result = self.load_supertypes(key);
         self.leave(query);
         let supers: Rc<[TypeId]> = Rc::from(result?);
-        self.supertypes.insert(key, supers.clone());
+        if self.cycles == cycles {
+            self.supertypes.insert(key, supers.clone());
+        }
         Ok(supers)
     }
 
@@ -493,9 +500,25 @@ impl TypeContext<'_> {
             }
         }
         let captured = self.arena.class(key, outer, Some(&new));
+        // Memoized before its bounds are set, since they can capture `t` again; forgotten if
+        // they can't be set.
         if memo {
             self.captured.insert(t, captured);
         }
+        let bounded = self.bound_captures(key, captured, captures);
+        if bounded.is_err() && memo {
+            self.captured.remove(&t);
+        }
+        bounded.map(|()| captured)
+    }
+
+    /// Sets each new capture variable's bounds (JLS 5.1.10).
+    fn bound_captures(
+        &mut self,
+        key: TypeKey,
+        captured: TypeId,
+        captures: Vec<NewCapture>,
+    ) -> R<()> {
         let subst = self.theta(captured);
         for (i, c, wildcard) in captures {
             let declared = self.var_bounds(TypeVarOwner::Type(key), i)?.to_vec();
@@ -517,7 +540,7 @@ impl TypeContext<'_> {
             };
             self.arena.set_bounds(n, upper, lower);
         }
-        Ok(captured)
+        Ok(())
     }
 
     /// Type erasure (JLS 4.6).
@@ -1236,7 +1259,7 @@ impl TypeContext<'_> {
         let package_access =
             !nm.flags.has(Flags::PUBLIC) && !nm.flags.has(Flags::PROTECTED) && !n_interface;
         // An interface has `Object`'s public methods only (JLS 9.2): `clone()` in an interface
-        // doesn't override `Object.clone()` (observation 22).
+        // doesn't override `Object.clone()` (W1's observation 6).
         let of_interface = self.decl(of)?.is_some_and(|d| d.is_interface());
         if of_interface && !n_interface && !nm.flags.has(Flags::PUBLIC) {
             return Ok(Tri::No);

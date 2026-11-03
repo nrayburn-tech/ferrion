@@ -1,13 +1,18 @@
 //! Least upper bounds (JLS 4.10.4), greatest lower bounds (5.1.10), the order of an
 //! intersection's parts, and upward projection (4.10.5).
 //!
-//! Two of javac's choices, observed (docs/design/semantic-type-relations.md#observations):
+//! javac's choices, observed (docs/design/semantic-type-relations.md#observations, and
+//! observations 1 to 3 in docs/design/types-oracle-normalization.md):
 //!
 //! - `lub`'s recursion through type arguments, which JLS 4.10.4 lets produce an infinite type
 //!   (`lub(Integer, String)` is `Comparable<? extends lub(Integer, String)> & ...`), is computed
 //!   while the same operands are on the stack at most twice; a third time, the argument is `?`.
-//! - An intersection's parts are ordered: the class first, then interfaces deepest first (the
-//!   longest chain of superinterfaces above them), then by qualified name.
+//! - `lub` captures its operands, and each parameterization it combines, so its type arguments
+//!   are `? extends` the lub of two types, or a type both have.
+//! - `glb` compares two classes' types erased: `glb(Integer, Comparable<CAP>)` is `Integer`.
+//! - An intersection's parts are ordered, `lub`'s and `glb`'s alike: the class first, then
+//!   interfaces deepest first (the longest chain of superinterfaces above them), then by
+//!   qualified name.
 
 use super::{Active, R, Tri, Type, TypeArg, TypeContext, TypeId, Why};
 use crate::Cancelled;
@@ -44,6 +49,9 @@ impl TypeContext<'_> {
             if self.arena.non_answer(t).is_some() {
                 return Ok(Some(t));
             }
+            // The operands are captured, as an expression's type is (W1's observation 4): JLS
+            // 4.10.4's `lcta(? extends U, ? super U) = U` isn't above `G<? super U>`.
+            let t = self.capture_(t)?;
             if self.arena.get(t) == Type::Null || operands.contains(&t) {
                 continue;
             }
@@ -231,31 +239,45 @@ impl TypeContext<'_> {
         if a == b {
             return Ok(a);
         }
+        // Each parameterization is captured, as the operands are (W1's observation 4): javac's
+        // `lub(List<? super Comparable<? super C>>, List<String>)` is `List<? extends Object>`,
+        // not 4.10.4's `List<? super glb(...)>`.
+        let (a, b) = (self.capture_(a)?, self.capture_(b)?);
+        if a == b {
+            return Ok(a);
+        }
         let (
             Type::Class {
                 key,
                 outer: ao,
-                args: Some(aa),
+                args: aa,
             },
             Type::Class {
                 outer: bo,
-                args: Some(ba),
+                args: ba,
                 ..
             },
         ) = (self.arena.get(a), self.arena.get(b))
         else {
             return Ok(a);
         };
-        let (aa, ba) = (self.arena.args(aa).to_vec(), self.arena.args(ba).to_vec());
-        let mut args = Vec::with_capacity(aa.len());
-        for (x, y) in aa.into_iter().zip(ba) {
-            args.push(self.lcta(x, y)?);
-        }
-        let outer = match (ao, bo) {
-            (Some(x), Some(y)) => Some(self.lci(x, y)?),
-            (o, _) => o,
+        let args = match (aa, ba) {
+            (Some(aa), Some(ba)) => {
+                let (aa, ba) = (self.arena.args(aa).to_vec(), self.arena.args(ba).to_vec());
+                let mut args = Vec::with_capacity(aa.len());
+                for (x, y) in aa.into_iter().zip(ba) {
+                    args.push(self.lcta(x, y)?);
+                }
+                Some(args)
+            }
+            _ => None,
         };
-        Ok(self.arena.class(key, outer, Some(&args)))
+        // A member of two parameterizations of its outer class is a member of their lci.
+        let outer = match (ao, bo) {
+            (Some(x), Some(y)) => Some(ferrion_stack::ensure_stack(|| self.lci(x, y))?),
+            _ => None,
+        };
+        Ok(self.arena.class(key, outer, args.as_deref()))
     }
 
     /// The least containing type argument (JLS 4.10.4).
@@ -324,7 +346,7 @@ impl TypeContext<'_> {
                     continue;
                 }
                 // A part above another is redundant; of two equal ones, the later goes. Two
-                // class types are compared erased, as javac does (observation 21):
+                // class types are compared erased, as javac does (W1's observation 5):
                 // `glb(Integer, Comparable<CAP>)` is `Integer`.
                 // Two parameterizations of one class are compared as they are.
                 let classes = match (self.arena.get(t), self.arena.get(other)) {
@@ -355,8 +377,9 @@ impl TypeContext<'_> {
         }
     }
 
-    /// Orders an intersection's parts as javac does (observation 2): type variables and the
-    /// class first, then interfaces deepest first, then by qualified name.
+    /// Orders an intersection's parts as javac does (observation 2, and W1's observations 2 and
+    /// 5): type variables and the class first, then interfaces deepest first, then by qualified
+    /// name.
     pub(crate) fn order(&mut self, parts: Vec<TypeId>) -> R<Vec<TypeId>> {
         let mut keyed = Vec::with_capacity(parts.len());
         for t in parts {
