@@ -121,6 +121,7 @@ impl<'t> Formatter<'t> {
         debug_assert!(self.in_region.is_none(), "a run reordered in a region");
         // A region copies the run as written, so its tokens emit nothing, as `token` does.
         if self.in_region.is_none() {
+            self.start_rewrite(first, last);
             for (i, unit) in units.iter().enumerate() {
                 if i > 0 {
                     self.space();
@@ -129,9 +130,20 @@ impl<'t> Formatter<'t> {
                     self.text(token);
                 }
             }
+            self.doc.end();
         }
         self.last_token = Some(last);
         self.trailing_comments(last);
+    }
+
+    /// Starts a rewrite of the input's tokens from `first` to `last`, which the rule then emits in
+    /// another order or in part (docs/design/formatter-completeness.md, "Edits"), ended with
+    /// [`Formatter::end`]. The edit record makes its output one edit, over the tokens' span.
+    /// Only outside disable regions: nothing in one is rewritten.
+    pub fn start_rewrite(&mut self, first: TokenId, last: TokenId) {
+        debug_assert!(self.in_region.is_none(), "a rewrite in a region");
+        let span = self.tree.token(first).span().start..self.tree.token(last).span().end;
+        self.doc().start_rewrite(span.start, span.end);
     }
 
     /// Places the comments before `token` that haven't been placed, without emitting the token:
@@ -558,7 +570,17 @@ impl<'t> Formatter<'t> {
                 );
                 self.doc().verbatim(verbatim);
             }
-            SyntaxKind::BlockComment | SyntaxKind::DocComment if text.contains(['\n', '\r']) => {
+            SyntaxKind::DocComment => {
+                let span = token.span();
+                let verbatim = copied(
+                    self.tree.text(),
+                    span.start,
+                    span.end,
+                    VerbatimKind::Doc { token: token.id() },
+                );
+                self.doc().verbatim(verbatim);
+            }
+            SyntaxKind::BlockComment if text.contains(['\n', '\r']) => {
                 let span = token.span();
                 let verbatim = copied(
                     self.tree.text(),
@@ -687,7 +709,7 @@ fn copied(text: &str, start: u32, end: u32, kind: VerbatimKind) -> Verbatim {
     let mut lines = Lines::new(copied);
     let first = lines.next().unwrap_or_default();
     let first = match kind {
-        VerbatimKind::Comment => trim_end(first),
+        VerbatimKind::Comment | VerbatimKind::Doc { .. } => trim_end(first),
         VerbatimKind::Copy { .. } => first,
     };
     Verbatim {

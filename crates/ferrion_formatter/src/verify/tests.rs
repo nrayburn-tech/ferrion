@@ -133,3 +133,22 @@ fn text_blocks_compare_apart_from_line_terminators() {
         Property::Equivalence
     );
 }
+
+#[test]
+fn imports_are_compared_apart_from_the_rest() {
+    let input = "import b.B;\nimport a.A;\n\nclass C {}\n";
+    check(input, input).unwrap();
+    // Until A2's import rewrites, imports must come out as they went in.
+    let violation = check(input, "import a.A;\nimport b.B;\n\nclass C {}\n").unwrap_err();
+    assert_eq!(violation.property, Property::Equivalence);
+    assert!(violation.message.starts_with("import 0"), "{violation}");
+    assert_eq!(
+        property(input, "import b.B;\n\nclass C {}\n"),
+        Property::Equivalence
+    );
+    // The rest of the tree is still compared, with its node indices past the imports.
+    assert_eq!(
+        property(input, "import b.B;\nimport a.A;\n\nclass D {}\n"),
+        Property::Equivalence
+    );
+}

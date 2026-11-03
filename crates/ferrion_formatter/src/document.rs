@@ -104,6 +104,11 @@ pub enum Element {
     BreaksWith { group: u32 },
     /// Text copied rather than laid out, by its index in [`Document::verbatims`].
     Verbatim(u32),
+    /// Its contents, which a rewrite emits for the input's bytes `start..end`: a reordered
+    /// modifier run or the import section. It prints its contents and changes nothing about
+    /// them; it tells the printer's edit record that its output replaces that span as one edit
+    /// (docs/design/formatter-completeness.md, "Edits").
+    Rewrite { start: u32, end: u32 },
 }
 
 /// Text that is placed rather than laid out (docs/design/formatter.md, "Copied text"): a text
@@ -129,6 +134,10 @@ pub enum VerbatimKind {
     Copy { to_end: bool },
     /// A block comment, its later lines re-indented to the column it starts at.
     Comment,
+    /// A traditional doc comment, `token`, which A2 reflows at the column it starts at
+    /// (docs/design/formatter-completeness.md, "Where reflow happens"). Until then it prints as
+    /// written when it's one line, and re-indented as a [`VerbatimKind::Comment`] otherwise.
+    Doc { token: TokenId },
 }
 
 /// A finished document.
@@ -253,6 +262,11 @@ impl DocumentBuilder {
         let index = self.verbatims.len() as u32;
         self.verbatims.push(verbatim);
         self.elements.push(Element::Verbatim(index));
+    }
+
+    /// Starts a [`Element::Rewrite`] of the input's bytes `start..end`.
+    pub fn start_rewrite(&mut self, start: u32, end: u32) {
+        self.start(Element::Rewrite { start, end }, None);
     }
 
     /// Starts a group, returning its index for [`DocumentBuilder::start_indent_if_broken`].
@@ -523,8 +537,8 @@ impl DocumentBuilder {
                         *next = (u64::from(*next) + after).min(u64::from(u32::MAX)) as u32;
                     }
                 }
-                Element::Indent(_) => {
-                    // A fill's last separator may be in an indent in it.
+                Element::Indent(_) | Element::Rewrite { .. } => {
+                    // A fill's last separator may be in an indent or a rewrite in it.
                     let (_, last) = after_end.pop().expect("a container without an End");
                     if let Some(last) = last
                         && let Some((_, outer @ None)) = after_end.last_mut()

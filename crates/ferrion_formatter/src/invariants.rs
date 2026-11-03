@@ -6,7 +6,7 @@ use std::sync::Arc;
 use ferrion_diagnostics::SourceText;
 use ferrion_parser::{ParseOptions, Severity, parse};
 
-use crate::{FormatOptions, Formatted, format_tree, verify_parsed};
+use crate::{FormatOptions, Formatted, apply_edits, format_edits, format_tree, verify_parsed};
 
 /// The releases [`check_bytes`] formats at: the parser's fuzzing releases, the LTS releases and
 /// the latest, which include both readings of `yield`.
@@ -26,7 +26,7 @@ pub fn check_bytes(bytes: &[u8]) -> Result<(), String> {
 }
 
 /// Formats `source` at `release`, unless it has errors there, and checks the safety properties
-/// of the output.
+/// of the output, and that the edits give it.
 pub fn check_source(source: &SourceText, release: u32) -> Result<(), String> {
     let parsed = parse(Arc::from(source.text()), ParseOptions { release });
     if parsed
@@ -41,5 +41,12 @@ pub fn check_source(source: &SourceText, release: u32) -> Result<(), String> {
         Formatted::Changed(output) => output,
         Formatted::Skipped(_) => return Err("a file without errors was skipped".to_owned()),
     };
-    verify_parsed(source, &parsed, &output, &FormatOptions { release }).map_err(|v| v.to_string())
+    verify_parsed(source, &parsed, &output, &FormatOptions { release })
+        .map_err(|v| v.to_string())?;
+    let edits = format_edits(&parsed.tree, source).ok_or("a file without errors has no edits")?;
+    let bom = if source.has_bom() { 3 } else { 0 };
+    if apply_edits(source.text(), &edits).as_bytes() != &output[bom..] {
+        return Err("the edits don't give the output".to_owned());
+    }
+    Ok(())
 }

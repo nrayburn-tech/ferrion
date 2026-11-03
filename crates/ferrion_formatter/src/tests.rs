@@ -16,7 +16,54 @@ fn formatted(text: &str) -> String {
             String::from_utf8_lossy(&output)
         );
     }
-    String::from_utf8(output).unwrap()
+    let output = String::from_utf8(output).unwrap();
+    assert_eq!(
+        apply_edits(source.text(), &edits(text)),
+        output.trim_start_matches('\u{feff}'),
+        "the edits don't give the output"
+    );
+    output
+}
+
+/// The edits for `text`.
+fn edits(text: &str) -> Vec<Edit> {
+    let source = SourceText::decode(text).unwrap();
+    let parsed = parse(
+        Arc::from(source.text()),
+        ParseOptions {
+            release: OPTIONS.release,
+        },
+    );
+    format_edits(&parsed.tree, &source).unwrap()
+}
+
+#[test]
+fn edits_touch_only_what_changes() {
+    let edit = |start: u32, end: u32, text: &str| Edit {
+        range: start..end,
+        text: text.to_owned(),
+    };
+    assert_eq!(edits("class A {\n  int x;\n}\n"), []);
+    // Gaps lose only what differs, and the final line ending is added at the end.
+    assert_eq!(
+        edits("class   A {\n  int  x;\n}"),
+        [edit(6, 8, ""), edit(18, 19, ""), edit(23, 23, "\n")]
+    );
+    // A reordered modifier run is one edit, over the whole run.
+    assert_eq!(
+        edits("class A {\n  final static int x = 1;\n}\n"),
+        [edit(12, 24, "static final")]
+    );
+    // A re-indented comment is one edit over the comment.
+    assert_eq!(
+        edits("class A {\n    /* a\n     */\n  int x;\n}\n"),
+        [edit(12, 14, ""), edit(14, 26, "/* a\n   */")]
+    );
+    // A line ending in a gap is the file's.
+    assert_eq!(
+        edits("class A {\r\nint x;\r\n}"),
+        [edit(11, 11, "  "), edit(20, 20, "\r\n")]
+    );
 }
 
 #[test]

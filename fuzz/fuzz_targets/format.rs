@@ -1,5 +1,6 @@
 //! Reads arbitrary bytes as a source file, parses it at a few releases, and wherever it parses
-//! without errors, formats it and checks the four safety properties.
+//! without errors, formats it and checks the four safety properties, and that the edits give the
+//! same output.
 
 #![no_main]
 

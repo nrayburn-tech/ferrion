@@ -13,8 +13,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use ferrion_diagnostics::SourceText;
-use ferrion_formatter::{FormatOptions, Formatted, format, verify};
+use std::sync::Arc;
+
+use ferrion_formatter::{FormatOptions, Formatted, apply_edits, format, format_edits, verify};
 use ferrion_java_version::LATEST_RELEASE;
+use ferrion_parser::{ParseOptions, parse};
 
 const EXPECTED: &str = ".formatted.java";
 
@@ -47,6 +50,13 @@ fn snapshots() {
         };
         if let Err(violation) = verify(&source, &actual, &options) {
             failures.push(format!("{name}: {violation}"));
+        }
+        // The edits give the same file.
+        let parsed = parse(Arc::from(source.text()), ParseOptions { release });
+        let edits = format_edits(&parsed.tree, &source).unwrap_or_default();
+        let bom = if source.has_bom() { 3 } else { 0 };
+        if apply_edits(source.text(), &edits).as_bytes() != &actual[bom..] {
+            failures.push(format!("{name}: the edits don't give the output"));
         }
         let file_name = input.file_name().unwrap().to_string_lossy();
         let expected_path =
