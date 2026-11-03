@@ -256,6 +256,9 @@ dependencies = [
 [[package]]
 name = "ferrion_cli"
 version = "0.0.0"
+dependencies = [
+ "ferrion_config",
+]
 
 [[package]]
 name = "ferrion_config"
