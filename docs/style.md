@@ -401,8 +401,8 @@ with the imports they belong to.
   `{@link #m(P1, P2[])}`, `{@value X#F}`, `@see X`, `@throws X`, `@exception X`, `@uses X`,
   `@provides X`, and in `///` comments from Java 23 on, `[X]` and `[text][X]`. Prose, labels,
   `{@code}`, `{@literal}`, and `{@value X}` without a member aren't uses.
-- **Kept:** wildcard imports, module imports, `java.lang` imports, and any import a comment
-  belongs to (below).
+- **Kept:** wildcard imports, module imports, and `java.lang` imports, unless repeated, and any
+  import a comment belongs to (below).
 - **Comments:** a comment belongs to an import when it is inside it, on its line after it, or
   directly above it with no blank line between, and moves with it. A comment that belongs to no
   import, such as a group header followed by a blank line, moves to the top of the section, in
@@ -435,7 +435,7 @@ class A {
 
 ### Departures
 
-- **`java.lang` and wildcard imports** stay, used or not: `import java.lang.String;`,
+- **`java.lang` and wildcard imports** stay, used or not, unless repeated: `import java.lang.String;`,
   `import java.lang.*;`, and the package's own `import p.q.*;`, which GJF removes. Removing them
   safely needs type information (SCOPE.md): `java.lang.String` matters if the package declares a
   `String`. Case: `import-java-lang`.
@@ -460,10 +460,6 @@ class A {
 - **`///` comments before Java 23** are plain line comments, so their links aren't uses: GJF,
   which knows no Java version, keeps `import u.Md;` for `/// [Md]` in a Java 21 file, and Ferrion
   removes it. Snapshot: `imports/markdown-before-23`.
-- **Repeated wildcard and module imports** stay, both copies, which GJF merges (**proposed**).
-  SCOPE.md says wildcard and module imports are never removed; a repeated one is as safe to
-  remove as a repeated single-type import, so the alternative is to merge them as GJF does and
-  amend SCOPE.md. Case: `import-duplicate-on-demand`.
 
 ## Statements
 

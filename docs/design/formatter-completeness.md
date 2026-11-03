@@ -78,13 +78,14 @@ GJF's order (observed), which Ferrion matches:
 
 ### Removal
 
-An import is **removable** if it is a single-type or single static import (not on demand, not a
-module import) and one of these holds:
+An import is **removable** if one of these holds:
 
-- **Unused:** its simple name has no use in the file (below).
+- **Unused** (single-type or single static only, not on demand, not a module import): its simple
+  name has no use in the file (below).
 - **Own package** (single-type only): its qualifier is the file's package, such as `p.q.A` in `package p.q;`. A nested
   type, `p.q.A.B`, isn't covered.
-- **A duplicate** of an import kept earlier.
+- **A duplicate** of an import kept earlier, of any kind: on demand, module, and `java.lang`
+  imports too (decided in review).
 
 …and **no comment belongs to it** (SCOPE.md). GJF removes an import with a comment and moves the
 comment to the import before it (observed); Ferrion keeps the import. Every removal is safe from
@@ -150,12 +151,17 @@ each kept import is emitted once and each removed import's tokens are not.
 ### Checking it
 
 `verify`'s equivalence compares the sections as multisets of import names, and checks each import
-missing from the output **independently of the plan**: it is a single-type or single static
-import, has no
-identifier with its simple name anywhere in the output outside the imports, and no word with that
-name in any doc comment. That over-approximates uses (any doc comment, any identifier), so it
-can't pass a removal the plan got wrong, though it could, in principle, reject a correct one; the
-corpus run will say whether that happens.
+missing from the output **independently of the plan**: an import of the same kind and name is
+still there; or it is a single-type import of the file's own package; or it is a single-type or
+single static import whose simple name is no identifier in the output outside the imports that
+may refer to one, and no reference in an attached doc comment. An identifier that may refer to an
+import is any but a declaration's own name, a label, and a name after `.` or `::`; the doc
+comments are the ones javac attaches (`ferrion_syntax::comments::doc_comment`), and each type in
+each of their references counts by its first segment. That still counts more than the plan does,
+so it can't pass a removal the plan got wrong. A first version counted every identifier and every
+word in every doc comment; fuzzing showed it rejected correct removals (a field named like the
+import, link labels, `{@code}` text, an unattached doc comment), so it was narrowed (decided in
+review).
 
 ## Doc comments
 
@@ -568,3 +574,11 @@ The user accepted all six recommendations (2026-11-02):
 5. **Ranges expand to units,** as GJF's do, with rewrites only inside the expanded range.
 6. **The work order** stands: the core step, then imports, Javadoc, Markdown, and ranges in
    parallel.
+
+From the imports workstream, also accepted (2026-11-02):
+
+7. **Repeated imports of any kind are merged,** as GJF merges them: a repeated on-demand, module,
+   or `java.lang` import adds nothing, so dropping it is safe from the syntax alone. SCOPE.md now
+   says so.
+8. **`verify`'s removal check** is the narrower one in "Checking it".
+9. **Unused `java.lang` imports are kept,** as SCOPE.md says, a departure.

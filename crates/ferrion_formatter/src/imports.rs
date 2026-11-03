@@ -14,8 +14,8 @@
 //!   groups; within a group by the whole name, Unicode escapes translated, compared by UTF-16 code
 //!   unit as Java strings compare, as GJF orders them (observed).
 //! - **Removal:** a single-type or single static import goes when its simple name has no use, a
-//!   single-type import when it names a type of the file's own package, and either when it
-//!   repeats an import kept before it, unless a comment belongs to it. Wildcard, module, and
+//!   single-type import when it names a type of the file's own package, and any import when it
+//!   repeats one kept before it, unless a comment belongs to it. Otherwise wildcard, module, and
 //!   `java.lang` imports are never removed (SCOPE.md). Uses are the identifiers
 //!   GJF counts and the references in attached doc comments ([`unused`]).
 
@@ -87,8 +87,8 @@ struct Import<'t> {
     /// The imported name as compared: its dots, its member for a static import, and `.*` on
     /// demand, with Unicode escapes translated.
     name: String,
-    /// Whether it may be removed: a single-type or single static import, other than a `java.lang`
-    /// one, which SCOPE.md never removes.
+    /// Whether it may be removed when unused: a single-type or single static import, other than a
+    /// `java.lang` one, which SCOPE.md never removes. Any import may go when it is repeated.
     single: bool,
     /// The comments before it, after the previous import's: the floating ones, then from
     /// `above` the ones directly above it. Empty for the first import, whose are outside.
@@ -295,7 +295,8 @@ pub fn plan<'t>(
     })
 }
 
-/// An import's group, its name as compared, and whether it may be removed (`Import::single`).
+/// An import's group, its name as compared, and whether it may be removed when unused
+/// (`Import::single`).
 fn name(node: SyntaxNode<'_>) -> (Group, String, bool) {
     let mut group = Group::Other;
     let mut name = String::new();
@@ -418,9 +419,9 @@ fn kept(tree: &SyntaxTree, comments: &CommentMap, planned: &[Import<'_>]) -> Vec
         let duplicate = seen.contains(&(import.group, import.name.as_str()));
         let own_package = import.group == Group::Other
             && package.as_deref().is_some_and(|p| p == import.qualifier());
-        if import.single
-            && !import.has_comments()
-            && (duplicate || own_package || wanted.contains(import.simple_name()))
+        if !import.has_comments()
+            && (duplicate
+                || import.single && (own_package || wanted.contains(import.simple_name())))
         {
             kept[k] = false;
         } else {

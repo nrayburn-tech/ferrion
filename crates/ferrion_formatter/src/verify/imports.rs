@@ -65,6 +65,8 @@ struct Import<'t> {
     /// Its name with Unicode escapes translated, `static` or `module` before it if it has one.
     name: String,
     static_or_module: bool,
+    /// Whether it is an `import module`, which a static import of the same name doesn't repeat.
+    module: bool,
     /// Whether it is a single-type or single static import.
     single: bool,
 }
@@ -125,6 +127,7 @@ fn imports(tree: &SyntaxTree) -> Vec<Import<'_>> {
                 tokens,
                 name,
                 static_or_module,
+                module,
                 single: !on_demand && !module,
             }
         })
@@ -133,12 +136,12 @@ fn imports(tree: &SyntaxTree) -> Vec<Import<'_>> {
 
 /// Compares the two trees' import sections as multisets: every import of the output is one of the
 /// input's, and every import of the input missing from the output is one the formatter may remove,
-/// checked without the plan. A single-type or single static import may go when:
+/// checked without the plan. Any import may go when an import of the same kind and name is still
+/// there (a duplicate). A single-type or single static import may also go when:
 ///
 /// - no identifier in the output outside the imports that may refer to it, and no reference in
 ///   an attached doc comment, has its simple name ([`Names`]): that over-approximates its uses, so a
 ///   removal the plan got wrong can't pass;
-/// - an import with the same name is still there (a duplicate);
 /// - it is a single-type import of a type of the file's own package.
 pub(super) fn compare(
     before: &SyntaxTree,
@@ -173,17 +176,24 @@ pub(super) fn compare(
         }
         *n -= 1;
         let mut reason = || -> Result<(), &'static str> {
-            if !import.single {
-                return Err("only single-type and single static imports are removed");
+            let duplicate = b.iter().any(|i| {
+                i.static_or_module == import.static_or_module
+                    && i.module == import.module
+                    && i.name == import.name
+            });
+            if duplicate {
+                return Ok(());
             }
-            let duplicate = b
-                .iter()
-                .any(|i| i.static_or_module == import.static_or_module && i.name == import.name);
+            if !import.single {
+                return Err(
+                    "only single-type and single static imports are removed unless repeated",
+                );
+            }
             let own_package = !import.static_or_module
                 && package
                     .as_deref()
                     .is_some_and(|p| import.name.rsplit_once('.').is_some_and(|(q, _)| q == p));
-            if duplicate || own_package {
+            if own_package {
                 return Ok(());
             }
             let names = names.get_or_insert_with(|| Names::new(after));
