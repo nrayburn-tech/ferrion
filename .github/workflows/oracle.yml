@@ -258,15 +258,23 @@ jobs:
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
       # Each project's build and javac run on the JDK its lock names (JAVA_HOME_<N>_X64); the
-      # last, 27, is JAVA_HOME, which builds the oracle.
+      # last one set up, 27, is JAVA_HOME, which builds the oracle.
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: |
-            21
-            25
-            26
-            27
+          java-version: "21" # matrix
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "25" # matrix
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "26" # matrix
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "27"
           cache: maven
       - name: Build the javac oracle
         working-directory: tools/javac-oracle
