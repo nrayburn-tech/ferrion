@@ -35,11 +35,13 @@ differences` checks against GJF and Ferrion both.
   Block comments that span lines are re-indented to their new column, with their stars aligned
   one column after the `/` when every later line starts with `*`. Otherwise the later lines keep
   their indentation relative to each other, the least indented at the comment's column, not
-  counting empty lines. A doc comment (`/**`) aligns the stars it has whatever its other lines
-  are, and moves those by as much as its least indented star.
+  counting empty lines. A doc comment (`/**`) that isn't reflowed (see [Doc comments](#doc-comments))
+  aligns the stars it has whatever its other lines are, and moves those by as much as its least
+  indented star.
 
-  A comment's text doesn't change, except that a line comment gets a space after its `//` when
-  text follows it directly, as GJF does: `//x` becomes `// x`, and `//-----` becomes `// -----`.
+  A comment's text doesn't change, except that doc comments are reflowed, and a line comment gets
+  a space after its `//` when text follows it directly, as GJF does: `//x` becomes `// x`, and
+  `//-----` becomes `// -----`.
   `//` alone, `///`, `////`, and a `//` followed by a tab are left alone, and so are
   `//noinspection` and `//$NON-NLS-1$`, which tools read.
 
@@ -61,9 +63,10 @@ differences` checks against GJF and Ferrion both.
   code (SCOPE.md and the comments design). Case: `modifier-comment`.
 - **Disable regions:** GJF doesn't recognize the markers and formats the code between them;
   Ferrion copies it (SCOPE.md). Case: `formatter-off`.
-- **A doc comment's lines without a star** stay without one, moved as far as its stars. GJF
-  rewrites the comment with a star on every line, an empty line included. Ferrion doesn't change
-  a block comment's text (SCOPE.md). Case: `doc-comment-stars`.
+- **A doc comment's lines without a star**, in a comment that isn't reflowed, stay without one,
+  moved as far as its stars. GJF rewrites the comment with a star on every line, an empty line
+  included. Ferrion doesn't change the text of a comment it re-indents (SCOPE.md). Case:
+  `doc-comment-stars`.
 - **Directives keep their `//`:** formatter markers (`//@formatter:off`), `ferrion-disable*`
   suppression comments, and the comments in a disable region get no space after their `//`,
   which GJF adds. A `//noinspection` or `//$NON-NLS-1$` trailing some statements, such as a local
@@ -71,6 +74,158 @@ differences` checks against GJF and Ferrion both.
   `directive-comments`.
 - **Long `//` comments** are left as they are, past the column limit. GJF 2.0.0 wraps one that
   goes over onto a new `//` line (SCOPE.md: `//` comments are not wrapped). Case: `line-comment`.
+
+## Doc comments
+
+Every traditional doc comment, `/** */`, is reflowed, wherever it is: on a declaration, in a method
+body, in an expression, or dangling at the end of a class. It starts and ends its line, so
+`int y = /** x */ 2;` puts the comment on a line of its own. `/***/`, `/*****/`, `/***  text */`,
+and `/*** ... ***/` banners aren't doc comments to the rules, and are re-indented as other block
+comments are. A doc comment in a disable region is copied. The snapshots in
+`crates/ferrion_formatter/tests/snapshots/javadoc/` have a case of each rule.
+
+### Javadoc
+
+- **Fill:** a paragraph's lines are joined and filled to 100 columns, counted in UTF-16 code
+  units, breaking a line only where the next word doesn't fit; runs of whitespace become one space.
+  A word is never split, so a long word, a URL, or a hyphenated word may go over. No line starts
+  with a word starting with `@`, which would start a block tag: the word before it moves down with
+  it, or the line goes over. A word ending with a hyphen after a letter or digit at the end of a
+  line is joined to the next line's first word, as GJF joins them: `well-` then `known` is
+  `well-known`. At deep indentation, a line holds one word.
+
+  ```java
+  /**
+   * aaaa bbbb cccc dddd eeee ffff gggg hhhh iiii jjjj kkkk llll mmmm nnnn oooo pppp qqqq rrrr ssss
+   * tttt uuuu vvvv wwww xxxx yyyy zzzz short line.
+   */
+  ```
+- **Inline tags** break at their spaces, right after the tag's name included, and their
+  whitespace is collapsed: `{@code a    b}` is `{@code a b}`, and a `{@code}` written across lines
+  is joined. A quoted string in one, as in `{@index "a phrase"}`, doesn't break. `<code>` is
+  different: its content is copied as written, line breaks included, and a line may break only
+  right after `<code>` and right before `</code>`. After `<a href="...">`, written just so, the
+  next word comes right after it, or on the next line if it doesn't fit: `<a href="u"> link</a>`
+  is `<a href="u">link</a>`.
+- **Shape:** `/** text */` on one line exactly when the text is one line that fits that way and
+  the comment has no block tag; otherwise `/**`, a ` * ` line for each line of text, and ` */`. An
+  empty comment is `/** */`. Text after `/**` moves into the body, stars before `*/` go
+  (`/** a **/` is `/** a */`), every line gets a star, and leading, trailing, and doubled blank
+  lines go.
+- **Paragraphs:** a blank line between paragraphs starts the next with `<p>`, after a blank line,
+  unless the paragraph follows a block, a `<br>`, or an HTML comment. A `<p>` within a line starts
+  a paragraph, with the text after it right after it. `<p>`, `<P>`, and `<p/>` are written `<p>`;
+  one with attributes is kept as written. `</p>` goes, and so does a `<p>` before anything else. A
+  `<p>` with no text after it, before a list or a block, stays on its own line. `<br>`, `<BR>`,
+  `<br/>`, and `<br />` are written `<br>`, and end their line; one written right after a word may
+  go on the next line when the line is full.
+
+  ```java
+  /**
+   * Para one.
+   *
+   * <p>Para two.
+   */
+  ```
+- **Lists:** `<ul>`, `<ol>`, and `<dl>` start their own line, after a blank line, and have one
+  after them; their `<li>`, `<dt>`, and `<dd>` are at +2, each on its own line, with their later
+  lines and the lists and blocks in them past its start tag: +4 for `<li>`, and past the
+  attributes of `<li class="x">`. In a list, the blank lines blocks ask for are line breaks.
+  `</li>`, `</dt>`, and `</dd>` go. Tags keep their case and attributes.
+
+  ```java
+  /**
+   * Intro:
+   *
+   * <ul>
+   *   <li>two is long word word word word word word word word word word word word word word word
+   *       word word
+   *   <li>three
+   *       <ul>
+   *         <li>nested
+   *       </ul>
+   * </ul>
+   */
+  ```
+- **Blocks:** `<pre>`, `<table>`, `<blockquote>`, `<h1>` to `<h6>`, and `{@snippet}` have a
+  blank line before and after them, and one written within a line becomes its own paragraph.
+  `<blockquote>` and `</blockquote>` are on lines of their own. A heading's text is filled. An HTML
+  comment is on lines of its own, without blank lines. `<div>`, `<hr>`, and other tags are text.
+- **Copied:** `<pre>`, `<table>`, `{@snippet}`, and HTML comments are copied as written, apart
+  from trailing whitespace: each line after the first keeps its text after the star, its
+  indentation included, and a line without a star gets one, with the line's text after it. A
+  `<pre>` holding a `{@code}` written across lines is written `<pre>{@code` and `}</pre>`, as GJF
+  writes it, the whitespace and blank lines between them gone.
+
+  ```java
+  /**
+   * <pre>{@code
+   * int x;
+   * }</pre>
+   */
+  ```
+- **Block tags** keep their order, with a blank line before the first and none between them.
+  Their later lines are at +4, and a tag's later paragraphs start with `<p>` at +4, without a
+  blank line. A tag whose text ends with a block has a blank line after it. Empty tags are kept.
+
+  ```java
+  /**
+   * Summary.
+   *
+   * @param x multi
+   *     <p>paragraph two
+   * @throws Exception when word word word word word word word word word word word word word word
+   *     word word word word
+   * @return r
+   */
+  ```
+- **Kept as written:** Unicode escapes, entities, `{@inheritDoc}`, unknown inline tags (their
+  whitespace collapsed), and stray `<`, `>`, and braces.
+- **Re-indented only:** a comment with an unclosed `<pre>`, `<code>`, or `<table>`, an unclosed
+  inline tag, or a line in a `<pre>` or an inline tag starting with `@` and a lowercase letter,
+  which javadoc reads as a block tag, is re-indented as a block comment is, as GJF does. So is a
+  comment with a tag argument or reference javadoc can't read, such as an unclosed `@see "...`,
+  an `@@`, `@*`, or `@/` escape, or an HTML tag the rules place (`<p>`, a list, a block) written
+  across lines.
+
+### Departures
+
+- **`<pre>` content keeps its indentation:** each line keeps its text after the star as written.
+  GJF removes a margin: the least indentation after `* ` over the whole comment, and in
+  `<pre>{@code`, the code's own common indentation too. javadoc keeps the whitespace after the
+  stars, so that changes what the `<pre>` shows. Files GJF has formatted are unchanged, their
+  margins already gone. Snapshots: `javadoc/pre-*`.
+
+  ```java
+  /**
+   * <pre>{@code
+   *     x
+   *   }</pre>
+   */
+  ```
+- **A doc comment in a disable region** is copied, where GJF reflows it (SCOPE.md). Snapshot:
+  `javadoc/regions`.
+- **A blank line in an inline tag (proposed)** is a space, as any whitespace in one is. GJF puts a
+  `<p>` there, inside the tag, and adds another on each run. Snapshot:
+  `javadoc/departure-blank-in-inline-tag`.
+- **A word starting with `@` after `<br>` (proposed):** a comment where a rule would put such a
+  word at the start of a line, such as `Text<br>@foo`, is re-indented only. GJF puts it there,
+  where javadoc reads a block tag, and a second run adds a blank line before it. Snapshot:
+  `javadoc/departure-at-after-break`.
+- **A block tag named with an uppercase letter (proposed),** such as `@Override` at the start of a
+  line, stays a block tag, as javadoc reads it. GJF joins it into the text before it, and it
+  becomes text. Snapshot: `javadoc/departure-uppercase-tag`.
+- **No line break after a word ending with a hyphen (proposed):** the fill doesn't break a line
+  right after `well-`, where the next run would join it to the word after it; the word moves down
+  with the next. GJF breaks there, then joins the two words on its next run. Snapshot:
+  `javadoc/departure-hyphen-at-a-break`.
+- **Leading stars (proposed):** all the stars at the start of a line go, as javadoc reads them.
+  GJF keeps all but one, so `**text` becomes `* text`, adding a star to what javadoc shows.
+  Snapshot: `javadoc/departure-stars`.
+- **Unicode escapes for other than letters and digits (proposed):** a comment with one, such as
+  `\u0040`, is re-indented only. It could stand for something the rules read, such as a block
+  tag's `@`, where the reflow sees only text. GJF reflows it. Snapshot:
+  `javadoc/departure-escaped-at`.
 
 ## Declarations
 
