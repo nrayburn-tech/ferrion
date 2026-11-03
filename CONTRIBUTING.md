@@ -396,15 +396,23 @@ cargo benchmark run parser --out after.json
 ```
 
 Each reports wall time, user and system time, peak RSS, and heap use. On Linux with valgrind,
-`--callgrind` also counts instructions. Compare two runs; a metric that grows past its threshold in
+`--callgrind` also counts instructions, several benchmarks at once once all of them are timed
+(`--jobs` sets how many). Compare two runs; a metric that grows past its threshold in
 `tools/bench/thresholds.toml` fails the comparison:
 
 ```bash
 cargo benchmark compare before.json after.json
 ```
 
-Pull requests run this on their base and head in CI, and show the comparison in the job summary. A
-new component adds its benchmarks to `tools/bench/src/benchmarks/`.
+Pull requests run this on their base and head in CI, and show the comparison in the job summary.
+CI runs only the benchmarks the change can affect; to see which those are, compare with a commit:
+
+```bash
+cargo benchmark affected main
+```
+
+A new component adds its benchmarks to `tools/bench/src/benchmarks/`, and its crate to
+`COMPONENTS` in `tools/bench/src/affected.rs`.
 
 ### Tests
 

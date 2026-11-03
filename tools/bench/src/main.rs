@@ -10,14 +10,18 @@
 //! The benchmarks are in [`benchmarks`]. Their inputs come from the corpus and a JDK, so nothing
 //! they read is committed.
 
+mod affected;
 mod alloc;
 mod benchmarks;
 mod compare;
 mod measure;
 mod results;
 
-use std::path::PathBuf;
+use std::num::NonZero;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode, Stdio};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Mutex, PoisonError};
 
 use anyhow::{Context, Result, bail};
 
@@ -37,6 +41,8 @@ commands:
   compare <base> <head>
                        compare two results files written by `run --out`, and fail if a metric
                        grows past its threshold
+  affected <commit>    print the filters for `run` that select the benchmarks a change from the
+                       commit to the working tree can affect, and why on stderr
 
 run options:
   --project <name>     a corpus project to read sources and jars from; repeatable (default:
@@ -46,6 +52,8 @@ run options:
   --time <seconds>     how long to time each benchmark for (default: 3)
   --callgrind          also count each benchmark's instructions with valgrind's callgrind; the
                        profiles are kept in target/release/bench-callgrind
+  --jobs <N>           how many benchmarks to count instructions for at once, after every one
+                       is timed (default: the number of CPUs)
   --out <file>         write the results as JSON
   --no-skip            fail if a benchmark's input isn't available, rather than skipping it
 
@@ -60,6 +68,8 @@ struct Options {
     inputs: Inputs,
     seconds: f64,
     callgrind: bool,
+    /// How many processes run under callgrind at once.
+    jobs: usize,
     out: Option<PathBuf>,
     no_skip: bool,
     thresholds: PathBuf,
@@ -93,6 +103,7 @@ fn run() -> Result<bool> {
         },
         seconds: 3.0,
         callgrind: false,
+        jobs: std::thread::available_parallelism().map_or(1, NonZero::get),
         out: None,
         no_skip: false,
         thresholds: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("thresholds.toml"),
@@ -110,6 +121,12 @@ fn run() -> Result<bool> {
             }
             "--time" => options.seconds = value("--time")?.parse().context("--time")?,
             "--callgrind" => options.callgrind = true,
+            "--jobs" => {
+                options.jobs = value("--jobs")?
+                    .parse::<NonZero<usize>>()
+                    .context("--jobs")?
+                    .get()
+            }
             "--out" => options.out = Some(PathBuf::from(value("--out")?)),
             "--no-skip" => options.no_skip = true,
             "--thresholds" => options.thresholds = PathBuf::from(value("--thresholds")?),
@@ -143,6 +160,13 @@ fn run() -> Result<bool> {
             let head = Results::read(head.as_ref())?;
             let thresholds = compare::read_thresholds(&options.thresholds)?;
             Ok(compare::run(&base, &head, &thresholds, options.markdown))
+        }
+        "affected" => {
+            let [base] = arguments.as_slice() else {
+                bail!("affected needs a commit to compare with\n\n{USAGE}");
+            };
+            affected::run(base)?;
+            Ok(true)
         }
         "child" => {
             let [name] = arguments.as_slice() else {
@@ -180,7 +204,11 @@ fn run_all(filters: &[String], options: &Options) -> Result<bool> {
         std::fs::create_dir_all(&profiles)?;
     }
 
+    // Timing runs one benchmark at a time, so that each has the machine to itself. Counting
+    // instructions waits until every benchmark is timed, and runs several at once: the counts
+    // don't depend on the machine's load.
     let mut results = Vec::new();
+    let mut counted = Vec::new();
     let mut ok = true;
     for benchmark in &selected {
         let mut command = Command::new(&exe);
@@ -204,7 +232,7 @@ fn run_all(filters: &[String], options: &Options) -> Result<bool> {
             .stderr(Stdio::inherit())
             .output()
             .with_context(|| format!("running {}", benchmark.name))?;
-        let mut result: BenchmarkResult = match output.status.code() {
+        let result: BenchmarkResult = match output.status.code() {
             Some(0) => serde_json::from_slice(&output.stdout)
                 .with_context(|| format!("reading {}'s results", benchmark.name))?,
             Some(SKIPPED) => {
@@ -222,27 +250,85 @@ fn run_all(filters: &[String], options: &Options) -> Result<bool> {
         };
         if options.callgrind {
             command.arg("--once");
-            let profile = profiles.join(format!("{}.out", benchmark.name.replace('/', "-")));
-            match measure::callgrind(&command, &profile) {
-                Ok(count) => {
-                    result.metrics.insert("instructions".to_owned(), count);
-                }
-                Err(error) => {
-                    println!(
-                        "{}: counting instructions FAILED: {error:#}",
-                        benchmark.name
-                    );
-                    ok = false;
-                }
-            }
+            counted.push(command);
+        } else {
+            print_result(&result);
         }
-        print_result(&result);
         results.push(result);
+    }
+    if options.callgrind {
+        ok &= count_instructions(&counted, &mut results, &profiles, options.jobs);
     }
     if let Some(out) = &options.out {
         Results::new(results).write(out)?;
     }
     Ok(ok)
+}
+
+/// Counts the instructions of each benchmark in `results`, whose process `commands` runs in
+/// callgrind mode, with up to `jobs` processes under callgrind at once. Prints each result once
+/// it and those before it are counted, so they're printed in order. Returns whether every count
+/// succeeded.
+fn count_instructions(
+    commands: &[Command],
+    results: &mut [BenchmarkResult],
+    profiles: &Path,
+    jobs: usize,
+) -> bool {
+    struct Progress<'a> {
+        results: &'a mut [BenchmarkResult],
+        counts: Vec<Option<Result<f64>>>,
+        printed: usize,
+        ok: bool,
+    }
+
+    let names: Vec<String> = results.iter().map(|result| result.name.clone()).collect();
+    let next = AtomicUsize::new(0);
+    let progress = Mutex::new(Progress {
+        counts: results.iter().map(|_| None).collect(),
+        results,
+        printed: 0,
+        ok: true,
+    });
+    std::thread::scope(|scope| {
+        for _ in 0..jobs.min(commands.len()) {
+            scope.spawn(|| {
+                loop {
+                    let index = next.fetch_add(1, Ordering::Relaxed);
+                    let Some(command) = commands.get(index) else {
+                        break;
+                    };
+                    let profile = profiles.join(format!("{}.out", names[index].replace('/', "-")));
+                    let count = measure::callgrind(command, &profile);
+
+                    let mut progress = progress.lock().unwrap_or_else(PoisonError::into_inner);
+                    let progress = &mut *progress;
+                    progress.counts[index] = Some(count);
+                    while let Some(Some(count)) = progress.counts.get_mut(progress.printed) {
+                        let result = &mut progress.results[progress.printed];
+                        match count {
+                            Ok(count) => {
+                                result.metrics.insert("instructions".to_owned(), *count);
+                            }
+                            Err(error) => {
+                                println!(
+                                    "{}: counting instructions FAILED: {error:#}",
+                                    result.name
+                                );
+                                progress.ok = false;
+                            }
+                        }
+                        print_result(result);
+                        progress.printed += 1;
+                    }
+                }
+            });
+        }
+    });
+    progress
+        .into_inner()
+        .unwrap_or_else(PoisonError::into_inner)
+        .ok
 }
 
 fn print_result(result: &BenchmarkResult) {
