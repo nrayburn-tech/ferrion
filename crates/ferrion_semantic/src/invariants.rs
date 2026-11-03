@@ -14,6 +14,10 @@
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
+mod relations;
+
+pub use self::relations::{check_relations, check_types};
+
 use crate::packages::{Package, PackageIndex};
 use crate::testing::dump_file;
 use crate::{

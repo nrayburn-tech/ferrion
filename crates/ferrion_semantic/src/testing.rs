@@ -28,7 +28,8 @@ use crate::{Engine, FileInput, ProjectInput, Snapshot, SourceSetId, SourceSetInp
 /// `abstract`, `final`), its binary name, then any of `extends X`, `implements X,Y`,
 /// `member Simple Binary` and `private-member Simple Binary` (an `InnerClasses` entry for a
 /// member of this class), `outer Binary Simple` (this class is a member of that one), `local`
-/// (a local class), `field name descriptor`, `method name descriptor`, and `signature text`.
+/// (a local class), `field name descriptor`, `method name descriptor` (public),
+/// `protected-method name descriptor`, and `signature text`.
 /// The whole line is split on spaces.
 pub fn class_file(spec: &str) -> (String, Vec<u8>) {
     let mut words = spec.split_whitespace();
@@ -78,7 +79,10 @@ pub fn class_file(spec: &str) -> (String, Vec<u8>) {
             }
             "local" => inner.push((name.to_owned(), None, Some("Local".to_owned()), 0)),
             "field" => fields.push((words.next().unwrap(), words.next().unwrap())),
-            "method" => methods.push((words.next().unwrap(), words.next().unwrap())),
+            "method" => methods.push((0x0001, words.next().unwrap(), words.next().unwrap())),
+            "protected-method" => {
+                methods.push((0x0004, words.next().unwrap(), words.next().unwrap()));
+            }
             "signature" => signature = words.next(),
             other => panic!("unknown word {other:?} in {spec:?}"),
         }
@@ -108,8 +112,8 @@ pub fn class_file(spec: &str) -> (String, Vec<u8>) {
     for (field, descriptor) in fields {
         b.field(0x0001, field, descriptor, &[]);
     }
-    for (method, descriptor) in methods {
-        b.method(0x0001, method, descriptor, &[]);
+    for (access, method, descriptor) in methods {
+        b.method(access, method, descriptor, &[]);
     }
     (name.to_owned(), b.finish())
 }
@@ -584,4 +588,65 @@ pub fn describe_type(snapshot: &Snapshot, view: SourceSetId, key: TypeKey) -> St
         }
     }
     out
+}
+
+/// A stand-in for the JDK classes the type relations' tests and properties use, as a jar's
+/// class lines (see [`class_file`]): their supertypes and type parameters are the JDK's, written
+/// here, so that a relation's answer can be checked by running javac on the same source.
+pub const RELATIONS_JDK: &[&str] = &[
+    "class java/lang/Object method equals (Ljava/lang/Object;)Z protected-method clone ()Ljava/lang/Object;",
+    "interface java/io/Serializable",
+    "interface java/lang/Cloneable",
+    "interface java/lang/Comparable signature <T:Ljava/lang/Object;>Ljava/lang/Object;",
+    "interface java/lang/CharSequence",
+    "interface java/lang/Appendable",
+    "interface java/lang/constant/Constable",
+    "interface java/lang/constant/ConstantDesc",
+    "abstract java/lang/Number implements java/io/Serializable",
+    "final java/lang/Integer extends java/lang/Number signature Ljava/lang/Number;Ljava/lang/Comparable<Ljava/lang/Integer;>;Ljava/lang/constant/Constable;Ljava/lang/constant/ConstantDesc;",
+    "final java/lang/Long extends java/lang/Number signature Ljava/lang/Number;Ljava/lang/Comparable<Ljava/lang/Long;>;Ljava/lang/constant/Constable;Ljava/lang/constant/ConstantDesc;",
+    "final java/lang/Double extends java/lang/Number signature Ljava/lang/Number;Ljava/lang/Comparable<Ljava/lang/Double;>;Ljava/lang/constant/Constable;Ljava/lang/constant/ConstantDesc;",
+    "final java/lang/Float extends java/lang/Number signature Ljava/lang/Number;Ljava/lang/Comparable<Ljava/lang/Float;>;Ljava/lang/constant/Constable;Ljava/lang/constant/ConstantDesc;",
+    "final java/lang/Short extends java/lang/Number signature Ljava/lang/Number;Ljava/lang/Comparable<Ljava/lang/Short;>;Ljava/lang/constant/Constable;",
+    "final java/lang/Byte extends java/lang/Number signature Ljava/lang/Number;Ljava/lang/Comparable<Ljava/lang/Byte;>;Ljava/lang/constant/Constable;",
+    "final java/lang/Character signature Ljava/lang/Object;Ljava/io/Serializable;Ljava/lang/Comparable<Ljava/lang/Character;>;Ljava/lang/constant/Constable;",
+    "final java/lang/Boolean signature Ljava/lang/Object;Ljava/io/Serializable;Ljava/lang/Comparable<Ljava/lang/Boolean;>;Ljava/lang/constant/Constable;",
+    "final java/lang/String signature Ljava/lang/Object;Ljava/io/Serializable;Ljava/lang/Comparable<Ljava/lang/String;>;Ljava/lang/CharSequence;Ljava/lang/constant/Constable;Ljava/lang/constant/ConstantDesc;",
+    "abstract java/lang/AbstractStringBuilder signature Ljava/lang/Object;Ljava/lang/Appendable;Ljava/lang/CharSequence;",
+    "final java/lang/StringBuilder extends java/lang/AbstractStringBuilder signature Ljava/lang/AbstractStringBuilder;Ljava/lang/Appendable;Ljava/io/Serializable;Ljava/lang/Comparable<Ljava/lang/StringBuilder;>;Ljava/lang/CharSequence;",
+    "abstract java/lang/Enum signature <E:Ljava/lang/Enum<TE;>;>Ljava/lang/Object;Ljava/lang/constant/Constable;Ljava/lang/Comparable<TE;>;Ljava/io/Serializable;",
+    "abstract java/lang/Record",
+    "final java/lang/Class signature <T:Ljava/lang/Object;>Ljava/lang/Object;Ljava/io/Serializable;",
+    "interface java/lang/Iterable signature <T:Ljava/lang/Object;>Ljava/lang/Object;",
+    "interface java/util/Collection signature <E:Ljava/lang/Object;>Ljava/lang/Object;Ljava/lang/Iterable<TE;>;",
+    "interface java/util/SequencedCollection signature <E:Ljava/lang/Object;>Ljava/lang/Object;Ljava/util/Collection<TE;>;",
+    "interface java/util/List signature <E:Ljava/lang/Object;>Ljava/lang/Object;Ljava/util/SequencedCollection<TE;>;",
+    "interface java/util/Queue signature <E:Ljava/lang/Object;>Ljava/lang/Object;Ljava/util/Collection<TE;>;",
+    "interface java/util/Deque signature <E:Ljava/lang/Object;>Ljava/lang/Object;Ljava/util/Queue<TE;>;Ljava/util/SequencedCollection<TE;>;",
+    "interface java/util/Set signature <E:Ljava/lang/Object;>Ljava/lang/Object;Ljava/util/Collection<TE;>;",
+    "interface java/util/RandomAccess",
+    "abstract java/util/AbstractCollection signature <E:Ljava/lang/Object;>Ljava/lang/Object;Ljava/util/Collection<TE;>;",
+    "abstract java/util/AbstractList extends java/util/AbstractCollection signature <E:Ljava/lang/Object;>Ljava/util/AbstractCollection<TE;>;Ljava/util/List<TE;>;",
+    "abstract java/util/AbstractSequentialList extends java/util/AbstractList signature <E:Ljava/lang/Object;>Ljava/util/AbstractList<TE;>;",
+    "class java/util/ArrayList extends java/util/AbstractList signature <E:Ljava/lang/Object;>Ljava/util/AbstractList<TE;>;Ljava/util/List<TE;>;Ljava/util/RandomAccess;Ljava/lang/Cloneable;Ljava/io/Serializable;",
+    "class java/util/LinkedList extends java/util/AbstractSequentialList signature <E:Ljava/lang/Object;>Ljava/util/AbstractSequentialList<TE;>;Ljava/util/List<TE;>;Ljava/util/Deque<TE;>;Ljava/lang/Cloneable;Ljava/io/Serializable;",
+    "abstract java/util/AbstractSet extends java/util/AbstractCollection signature <E:Ljava/lang/Object;>Ljava/util/AbstractCollection<TE;>;Ljava/util/Set<TE;>;",
+    "class java/util/HashSet extends java/util/AbstractSet signature <E:Ljava/lang/Object;>Ljava/util/AbstractSet<TE;>;Ljava/util/Set<TE;>;Ljava/lang/Cloneable;Ljava/io/Serializable;",
+    "interface java/util/Map member Entry java/util/Map$Entry signature <K:Ljava/lang/Object;V:Ljava/lang/Object;>Ljava/lang/Object;",
+    "interface java/util/Map$Entry outer java/util/Map Entry signature <K:Ljava/lang/Object;V:Ljava/lang/Object;>Ljava/lang/Object;",
+];
+
+/// A project of one source set, with [`RELATIONS_JDK`] as its only classpath entry and no
+/// platform, and the files of `files`, a resolution case's `//- file` lines and texts (see
+/// [`case_input`]).
+pub fn relations_input(files: &str) -> ProjectInput {
+    let mut text = String::from("//- jar jdk.jar\n");
+    for class in RELATIONS_JDK {
+        text.push_str("//- class ");
+        text.push_str(class);
+        text.push('\n');
+    }
+    text.push_str("//- set main 21 jdk.jar no-platform\n");
+    text.push_str(files);
+    case_input(&text)
 }
