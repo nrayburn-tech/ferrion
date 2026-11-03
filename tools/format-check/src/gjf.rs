@@ -175,10 +175,17 @@ impl Gjf {
             let path = dir.join(i.to_string()).join(file.name);
             std::fs::create_dir_all(path.parent().unwrap())?;
             std::fs::write(&path, file.bytes)?;
-            list.push_str(
-                path.to_str()
-                    .context("the temporary directory isn't UTF-8")?,
-            );
+            let listed = path
+                .to_str()
+                .context("the temporary directory isn't UTF-8")?;
+            // The list has one path per line, unquoted, so a path can't hold whitespace.
+            if listed.contains(char::is_whitespace) {
+                bail!(
+                    "{listed}: GJF is given its files' paths unquoted, so they can't contain \
+                     whitespace; set TMPDIR (TEMP on Windows) to a directory without any"
+                );
+            }
+            list.push_str(listed);
             list.push('\n');
             paths.push(path);
         }
