@@ -11,6 +11,7 @@
 mod document;
 mod edits;
 mod format;
+mod imports;
 #[doc(hidden)]
 pub mod invariants;
 mod modifiers;

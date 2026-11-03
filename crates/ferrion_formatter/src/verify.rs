@@ -26,7 +26,7 @@ pub enum Property {
     /// Formatting the output gives the output.
     Idempotence,
     /// The output parses to the same tree, apart from the formatter's rewrites (modifier
-    /// reordering).
+    /// reordering, and the import section's sorting and removals).
     Equivalence,
     /// The input's and the output's comments are the same, in the same order, apart from what
     /// the formatter may change: trailing whitespace, the indentation of a block comment's
@@ -295,38 +295,57 @@ fn tokens<'t>(tree: &'t SyntaxTree, kept: &imports::Kept) -> Vec<TokenSignature<
 /// Compares the two trees' comments in order, by kind and by text apart from trailing
 /// whitespace and the indentation of later lines. The input's line comments outside disable
 /// regions compare with the space the formatter adds after their `//`, so the output's must have
-/// it.
+/// it. In a file with imports, the comments around the import section move with its imports, so
+/// [`imports::compare_comments`] compares those apart.
 fn comments(before: &SyntaxTree, after: &SyntaxTree, bom: usize) -> Result<(), Violation> {
-    let list = |tree: &SyntaxTree, input: bool| -> Vec<(SyntaxKind, String, usize)> {
+    let sections = imports::has_imports(before);
+    let list = |tree: &SyntaxTree, input: bool| {
         // Both sides' regions: a doc comment in one is copied, so it isn't compared as reflowed.
         let regions = if tree.text().contains("@formatter:") {
             regions::find(tree, &CommentMap::new(tree))
         } else {
             Vec::new()
         };
+        let section = if sections {
+            imports::comment_region(tree)
+        } else {
+            0..0
+        };
         let mut regions = regions.into_iter().peekable();
-        tree.tokens()
+        let mut in_section = Vec::new();
+        let mut rest = Vec::new();
+        for t in tree
+            .tokens()
             .filter(|t| ferrion_syntax::comments::is_comment(t.kind()))
-            .map(|t| {
-                // The comments come in order, so the regions they're past are dropped.
-                while regions
-                    .next_if(|r| r.end.is_some_and(|end| end < t.id()))
-                    .is_some()
-                {}
-                let in_region = regions.peek().is_some_and(|r| r.start <= t.id());
-                let text = if t.kind() == SyntaxKind::DocComment && !in_region {
-                    doc_comments::normalize(t.text())
-                } else {
-                    normalize_comment(
-                        t.text(),
-                        input && !in_region && t.kind() == SyntaxKind::LineComment,
-                    )
-                };
-                (t.kind(), text, t.span().start as usize)
-            })
-            .collect()
+        {
+            // The comments come in order, so the regions they're past are dropped.
+            while regions
+                .next_if(|r| r.end.is_some_and(|end| end < t.id()))
+                .is_some()
+            {}
+            let in_region = regions.peek().is_some_and(|r| r.start <= t.id());
+            let text = if t.kind() == SyntaxKind::DocComment && !in_region {
+                doc_comments::normalize(t.text())
+            } else {
+                normalize_comment(
+                    t.text(),
+                    input && !in_region && t.kind() == SyntaxKind::LineComment,
+                )
+            };
+            if section.contains(&t.id().index()) {
+                in_section.push(imports::SectionComment {
+                    token: t.id(),
+                    kind: t.kind(),
+                    text,
+                    start: t.span().start as usize,
+                });
+            } else {
+                rest.push((t.kind(), text, t.span().start as usize));
+            }
+        }
+        (rest, in_section)
     };
-    let (a, b) = (list(before, true), list(after, false));
+    let ((a, a_section), (b, b_section)) = (list(before, true), list(after, false));
     let strip = |list: &[(SyntaxKind, String, usize)]| -> Vec<(SyntaxKind, String)> {
         list.iter().map(|(k, t, _)| (*k, t.clone())).collect()
     };
@@ -345,7 +364,7 @@ fn comments(before: &SyntaxTree, after: &SyntaxTree, bom: usize) -> Result<(), V
             ),
         ));
     }
-    Ok(())
+    imports::compare_comments(before, after, &a_section, &b_section, bom)
 }
 
 /// A comment's text as the comparison sees it: each line without trailing whitespace, later

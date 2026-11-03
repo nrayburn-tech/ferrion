@@ -288,7 +288,9 @@ name = "ferrion_formatter"
 version = "0.0.0"
 dependencies = [
  "ferrion_diagnostics",
+ "ferrion_doc_comments",
  "ferrion_java_version",
+ "ferrion_lexer",
  "ferrion_parser",
  "ferrion_stack",
  "ferrion_syntax",
