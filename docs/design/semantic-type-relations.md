@@ -104,14 +104,15 @@ containment by pair, capture and erasure by type). Section numbers are the JLS's
 
 `lub` follows 4.10.4: the erased candidate set, its minimal elements, and the least containing
 invocation of each generic candidate, with `lub` of type arguments recursive. The infinite types
-4.10.4 allows are where javac departs: observation 1 in the [overview](semantic-types.md) shows
-javac cutting the recursion off after one level, with `Comparable<?>` at the bottom. Ferrion cuts
-off at the same depth, so its types print the same. W0's corpus run and the oracle's conditional
-expression types give more cases; each departure found becomes an observation and a test.
+4.10.4 allows are where javac departs: javac computes one level more than the operands and then
+writes `Comparable<?>` ([the oracle's observation 1](types-oracle-normalization.md#observations)).
+Ferrion cuts off at the same depth, so its types print the same.
 
-The order of an intersection's parts is part of the type's printed form. javac printed `Object`
-first, then the interfaces (observation 1); W1 observes the order on inputs with several classes
-and interfaces and matches it.
+The order of an intersection's parts is part of the type's printed form. javac puts the class
+first, then interfaces deepest first (the longest chain of superinterfaces), then by qualified
+name, whichever operand comes first (observation 2, from four inputs). Ferrion orders `lub`'s and
+`glb`'s results by that rule, and W1 observes it on more inputs: interfaces of equal depth in
+different packages, and a class deeper than the interfaces.
 
 ### Conversions and contexts
 
@@ -174,12 +175,21 @@ again further down) is a cycle and answers `Unknown(Limit)` at once, so cycles c
 
 ## Checking
 
-- **The relations oracle** (W0's `javac-oracle relations`): javac's answers, through
-  `javax.lang.model.util.Types`, to questions about pairs of types taken from each corpus source
-  set's own declarations, sampled deterministically. Ferrion's adapter rebuilds each type from
-  where the oracle says it was declared, asks the same question, and compares. `lub` isn't in that
-  API, so it is compared through the types of conditional expressions in the `types` dump whose
-  operands are names or literals B2 already types.
+- **The relations oracle** (W0's relation queries, in the same `javac-oracle types` run, compared
+  alone with `cargo oracle types --relations`): javac's answers, through
+  `javax.lang.model.util.Types`, to questions about types taken from each corpus source set's own
+  declarations (fields, parameters, results, supertypes; 48 per source set by default), sampled
+  deterministically ([type relations](types-oracle-normalization.md#type-relations)). Ferrion's
+  side rebuilds each type from the declaration site the oracle names, asks the same question, and
+  compares. `lub` isn't in that API, so it is compared through the types of conditional
+  expressions in the `types` dump whose operands are names or literals B2 already types.
+- **The API's own departures:** `directSupertypes` gives `int[]` one intersection rather than three
+  types, lists `Object` among an interface's supertypes even when it has superinterfaces, and
+  substitutes wildcards rather than capturing them; `asMemberOf` doesn't capture
+  (observations 16 and 17). That is the API, not how javac types programs. Ferrion's relations
+  follow the JLS, and its side of the comparison converts their answers to the API's shape: the
+  array's three supertypes as one intersection, `Object` added for an interface, a member type
+  substituted without capture.
 - **Tests:** the JLS's examples for each section above, and each observation, as tests in
   `ferrion_semantic` with javac's answer written beside them.
 - **Properties:** on types generated from a small fixed hierarchy (generic classes, F-bounds,
@@ -193,11 +203,15 @@ again further down) is a cycle and answers `Unknown(Limit)` at once, so cycles c
 
 Run with Temurin 27.0.1's `javac`, in a scratch directory. Each becomes a test in W1.
 
-1. `lub(Integer, String)`: see observation 1 in [type attribution](semantic-types.md). The cut-off
-   is after one level, and `Object` is the intersection's first part.
+1. `lub(Integer, String)` printed in a diagnostic: `INT#1 extends
+   Object,Serializable,Comparable<? extends INT#2>,Constable,ConstantDesc`, with `INT#2` the same
+   with `Comparable<?>`. The diagnostic adds `Object` as a first part; the API's type, which the
+   oracle compares, doesn't.
 
-W0 records more in [types oracle normalization](types-oracle-normalization.md); W1 adds the ones
-it needs here (intersection order, `glb` dropping redundant parts, capture of nested wildcards).
+W0's observations in [types oracle normalization](types-oracle-normalization.md#observations) are
+the rest of this milestone's: 1–3 (`lub`), 7 (capture's bounds), 9 (upward projection), 16–18
+(the API's supertypes, members, and subsignatures). W1 adds the ones it needs (intersection order
+on more inputs, `glb` dropping redundant parts, capture of nested wildcards).
 
 ## Questions for review
 

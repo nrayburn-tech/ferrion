@@ -116,6 +116,10 @@ up to the statement. The arguments of such a call are still typed when they are 
 their types don't depend on the call. W0's first corpus counts give how many calls fall on each
 side, and W4 records it.
 
+The oracle reports a call's chosen method and its type as invoked, but not which phase chose it
+(W0's question 12): which phase chose a call is recorded in Ferrion's result for rules, and isn't
+compared.
+
 ## Member tables
 
 ```rust
@@ -160,9 +164,12 @@ Java's rounding, and `String` conversion of a constant follows 5.1.11.
   doesn't change it. A cycle of constants (an error javac reports) reads as not constant.
 - **Class files:** a field's `ConstantValue` attribute, which B1 reads but B2's `ClassField`
   doesn't keep yet; W2 adds it.
-- **Text of floating-point constants:** `"" + 1.0e23` folds through `Double.toString`, whose
-  output changed in JDK 19. W2 observes which JDK's output javac folds with (the compiling JDK's,
-  or `--release`'s), and folds to match.
+- **Text of floating-point constants:** `"" + 1.0E23` folds through `Double.toString`, whose
+  output changed in JDK 19, and javac folds with the JDK it runs on, not `--release`'s
+  (observation 13 in [types oracle normalization](types-oracle-normalization.md#observations):
+  `1.0E23` on JDK 27, `9.999999999999999E22` on JDK 17). Ferrion folds with JDK 19's shortest
+  decimal, which every corpus project's JDK (21 or later) uses; a build on an older JDK can differ,
+  and only in such text.
 
 ## The result
 
@@ -207,9 +214,11 @@ already allows.
 
 `cargo oracle types` (W0's) compares, per expression in B3b's part, the type, and per call the
 chosen method's key, and per constant expression the value, in the formats of [types oracle
-normalization](types-oracle-normalization.md). Each mismatch is categorized (`type`, `method`,
-`constant`, `missing`, `error` for a non-answer where javac has a type); non-answers left to later
-milestones are counted as `left-to-b3c` and `left-to-b3d`, not compared. The removed-symbols check
+normalization](types-oracle-normalization.md#what-is-compared)). Each mismatch is categorized
+with the oracle's categories (`missing`, `order`, `type`, `value`, `method`, `instantiation`, and
+for later milestones `finality` and `answer`), and a non-answer where javac has a type is a `type`
+mismatch like any other; Ferrion's values starting `left-to-` (`left-to-b3c`, `left-to-b3d`) are
+counted apart, not compared. The removed-symbols check
 runs as the overview defines. W4 records:
 
 - the counts, per project and category, and the known differences, at zero unexplained;
