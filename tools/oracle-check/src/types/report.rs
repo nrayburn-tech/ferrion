@@ -35,6 +35,8 @@ pub struct Tally {
     pub finality: BTreeMap<String, u64>,
     /// Relation queries, by query.
     pub relations: BTreeMap<&'static str, u64>,
+    /// Source sets whose relations javac threw on.
+    pub relation_errors: u64,
     pub comparison: Comparison,
     /// For files left out for javac's errors, how many have each error code.
     pub error_codes: BTreeMap<String, u64>,
@@ -118,6 +120,7 @@ impl Tally {
         for (query, count) in &other.relations {
             *self.relations.entry(query).or_default() += count;
         }
+        self.relation_errors += other.relation_errors;
         let (c, o) = (&mut self.comparison, &other.comparison);
         c.matched += o.matched;
         for (aspect, categories) in &o.mismatched {
@@ -308,7 +311,8 @@ impl Report {
         .unwrap();
         writeln!(
             out,
-            "relation queries: {}",
+            "relation queries ({} source sets lost theirs to javac throwing): {}",
+            t.relation_errors,
             t.relations
                 .iter()
                 .map(|(q, n)| format!("{q} {n}"))

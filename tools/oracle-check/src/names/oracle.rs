@@ -1,7 +1,8 @@
-//! Running `javac-oracle names` on a source set, and caching its output by a hash of its inputs.
+//! Running `javac-oracle names` (or `types`, which compiles alike) on a source set, and caching
+//! its output by a hash of its inputs.
 //!
 //! ```text
-//! target/oracle/names/<oracle key>/<input hash>.jsonl    the oracle's output for a source set
+//! target/oracle/<command>/<oracle key>/<input hash>.jsonl    the oracle's output for a source set
 //! ```
 //!
 //! The input hash covers the release and how the source set is compiled (`-source` or

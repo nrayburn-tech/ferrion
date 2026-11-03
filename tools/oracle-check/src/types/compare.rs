@@ -415,6 +415,7 @@ pub fn javac_answer(relations: &Relations, query: &Query) -> String {
         | Query::Same(_, _, a)
         | Query::Subsignature(_, _, _, a)
         | Query::Overrides(_, _, _, a) => answer(a),
+        Query::Threw(_, exception) => format!("threw {exception}"),
     }
 }
 
@@ -422,6 +423,9 @@ pub fn javac_answer(relations: &Relations, query: &Query) -> String {
 pub fn compare_relations(relations: &Relations, ours: &[Option<String>]) -> Compared {
     let mut compared = Compared::default();
     for (i, query) in relations.queries.iter().enumerate() {
+        if let Query::Threw(..) = query {
+            continue;
+        }
         let theirs = javac_answer(relations, query);
         let found = ours.get(i).and_then(Option::as_deref);
         let i = i as i64;
@@ -670,6 +674,7 @@ mod tests {
                 Query::Erasure(1, None),
             ],
             types: vec!["int".into(), "long".into()],
+            error: None,
         };
         assert_eq!(javac_answer(&relations, &relations.queries[1]), "long,int");
         let compared =

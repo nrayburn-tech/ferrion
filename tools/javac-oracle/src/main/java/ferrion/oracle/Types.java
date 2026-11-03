@@ -183,6 +183,14 @@ final class Types implements Names.Command {
         json.value(number);
       } else if (value instanceof Integer number) {
         json.value(number);
+      } else if (value instanceof Boolean answer) {
+        json.value(answer);
+      } else if (value instanceof int[] numbers) {
+        json.beginArray();
+        for (int number : numbers) {
+          json.value(number);
+        }
+        json.endArray();
       } else {
         json.value((String) value);
       }
@@ -249,7 +257,11 @@ final class Types implements Names.Command {
                 positions.getStartPosition(unit, node), positions.getEndPosition(unit, node)
               });
         }
-        sites(type);
+        try {
+          sites(type);
+        } catch (RuntimeException e) {
+          // A class javac can't complete (a bad class file it extends) gives no sites.
+        }
       }
       return super.visitClass(node, null);
     }
@@ -260,10 +272,14 @@ final class Types implements Names.Command {
       if (element != null && Names.Keys.isLocal(element) && seen.add(node)) {
         String key = keys.key(element);
         long offset = Long.parseLong(key.substring(key.lastIndexOf(':') + 1));
-        variables.add(
-            new Object[] {
-              offset, element.getKind().name(), finality(element), index(element.asType())
-            });
+        try {
+          variables.add(
+              new Object[] {
+                offset, element.getKind().name(), finality(element), index(element.asType())
+              });
+        } catch (RuntimeException e) {
+          // A variable javac's API fails on is left out, not the file.
+        }
       }
       return super.visitVariable(node, null);
     }
@@ -603,13 +619,31 @@ final class Types implements Names.Command {
    * Writes the relations line: javac's answers through {@code javax.lang.model.util.Types} about
    * a sample of the types the source set declares. The sample is the first {@link
    * #relationTypes} distinct type strings, ordered by a hash of the string, so it is the same on
-   * every run; each type's first site in the sample's order says where it is declared.
+   * every run; each type's first site in the sample's order says where it is declared. If asking
+   * throws, the line has the {@code error} instead.
    */
   @Override
   public void finish(PrintStream out) {
     if (task == null || relationTypes <= 0) {
       return;
     }
+    try {
+      relations(out);
+    } catch (RuntimeException | StackOverflowError e) {
+      // The relations are lost, not the source set's files, which are already written.
+      Json json = new Json();
+      json.beginObject()
+          .name("relations")
+          .beginObject()
+          .name("error")
+          .value(e.toString())
+          .endObject()
+          .endObject();
+      out.println(json);
+    }
+  }
+
+  private void relations(PrintStream out) {
     javax.lang.model.util.Types types = task.getTypes();
     Elements elements = task.getElements();
     TypeStrings printer = new TypeStrings(keys);
@@ -621,9 +655,13 @@ final class Types implements Names.Command {
     List<Site> ordered = new ArrayList<>();
     Map<String, String> printed = new HashMap<>();
     for (Site site : sites) {
-      if (!hasError(site.type())) {
-        printed.put(site.where(), printer.print(site.type()));
-        ordered.add(site);
+      try {
+        if (!hasError(site.type())) {
+          printed.put(site.where(), printer.print(site.type()));
+          ordered.add(site);
+        }
+      } catch (RuntimeException e) {
+        // A type javac can't complete isn't asked about.
       }
     }
     ordered.sort(
@@ -641,6 +679,51 @@ final class Types implements Names.Command {
       }
     }
 
+    // Each sampled type's queries are asked as a block: a class file javac can't read (a
+    // `BadClassFile` from a dependency's jar) loses that block, and is written as `threw`.
+    List<Object[]> queries = new ArrayList<>();
+    for (Site site : sample) {
+      TypeMirror type = site.type();
+      int t = index.apply(type);
+      block(
+          queries,
+          t,
+          block -> {
+            block.add(query("erasure", t, () -> index.apply(types.erasure(type))));
+            block.add(query("capture", t, () -> index.apply(types.capture(type))));
+            List<? extends TypeMirror> supertypes = types.directSupertypes(type);
+            int[] indices = new int[supertypes.size()];
+            for (int i = 0; i < indices.length; i++) {
+              indices[i] = index.apply(supertypes.get(i));
+            }
+            block.add(new Object[] {"supertypes", t, indices});
+            for (int i = 0; i < indices.length; i++) {
+              TypeMirror supertype = supertypes.get(i);
+              int s = indices[i];
+              block.add(relation("subtype", t, s, () -> types.isSubtype(type, supertype)));
+              block.add(relation("subtype", s, t, () -> types.isSubtype(supertype, type)));
+              block.add(relation("assignable", t, s, () -> types.isAssignable(type, supertype)));
+              block.add(relation("assignable", s, t, () -> types.isAssignable(supertype, type)));
+            }
+          });
+    }
+    for (Site a : sample) {
+      for (Site b : sample) {
+        int s = index.apply(a.type());
+        int t = index.apply(b.type());
+        queries.add(relation("subtype", s, t, () -> types.isSubtype(a.type(), b.type())));
+        queries.add(relation("assignable", s, t, () -> types.isAssignable(a.type(), b.type())));
+        queries.add(relation("same", s, t, () -> types.isSameType(a.type(), b.type())));
+      }
+    }
+    for (Site site : sample) {
+      if (site.type() instanceof DeclaredType declared
+          && declared.asElement() instanceof TypeElement owner) {
+        int t = index.apply(declared);
+        block(queries, t, block -> members(block, types, elements, declared, owner, index));
+      }
+    }
+
     Json json = new Json();
     json.beginObject().name("relations").beginObject();
     json.name("sites").beginArray();
@@ -649,39 +732,8 @@ final class Types implements Names.Command {
     }
     json.endArray();
     json.name("queries").beginArray();
-    for (Site site : sample) {
-      TypeMirror type = site.type();
-      int t = index.apply(type);
-      query(json, "erasure", t, () -> index.apply(types.erasure(type)));
-      query(json, "capture", t, () -> index.apply(types.capture(type)));
-      List<? extends TypeMirror> supertypes = types.directSupertypes(type);
-      json.beginArray().value("supertypes").value(t).beginArray();
-      for (TypeMirror supertype : supertypes) {
-        json.value(index.apply(supertype));
-      }
-      json.endArray().endArray();
-      for (TypeMirror supertype : supertypes) {
-        int s = index.apply(supertype);
-        relation(json, "subtype", t, s, () -> types.isSubtype(type, supertype));
-        relation(json, "subtype", s, t, () -> types.isSubtype(supertype, type));
-        relation(json, "assignable", t, s, () -> types.isAssignable(type, supertype));
-        relation(json, "assignable", s, t, () -> types.isAssignable(supertype, type));
-      }
-    }
-    for (Site a : sample) {
-      for (Site b : sample) {
-        int s = index.apply(a.type());
-        int t = index.apply(b.type());
-        relation(json, "subtype", s, t, () -> types.isSubtype(a.type(), b.type()));
-        relation(json, "assignable", s, t, () -> types.isAssignable(a.type(), b.type()));
-        relation(json, "same", s, t, () -> types.isSameType(a.type(), b.type()));
-      }
-    }
-    for (Site site : sample) {
-      if (site.type() instanceof DeclaredType declared
-          && declared.asElement() instanceof TypeElement owner) {
-        members(json, types, elements, declared, owner, index);
-      }
+    for (Object[] query : queries) {
+      entry(json, query);
     }
     json.endArray();
     json.name("types").beginArray();
@@ -693,9 +745,24 @@ final class Types implements Names.Command {
     out.println(json);
   }
 
+  /**
+   * Adds the queries {@code asking} adds, or, if javac throws while asking them, one {@code
+   * ["threw", type, exception]}.
+   */
+  private static void block(
+      List<Object[]> queries, int type, java.util.function.Consumer<List<Object[]>> asking) {
+    List<Object[]> block = new ArrayList<>();
+    try {
+      asking.accept(block);
+      queries.addAll(block);
+    } catch (RuntimeException e) {
+      queries.add(new Object[] {"threw", type, e.toString()});
+    }
+  }
+
   /** {@code asMemberOf}, {@code isSubsignature}, and {@code overrides} for a declared type. */
   private void members(
-      Json json,
+      List<Object[]> queries,
       javax.lang.model.util.Types types,
       Elements elements,
       DeclaredType declared,
@@ -710,14 +777,13 @@ final class Types implements Names.Command {
     }
     members.sort(Comparator.comparingLong((Element m) -> hash(keys.key(m))));
     for (Element member : members.subList(0, Math.min(MEMBERS, members.size()))) {
-      String key = keys.key(member);
-      json.beginArray().value("member").value(t).value(key);
+      int answer;
       try {
-        json.value(index.apply(types.asMemberOf(declared, member)));
+        answer = index.apply(types.asMemberOf(declared, member));
       } catch (RuntimeException e) {
-        json.value(-1);
+        answer = -1;
       }
-      json.endArray();
+      queries.add(new Object[] {"member", t, keys.key(member), answer});
     }
     // The type's own methods, each with its supertypes' methods of the same name.
     List<ExecutableElement> own = new ArrayList<>();
@@ -735,27 +801,27 @@ final class Types implements Names.Command {
           if (other.getKind() == ElementKind.METHOD
               && other.getSimpleName().contentEquals(method.getSimpleName())) {
             ExecutableElement overridden = (ExecutableElement) other;
-            json.beginArray()
-                .value("subsignature")
-                .value(t)
-                .value(keys.key(method))
-                .value(keys.key(overridden));
+            Object subsignature;
             try {
-              json.value(
+              subsignature =
                   types.isSubsignature(
                       (ExecutableType) types.asMemberOf(declared, method),
-                      (ExecutableType) types.asMemberOf(declared, overridden)));
+                      (ExecutableType) types.asMemberOf(declared, overridden));
             } catch (RuntimeException e) {
-              json.value("error");
+              subsignature = "error";
             }
-            json.endArray();
-            json.beginArray()
-                .value("overrides")
-                .value(keys.key(method))
-                .value(keys.key(overridden))
-                .value(keys.key(owner))
-                .value(elements.overrides(method, overridden, owner))
-                .endArray();
+            queries.add(
+                new Object[] {
+                  "subsignature", t, keys.key(method), keys.key(overridden), subsignature
+                });
+            queries.add(
+                new Object[] {
+                  "overrides",
+                  keys.key(method),
+                  keys.key(overridden),
+                  keys.key(owner),
+                  elements.overrides(method, overridden, owner)
+                });
           }
         }
       }
@@ -782,24 +848,24 @@ final class Types implements Names.Command {
     T get();
   }
 
-  private static void query(Json json, String name, int type, Answer<Integer> answer) {
-    json.beginArray().value(name).value(type);
+  private static Object[] query(String name, int type, Answer<Integer> answer) {
+    int result;
     try {
-      json.value(answer.get());
+      result = answer.get();
     } catch (RuntimeException e) {
-      json.value(-1);
+      result = -1;
     }
-    json.endArray();
+    return new Object[] {name, type, result};
   }
 
-  private static void relation(Json json, String name, int s, int t, Answer<Boolean> answer) {
-    json.beginArray().value(name).value(s).value(t);
+  private static Object[] relation(String name, int s, int t, Answer<Boolean> answer) {
+    Object result;
     try {
-      json.value(answer.get());
+      result = answer.get();
     } catch (RuntimeException e) {
-      json.value("error");
+      result = "error";
     }
-    json.endArray();
+    return new Object[] {name, s, t, result};
   }
 
   /** Whether a type has an error type in it, so it isn't asked about. */

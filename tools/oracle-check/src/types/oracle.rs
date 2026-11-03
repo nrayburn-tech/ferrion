@@ -173,6 +173,8 @@ pub struct Relations {
     pub sites: Vec<(String, usize)>,
     pub queries: Vec<Query>,
     pub types: Vec<String>,
+    /// What javac threw while answering, which lost the relations.
+    pub error: Option<String>,
 }
 
 /// A yes-or-no answer, or javac threw.
@@ -199,6 +201,9 @@ pub enum Query {
     Subsignature(usize, String, String, Answer),
     /// `overrides(method, overridden, class)`, by keys.
     Overrides(String, String, String, Answer),
+    /// javac threw while asking about the type (a class file it can't read), so its block of
+    /// queries is lost: not compared.
+    Threw(usize, String),
 }
 
 impl Query {
@@ -213,6 +218,7 @@ impl Query {
             Query::Member(..) => "member",
             Query::Subsignature(..) => "subsignature",
             Query::Overrides(..) => "overrides",
+            Query::Threw(..) => "threw",
         }
     }
 
@@ -264,6 +270,7 @@ impl Query {
             "member" => Query::Member(index(1)?, text(2)?, result(3)),
             "subsignature" => Query::Subsignature(index(1)?, text(2)?, text(3)?, answer(4)),
             "overrides" => Query::Overrides(text(1)?, text(2)?, text(3)?, answer(4)),
+            "threw" => Query::Threw(index(1)?, text(2)?),
             other => bail!("unknown query `{other}`"),
         })
     }
@@ -282,6 +289,8 @@ struct RawRelations {
     queries: Vec<Value>,
     #[serde(default)]
     types: Vec<String>,
+    #[serde(default)]
+    error: Option<String>,
 }
 
 /// The oracle's `types` output for a source set.
@@ -312,6 +321,7 @@ impl CommandOutput for Output {
                         .collect::<Result<_>>()
                         .with_context(|| format!("line {}: the relations", i + 1))?,
                     types: parsed.relations.types,
+                    error: parsed.relations.error,
                 };
             } else {
                 let file: FileOutput = serde_json::from_str(line)
@@ -370,7 +380,7 @@ mod tests {
             "\n",
             r#"{"file":"projects/p/src/module-info.java","module":1,"skipped":"a module declaration"}"#,
             "\n",
-            r#"{"relations":{"sites":[["field p/A.f type",0]],"queries":[["erasure",0,0],["supertypes",0,[]],["subtype",0,1,false],["same",0,0,true],["assignable",1,0,"error"],["member",1,"method p/A.m()V",-1],["subsignature",1,"m1","m2",true],["overrides","m1","m2","type p/A platform",false]],"types":["int","java/lang/String"]}}"#,
+            r#"{"relations":{"sites":[["field p/A.f type",0]],"queries":[["erasure",0,0],["supertypes",0,[]],["subtype",0,1,false],["same",0,0,true],["assignable",1,0,"error"],["member",1,"method p/A.m()V",-1],["subsignature",1,"m1","m2",true],["overrides","m1","m2","type p/A platform",false],["threw",1,"BadClassFile"]],"types":["int","java/lang/String"]}}"#,
             "\n",
             r#"{"sourceSet":{"processors":[],"diagnostics":[],"processorRuns":[],"moduleDiagnostics":[],"millis":12}}"#,
             "\n"
@@ -399,6 +409,7 @@ mod tests {
             Query::Member(1, "method p/A.m()V".into(), None)
         );
         assert_eq!(relations.queries[7].name(), "overrides");
+        assert_eq!(relations.queries[8], Query::Threw(1, "BadClassFile".into()));
         assert_eq!(output.set.millis, 12);
         // Without the summary line, the run didn't finish.
         assert!(<Output as CommandOutput>::parse(text.lines().next().unwrap()).is_err());
