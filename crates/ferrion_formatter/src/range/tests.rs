@@ -115,6 +115,16 @@ fn a_comment_on_the_units_last_line_goes_with_them() {
 }
 
 #[test]
+fn a_comment_on_the_line_of_the_code_before_goes_with_that_code() {
+    let text = "class A {\n  void f() {\n    a();   /* c */ b(  );\n  }\n}\n";
+    assert_eq!(
+        formatted(text, "b(").unwrap(),
+        "class A {\n  void f() {\n    a();   /* c */\n    b();\n  }\n}\n"
+    );
+    assert_eq!(expanded(text, "/* c */"), expanded(text, "a()"));
+}
+
+#[test]
 fn a_clean_files_edits_are_whole_file_formattings() {
     let source = SourceText::decode(METHOD).unwrap();
     let tree = tree(METHOD);

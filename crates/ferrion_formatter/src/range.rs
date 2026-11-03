@@ -14,10 +14,10 @@
 //! of their own. Each run is formatted on its own, as GJF formats a `}` alone, or `} else {`.
 //!
 //! **The expanded range** is the runs of the tokens the range touches, everything between them,
-//! the comments before the first that don't trail the code before them, and the comments after
-//! the last that trail it or are on its line (`a(); /* c */ b();` with `a();`, as GJF counts it).
-//! A comment the range touches counts with the code it is placed with: a trailing comment with
-//! the code before it, any other with the code after it.
+//! the comments before the first that don't trail the code before them and aren't on its line,
+//! and the comments after the last that trail it or are on its line (`a(); /* c */ b();` with
+//! `a();`, as GJF counts it). A comment the range touches counts with the code it is placed
+//! with: one trailing code or on its line with that code, any other with the code after it.
 //!
 //! **The edits kept** are those inside the expanded range (gaps, re-indented comments, and
 //! rewrites whose whole span is inside it), the edit of the gap before it, which gives the unit
@@ -225,14 +225,15 @@ impl<'t> Ranges<'t> {
                 .is_some_and(|c| c.placement == Placement::Trailing)
         };
 
-        // The comments before the first token that lead it, and those trailing the last.
+        // The comments before the first token that lead it, other than those on the line of the
+        // code before, which go with that code, as below.
         let mut units_start = first.span().start;
         let mut t = first.prev_token();
         while let Some(token) = t
             && token.is_trivia()
         {
             if is_comment(token.kind()) {
-                if trailing(token) {
+                if trailing(token) || on_code_line(token) {
                     break;
                 }
                 units_start = token.span().start;
@@ -328,14 +329,16 @@ pub struct Run {
 }
 
 /// The code token a token the range touches stands for: itself for code, the code a comment is
-/// placed with, and nothing for whitespace or the end of the file.
+/// placed with (the code before it when it is on that code's line), and nothing for whitespace
+/// or the end of the file.
 fn anchor<'t>(comments: &CommentMap, token: SyntaxToken<'t>) -> Option<SyntaxToken<'t>> {
     match token.kind() {
         K::Whitespace | K::LineTerminator | K::Eof => None,
         kind if is_comment(kind) => {
-            let trailing = comments
-                .get(token.id())
-                .is_some_and(|c| c.placement == Placement::Trailing);
+            let trailing = on_code_line(token)
+                || comments
+                    .get(token.id())
+                    .is_some_and(|c| c.placement == Placement::Trailing);
             let next = token.next_non_trivia().filter(|t| t.kind() != K::Eof);
             if trailing {
                 token.prev_non_trivia().or(next)
@@ -345,6 +348,28 @@ fn anchor<'t>(comments: &CommentMap, token: SyntaxToken<'t>) -> Option<SyntaxTok
         }
         _ => Some(token),
     }
+}
+
+/// Whether `comment` is on the line of the code before it, after only whitespace and comments
+/// since: it goes with that code, as GJF counts it, whichever code the comment map attaches it
+/// to. Formatting moves the code after it to a line of its own (`a(); /* c */ b();` gives
+/// `a(); /* c */` and `b();`), so counting it with that code would change with formatting.
+fn on_code_line(comment: SyntaxToken<'_>) -> bool {
+    let mut t = comment.prev_token();
+    while let Some(token) = t {
+        match token.kind() {
+            K::Whitespace => {}
+            K::LineTerminator => return false,
+            kind if is_comment(kind) => {
+                if token.text().contains(['\n', '\r']) {
+                    return false;
+                }
+            }
+            _ => return true,
+        }
+        t = token.prev_token();
+    }
+    false
 }
 
 /// Where the piece of text `token` is ends: a line comment's trailing whitespace is the gap's
