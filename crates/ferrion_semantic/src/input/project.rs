@@ -111,7 +111,15 @@ impl ProjectInput {
 /// reader's own would be ambiguous).
 #[derive(Default)]
 struct Platforms {
-    configured: Vec<(Arc<PlatformApi>, bool, CompileOptions, Arc<dyn Platform>)>,
+    made: Vec<Made>,
+}
+
+/// A platform made for a platform API and compile options.
+struct Made {
+    api: Arc<PlatformApi>,
+    all_visible: bool,
+    options: CompileOptions,
+    platform: Arc<dyn Platform>,
 }
 
 impl Platforms {
@@ -134,11 +142,13 @@ impl Platforms {
             return types.platform.clone();
         }
         let api = types.platform.clone();
-        let same = |(other, other_all, other_options, _): &&(_, bool, CompileOptions, _)| {
-            Arc::ptr_eq(other, &api) && *other_all == all_visible && other_options == options
+        let same = |made: &&Made| {
+            Arc::ptr_eq(&made.api, &api)
+                && made.all_visible == all_visible
+                && made.options == *options
         };
-        if let Some((.., platform)) = self.configured.iter().find(same) {
-            return platform.clone();
+        if let Some(made) = self.made.iter().find(same) {
+            return made.platform.clone();
         }
         let visible = if all_visible {
             None
@@ -155,8 +165,12 @@ impl Platforms {
             visible,
             patches,
         });
-        self.configured
-            .push((api, all_visible, options.clone(), platform.clone()));
+        self.made.push(Made {
+            api,
+            all_visible,
+            options: options.clone(),
+            platform: platform.clone(),
+        });
         platform
     }
 }
