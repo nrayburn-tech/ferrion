@@ -5,9 +5,10 @@
 //! ([`crate::names`]: the same plan, source path, processors, and cache), and javac's attributed
 //! types, chosen methods, constant values, variables' finality, and answers to type relation
 //! queries are compared with Ferrion's ([`compare`]). Files with javac's language errors, files
-//! javac never analyzed or threw on, and Lombok-annotated types are left out, as in `names`. Until
-//! B3's attribution exists, Ferrion's side is a stand-in that gives nothing, and every entry is
-//! counted as not compared.
+//! javac never analyzed or threw on, and Lombok-annotated types are left out, as in `names`.
+//! Ferrion's side ([`ferrion`]) answers the relation queries with B3a's relations; until B3b's
+//! attribution exists, it gives nothing for the files' entries, which are counted as not
+//! compared.
 
 mod compare;
 mod ferrion;
@@ -40,8 +41,9 @@ names` does, and compares javac's attributed types, chosen methods, constant val
 finality, and answers to type relation queries about a sample of each source set's declared types
 with Ferrion's. Files with javac errors, files javac never analyzed, and Lombok-annotated types are
 left out. Fails on a mismatch that isn't a known difference
-(tools/oracle-check/differences/types-known.txt). Until B3's attribution exists, Ferrion's side
-gives nothing, and every entry is counted as not compared.
+(tools/oracle-check/differences/types-known.txt). Ferrion answers the relation queries; until
+B3b's attribution exists, it gives nothing for the files' entries, which are counted as not
+compared.
 
 options:
   --source-set <id>    only this source set of each project (repeatable); the ones it depends on

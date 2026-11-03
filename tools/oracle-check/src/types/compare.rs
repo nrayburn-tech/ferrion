@@ -87,7 +87,7 @@ pub trait Typer: Sync {
     ) -> Result<Option<Attributed>, String>;
 }
 
-/// Nothing to compare: until B3's attribution exists, and for `--javac-only`.
+/// Nothing to compare: for `--javac-only`.
 pub struct StandIn;
 
 impl Typer for StandIn {
@@ -426,6 +426,22 @@ pub fn javac_answer(relations: &Relations, query: &Query) -> String {
     }
 }
 
+/// A query and what it asks about, for reports: `subtype java/util/List | java/lang/Object`.
+pub fn describe(relations: &Relations, query: &Query) -> String {
+    let ty = |i: &usize| relations.types.get(*i).map_or("", String::as_str);
+    let operands = match query {
+        Query::Subtype(s, t, _) | Query::Assignable(s, t, _) | Query::Same(s, t, _) => {
+            format!("{} | {}", ty(s), ty(t))
+        }
+        Query::Erasure(t, _) | Query::Capture(t, _) | Query::Supertypes(t, _) => ty(t).to_owned(),
+        Query::Member(t, m, _) => format!("{} | {m}", ty(t)),
+        Query::Subsignature(t, m, n, _) => format!("{} | {m} | {n}", ty(t)),
+        Query::Overrides(m, n, of, _) => format!("{m} | {n} | {of}"),
+        Query::Threw(t, _) => ty(t).to_owned(),
+    };
+    format!("{} {operands}", query.name())
+}
+
 /// Whether a query is about a type javac couldn't resolve, or javac's answer has one: a class
 /// a jar names that javac's classpath lacks, which javac reports nothing about where nothing
 /// needs it (docs/design/types-oracle-normalization.md, "What is compared").
@@ -490,7 +506,14 @@ pub fn compare_relations(relations: &Relations, ours: &[Option<String>]) -> Comp
         let found = ours.get(i).and_then(Option::as_deref);
         let i = i as i64;
         compared.check(
-            mismatch(Aspect::Relation, i, i, query.name(), theirs, found.as_ref()),
+            mismatch(
+                Aspect::Relation,
+                i,
+                i,
+                &describe(relations, query),
+                theirs,
+                found.as_ref(),
+            ),
             |_, _| Category::Answer,
         );
     }

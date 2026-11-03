@@ -8,13 +8,16 @@
 //!   attribution translates them. The other types the queries ask about (a type's direct
 //!   supertypes, which the oracle asks subtyping of) are parsed from javac's type strings.
 //! - **The API's shape:** `Types.directSupertypes` and `Types.asMemberOf` depart from the JLS
-//!   (observations 16 and 17 in docs/design/types-oracle-normalization.md), so their answers are
+//!   (observations 16 and 17 in docs/design/types-oracle-normalization.md, and 8 and 9 in
+//!   docs/design/semantic-type-relations.md), so their answers are
 //!   converted: a wildcard-parameterized type's supertypes and members are substituted without
 //!   capture, an interface's supertypes start with `Object`, a type variable's are its bounds
 //!   (after `Object` if the first is an interface), and an array's is one type, the array of its
 //!   component's superclass, or `Serializable&Cloneable` for an array of `Object` or a primitive.
 //! - **Answers** are type strings, `yes` or `no`, or a comma-separated list for supertypes;
-//!   `Unknown` is no answer, so it counts as missing.
+//!   `Unknown` is no answer, so it counts as missing, but where a class or member Ferrion
+//!   couldn't find is one a Lombok-annotated class's annotations make, which is
+//!   `left-to-b4 lombok`.
 //!
 //! Each project's engine is the names comparison's ([`Ferrion`]), so a run loads it once.
 
@@ -130,14 +133,11 @@ impl<'s> Relater<'s> {
             self.cx.refuel(DEFAULT_FUEL);
             self.lombok = false;
             let built = self.site(site)?;
-            if std::env::var_os("FERRION_DEBUG_SITES").is_some() {
-                let text = match built {
-                    Some(t) => self.cx.type_string(t, Printed::Captures)?,
-                    None => "NONE".to_owned(),
-                };
-                eprintln!("site {site} => {text} (javac {})", relations.types[*index]);
-            }
             self.built.insert(*index, (built, self.lombok));
+            if self.cx.fuel_used() > cost.fuel {
+                cost.fuel = self.cx.fuel_used();
+                cost.fuel_query = format!("the type of {site}");
+            }
         }
         let mut answers = Vec::with_capacity(relations.queries.len());
         for query in &relations.queries {
@@ -147,35 +147,9 @@ impl<'s> Relater<'s> {
             if answer.is_none() && self.lombok {
                 answer = Some("left-to-b4 lombok".to_owned());
             }
-            if std::env::var_os("FERRION_DEBUG_QUERIES").is_some() {
-                let javac = super::compare::javac_answer(relations, query);
-                if answer.as_deref() != Some(javac.as_str()) {
-                    let ty = |i: &usize| relations.types.get(*i).cloned().unwrap_or_default();
-                    let operands = match query {
-                        Query::Subtype(s, t, _)
-                        | Query::Assignable(s, t, _)
-                        | Query::Same(s, t, _) => {
-                            format!("{} | {}", ty(s), ty(t))
-                        }
-                        Query::Erasure(t, _) | Query::Capture(t, _) | Query::Supertypes(t, _) => {
-                            ty(t)
-                        }
-                        Query::Member(t, m, _) => format!("{} | {m}", ty(t)),
-                        Query::Subsignature(t, m, n, _) => format!("{} | {m} | {n}", ty(t)),
-                        Query::Overrides(m, n, o, _) => format!("{m} | {n} | {o}"),
-                        Query::Threw(..) => String::new(),
-                    };
-                    eprintln!(
-                        "query {} {}: {operands} => javac {javac}, Ferrion {}",
-                        answers.len(),
-                        query.name(),
-                        answer.as_deref().unwrap_or("nothing")
-                    );
-                }
-            }
             if self.cx.fuel_used() > cost.fuel {
                 cost.fuel = self.cx.fuel_used();
-                cost.fuel_query = format!("{query:?}");
+                cost.fuel_query = super::compare::describe(relations, query);
             }
             answers.push(answer);
         }
