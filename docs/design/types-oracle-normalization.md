@@ -12,15 +12,22 @@ Ferrion's, and what javac does that has no counterpart in Ferrion.
 [the names oracle](semantic-oracle-normalization.md#the-compilation)): the same command line,
 processors, source path, crash handling, and keys. Everything about javac here was learned by
 running the oracle on small inputs written for the purpose, on Temurin 27.0.1 unless a JDK is
-named, and on the corpus.
+named, and on the corpus; the [observations](#observations) list what each input showed.
+
+Two of the oracle's values aren't in javac's public API (`javax.lang.model`, `com.sun.source`),
+and come from two of javac's internal methods, as `names` takes a tree's preferred position from
+one: a constant's value (`Type.constValue()` of the expression's type), and whether a variable is
+effectively final (the `EFFECTIVELY_FINAL` flag of its symbol, found by name, since its bit isn't
+the same on every JDK). What both give was checked against the JLS on the inputs of observations
+11 and 12, and is the same on JDKs 21, 25, 26, and 27.
 
 ## The oracle's output
 
-One JSON object per line, as `names` writes them: one per file but `module-info.java`, one per
-file a processor generated (`generated: 1`), one per `module-info.java` (`module: 1` and
-`skipped`, since a module declaration has no expressions), a `relations` object (see
-[Type relations](#type-relations)), and the last `sourceSet` object, as `names` writes it. Paths
-are relative to the corpus directory. Each file has:
+One JSON object per line, in this order: one per file but `module-info.java`, one per file a
+processor generated (`generated: 1`), a `relations` object (see [Type relations](#type-relations)),
+one per `module-info.java` (`module: 1` and `skipped`, since a module declaration has no
+expressions), and the last `sourceSet` object, as `names` writes it. Paths are relative to the
+corpus directory. Each file has:
 
 - `diagnostics`, `lombok`, `unanalyzed`, and `crash`, as `names` writes them;
 - `analyzeMicros`: the time javac spent analyzing the file's classes (see
@@ -150,10 +157,337 @@ pattern binding, keyed by the offset its `local` key has in `names`, with its ty
 
 ## Expressions
 
+Every tree javac's API calls an expression, with its range and `Trees.getTypeMirror`, but:
+
+- **names of packages, types, type variables, and methods** (an identifier or member select whose
+  element is one): `Collections` in `Collections.emptyList()`, `String` in `String::length`, the
+  method name `m` in `a.m()`. Their resolution is the names comparison's; a call's method is in
+  [Calls](#calls). `this`, `super`, `A.class`, and an array's `length` are expressions;
+- **type trees** (primitive, array, parameterized, wildcard, union, intersection, annotated, and
+  `var`), annotations, and an annotation's `name =`; the annotation's values are expressions;
+- **package declarations, imports, and module declarations**;
+- **trees javac made up**, with no end (the default constructor's `super()`, an enum constant's
+  `new`): they have no source to type. Their calls are in [Calls](#calls).
+
+A tree that is both an expression and a constant is in both lists. Ranges are javac's, as in
+[names](semantic-oracle-normalization.md#javacs-ranges); two observed oddities: an enum constant
+with a body has a `NEW_CLASS` whose range is the body alone (`{ }`), and a parenthesized `switch`
+selector is a `PARENTHESIZED` tree of its own.
+
+The type is what javac attributed: a poly expression's type is the one its context gave
+(`Function<String,Integer>` for `String::length` assigned to one), a lambda's and a method
+reference's is its target type, and a conditional or `switch` expression's is javac's least upper
+bound where the operands need one (observations [1 to 6](#observations)).
+
 ## Calls
+
+For each `METHOD_INVOCATION` (explicit `this(...)` and `super(...)` included), `NEW_CLASS`, and
+`MEMBER_REFERENCE`, the method or constructor `Trees.getElement` gives, keyed as `names` keys it:
+the declaring class's binary name, the name, and the erased descriptor. That is the method javac
+chose, not the type searched (which `names` compares).
+
+- **The type as invoked** is the method select's `Trees.getTypeMirror`: an `ExecutableType` with
+  the inferred type arguments substituted, `(java/lang/Integer[])java/util/List<java/lang/Integer>`
+  for `Arrays.asList(1, 2)`. javac's public API gives no type for a `NEW_CLASS`'s constructor or a
+  method reference's method, nor the inferred type arguments themselves, nor which phase of
+  JLS 15.12.2 found the method (whether a variable arity call was made in the third); those are
+  -1, and are seen only through the expression's type.
+- **Calls javac made up** have end -1: a constructor's implicit `super()`, at its body's `{`; the
+  default constructor's, at the class's keyword (`class`, `enum`, `record`) after its modifiers;
+  an anonymous class's, at its body's `{`; and an enum constant's `new`, at the constant's name.
+  Ferrion's side matches them by their start alone.
+- **An anonymous class's creation** chooses the anonymous class's own constructor (`method local
+  <file>:<offset>.<init>(...)V`, its parameters the superclass constructor's, as JLS 15.9.5.1 has
+  it); the superclass constructor chosen is the implicit `super(...)` call inside it, at the body's
+  `{`, which is the anonymous class's key.
 
 ## Type relations
 
+After a source set's files, one `relations` object: javac's answers, through
+`javax.lang.model.util.Types` (and `Elements.overrides`), about a sample of the types the source
+set declares, so that B3a's relations can be checked before expressions are typed.
+
+- **Sites:** every class's superclass and interfaces, field types, parameter types, and return
+  types, in the source set's files and in the classes javac declares implicitly (a record's
+  accessors, `toString`): `type p/A source projects/... superclass`, `type p/A ... interface 0`,
+  `field p/A.f type`, `method p/A.m(I)V parameter 0`, `method p/A.m(I)V return`, a names key and
+  a role. Anonymous classes, and types with an error type in them, are left out.
+- **The sample:** the first `--relation-types` (48 by default) distinct type strings, ordered by
+  FNV-1a of the string, then the string, then the site; each with its first site in that order.
+  The same source set gives the same sample on every run and JDK. `sites` lists them:
+  `[site, type]`.
+- **Queries,** with types as indices into the object's own `types` list: for each sampled type
+  `erasure`, `capture`, and `supertypes` (`directSupertypes`), and `subtype` and `assignable`
+  between it and each direct supertype, both ways; for each ordered pair of sampled types
+  `subtype`, `assignable`, and `same`; for each sampled declared type, `member` (`asMemberOf`) for
+  three of its class's members (by FNV-1a of their keys), and for four of its class's own methods
+  and each method of the same name in its supertypes, `subsignature` (of both as members of the
+  type) and `overrides`. A yes-or-no answer is `true`, `false`, or `"error"` when javac threw; a
+  type answer is -1 when it threw.
+- **What javac can't read:** each sampled type's own queries (its unary ones and those with its
+  supertypes, and its members') are asked as a block, and a block javac throws on is one
+  `["threw", type, exception]` instead, which isn't compared. In the corpus that is a dependency's
+  class file javac can't read: `BadClassFile` for `RateLimiter$Metrics` in resilience4j 1.7.1's
+  jar, which jedis's tests have on their classpath, thrown while completing a supertype. Before
+  blocks, it lost a quarter of the corpus's source sets' relations. Anything else that throws
+  gives the object an `error` instead of its queries.
+
+48 types make about 7,600 queries per source set (jedis: 15,204 for two). `lub` isn't in the API;
+the types of conditional expressions and `var` variables in the files give it.
+
 ## Analysis time
 
+`analyzeMicros` is the time between javac's `ANALYZE` task events for the file's classes. javac
+27 starts every class's event (attribution) and then finishes each (flow analysis), in the same
+order ([observation 19](#observations)); other policies do both for a class before the next. So
+the time from an event to the next is charged to the class whose event started it if that is a
+start, else to the class whose event ends it if that is a finish; time between a finish and a
+start is no class's. Under javac 27's order, the last class's attribution and the first's flow
+analysis can't be told apart, and both are charged to the last class. The time includes what
+javac does lazily for the class: completing classes from the classpath and reading files on the
+source path. Each source set runs in a JVM of its own, which is warming up (loading javac's classes
+and compiling them) while it analyzes its first classes, so those files' times are inflated; the
+distribution over the corpus is in [The corpus](#the-corpus).
+
+## What is compared
+
+For each source set, as in `names`:
+
+1. **Files left out:** files with a language error (switch errors among them: the report counts
+   files whose only errors are switch errors), files javac never analyzed or threw on, and module
+   declarations, each counted. Entries inside Lombok-annotated classes are left out, until B4.
+2. **Matching:** each javac entry with Ferrion's at the same range in UTF-16 units (Ferrion's
+   byte offsets converted as in `names`), an implicit call by its start, a variable by its
+   offset, a relation query by its index. Values are compared as strings.
+3. **Categories:** `missing` (Ferrion has nothing there), `order` (intersections with the same
+   parts in another order), `type`, `value` (a constant), `method` (another method chosen),
+   `instantiation` (the same method, another type as invoked), `finality`, and `answer` (a
+   relation). A Ferrion value starting with `left-to-` (`left-to-b3c inference`) is a later
+   milestone's, and counted apart. A mismatch listed in
+   `tools/oracle-check/differences/types-known.txt` (`<category> <file> <aspect> <start>-<end>`)
+   counts under its known category.
+
+Ferrion's side is the `Typer` trait in `tools/oracle-check/src/types/compare.rs`; until B3's
+attribution exists, a stand-in gives nothing, and every entry is counted as not compared.
+`--relations` compares the relation queries only, for B3a. Ferrion's type strings name local
+classes as javac's keys do, with the file relative to the corpus and UTF-16 offsets, as
+`names`' `oracle_key` converts keys.
+
 ## Observations
+
+On Temurin 27.0.1 unless a JDK is named, each on an input written for it.
+
+1. **`lub` cuts its recursion off.** `var x = b ? 1 : "x";` has
+   `java/io/Serializable&java/lang/Comparable<? extends java/io/Serializable&java/lang/Comparable<?>&java/lang/constant/Constable&java/lang/constant/ConstantDesc>&java/lang/constant/Constable&java/lang/constant/ConstantDesc`.
+   By JLS 4.10.4, `lcta(Comparable<Integer>, Comparable<String>)` is `? extends lub(Integer,
+   String)`, an infinite type; javac computes one more level and then writes `Comparable<?>`.
+   This departs from the JLS, which leaves the infinite type in place. `b ? new StringBuilder() :
+   "s"` and `List.of(1, 2.0)` (inference's lub) are cut off the same way.
+2. **The order of a `lub`'s parts** is a class first, then interfaces deepest first (the longest
+   chain of superinterfaces), then by qualified name: `Ab&Zed` for two classes implementing `Zed,
+   Ab` and `Ab, Zed`, whichever operand comes first; `z/Deep8&z/Aaa` where `Deep8` extends two
+   interfaces; `Base&Deep&Other&Zed`. The JLS doesn't order an intersection's parts.
+3. **`lub` keeps only minimal candidates,** as JLS 4.10.4 says: `b ? new ArrayList<String>() :
+   new LinkedList<String>()` is `java/util/AbstractList<java/lang/String>&java/io/Serializable&java/lang/Cloneable`
+   (`List` is a supertype of `AbstractList`), and with a `HashSet` instead,
+   `java/util/AbstractCollection<java/lang/String>&java/io/Serializable&java/lang/Cloneable`.
+   `b ? list : set` (two interfaces) is `java/util/Collection<java/lang/String>`.
+4. **Inference infers lubs too:** `Arrays.asList(1, "a")` is a `List` of observation 1's type.
+   `var e = Collections.emptyList();` is `java/util/List<java/lang/Object>`.
+5. **Conditional expressions** follow JLS 15.25: `Object o = true ? 1 : "x";` types the conditional
+   `java/lang/Object` (a reference conditional in an assignment context is a poly expression);
+   `b ? 1 : 'a'` is `char` (a constant `int` representable as `char`), `b ? 'a' : 1000000` is
+   `int`, `b ? (short) 1 : (byte) 1` is `short`, `b ? (Integer) 1 : (Character) 'a'` is `int`,
+   `b ? Integer.valueOf(1) : Double.valueOf(2)` is `double`, and `b ? Integer.valueOf(1) : null`
+   is `java/lang/Integer`.
+6. **`switch` expressions** (JLS 15.28.1): `case 1 -> 1; default -> 2L;` is `long`, and `case 1 ->
+   "a"; default -> 1;` is observation 1's lub.
+7. **Capture's bounds** are the glb JLS 5.1.10 gives: `ls.get(0)` for `List<? super Integer>` is
+   `capture#1 extends java/lang/Object super java/lang/Integer`; `g.get()` for `G<?>` with `class
+   G<T extends Comparable<T>>` is `capture#1 extends java/lang/Comparable<capture#1>`; and
+   `en.getDeclaringClass()` for `Enum<?>` is
+   `java/lang/Class<capture#1 extends java/lang/Enum<capture#1>>`. Nested wildcards are captured
+   one level at a time: `ll.get(0)` for `List<? extends List<? extends Number>>` is `capture#1
+   extends java/util/List<? extends java/lang/Number>`, and `ll.get(0).get(0)` `capture#1 extends
+   java/lang/Number`.
+8. **A generic method's return type is captured** (JLS 15.12.3): `Collectors.toList()` in
+   `stream.collect(Collectors.toList())` is
+   `java/util/stream/Collector<java/lang/String,capture#1 extends java/lang/Object,java/util/List<java/lang/String>>`.
+9. **`var` takes the upward projection** (JLS 14.4.1): `var x = xs.get(0);` for `List<? extends
+   Number>` is `java/lang/Number`, `var dc = en.getDeclaringClass();`
+   `java/lang/Class<? extends java/lang/Enum<?>>`, and `var c = g.get();`
+   `java/lang/Comparable<?>`. `var` of an anonymous class's creation is the anonymous class.
+10. **A multi-catch parameter's** type is the union, `java/io/IOException|java/lang/RuntimeException`,
+    and it is `final` (JLS 14.20).
+11. **Constants** are what JLS 15.29 says: `1 << 3 + 2` is `int 32`, `(byte) 300` `byte 44`,
+    `Long.MAX_VALUE + 1` `long -9223372036854775808`, `1.0f / 3` `float 0x1.555556p-2`, `0.0 /
+    0.0` `double NaN`, `-0.0` `double -0x0.0p0`, `"a" + K + 'c' + 1.5f` `String "a32c1.5"`, `1 < 2
+    && "a" == "a"` `boolean true`, `true ? 'a' : 0` `char "a"`, and a `final` local with a constant
+    initializer is a constant where it's used. `1 / 0` isn't a constant (it would complete
+    abruptly), nor is `... + null`, though its left operand is. A parenthesized constant is one.
+    javac holds a `boolean`'s, `char`'s, `byte`'s, and `short`'s value as an `Integer`; the
+    oracle writes it by the expression's type.
+12. **Effective finality** is JLS 4.12.4's: a local assigned once after its declaration without an
+    initializer, an unassigned parameter, catch parameter, pattern binding, lambda parameter, and
+    enhanced `for` variable are `effectively-final`; a variable assigned again, or a basic `for`
+    loop's incremented variable, `mutable`; a declared `final` variable is `final` (javac doesn't
+    also mark it effectively final, as the JLS doesn't), and so are a resource and a multi-catch
+    parameter. JDKs 21, 25, and 26 give the same, at release 21.
+13. **String conversion of `float` and `double` constants is the running JDK's.** `"" + 1.0E23`
+    folds to `String "1.0E23"` on JDK 27, and to `9.999999999999999E22` on Corretto 17 (with the
+    same internal method), whose `Double.toString` predates JDK 19's shortest-decimal one; `"" +
+    2.0e-3` is `0.002` on both. JLS 5.1.11 defers to `Double.toString`, whose specification
+    changed in 19. Every corpus project runs on JDK 21 or later, so Ferrion follows JDK 19's.
+14. **Implicit calls' positions:** see [Calls](#calls) (a class `T1` with no constructor: the
+    `super()` at `class`; `T2() {}`: at its `{`; `Sub() { }` in a subclass of `T2<String>`: at
+    its `{`, choosing `T2.<init>()V`; an enum: at `enum`, choosing
+    `java/lang/Enum.<init>(Ljava/lang/String;I)V`).
+15. **Enum constants:** `RED` has an implicit `NEW_CLASS` at its name choosing `Color.<init>()V`;
+    `GREEN { }` has a `NEW_CLASS` with the range of `{ }` choosing the anonymous class's
+    constructor, and an implicit `super()` at `GREEN` choosing `Color.<init>()V`.
+16. **`directSupertypes` departs from JLS 4.10:** for `int[]` it gives one intersection,
+    `java/lang/Object&java/io/Serializable&java/lang/Cloneable`, where JLS 4.10.3 has three direct
+    supertypes; for an interface it includes `Object` even when the interface has
+    superinterfaces (`List`: `Object` and `SequencedCollection`), as the API's documentation says
+    and JLS 4.10.2 doesn't; and for a wildcard-parameterized type it substitutes the wildcards
+    instead of capturing (`List<? extends Number>`: `SequencedCollection<? extends Number>`;
+    `Enum<?>`: `Comparable<?>`), where JLS 4.10.2 takes the supertypes of the capture.
+17. **`asMemberOf` doesn't capture:** `List.get` as a member of `List<? extends Number>` is
+    `(int)? extends java/lang/Number`, a wildcard as a return type.
+18. **`isSubsignature` compares signatures only,** names aside, as JLS 8.4.2: `n2(List)` is a
+    subsignature of `n(List<String>)` and of `<T> m(List<T>)` (the erasure rule), and not the
+    reverse.
+19. **javac 27 attributes every class first,** starting each one's `ANALYZE` event, and then
+    analyzes flow for each, finishing its event, in the same order.
+20. **Switch errors:** exhaustiveness is checked in flow analysis, so a class with an attribution
+    error has none reported (a `switch` missing a sealed type's case went unreported beside a
+    dominance error). The codes, which the report counts: `not.exhaustive` and
+    `not.exhaustive.statement` (with `.details` on javac 27, without on 21), `pattern.dominated`,
+    `duplicate.case.label`, `duplicate.default.label`, `duplicate.unconditional.pattern`,
+    `unconditional.pattern.and.default`, `flows.through.to.pattern`, and
+    `flows.through.from.pattern`, each under `compiler.err.`.
+
+## Known differences
+
+None yet: they come with Ferrion's side, in B3's milestones.
+
+## The corpus
+
+`cargo oracle types --javac-only` on every locked project, on a 10-core Mac with two JVMs of 5 GB
+at a time, each project on the JDK its lock names, on 2 November 2026, with the oracle jar of
+SHA-1 `e61ea3af7772dc7df0801dfe5f140dd9e8b76efa` (built reproducibly, as W6c made it). Files
+include those processors generated and module declarations; "compared" are those not left out,
+as in [names](semantic-oracle-normalization.md#the-corpus) (the same 445 files with language
+errors, 442 of them hertzbeat's tests). Entries are counted in compared files, outside Lombok
+types. javac's time is its own, summed over the JVMs; the output is the cached JSON.
+
+| Project | JDK | Source sets | Files | Compared | Expressions | Calls | Constants | Variables | Relation queries | javac | Output |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| jedis | 21 | 2 | 1,080 | 1,080 | 369,831 | 140,681 | 70,792 | 46,509 | 15,204 | 28 s | 37 MB |
+| guava | 21 | 6 | 1,597 | 1,594 | 427,754 | 153,966 | 98,287 | 44,949 | 30,925 | 43 s | 47 MB |
+| caffeine | 26 | 29 | 1,309 | 1,303 | 293,589 | 107,858 | 34,437 | 34,631 | 138,888 | 83 s | 35 MB |
+| spring-data-jpa | 21 | 4 | 901 | 901 | 191,400 | 59,528 | 36,490 | 21,004 | 30,596 | 35 s | 24 MB |
+| lucene | 21 | 75 | 6,239 | 6,202 | 2,069,301 | 470,731 | 410,240 | 197,615 | 409,828 | 327 s | 176 MB |
+| hertzbeat | 25 | 46 | 1,384 | 942 | 44,975 | 15,840 | 11,174 | 5,165 | 171,875 | 114 s | 40 MB |
+| helidon | 27 | 376 | 4,901 | 4,687 | 1,050,860 | 381,347 | 188,509 | 110,668 | 1,382,963 | 1,035 s | 155 MB |
+| total | | 538 | 17,411 | 16,709 | 4,447,710 | 1,329,951 | 849,929 | 460,541 | 2,180,279 | 1,664 s | 514 MB |
+
+- **Calls:** 31,765 of them implicit (`super()` and enum constants' `new`).
+- **Expressions by kind:** identifiers 1,442,787, method invocations 1,139,535, string literals
+  326,202, int literals 324,318, member selects 245,789, class instance creations 146,132,
+  parenthesized 135,735, assignments 112,814, `+` 72,950, and fewer of the rest.
+- **Variables:** 379,483 effectively final, 29,168 final, 51,890 mutable.
+- **Relation queries:** `subtype` and `assignable` 701,655 each, `same` 647,573, `erasure`,
+  `capture`, and `supertypes` 16,003 each, `member` 41,529, `subsignature` and `overrides` 19,838
+  each, and 182 blocks javac threw on, all on class files it couldn't read.
+- **Switch errors:** none: no corpus file has one.
+- **Error types in clean files:** 8 type strings, where a jar's method names a class its classpath
+  lacks (`(error graphql.execution.ExecutionStrategy)graphql/GraphQL$Builder` in helidon's GraphQL
+  server); javac reports nothing, since nothing needs the class.
+- **Type strings:** 666,527 in the files' tables, median 46 characters, the longest 5,540;
+  captures up to `capture#5` in one string (caffeine's `LocalAsyncCache`).
+- **Size:** 514 MB in all, each file's type strings listed once and named by index. The largest
+  output, one of lucene's source sets at 37 MB, gzips to 6 MB; compressing the cache isn't needed
+  yet, and would cut it about six times if CI's cache needs it.
+
+The whole run took 864 s. javac's time per source set includes starting the JVM, the
+processors, and the relations, which `millis` covers.
+
+### Analysis time per file
+
+`analyzeMicros` of the 16,709 compared files (javac 21 to 27, each project's own):
+
+| | Median | p90 | p99 | p99.9 | Max | Sum |
+| --- | --- | --- | --- | --- | --- | --- |
+| Every compared file | 1.6 ms | 17.5 ms | 122 ms | 431 ms | 1,129 ms | 147 s |
+| But each source set's first 5 files | 1.4 ms | 11.9 ms | 74 ms | 323 ms | 1,129 ms | 88 s |
+
+A source set's first file took 39 ms in the median, against 1.4 ms from the sixth on: the JVM's
+warm-up, and the first completions of the platform's classes, are charged to the first classes
+analyzed, so the second row is the better measure of a file's own cost. The machine was shared with
+other work, and an earlier run of the same jar's predecessor gave the same files up to three times
+less (`CommandObjects.java` 379 ms there, 1,129 ms here), so these are upper bounds within a factor
+of about three. The 20 slowest files, by position in their source set (0 is the first analyzed):
+
+| Time | # | File |
+| --- | --- | --- |
+| 1,129 ms | 13 | jedis/src/main/java/redis/clients/jedis/CommandObjects.java |
+| 920 ms | 107 | spring-data-jpa/spring-data-jpa/src/test/java/org/springframework/data/jpa/repository/AotUserRepositoryTests.java |
+| 906 ms | 216 | spring-data-jpa/spring-data-jpa/target/generated-sources/antlr4/org/springframework/data/jpa/repository/query/EqlParser.java |
+| 867 ms | 32 | jedis/src/main/java/redis/clients/jedis/Jedis.java |
+| 730 ms | 0 | jedis/src/main/java/redis/clients/jedis/AbstractPipeline.java |
+| 721 ms | 0 | caffeine/guava/src/test/java/com/github/benmanes/caffeine/guava/CaffeinatedGuavaTest.java |
+| 629 ms | 6 | caffeine/caffeine/src/test/java/com/github/benmanes/caffeine/cache/BoundedLocalCacheTest.java |
+| 585 ms | 65 | hertzbeat/hertzbeat-common-spring/src/main/java/org/apache/hertzbeat/common/support/valid/SqlSecurityValidator.java |
+| 581 ms | 63 | jedis/src/main/java/redis/clients/jedis/RedisClusterClient.java |
+| 563 ms | 225 | guava/guava/src/com/google/common/collect/Maps.java |
+| 554 ms | 0 | helidon/webclient/http2/src/test/java/io/helidon/webclient/http2/Http2AltSvcCacheTest.java |
+| 548 ms | 200 | guava/guava/src/com/google/common/collect/ImmutableSetMultimap.java |
+| 474 ms | 8 | caffeine/caffeine/src/eclipseTest/java/com/github/benmanes/caffeine/eclipse/mutable/ConcurrentHashMapTest.java |
+| 465 ms | 0 | caffeine/caffeine/src/test/java/com/github/benmanes/caffeine/cache/AsMapTest.java |
+| 463 ms | 0 | caffeine/jcache/src/test/java/com/github/benmanes/caffeine/jcache/CacheManagerTest.java |
+| 462 ms | 0 | caffeine/caffeine/build/generated/sources/local-cache/com/github/benmanes/caffeine/cache/SI.java |
+| 457 ms | 0 | caffeine/guava/src/osgiTest/java/com/github/benmanes/caffeine/guava/OSGiTest.java |
+| 431 ms | 222 | spring-data-jpa/spring-data-jpa/target/generated-sources/antlr4/org/springframework/data/jpa/repository/query/HqlParser.java |
+| 426 ms | 5 | jedis/src/main/java/redis/clients/jedis/BuilderFactory.java |
+| 421 ms | 0 | helidon/openapi/openapi-31/src/test/java/io/helidon/openapi/v31/OpenApi31DocumentMapperTest.java |
+
+The slow files that aren't first are large API surfaces (jedis's `CommandObjects` and `Jedis`,
+thousands of overloaded calls), ANTLR's generated parsers, and guava's collection classes, heavy
+in generic inference.
+
+### javac's stress tests
+
+`javac-oracle types --release 27 --javac --enable-preview` on 975 of javac's own tests
+(`cargo corpus jdk-tests`): every file under `generics/inference`, `generics/diamond`, `lambda`,
+`patterns`, `expswitch`, and `perf`, and every file named for deep nesting, chains, or stress,
+each in a JVM of its own, since they declare clashing classes, on Temurin 27.0.1. Each file is its
+JVM's first, so about 40 ms of every time is warm-up; files javac reports errors in are counted
+too. The slowest:
+
+| Time | Expressions | Errors | File |
+| --- | --- | --- | --- |
+| 5,031 ms | 102 | 0 | generics/inference/8048838/T8048838.java |
+| 488 ms | 303 | 0 | generics/inference/8067767/T8067767.java |
+| 458 ms | 100 | 0 | lambda/speculative/NestedLambdaGenerics.java |
+| 164 ms | 220 | 0 | lambda/speculative/InferWeak.java |
+| 141 ms | 442 | 24 | lambda/deduplication/DeduplicationTest.java |
+| 129 ms | 41 | 0 | lambda/speculative/InferStrict.java |
+| 122 ms | 119 | 0 | lambda/speculative/T8055984.java |
+| 119 ms | 168 | 0 | patterns/T8326404.java |
+| 116 ms | 384 | 42 | generics/inference/EagerReturnTypeResolution/EagerReturnTypeResolutionTestb.java |
+| 110 ms | 958 | 0 | lambda/ByteCodeTest.java |
+
+`T8048838` declares a method with 100 type parameters, each bounded by the next, and calls it: a
+fixed input that takes javac five seconds, which a per-file limit has to allow for or cut off as
+"unknown". The rest are under half a second, nested generic lambdas and speculative attribution
+the slowest of them. The whole set took 371 s.
+
+## Still to observe
+
+- The order of a `lub`'s parts on more inputs (observation 2's rule is from four): interfaces of
+  equal depth in different packages, and a class among them deeper than the interfaces.
+- Whether a variable arity call javac chose in phase 3 can be told from the oracle's output where
+  the instantiated type alone doesn't say (a single array argument).
+- Ferrion's side of local classes in type strings, as `names`' `oracle_key` converts keys, once B3
+  writes them.
