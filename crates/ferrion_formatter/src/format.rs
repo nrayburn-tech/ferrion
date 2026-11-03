@@ -18,6 +18,7 @@
 use ferrion_syntax::comments::{Comment, CommentMap, Element as CommentElement, Placement};
 use ferrion_syntax::{SyntaxKind, SyntaxNode, SyntaxToken, SyntaxTree, TokenId};
 
+use crate::doc_comments;
 use crate::document::{Document, DocumentBuilder, IndentKind, Verbatim, VerbatimKind, width};
 use crate::imports;
 use crate::printer::{Lines, trim_end};
@@ -637,9 +638,14 @@ impl<'t> Formatter<'t> {
                     self.tree.text(),
                     span.start,
                     span.end,
-                    VerbatimKind::Doc { token: token.id() },
+                    VerbatimKind::Doc {
+                        token: token.id(),
+                        layout: None,
+                    },
                 );
-                self.doc().verbatim(verbatim);
+                // Laid out here, once; filled by the printer at its column.
+                let layout = doc_comments::javadoc::layout(self.tree.text(), span.start, span.end);
+                self.doc().doc_comment(verbatim, layout);
             }
             SyntaxKind::BlockComment if text.contains(['\n', '\r']) => {
                 let span = token.span();

@@ -1,6 +1,7 @@
 //! Runs every reduced failure of the `format` fuzz target in `tests/fuzz-regressions/`, and every
 //! source file the parser's tests use, through the fuzz target's checks: at each release where the
-//! input parses without errors, the four safety properties hold.
+//! input parses without errors, the four safety properties hold. The `javadoc` target's reflow
+//! failures in `tests/javadoc-regressions/` go through its reflow check.
 
 use std::fs;
 use std::panic;
@@ -21,6 +22,26 @@ fn fuzz_regressions() {
         .collect();
     paths.sort();
     check_all(&paths);
+}
+
+#[test]
+fn javadoc_regressions() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/javadoc-regressions");
+    let mut failures = Vec::new();
+    let mut count = 0;
+    for entry in fs::read_dir(&dir).unwrap() {
+        let path = entry.unwrap().path();
+        if path.file_name().unwrap() == "README.md" {
+            continue;
+        }
+        count += 1;
+        let bytes = fs::read(&path).unwrap();
+        if let Err(message) = invariants::check_javadoc_reflow(&bytes) {
+            failures.push(format!("{}: {message}", path.display()));
+        }
+    }
+    assert!(count > 0, "no inputs in {}", dir.display());
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
 #[test]

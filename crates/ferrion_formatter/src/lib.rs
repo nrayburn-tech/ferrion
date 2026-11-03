@@ -8,6 +8,7 @@
 //! modifiers in order. [`format_edits`] gives the same output as edits of the input
 //! (docs/design/formatter-completeness.md, "Edits").
 
+mod doc_comments;
 mod document;
 mod edits;
 mod format;
