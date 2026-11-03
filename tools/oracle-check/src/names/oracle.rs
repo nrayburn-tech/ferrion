@@ -175,6 +175,38 @@ pub struct Output {
     pub set: SetOutput,
 }
 
+/// What a command of the oracle writes for a source set: `names`' [`Output`], or `types`'.
+pub trait CommandOutput: Sized {
+    fn parse(text: &str) -> Result<Self>;
+
+    /// The files processors generated that the output names, relative to the corpus directory:
+    /// a cached output is used only while they exist.
+    fn generated(&self) -> Vec<&str>;
+}
+
+impl CommandOutput for Output {
+    fn parse(text: &str) -> Result<Output> {
+        Output::parse(text)
+    }
+
+    fn generated(&self) -> Vec<&str> {
+        self.files
+            .iter()
+            .filter(|f| f.generated == 1)
+            .map(|f| f.file.as_str())
+            .collect()
+    }
+}
+
+/// The trailer line every command ends its output with, if `line` is it.
+pub fn parse_trailer(line: &str) -> Option<Result<SetOutput>> {
+    line.starts_with("{\"sourceSet\"").then(|| {
+        serde_json::from_str::<Trailer>(line)
+            .map(|t| t.source_set)
+            .context("the source set's summary")
+    })
+}
+
 impl Output {
     pub fn parse(text: &str) -> Result<Output> {
         let mut output = Output::default();
@@ -196,9 +228,20 @@ impl Output {
     }
 }
 
-/// The jar that runs `names`, and the JDKs it runs on: each project's own, the one its lock
-/// names.
+/// A command of the oracle that compiles a source set: `names` or `types`.
+pub struct OracleCommand {
+    /// The command, and the cache's directory under the cache root.
+    pub name: &'static str,
+    /// Bumped when the command's output or the input hash changes meaning.
+    pub format: &'static str,
+    /// The command's own options, after its name.
+    pub args: Vec<String>,
+}
+
+/// The jar that runs `names` (or `types`), and the JDKs it runs on: each project's own, the one
+/// its lock names.
 pub struct NamesOracle {
+    command: OracleCommand,
     jar: PathBuf,
     heap: String,
     /// Where every source set's processors are found instead of its own processor path, if
@@ -216,16 +259,34 @@ pub struct Jvm {
 }
 
 /// What running a source set gave.
-pub struct Ran {
-    pub output: Result<Output, String>,
+pub struct Ran<O = Output> {
+    pub output: Result<O, String>,
     /// Whether the output came from the cache.
     pub cached: bool,
     pub elapsed: Duration,
+    /// The output's size in bytes.
+    pub bytes: u64,
 }
 
 impl NamesOracle {
-    /// The oracle in `jar`, on each of `jdks`: a feature version and its JDK's home.
+    /// The oracle's `names` in `jar`, on each of `jdks`: a feature version and its JDK's home.
     pub fn new(
+        jar: PathBuf,
+        heap: String,
+        processor_path: Vec<PathBuf>,
+        jdks: &BTreeMap<u32, PathBuf>,
+    ) -> Result<NamesOracle> {
+        let command = OracleCommand {
+            name: "names",
+            format: FORMAT,
+            args: Vec::new(),
+        };
+        NamesOracle::for_command(command, jar, heap, processor_path, jdks)
+    }
+
+    /// The oracle's `command` in `jar`, on each of `jdks`.
+    pub fn for_command(
+        command: OracleCommand,
         jar: PathBuf,
         heap: String,
         processor_path: Vec<PathBuf>,
@@ -246,8 +307,12 @@ impl NamesOracle {
                 bail!("{} is JDK {found}, not JDK {version}", home.display());
             }
             let mut hash = Sha256::new();
-            hash.update(FORMAT);
+            hash.update(command.format);
             hash.update(b"\0");
+            for arg in &command.args {
+                hash.update(arg);
+                hash.update(b"\0");
+            }
             hash.update(&bytes);
             hash.update(b"\0");
             hash.update(std::fs::read(home.join("release"))?);
@@ -262,6 +327,7 @@ impl NamesOracle {
             jvms.insert(version, Jvm { java, key });
         }
         Ok(NamesOracle {
+            command,
             jar,
             heap,
             processor_path,
@@ -279,17 +345,17 @@ impl NamesOracle {
     /// The oracle's output for `set`, run on its project's JDK, from the cache under
     /// `cache_root` when its inputs haven't changed. `corpus` is the corpus directory, which
     /// paths in the output are relative to.
-    pub fn run(
+    pub fn run<O: CommandOutput>(
         &self,
         sets: &[SourceSet],
         set: &SourceSet,
         corpus: &Path,
         cache_root: &Path,
         scratch: &Path,
-    ) -> Result<Ran> {
+    ) -> Result<Ran<O>> {
         let start = Instant::now();
         let jvm = self.jvm(set.jdk)?;
-        let cache = cache_root.join("names").join(&jvm.key);
+        let cache = cache_root.join(self.command.name).join(&jvm.key);
         let sourcepath = plan::source_path(sets, set);
         let classpath = plan::class_path(sets, set);
         let processor_path = if self.processor_path.is_empty() {
@@ -312,17 +378,17 @@ impl NamesOracle {
         )?;
         let cached = cache.join(format!("{hash}.jsonl"));
         if let Ok(text) = std::fs::read_to_string(&cached)
-            && let Ok(output) = Output::parse(&text)
+            && let Ok(output) = O::parse(&text)
             && output
-                .files
+                .generated()
                 .iter()
-                .filter(|f| f.generated == 1)
-                .all(|f| corpus.join(&f.file).exists())
+                .all(|file| corpus.join(file).exists())
         {
             return Ok(Ran {
                 output: Ok(output),
                 cached: true,
                 elapsed: start.elapsed(),
+                bytes: text.len() as u64,
             });
         }
 
@@ -356,7 +422,8 @@ impl NamesOracle {
             .arg("-XX:ActiveProcessorCount=2")
             .arg("-jar")
             .arg(&self.jar)
-            .arg("names")
+            .arg(self.command.name)
+            .args(&self.command.args)
             .arg(match set.platform {
                 PlatformKind::Release => "--release",
                 PlatformKind::Jdk => "--source",
@@ -404,7 +471,7 @@ impl NamesOracle {
             .status()
             .with_context(|| format!("running {}", jvm.java.display()))?;
         let text = std::fs::read_to_string(&stdout).unwrap_or_default();
-        let output = match Output::parse(&text) {
+        let output = match O::parse(&text) {
             Ok(output) => {
                 std::fs::create_dir_all(&cache)?;
                 let partial = cached.with_extension(format!("partial-{}", std::process::id()));
@@ -429,6 +496,7 @@ impl NamesOracle {
             output,
             cached: false,
             elapsed: start.elapsed(),
+            bytes: text.len() as u64,
         })
     }
 }

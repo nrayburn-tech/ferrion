@@ -16,8 +16,8 @@
 
 mod compare;
 pub mod ferrion;
-mod oracle;
-mod plan;
+pub(crate) mod oracle;
+pub(crate) mod plan;
 mod report;
 
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
@@ -234,7 +234,23 @@ pub fn run(options: Options) -> Result<bool> {
         resolver,
         known: &known,
     };
-    let results = schedule(&context, &work, options.jobs)?;
+    let results = schedule(
+        &groups,
+        &work,
+        options.jobs,
+        |group, i| run_set(&context, group, i),
+        |result: &SetResult| {
+            let row = &result.row;
+            eprintln!(
+                "{}: {} files, {} with errors, {:.1}s{}",
+                row.source_set,
+                row.files,
+                row.error_files,
+                row.seconds,
+                if row.cached { " (cached)" } else { "" }
+            );
+        },
+    )?;
 
     let mut report = Report::default();
     for (&(group, _), result) in work.iter().zip(results) {
@@ -287,11 +303,17 @@ struct SetResult {
 /// Runs every source set of `work` on up to `jobs` threads, each once the source sets it depends
 /// on that are also in `work` are done, so their generated sources are on its source path.
 /// Returns the results in `work`'s order.
-fn schedule(context: &Shared, work: &[(usize, usize)], jobs: usize) -> Result<Vec<SetResult>> {
-    struct State {
+pub(crate) fn schedule<R: Send>(
+    groups: &[Vec<SourceSet>],
+    work: &[(usize, usize)],
+    jobs: usize,
+    run_set: impl Fn(usize, usize) -> Result<R> + Sync,
+    progress: impl Fn(&R) + Sync,
+) -> Result<Vec<R>> {
+    struct State<R> {
         started: Vec<bool>,
         done: Vec<bool>,
-        results: Vec<Option<SetResult>>,
+        results: Vec<Option<R>>,
         error: Option<anyhow::Error>,
     }
     let state = Mutex::new(State {
@@ -305,7 +327,7 @@ fn schedule(context: &Shared, work: &[(usize, usize)], jobs: usize) -> Result<Ve
     let waits: Vec<Vec<usize>> = work
         .iter()
         .map(|&(group, i)| {
-            context.groups[group][i]
+            groups[group][i]
                 .dependencies
                 .iter()
                 .filter_map(|&d| work.iter().position(|&w| w == (group, d)))
@@ -335,19 +357,11 @@ fn schedule(context: &Shared, work: &[(usize, usize)], jobs: usize) -> Result<Ve
                         }
                     };
                     let (group, i) = work[next];
-                    let result = run_set(context, group, i);
+                    let result = run_set(group, i);
                     let mut s = state.lock().unwrap();
                     match result {
                         Ok(result) => {
-                            let row = &result.row;
-                            eprintln!(
-                                "{}: {} files, {} with errors, {:.1}s{}",
-                                row.source_set,
-                                row.files,
-                                row.error_files,
-                                row.seconds,
-                                if row.cached { " (cached)" } else { "" }
-                            );
+                            progress(&result);
                             s.results[next] = Some(result);
                         }
                         Err(error) => {
@@ -379,9 +393,10 @@ fn run_set(context: &Shared, group: usize, i: usize) -> Result<SetResult> {
         output,
         cached,
         elapsed,
+        ..
     } = context
         .oracle
-        .run(
+        .run::<oracle::Output>(
             sets,
             set,
             context.corpus,
@@ -554,7 +569,7 @@ fn run_set(context: &Shared, group: usize, i: usize) -> Result<SetResult> {
 }
 
 /// A file as reports name it: the project, then the path, for a project's own files.
-fn display(file: &str) -> String {
+pub(crate) fn display(file: &str) -> String {
     file.strip_prefix("projects/").unwrap_or(file).to_owned()
 }
 

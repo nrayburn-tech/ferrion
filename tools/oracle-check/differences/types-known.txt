@@ -1,0 +1,15 @@
+# Entries whose types are a known difference from javac's, for `cargo oracle types`. Read by
+# tools/oracle-check/src/types/compare.rs; docs/design/types-oracle-normalization.md ("Known
+# differences") explains each category.
+#
+# First the categories, each with its explanation:
+#
+#   category <name>: <explanation>
+#
+# then the entries that show them, by the file as reports name it (its project, then its path),
+# the aspect (expression, constant, call, or variable), and javac's range in UTF-16 offsets (a
+# variable's offset twice):
+#
+#   <category> <file> <aspect> <start>-<end>
+#
+# None yet: Ferrion's side of the comparison comes with B3's attribution.
