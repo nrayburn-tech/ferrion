@@ -155,6 +155,22 @@ fn a_fill_break_records_the_width_of_the_next_item() {
 }
 
 #[test]
+fn a_space_before_a_fill_break_is_measured_once() {
+    let mut b = DocumentBuilder::new();
+    let group = b.start_group();
+    b.start_fill();
+    text(&mut b, 2);
+    b.space();
+    b.fill_break(false);
+    text(&mut b, 3);
+    b.end();
+    b.end();
+    let document = b.finish();
+    assert_eq!(group_at(&document, group).0, 6);
+    assert!(!document.elements.contains(&Element::Space));
+}
+
+#[test]
 fn a_fills_last_break_counts_the_width_after_the_fill() {
     let mut b = DocumentBuilder::new();
     b.start_fill();

@@ -348,6 +348,12 @@ impl DocumentBuilder {
     /// A separator between two items of the innermost fill, which may be inside indents in the
     /// fill but no other container, so that an item can be indented from its separator on.
     pub fn fill_break(&mut self, soft: bool) {
+        // A separator that prints a space replaces a space just pushed, as for a `Line`: the two
+        // print one space, so they're measured as one.
+        if !soft && matches!(self.elements.last(), Some(Element::Space)) {
+            self.elements.pop();
+            self.position -= 1;
+        }
         let elements = &self.elements;
         let open = self
             .open
