@@ -156,8 +156,8 @@ under `FERRION_CORPUS_DIR`). The oracle comparison and the semantic benchmark us
   generate (decision 3 in [review](semantic.md#decisions-made-in-review)), then the roots the
   build's other plugins generated sources into, in the checkout, as the lock records them
   (Helidon's templates, ANTLR's and protobuf's output, caffeine's code generator's). Until the
-  oracle has run, the first doesn't exist, and the others exist only where the lock's build ran;
-  each missing one is a warning.
+  oracle has run, the first doesn't exist, and the others exist only where the lock's build ran
+  or `corpus generate` has run (see the corpus tool's `generate`); each missing one is a warning.
 - **How a source set is compiled** (`platform` and the options) and its **processor path** are
   as the lock records them: the build's own, read from what it ran (see the corpus tool's
   `lock`), with only the options for the JDK's own modules, since the corpus compiles every
@@ -172,9 +172,12 @@ under `FERRION_CORPUS_DIR`). The oracle comparison and the semantic benchmark us
   the classpath, as from any model, and an entry the classpath has too is read there.
 - **The release** is the lock's, or the lock's JDK when the build sets none, as the parser checks
   use.
-- **The JDK** is `--jdk`, else `JAVA_HOME`, for every source set, as the other corpus tools find
-  theirs. The newest GA JDK serves every release the corpus uses, and the oracle runs with it.
-  With neither, the model leaves `jdk` out and its reader's `--jdk` or `JAVA_HOME` applies.
+- **The JDK** is `--jdk`, else the one the project's lock names, which the build ran with (decision
+  1 of the [corpus inputs review](semantic.md#the-corpus-inputs-review)), else `JAVA_HOME`, for
+  every source set. The lock's is found as the corpus tool's `jdks` says: `FERRION_JDK_<N>`,
+  `JAVA_HOME_<N>_X64` (which `actions/setup-java` sets), `JAVA_HOME` if it is JDK N, or a JDK
+  mise installed. The javac oracle runs each project on that JDK too. With none, the model
+  leaves `jdk` out and its reader's `--jdk` or `JAVA_HOME` applies.
 - **What is left out** is printed: entries the lock marks unavailable, and dependencies on source
   sets the lock doesn't have. None of the current locks has either.
 
@@ -212,7 +215,11 @@ at its release:
   `jar --describe-module`). Manifests' `Class-Path` aren't followed there, which javac doesn't do
   either.
 - **The JDK** is opened with `Jdk::open` and asked for `platform(release)`, or for a `jdk`
-  source set `platform(<the JDK's own version>)`, its whole image; B1's usage errors (a JDK 9 or
+  source set `image_platform()`, its whole image, internal packages included: from JDK 25,
+  `ct.sym` has the JDK's own release, with only what its modules export, so `platform(<the JDK's
+  own version>)` has no `sun.security.jca`, which javac finds with `-source 8` (observed with
+  javac 27, and with `-source 17 --add-exports java.base/sun.security.jca=ALL-UNNAMED`). B1's
+  usage errors (a JDK 9 or
   10, a release the JDK can't serve) are passed through with the JDK's origin added. A JDK older
   than the release gets its own message, with help. Each JDK is opened once per run, and a
   problem that many source sets share (one JDK, one missing jar) is reported once. Which of its

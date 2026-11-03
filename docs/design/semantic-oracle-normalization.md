@@ -9,7 +9,8 @@ reports, how javac's names and keys are matched with Ferrion's, what javac does 
 counterpart in Ferrion, and what the corpus gives.
 
 Everything about javac here was learned by running the oracle, never from javac's source: on small
-inputs written for the purpose, and on the corpus. Observations are for JDK 27 (Temurin 27.0.1).
+inputs written for the purpose, and on the corpus. Observations on small inputs are for JDK 27
+(Temurin 27.0.1); each corpus project runs on the JDK its lock names (see [Releases](#releases)).
 When javac's behavior is in doubt, run the oracle on an input that shows it, and update this
 document and the comparison together.
 
@@ -129,13 +130,18 @@ lambda parameter without a type), when the expression is a chain of names, and `
   parameter, which javac makes from the record component, the preferred position of the
   component's type (`String` in `@A String a`, the last `.` of `java.lang.String`, the `<` of
   `List<String>`, the first `[` of an array type, the `...` of `String...`), as observation 16
-  in [names](semantic-names.md#observations) records. Javac's binary names for local classes
+  in [names](semantic-names.md#observations) records. That is javac 27's position for the
+  parameter; javac 21, 25, and 26 put it at the component's start, its annotations included
+  (observed on a record with each kind of type), so the oracle takes the type's preferred
+  position on every JDK. Javac's binary names for local classes
   (`Outer$1Local`) are its own choice of digits, so they're never in a key; a member type of a
   local class is keyed by its own declaration. Descriptors write a local class as `L<local
   key>;`.
 - **Ferrion's keys** (`SymbolKey` in `ferrion_semantic`) have the same form and positions, but for
   absolute paths, byte offsets, and `class platform` for the platform; `ferrion.rs` converts
-  them, each `local <file>:<offset>` of the file to UTF-16 units. Its `member` keys, for a
+  them, each `local <file>:<offset>` of the file to UTF-16 units. A class a `--patch-module`
+  adds to the platform is `class <the patch's jar or directory>`, as javac's is (see
+  [Releases](#releases)). Its `member` keys, for a
   single-static import's member, meet no javac key: javac gives those names no element.
 - **Descriptors** erase each parameter and the return type with `Types.erasure`; constructors
   return `V`. Synthetic parameters aren't in `javax.lang.model`, so an inner class's constructor
@@ -167,8 +173,9 @@ method came from a static import, and the type is the method's owner. For `Q.m()
 
 `Ferrion` in `tools/oracle-check/src/names/ferrion.rs` runs `ferrion_semantic` as the CLI will:
 
-- **One engine per project:** the project's model (`corpus::model`, with `JAVA_HOME` as each
-  source set's JDK, the oracle's), loaded by `ferrion_project` with its type inputs opened, made
+- **One engine per project:** the project's model (`corpus::model`, with the JDK the project's
+  lock names as each source set's, the oracle's), loaded by `ferrion_project` with its type
+  inputs opened, made
   into a `ProjectInput` by `ProjectInput::from_project`, so the compile options, processor and
   module paths, and generated roots in the model are the oracle's too.
 - **Source set by source set,** as the oracle finishes each: the files the oracle generated for it
@@ -365,9 +372,13 @@ package before release 9, and the packages the module graph exports to the unnam
 `-source`), and the oracle compiles as the build does. Jedis and Guava compile with `-source 1.8
 -target 1.8`: with `--release 8`, Guava's files that use `sun.misc` and `sun.security.jca`, and a
 test that uses `java.lang.classfile`, were left out for errors, though the build compiles them;
-with `-source 8` they compile. The oracle runs on the newest JDK, so it sees JDK 27's API where
-the build saw JDK 21's: `java.lang.classfile`, which JDK 21 doesn't have, is found (Guava's build
-leaves that test out).
+with `-source 8` they compile. The oracle runs each project on the JDK its lock names, the one
+its build ran on (decision 1 of the [corpus inputs review](semantic.md#the-corpus-inputs-review)),
+so it sees the API the build saw: on JDK 21, Guava's test that uses `java.lang.classfile` has
+`package java.lang.classfile does not exist`, and is left out, while JDK 27 has the package
+(Guava's build leaves that test out). Ferrion's side gives such a source set the JDK's image
+(`Jdk::image_platform`), not `ct.sym`'s release, which from JDK 25 has the JDK's own release
+with only what its modules export, and no `sun.security.jca`.
 
 Lucene's build (`gradle/java/core-mrjar.gradle`) compiles `lucene/core/src/java21` without
 `--release`, with `--add-exports java.base/java.lang.foreign=ALL-UNNAMED`, `--add-exports
@@ -376,7 +387,9 @@ extracted from JDK 21>`, with JDK 21's preview foreign memory API and the incuba
 packages in it. With `--release 21`, 15 of those files reported `is a preview API and is disabled
 by default` and 7 `package jdk.incubator.vector is not visible`. With the build's options, the
 names of the patched classes are javac's from the API jar (`class
-projects/lucene/lucene/core/src/generated/jdk/jdk21.apijar`), not the platform's.
+projects/lucene/lucene/core/src/generated/jdk/jdk21.apijar`), not the platform's. Ferrion's
+platform says which patch a class comes from (`Platform::patched_from`), and its keys name it
+too.
 
 ### Annotation processors
 
@@ -416,7 +429,9 @@ does: a source root of a Maven compiler execution that's in the module's build d
 not the processors' (`-s`) directory, and a source directory of a Gradle source set in the
 project's build directory. The model lists them as generated-source roots, and the oracle compiles
 their files with the source set's own and puts them on dependents' source paths. They exist where
-the lock's build ran, and not after `corpus fetch` alone.
+the lock's build ran; after `corpus fetch`, `corpus generate` makes them (decision 3 of the
+[corpus inputs review](semantic.md#the-corpus-inputs-review)), as it does the jar on caffeine's
+processor paths, which its build downloads.
 
 ## Known differences
 
@@ -439,24 +454,11 @@ file and javac's range, under one of these categories (the counts are of the run
   oracle's searched type is the declaring type of the overload javac chooses, and choosing is
   B3's, so Ferrion gives the first import's type. Every listed name's file imports both types
   statically.
-- **`patched-platform`** (1,014): a class that `--patch-module` adds to a platform module:
-  lucene's `java21` sources, compiled with the JDK 21 API jar its build extracts patched into
-  `java.base` and `jdk.incubator.vector`. javac's key names the jar as the class's origin
-  (`class projects/lucene/lucene/core/src/generated/jdk/jdk21.apijar`), while Ferrion's platform
-  serves patched classes as part of their module, so its key says `platform`. Giving them the
-  jar's origin would need the platform to say where each class came from; it's the same class
-  either way.
-- **`platform-per-source-set`** (8, guava): `ProjectInput::from_project` wraps the platform of
-  each source set compiled with `-source` before release 9 in a new `Configured`, so guava's
-  `main` and `test` have two platform class sources, the same platform class is two types, and
-  `Map.Entry`, inherited by `SynchronizedNavigableMapTest.TestMap` through `main`'s
-  `ForwardingMap` and its own `NavigableMap`, is ambiguous. To be fixed in
-  `ferrion_semantic::input::project` by sharing one wrapped platform among source sets with the
-  same platform and options.
-- **`jdk-internal-package`** (11, guava's `MacHashFunctionTest`): `guava-tests`' tests compile
-  with `-source 8` against JDK 27's own API, where javac finds `sun.security.jca`, a package
-  `java.base` doesn't export; Ferrion's platform for the source set has no such package. To be
-  looked into in `ferrion_project`'s platform for `PlatformKind::Jdk`.
+- **`lombok-member`** (5, hertzbeat): a method Lombok generates, named qualified by its type
+  (`QueryResult.builder()` for a `@Builder` class). On JDK 25, its lock's, Lombok runs, so javac
+  has the method and searches `QueryResult`, while Ferrion sees no member Lombok generates and
+  reports the type's members incomplete. Names inside Lombok-annotated types are left out until
+  B4 (below); these are outside them. B4 resolves them.
 - **`dependency-view`** (none): a dependency's type resolved in the dependency's own view
   (decision 1 of the [project symbols review](semantic.md#the-project-symbols-review)), where
   javac compiles the dependent source set as one namespace, so a type the dependent redeclares
@@ -466,25 +468,31 @@ file and javac's range, under one of these categories (the counts are of the run
   dependencies' references stay resolved in their own views.
 
 Lombok-annotated types aren't a category: their names are left out before comparing, until B4
-(248 types in hertzbeat, at JDK 27).
+(554 types in hertzbeat).
+
+Three categories W6b listed were Ferrion's or the comparison's, and are fixed (decisions of the
+[corpus inputs review](semantic.md#the-corpus-inputs-review), and W6c): `patched-platform`
+(1,014 names; Ferrion's platform names the patch a class comes from), `platform-per-source-set`
+(8; source sets compiled alike share one platform), and `jdk-internal-package` (11; a `jdk`
+source set sees the JDK's image, and guava runs on JDK 21, its lock's, whose `ct.sym` has no
+classes for its own release anyway).
 
 ## The corpus
 
 `cargo oracle names` on every locked project, on a 10-core Mac with two JVMs of 5 GB at a time,
-with each build's own processors, release options, generated roots, and module paths, on 2
-November 2026, after locking every project again with its own JDK. "Compared" files are those not
-left out; files include those processors generated (in brackets) and module declarations.
+with each build's own processors, release options, generated roots, and module paths, each
+project on the JDK its lock names, on 2 November 2026. "Compared" files are those not left out;
+files include those processors generated (in brackets) and module declarations.
 
-| Project | Source sets | Files | Module declarations | Language errors | Never analyzed | Compared | B2 names | B3 names |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| jedis | 2 | 1,080 | 0 | 0 | 0 | 1,080 | 351,154 | 74,161 |
-| guava | 6 | 1,597 | 2 | 0 | 0 | 1,597 | 466,689 | 66,153 |
-| caffeine | 29 | 1,309 (601) | 4 | 2 | 0 | 1,307 | 300,781 | 64,097 |
-| spring-data-jpa | 4 | 901 (280) | 0 | 0 | 0 | 901 | 215,039 | 25,810 |
-| lucene | 75 | 6,239 (271) | 37 | 0 | 0 | 6,239 | 1,694,555 | 220,763 |
-| hertzbeat, JDK 27 | 46 | 1,384 | 0 | 610 | 0 | 774 | 67,782 | 6,436 |
-| hertzbeat, JDK 25 | 46 | 1,384 | 0 | 442 | 0 | 942 | 80,810 | 6,904 |
-| helidon | 376 | 4,901 (462) | 214 | 0 | 0 | 4,901 | 1,092,038 | 186,631 |
+| Project | JDK | Source sets | Files | Module declarations | Language errors | Never analyzed | Compared | B2 names | B3 names |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| jedis | 21 | 2 | 1,080 | 0 | 0 | 0 | 1,080 | 351,154 | 74,161 |
+| guava | 21 | 6 | 1,597 | 2 | 1 | 0 | 1,596 | 465,099 | 65,791 |
+| caffeine | 26 | 29 | 1,309 (601) | 4 | 2 | 0 | 1,307 | 300,781 | 64,097 |
+| spring-data-jpa | 21 | 4 | 901 (280) | 0 | 0 | 0 | 901 | 215,039 | 25,810 |
+| lucene | 21 | 75 | 6,239 (271) | 37 | 0 | 0 | 6,239 | 1,694,558 | 220,760 |
+| hertzbeat | 25 | 46 | 1,384 | 0 | 442 | 0 | 942 | 80,810 | 6,904 |
+| helidon | 27 | 376 | 4,901 (462) | 214 | 0 | 0 | 4,901 | 1,092,038 | 186,631 |
 
 No file was left unanalyzed or lost to a crash, and every module declaration compiled. Before
 (W3's run, with processors from the classpath, `--release` everywhere, and no module
@@ -499,7 +507,9 @@ declarations), the four projects run then were:
 
 - **jedis** and **guava** compile with `-source 1.8 -target 1.8` now, as their builds do; Guava's
   11 files that `--release 8` failed compile. Guava's files gain `guava-tests/benchmark`, a test
-  root build-helper adds, which the lock now reads from the compiler's source roots.
+  root build-helper adds, which the lock now reads from the compiler's source roots. On JDK 21,
+  guava's `AbstractFutureTest` names `java.lang.classfile`, which JDK 21 doesn't have, and is
+  left out; on JDK 27 (W6b's run) it compiled.
 - **lucene's** `java21` sources compile with the build's `--add-exports` and `--patch-module`
   (see [Releases](#releases)).
 - **helidon** compiles whole: its builder, service, feature, and copyright processors generate
@@ -517,21 +527,22 @@ declarations), the four projects run then were:
   that name a type the code generator writes, which their source sets don't have.
 - **spring-data-jpa** compiles whole, with Hibernate's and Querydsl's processors (352 and 242
   files) and JMH's.
-- **hertzbeat** is Lombok's. On javac 27, Lombok 1.18.42 throws (see [Crashes](#crashes)) and is
-  left out, so the files that use the getters, setters, and constructors it would generate have
-  language errors (`cannot find symbol`, 490 of the 610). On JDK 25 (`JAVA_HOME` a JDK 25 for
-  `cargo oracle names hertzbeat`), Lombok runs: 554 Lombok types are left out, and 442 files still
-  have errors, nearly all test sources (`cannot find symbol` in 440) that use what Lombok generates
-  for their main source set's types, which javac reads from the source path, where Lombok doesn't
-  run.
+- **hertzbeat** is Lombok's, and runs on JDK 25, its lock's. On javac 27, Lombok 1.18.42 throws
+  (see [Crashes](#crashes)) and is left out, so the files that use the getters, setters, and
+  constructors it would generate had language errors (`cannot find symbol`, 490 of the 610 left
+  out then, 774 compared). On JDK 25, Lombok runs: 554 Lombok types are left out, and 442 files
+  still have errors, all in test source sets that read their main source set's Lombok-annotated
+  types from source, where Lombok doesn't run (`cannot find symbol` in 440); the report counts
+  them so (`in source sets that read Lombok-annotated types from source`). They wait for B4.
 
-The B2 names, in all seven (hertzbeat at JDK 27), by context and kind of symbol: types in `type`
-contexts (783,260, plus 59,101 type variables), locals (1,037,853), fields (529,364), and types
-(286,115) in expressions, imports (550,961 packages and 161,608 types, qualifiers included),
-method names' searched types (509,529), annotations (142,607), package declarations (79,481), and
-in module declarations 1,409 modules, 6,317 packages, and 686 types. Implicit names were 69,286,
-`keyword` names 102,402, and names with no element 22,823. javac took 1,146 s for Helidon and
-355 s for lucene (summed over the JVMs); the others under a minute each.
+The B2 names, in all seven, by context and kind of symbol: types in `type` contexts (783,376,
+plus 59,105 type variables), locals (1,038,116), fields (529,482), and types (286,270) in
+expressions, imports (558,411 packages and 163,547 types, qualifiers included), method names'
+searched types (509,565), annotations (142,773), package declarations (80,495), and in module
+declarations 1,409 modules, 6,317 packages, and 686 types. Implicit names were 174,569, `keyword`
+names 116,688, and names with no element 22,880. javac took 1,394 s for Helidon, 527 s for
+lucene, and 138 s for hertzbeat (summed over the JVMs), and under 70 s for each of the others;
+the run took 1,119 s.
 
 The processors that ran, by the files they created: Helidon's `AptProcessor` (234 source sets,
 2,580 files), JMH's (5, 740), Hibernate's (4, 352), Querydsl's (4, 242), Spring Boot's
@@ -548,20 +559,28 @@ work on the machine.
 
 | Project | B2 names | Matched | Known | Unexplained | Extra | Left to B3 | Ferrion |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| jedis | 351,154 | 351,154 | 0 | 0 | 2,522 | 74,274 | 0.7 s |
-| guava | 466,671 | 466,548 | 123 | 0 | 7,314 | 64,996 | 0.9 s |
-| caffeine | 300,781 | 296,005 | 4,776 | 0 | 3,258 | 64,378 | 0.9 s |
-| spring-data-jpa | 215,039 | 215,017 | 22 | 0 | 524 | 25,868 | 0.9 s |
-| lucene | 1,694,555 | 1,693,258 | 1,297 | 0 | 3,405 | 220,261 | 2.8 s |
-| hertzbeat, JDK 27 | 67,782 | 67,782 | 0 | 0 | 8,827 | 6,856 | 2.7 s |
-| helidon | 1,092,038 | 1,091,381 | 657 | 0 | 11,198 | 188,574 | 3.8 s |
-| total | 4,188,020 | 4,181,145 | 6,875 | 0 | 37,048 | 645,207 | 12.6 s |
+| jedis | 351,154 | 351,154 | 0 | 0 | 2,522 | 74,274 | 0.6 s |
+| guava | 465,099 | 464,995 | 104 | 0 | 7,291 | 64,630 | 0.8 s |
+| caffeine | 300,781 | 296,005 | 4,776 | 0 | 3,258 | 64,378 | 0.8 s |
+| spring-data-jpa | 215,039 | 215,017 | 22 | 0 | 524 | 25,868 | 0.8 s |
+| lucene | 1,694,558 | 1,694,275 | 283 | 0 | 3,402 | 220,261 | 2.3 s |
+| hertzbeat | 80,810 | 80,805 | 5 | 0 | 23,585 | 10,188 | 2.4 s |
+| helidon | 1,092,038 | 1,091,381 | 657 | 0 | 11,198 | 188,574 | 3.4 s |
+| total | 4,199,479 | 4,193,632 | 5,847 | 0 | 51,780 | 648,173 | 11.1 s |
 
-Known differences by project: guava 21 `case-label`, 83 `static-import-overload`, 11
-`jdk-internal-package`, 8 `platform-per-source-set`; caffeine 33 and 4,743; spring-data-jpa 22
-`case-label`; lucene 279 `case-label`, 1,014 `patched-platform`, 4 `static-import-overload`;
-helidon 657 `case-label`. 99.84% of the B2 names match; without caffeine's generated
-static-import calls, 99.95%.
+Known differences by project: guava 21 `case-label` and 83 `static-import-overload`; caffeine
+33 and 4,743; spring-data-jpa 22 `case-label`; lucene 279 `case-label` and 4
+`static-import-overload`; hertzbeat 5 `lombok-member`; helidon 657 `case-label`. 99.86% of the
+B2 names match; without caffeine's generated static-import calls, 99.97%. W6b's run, before the
+fixes of W6c, had 4,188,020 B2 names, 4,181,145 matched, and 6,875 known, hertzbeat on JDK 27.
+
+The first full run of W6c had two problems of the comparison's own, both fixed: javac 21 to 26
+key a compact constructor's parameter at the component's start, not its type's preferred
+position as javac 27 does, so locals in records' compact constructors mismatched in caffeine,
+spring-data-jpa, lucene, and hertzbeat (78 names; see [Keys](#keys)); and four of Helidon's
+source sets failed on Ferrion's side (`cancelled`), whose generated files the oracle wrote again
+after the engine had read them: the first change to the engine cancelled the snapshot comparing
+the rest.
 
 A run of one project, from the cache, peaked at 864 MB of memory for lucene and 505 MB for
 helidon, the oracle's output included.
@@ -603,9 +622,6 @@ compiles (see [The corpus](#the-corpus)).
 
 ## Still to observe
 
-- Generated roots of the build's other plugins exist only where the lock's build ran: after
-  `corpus fetch` alone (the weekly workflow), Helidon's `common/common` loses `Version`, and
-  caffeine's `codeGen` its sources, until something runs those plugins.
 - A static import whose member is inherited by the imported type: which type javac's method gives
   as the searched one, against the type the import names. The corpus has no mismatch of it.
 - Type annotations inside a qualified type (`java.lang.@A String`): which ranges javac gives the
