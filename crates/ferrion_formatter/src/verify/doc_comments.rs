@@ -41,7 +41,7 @@ impl Compared {
         }
     }
 
-    /// The comment as a multiset comparison matches it, as the import section's comments are
+    /// The comment as one string, as the import section's comments and a range's comments are
     /// compared: its content for a traditional doc comment, so a reflowed one matches, or its
     /// text.
     pub(super) fn key(self) -> String {

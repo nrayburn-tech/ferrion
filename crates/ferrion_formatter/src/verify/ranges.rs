@@ -226,7 +226,7 @@ fn compare_comments(
     let (section_a, section_b) = (section(before), section(after));
     let in_section = |t: SyntaxToken<'_>, input: bool| -> SectionComment {
         let text = if t.kind() == SyntaxKind::DocComment {
-            doc_comments::normalize(t.text())
+            doc_comments::normalize(t.text()).key()
         } else {
             // Only a comment the range formats gets the space after its `//`.
             let formatted = input
@@ -276,7 +276,7 @@ fn compare_comments(
             return (kind, text.to_owned());
         }
         let text = if kind == SyntaxKind::DocComment {
-            doc_comments::normalize(text)
+            doc_comments::normalize(text).key()
         } else {
             normalize_comment(text, input && kind == SyntaxKind::LineComment)
         };
