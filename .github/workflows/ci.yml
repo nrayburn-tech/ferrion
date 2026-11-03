@@ -87,15 +87,20 @@ jobs:
         run: cargo corpus fetch jedis
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      # The head's harness is kept for the comparison: after the base builds into the same target/,
+      # cargo counts the base's builds as up to date in the head's checkout too, since the base's
+      # files are newer.
       - name: Run the benchmarks on the head
-        run: cargo benchmark run --callgrind --no-skip --time 2 --out "$RUNNER_TEMP/head.json"
+        run: |
+          cargo benchmark run --callgrind --no-skip --time 2 --out "$RUNNER_TEMP/head.json"
+          cp target/release/bench "$RUNNER_TEMP/bench"
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
       - name: Check out the base
         run: |
           git fetch --no-tags --depth=1 origin "${{ github.event.pull_request.base.sha }}"
           git worktree add "$RUNNER_TEMP/base" FETCH_HEAD
-      # In the same target directory, so only what changed is rebuilt.
+      # In the same target directory, so the dependencies built for the head are reused.
       - name: Run the benchmarks on the base
         run: |
           cd "$RUNNER_TEMP/base"
@@ -114,7 +119,7 @@ jobs:
             echo "The base has no benchmarks to compare with." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          cargo benchmark compare --markdown "$RUNNER_TEMP/base.json" "$RUNNER_TEMP/head.json" \
+          "$RUNNER_TEMP/bench" compare --markdown "$RUNNER_TEMP/base.json" "$RUNNER_TEMP/head.json" \
             | tee -a "$GITHUB_STEP_SUMMARY"
 
   fuzz:
