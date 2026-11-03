@@ -6,7 +6,8 @@
 //! compares Ferrion's output with GJF's fixed point for the same input, per project, against the
 //! numbers committed in `gjf-diff.toml` (see [`compare`]). `format-check differences` checks the
 //! departures from GJF in `differences/` (see [`differences`]), and `format-check snapshots` that
-//! the formatter's snapshots are GJF's output (see [`snapshots`]).
+//! the formatter's snapshots are GJF's output (see [`snapshots`]). `format-check ranges` is the
+//! range test, on files broken at random tokens (see [`ranges`]).
 //!
 //! The corpus is found as `tools/corpus` finds it, and the GJF jar is cached with the corpus's jars
 //! (see [`gjf`]).
@@ -15,6 +16,7 @@ mod compare;
 mod diff;
 mod differences;
 mod gjf;
+mod ranges;
 mod snapshots;
 mod verify;
 
@@ -43,6 +45,9 @@ checks:
   snapshots    check that the expected outputs of the formatter's snapshots are GJF's fixed point,
                except those listed as not; its targets are areas, such as `statements`, or
                snapshots, such as `core/comments` (takes only --jobs and --batch)
+  ranges       the range test: break each file at seeded random tokens, and check that every
+               unit the error doesn't affect formats through format_range as the clean file
+               formats; report how often recovery shifts units so they can't be compared
 
 options:
   --check        gjf: fail if a project's differing lines are above the number in
@@ -56,6 +61,8 @@ options:
   --batch <N>    gjf, differences, snapshots: files per JVM start (default: 1000)
   --bless        differences: write GJF's outputs that changed instead of failing
   --limit <N>    show the first N failures, rejected files, and unsettled files (default: 10)
+  --seed <N>     ranges: the random seed (default: 1)
+  --per-file <N> ranges: the tokens broken in each file, one at a time (default: 2)
   --verbose      verify: print each file before formatting it, to find one that aborts
 
 Targets default to every corpus project. `jdk-tests` names OpenJDK's javac tests, each formatted
@@ -79,6 +86,8 @@ pub struct Options {
     pub bless: bool,
     pub limit: usize,
     pub verbose: bool,
+    pub seed: u64,
+    pub per_file: usize,
 }
 
 fn main() -> ExitCode {
@@ -113,6 +122,8 @@ fn run() -> Result<bool> {
         bless: false,
         limit: 10,
         verbose: false,
+        seed: 1,
+        per_file: 2,
     };
     let mut names = Vec::new();
     while let Some(arg) = args.next() {
@@ -128,6 +139,10 @@ fn run() -> Result<bool> {
             "--bless" => options.bless = true,
             "--limit" => options.limit = value("--limit")?.parse().context("--limit")?,
             "--verbose" => options.verbose = true,
+            "--seed" => options.seed = value("--seed")?.parse().context("--seed")?,
+            "--per-file" => {
+                options.per_file = value("--per-file")?.parse().context("--per-file")?
+            }
             "--help" | "-h" => {
                 println!("{USAGE}");
                 return Ok(true);
@@ -149,7 +164,7 @@ fn run() -> Result<bool> {
     if check == "snapshots" {
         return snapshots::run(&names, &options);
     }
-    if check != "verify" && check != "gjf" {
+    if check != "verify" && check != "gjf" && check != "ranges" {
         eprintln!("{USAGE}");
         std::process::exit(2);
     }
@@ -170,6 +185,7 @@ fn run() -> Result<bool> {
     }
     match check.as_str() {
         "verify" => Ok(verify::run(selected, &options)),
+        "ranges" => Ok(ranges::run(selected, &options)),
         _ => compare::run(selected, &options),
     }
 }
