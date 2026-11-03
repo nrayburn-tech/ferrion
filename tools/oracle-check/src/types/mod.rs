@@ -335,6 +335,11 @@ fn run_set(context: &Shared, group: usize, i: usize) -> Result<SetResult> {
     for query in &output.relations.queries {
         *tally.relations.entry(query.name()).or_default() += 1;
     }
+    if let Some(error) = &output.relations.error {
+        tally.relation_errors = 1;
+        row.failure
+            .get_or_insert(format!("javac threw on the relations: {error}"));
+    }
     let ferrion = context
         .typer
         .attribute(sets, set, context.corpus, &output.relations);
