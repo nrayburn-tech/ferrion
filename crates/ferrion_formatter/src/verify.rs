@@ -78,11 +78,31 @@ fn violation(property: Property, offset: Option<usize>, message: impl Into<Strin
 /// `options.release`. An input with errors is one the formatter skips, so its only valid output
 /// is the input itself.
 pub fn verify(input: &SourceText, output: &[u8], options: &FormatOptions) -> Result<(), Violation> {
+    let before = parse(
+        Arc::from(input.text()),
+        ParseOptions {
+            release: options.release,
+        },
+    );
+    verify_parsed(input, &before, output, options)
+}
+
+/// [`verify`], for a caller that has parsed `input` at `options.release` already, as `before`.
+pub fn verify_parsed(
+    input: &SourceText,
+    before: &Parse,
+    output: &[u8],
+    options: &FormatOptions,
+) -> Result<(), Violation> {
+    debug_assert_eq!(
+        before.tree.text(),
+        input.text(),
+        "the parse isn't the input's"
+    );
     let parse_options = ParseOptions {
         release: options.release,
     };
-    let before = parse(Arc::from(input.text()), parse_options);
-    if has_errors(&before) {
+    if has_errors(before) {
         return if output == input.to_bytes() {
             Ok(())
         } else {
