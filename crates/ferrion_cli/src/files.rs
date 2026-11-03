@@ -661,7 +661,7 @@ mod tests {
         let selection = select_paths(&scratch.0, &[r"src\a\A.java", r".\src\a"], &none);
         assert_eq!(paths(&selection), ["src/a/A.java"]);
         let cwd = scratch.0.to_str().unwrap();
-        let lower = format!("{}{}", &cwd[..1].to_lowercase(), &cwd[1..]);
+        let lower = format!("{}{}", cwd[..1].to_lowercase(), &cwd[1..]);
         assert_eq!(
             normalize(&scratch.0, Path::new(&format!(r"{lower}\src\x.java"))),
             Normalized::Inside("src/x.java".into())
