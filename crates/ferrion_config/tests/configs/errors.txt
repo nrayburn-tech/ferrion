@@ -724,7 +724,7 @@ error: expected `,` or `]` after this value
  --> ferrion.jsonc:2:34
   |
 2 | { "configs": [{ "files": ["a/**" "b/**"] }] }
-  |                                 - add `,` here
+  |                                - add `,` here
   |                                  ^ the next value starts here
 
 === syntax-missing-comma.jsonc
@@ -732,7 +732,7 @@ error: expected `,` or `}` after this value
  --> ferrion.jsonc:7:7
   |
 6 |       "rules": { "no-unused-variable": "warn" }
-  |                                                - add `,` here
+  |                                               - add `,` here
 7 |       "format": { "enabled": false }
   |       ^ the next key starts here
 

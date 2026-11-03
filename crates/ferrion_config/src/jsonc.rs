@@ -568,7 +568,8 @@ impl Parser<'_> {
     }
 
     /// The error for something other than `,` or the closing bracket after a value that ends at
-    /// `end`. When it looks like the next member, a missing comma is likely, and the error says so.
+    /// `end`. When it looks like the next member, a missing comma is likely, and the error says so,
+    /// marking the value's last character, which every value has.
     fn expected_separator(&self, end: u32, closing: Closing) -> ConfigError {
         let (span, found) = self.found();
         let (message, next) = match closing {
@@ -590,7 +591,9 @@ impl Parser<'_> {
         };
         let error = ConfigError::new(ErrorCode::Syntax, message, span);
         if looks_like_next {
-            error.label(next).related(Span::empty(end), "add `,` here")
+            error
+                .label(next)
+                .related(Span::new(end - 1, end), "add `,` here")
         } else {
             error.label(format!("found {found}"))
         }
@@ -779,10 +782,7 @@ mod tests {
         let error = err(text);
         assert_eq!(error.message, "expected `,` or `}` after this value");
         assert_eq!(slice(text, error.span), "\"");
-        assert_eq!(
-            error.related.unwrap().span,
-            Span::empty(text.find('1').unwrap() as u32 + 1)
-        );
+        assert_eq!(slice(text, error.related.unwrap().span), "1");
         let error = err("[1 2]");
         assert_eq!(error.message, "expected `,` or `]` after this value");
         assert_eq!(error.label.as_deref(), Some("the next value starts here"));
