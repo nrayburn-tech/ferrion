@@ -243,7 +243,10 @@ On `b3/integration`, cut from main at 3273dd6:
 1. **W1, type relations (B3a):** `types`: the arena, translation, relations, `lub` and `glb`,
    conversions and contexts, member types as seen from a type; Ferrion's relations side for
    `cargo oracle types --relations`; property tests and the fuzz target. One agent: its parts
-   build on each other.
+   build on each other. (Done: each of the corpus's 2,180,279 relation queries matches, is left
+   to B4, is about a type javac couldn't resolve, or was lost to javac throwing, with no known
+   differences; the most fuel a query used is 145 steps;
+   [results](semantic-type-relations.md#results).)
 2. **B3a review stop,** after W1's corpus comparison.
 3. **W2, attribution core (B3b):** `members` (member tables), `attr`'s walk and result,
    literals, names, field access, operators and promotions, casts, `instanceof` without
