@@ -1485,7 +1485,8 @@ fits there.
 
 Formatting part of a file (`format_range`; `--lines` in A3, a selection in the editor) formats
 the units the range touches as the whole file would be formatted there: a statement, a member, a
-`switch` label or rule, an import, or a run of a statement's tokens around its blocks, such as
+`switch` label or rule, an import (the whole import section when it is sorted or pruned), or a
+run of a statement's tokens around its blocks, such as
 `} else {`, as GJF's `--lines` does (docs/design/formatter-completeness.md, "Ranges"). The
 indentation and blank lines before the units, and the line breaks after them, are formatted too;
 the line after them keeps its indentation.
@@ -1505,8 +1506,9 @@ with only `b = 2;` in range gives
 ### Departures
 
 - **A range far from the imports** leaves them as they are; GJF sorts and prunes them whatever the
-  range (decided at the start of A2). Case: `tests/ranges/import.java`.
-- **A modifier run partly in range (proposed):** a declaration whose header is in range has its
+  range (decided at the start of A2). A range touching an import formats the whole section, sorted
+  and pruned. Case: `tests/ranges/import-unsorted.java`.
+- **A modifier run partly in range:** a declaration whose header is in range has its
   modifiers reordered, as the rest of its header is formatted (decided in review: rewrites apply
   inside the expanded range). GJF reorders them only when the range it was given holds the whole
   run, so with only `static` or an annotation on the line above in range, it formats the

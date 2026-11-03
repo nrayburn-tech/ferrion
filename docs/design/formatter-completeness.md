@@ -422,17 +422,22 @@ decided at the start:
 
 - **Units.** The range is expanded to the units its tokens are in, as GJF's are (a statement, a
   member, the header of one with a block, an import, the package declaration, a module directive),
-  the comments before the unit's first token included. Every gap inside the units and around them
+  the comments before the unit's first token included. **The import section is one unit** when
+  whole-file formatting rewrites it (sorts it, or removes or merges imports): a range touching any
+  import expands to the whole section, so its rewrite applies (decided in review, 11). When the
+  plan leaves the section as written (nothing to change, pinned by a directive or a disable
+  region, or holding a syntax error), each import is a unit of its own and gets only its
+  whitespace. Every gap inside the units and around them
   (indentation and blank lines) gets the whole-file output. A range touching no token changes
   nothing. A partial unit isn't formatted, because breaking part of a statement's lines can leave
   the rest over the limit or broken in two styles.
 - **Rewrites** apply only when their whole construct is in the expanded range: the whole import
-  section for sorting and removal (a departure: GJF always fixes the imports), the whole run for
-  modifier reordering, the whole comment for doc comment reflow. A declaration's modifiers and doc
-  comment are in its header's unit, so they are rewritten whenever the header is in range, where
-  GJF reorders the modifiers only when the range given holds all of them (a departure, proposed in
-  docs/style.md, "Range formatting"). A rewrite that is cut, such as the import section for a
-  range on one import, changes nothing, its whitespace included, since its output is one edit.
+  section for sorting and removal (a departure: GJF always fixes the imports, where Ferrion fixes
+  them when the range touches them), the whole run for modifier reordering, the whole comment for
+  doc comment reflow. A declaration's modifiers and doc comment are in its header's unit, and the
+  import section is one unit, so in practice no rewrite is cut. The modifiers are rewritten
+  whenever the header is in range, where GJF reorders them only when the range given holds all of
+  them (a departure, decided in review, 10).
 - **A disable region** is copied as written, in a range as in a file.
 - **Errors:** a range is formatted unless an error's unit overlaps its expanded range (below),
   where GJF refuses any file with an error.
@@ -497,6 +502,25 @@ are affected as a whole), 2.94 million runs away from the change, 3.5% of them a
 error, and of the rest 5.7% shifted (25.6% after a broken brace, 3 to 8% for other tokens) and
 2,673,257 the same as in the clean file; 30, in copies whose imports changed, are the type-use
 exception, and none differ otherwise.
+
+With the import section one unit (decision 11), the test compares the section as one run when
+the clean file's is rewritten. Which imports the section keeps depends on the code that uses them,
+which the change can delete, so a difference in a copy whose kept imports aren't the clean file's
+is counted with the type-use exception. With the same seed and count: 2.84 million runs, 3.6%
+affected, 6.3% of the rest shifted (26.4% after a broken brace; a section rewritten in one file
+and not in the other doesn't match), 2,569,980 the same, 239 in the import exception, and none
+differ otherwise.
+
+**Parser follow-ups,** after A2 (decided in review, 12), found by the range test:
+
+- **A stray token's error is reported in its block.** At a token that can't start a statement,
+  `expr_stmt` reports the error with the block open, then puts the token in an `Error` node, so
+  `error_units` has to guess that a closed block's own error is its `Error` item's (above).
+  Reporting it inside the `Error` node would make the flag exact.
+- **Unclosed-block recovery doesn't look past annotations.** A method missing its `}` followed by
+  `@Test public void m() {}` isn't closed at `public`, since the statement starts with `@Test`:
+  the rest of the class parses as statements, which is most of the 26% of units shifted after a
+  broken brace. An annotation followed by a member-only modifier should close the block too.
 
 ## Safety properties
 
@@ -580,6 +604,7 @@ Each goes in `docs/style.md` with its snapshot, once approved:
 | a comment on the line after the last import | moves with that import | stays with what follows | comments design |
 | formatter markers or `ferrion-disable*` in the imports | sorted with the imports | the section isn't rewritten | SCOPE.md: directives never move |
 | a range far from the imports | imports sorted and pruned | imports untouched | decided at the start |
+| a range touching a declaration's header but not all of its modifiers | the header formatted, the modifiers not reordered | reordered | decided in review: rewrites apply inside the expanded range |
 | `<pre>` content indented past the stars | a common margin removed | kept | changes the rendered `<pre>` |
 | a `///` paragraph wrapped before `-`, `#`, `>`, `1.`, `` ``` `` | breaks there, making a list, heading, quote, or fence; `#` and `` ``` `` unstable | the word before moves down | changes meaning, unstable |
 | `` `code   span` `` in `///` | spaces collapsed | kept | changes meaning |
@@ -650,3 +675,13 @@ From the Javadoc workstream, also accepted (2026-11-02):
     - a comment with a Unicode escape for other than a letter or digit is re-indented only.
 11. **A hyphen-ended word at a line's end joins the next line's first word,** as GJF joins them
     (`well-` and `known` become `well-known`). `verify` allows exactly this join.
+
+From the ranges workstream, also accepted (2026-11-02):
+
+12. **A declaration's header in range reorders its whole modifier run,** where GJF reorders it only
+    when the range given holds the whole run, a departure.
+13. **A range touching the import section expands to the whole section** when formatting rewrites
+    it, so the sort and removal apply; a section the plan leaves alone keeps one unit per import.
+14. **The parser issues the range test found** (the stray-token error placement in `expr_stmt`,
+    and unclosed-block recovery not looking past annotations) are follow-ups after A2, recorded
+    in "Ranges".
