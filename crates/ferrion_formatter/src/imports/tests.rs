@@ -105,10 +105,14 @@ fn what_counts_as_a_use() {
 fn attached_doc_comments_count() {
     let output = formatted(
         "package p;\n\nimport u.Link;\nimport u.Param;\nimport u.Value;\nimport u.ValueOnly;\n\
-         import u.See;\nimport u.Code;\nimport u.Loose;\nimport u.Label;\nimport static u.S.m;\n\
-         \n/** {@link Link#f(Param)} {@value Value#X} {@value ValueOnly} {@code Code} {@link m} \
-         {@link String Label}\n * @see See\n */\nclass T {\n  /** {@link Loose} */\n}\n",
+         import u.See;\nimport u.Code;\nimport u.Loose;\nimport u.Label;\nimport u.Before;\n\
+         import u.Local;\nimport static u.S.m;\n\n/** {@link Before} */\n/** {@link \
+         Link#f(Param)} {@value Value#X} {@value ValueOnly} {@code Code} {@link m} {@link String \
+         Label}\n * @see See\n */\nclass T {\n  void f() {\n    /** {@link Local} */\n    int \
+         x;\n  }\n\n  /** {@link Loose} */\n}\n",
     );
+    // Only the comment right before a declaration is attached: not `Before`, `Local` (a local
+    // variable's), or `Loose` (before the `}`), as GJF counts them (observed).
     assert!(
         output.starts_with(
             "package p;\n\nimport static u.S.m;\n\nimport u.Link;\nimport u.Param;\nimport \
