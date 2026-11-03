@@ -1,7 +1,8 @@
 //! Checks that what depends on the latest release agrees with `LATEST_RELEASE`: the JDK the
 //! lexer's Unicode tables were generated with, and the JDK the workflows install. Raising
 //! `LATEST_RELEASE` without the others fails these tests. A workflow line marked `# matrix`
-//! installs a JDK of a test matrix, such as the class file check's, on purpose.
+//! installs another JDK on purpose: one of a test matrix, such as the class file check's, or the
+//! JDK a corpus project's lock names, which its build and javac run on.
 
 use ferrion_java_version::LATEST_RELEASE;
 

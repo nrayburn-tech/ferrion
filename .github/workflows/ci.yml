@@ -143,14 +143,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
-      # The last is JAVA_HOME; JDK 21 is jedis's, which its names comparison runs on
-      # (JAVA_HOME_21_X64).
+      # JDK 21 is jedis's, which its names comparison runs on (JAVA_HOME_21_X64); the last one set
+      # up is JAVA_HOME.
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: |
-            21
-            27
+          java-version: "21" # matrix
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "27"
           cache: maven
       # cargo test checks that the tables come from the latest release; this checks that they're
       # what that JDK reports.
