@@ -375,3 +375,17 @@ document's (accepted). One more (accepted):
    leaves legality `Unknown` where typing doesn't need it, since code javac rejects is never
    compared. The alternative is implementing 5.5's legality in full now, which only a future
    "this cast always fails" rule would use.
+
+W1's questions, for B3a's review stop, each with a recommendation:
+
+2. **Raw qualified inner classes** ([departures](#departures)): should B2's `TyPart::Class` record
+   that a qualifier was written, so `Outer.Inner` inside a subclass of `Outer<X>` is raw as javac
+   makes it? Recommended: in W2, and only if attribution meets the case; the corpus has none.
+3. **Lombok:** keep queries that need a class or member Lombok generates counted apart as
+   `left-to-b4 lombok`, rather than as known differences? Recommended: yes; B4 answers them.
+4. **Types javac couldn't resolve:** keep queries whose javac answer holds an `error` type, where
+   Ferrion's view has the class, counted apart rather than as known differences? Recommended: yes.
+5. **The weekly oracle workflow** compares relations with Ferrion's side for every project, which
+   W1's brief didn't ask for: keep it? Recommended: yes; it costs seconds over javac's side.
+6. **Fuel:** keep `DEFAULT_FUEL` at 10,000 per query until W2 measures each body's use?
+   Recommended: yes.
