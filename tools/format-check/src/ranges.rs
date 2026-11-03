@@ -25,9 +25,11 @@
 //!
 //! One unit a run is formatted in per broken copy, picked at random, is also checked with
 //! `verify_range`. A difference in a compared unit, a `verify_range` violation, or a panic is a
-//! failure; a difference in a copy whose imports aren't the clean file's is counted apart, as the
-//! design's one known exception (the type-use annotations a file imports, which an error in the
-//! imports, or before them, can lose).
+//! failure; a difference in a copy whose imports aren't the clean file's, or whose import section
+//! formatting keeps other imports of, is counted apart: the type-use annotations a file imports,
+//! which an error in the imports or before them can lose, are the design's one known exception,
+//! and the import section, one unit when it is rewritten, depends on the uses of its imports,
+//! which the change can delete.
 
 use std::collections::{BTreeMap, HashMap};
 use std::fmt;
@@ -165,7 +167,7 @@ struct Tally {
     /// Runs without a clean match: recovery shifted the structure.
     shifted: usize,
     equal: usize,
-    /// Runs that differ in a copy whose imports aren't the clean file's.
+    /// Runs that differ in a copy whose imports, or kept imports, aren't the clean file's.
     import_differences: usize,
     failures: usize,
 }
@@ -541,12 +543,15 @@ fn check_mutation(
         return;
     }
     let tree = &parsed.tree;
-    let imports_changed = imports(tree) != imports(&clean.parsed.tree);
+    let mut imports_changed = imports(tree) != imports(&clean.parsed.tree);
     if tree.error_units().first() == Some(&tree.root()) {
         tally.whole_file += 1;
         return;
     }
     let ranges = Ranges::new(tree, &broken_source);
+    // Which imports formatting removes depends on the code that uses them, which the change can
+    // be.
+    imports_changed |= ranges.kept_imports() != clean_ranges.kept_imports();
     let clean_tree = &clean.parsed.tree;
     // Each run's expanded range, and its clean match when it has one: `None` for a run that
     // touches the change, or that an error affects, or without a match.
