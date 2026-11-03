@@ -1,4 +1,3 @@
-package   p;import   a.B;
-import a.C;
+package   p;
 
 class A {}

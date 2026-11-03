@@ -4,7 +4,9 @@
 //!
 //! **Units** are what GJF's `--lines` formats as a whole (observed): a statement in a block or a
 //! `switch` group, a `switch` label or rule, a member of a class or enum body, an enum constant,
-//! a top-level declaration, an import, the package declaration, a module directive. A unit inside
+//! a top-level declaration, an import, the package declaration, a module directive. The import
+//! section is one unit when formatting rewrites it (sorts it or removes imports), so that a range
+//! touching it applies the rewrite, which can't be done in part. A unit inside
 //! an expression (a statement in a lambda body, a member of an anonymous class) is part of the
 //! unit around the expression, so a range in a lambda body formats the whole statement the
 //! lambda is in. A unit's own tokens, those not in a unit inside it, can come in several runs:
@@ -36,7 +38,8 @@ use ferrion_syntax::{
 use crate::edits::{self, Edit};
 use crate::format::Formatter;
 use crate::printer::trim_end;
-use crate::{printer, printer_source, regions, rules};
+use crate::regions::Region;
+use crate::{imports, printer, printer_source, regions, rules};
 
 /// Why [`format_range`] can't format a range.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -101,6 +104,8 @@ pub struct Ranges<'t> {
     pins_region: Option<Range<u32>>,
     /// Whole-file formatting's edits, error units copied.
     edits: OnceCell<Vec<Edit>>,
+    /// The imports a rewritten import section keeps, in output order.
+    kept_imports: Option<Vec<&'t str>>,
 }
 
 impl<'t> Ranges<'t> {
@@ -118,10 +123,12 @@ impl<'t> Ranges<'t> {
                 })
             })
             .map(|unit| span(*unit));
+        let section = rewritten_section(tree, &comments, &regions);
         Ranges {
             tree,
             source,
-            owners: Owners::new(tree),
+            owners: Owners::new(tree, section.as_ref().map(|(first, _)| *first)),
+            kept_imports: section.map(|(_, kept)| kept),
             comments,
             error_units: units.into_iter().map(span).collect(),
             pins_region,
@@ -152,6 +159,12 @@ impl<'t> Ranges<'t> {
             .filter(|u| u.start < units.end)
             .or(self.pins_region.as_ref())
             .cloned()
+    }
+
+    /// The text of the imports whole-file formatting keeps, in its order, when it rewrites the
+    /// import section: which imports are removed depends on the whole file's code.
+    pub fn kept_imports(&self) -> Option<&[&'t str]> {
+        self.kept_imports.as_deref()
     }
 
     /// Whole-file formatting's edits for the tree, error units copied as written.
@@ -368,7 +381,9 @@ struct Owners {
 }
 
 impl Owners {
-    fn new(tree: &SyntaxTree) -> Owners {
+    /// The owners of `tree`'s nodes, with the imports of `section`, a rewritten import section's
+    /// first import, all owned by it.
+    fn new(tree: &SyntaxTree, section: Option<NodeId>) -> Owners {
         let count = tree.node_count();
         let mut owner = vec![NodeId::ROOT; count];
         let mut in_expression = vec![false; count];
@@ -382,10 +397,14 @@ impl Owners {
                 None => (NodeId::ROOT, false),
             };
             in_expression[i] = inside;
-            owner[i] = if !inside && is_unit(node) {
-                node.id()
-            } else {
-                parent_owner
+            owner[i] = match section {
+                Some(first)
+                    if node.kind() == K::ImportDecl && node.parent() == Some(tree.root()) =>
+                {
+                    first
+                }
+                _ if !inside && is_unit(node) => node.id(),
+                _ => parent_owner,
             };
         }
         Owners { owner }
@@ -419,6 +438,40 @@ impl Owners {
         }
         last
     }
+}
+
+/// The first import of `tree`'s import section, and the imports kept, when whole-file
+/// formatting rewrites the section
+/// (sorts it, or removes imports), which makes the section one unit: a range touching any of it
+/// formats all of it, so that the rewrite applies (docs/design/formatter-completeness.md,
+/// "Ranges"). `None` when the section is emitted as written, as the import rule decides: no
+/// imports, a section the plan leaves alone (nothing to change, pinned, or with a syntax error),
+/// or one starting in a disable region.
+fn rewritten_section<'t>(
+    tree: &'t SyntaxTree,
+    comments: &CommentMap,
+    regions: &[Region],
+) -> Option<(NodeId, Vec<&'t str>)> {
+    let imports: Vec<SyntaxNode<'t>> = tree
+        .root()
+        .children()
+        .filter(|n| n.kind() == K::ImportDecl)
+        .collect();
+    let first = imports.first()?.first_token().id();
+    if regions
+        .iter()
+        .any(|r| r.start < first && r.end.is_none_or(|end| end > first))
+    {
+        return None;
+    }
+    let plan = imports::plan(tree, comments, regions, &imports)?;
+    let kept = plan
+        .groups
+        .iter()
+        .flatten()
+        .map(|e| e.import.text())
+        .collect();
+    Some((imports[0].id(), kept))
 }
 
 /// Whether a node of `kind` is an expression, whose statements and members are part of the unit
