@@ -11,13 +11,14 @@ use crate::imports::Rewrite;
 /// The rule for the import section, `imports`, the compilation unit's imports in input order: the
 /// planned section when the plan rewrites it, and otherwise the imports as written, one per line,
 /// with the input's blank lines between them, at most one. A1's blank lines before and after the
-/// section are the compilation unit's.
-pub(super) fn section<'t>(f: &mut Formatter<'t>, imports: &[NodeOrToken<'t>]) {
+/// section are the compilation unit's. Returns whether it emitted an import.
+pub(super) fn section<'t>(f: &mut Formatter<'t>, imports: &[NodeOrToken<'t>]) -> bool {
     let nodes: Vec<SyntaxNode<'t>> = imports.iter().filter_map(|i| i.as_node()).collect();
     if !f.in_region()
         && let Some(plan) = f.plan_imports(&nodes)
     {
-        return rewritten(f, &plan);
+        rewritten(f, &plan);
+        return !plan.groups.is_empty();
     }
     for (i, &import) in imports.iter().enumerate() {
         if i > 0 {
@@ -25,6 +26,7 @@ pub(super) fn section<'t>(f: &mut Formatter<'t>, imports: &[NodeOrToken<'t>]) {
         }
         emit(f, import);
     }
+    true
 }
 
 /// The section as planned: the comments above the first import where they are, then the floating
