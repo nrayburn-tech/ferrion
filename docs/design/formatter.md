@@ -520,8 +520,9 @@ insertions plus deletions), between Ferrion's output and GJF's fixed point, for 
 `cargo format-check gjf` prints them, with the largest differing files and a sample of hunks.
 
 **Tracking:** the totals are committed in `tools/format-check/gjf-diff.toml`. The weekly job fails
-if a project's differing lines go above the committed number, and a change that lowers them updates
-the file. The file's history is the record over time, as `thresholds.toml` is for recovery
+if a project's differing lines go above the committed number, or its files compared go below it (a
+file left out takes its differing lines with it), and a change that lowers the differing lines
+updates the file. The file's history is the record over time, as `thresholds.toml` is for recovery
 quality.
 
 ### Departures, checked
