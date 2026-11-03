@@ -312,7 +312,7 @@ error: a glob can't contain `..`
 
 ```
 error: expected `,` or `}` after this value
- --> ferrion.jsonc:6:5
+ --> ferrion.jsonc:6:7
   |
 5 |       "rules": { "no-unused-variable": "warn" }
   |                                               - add `,` here
