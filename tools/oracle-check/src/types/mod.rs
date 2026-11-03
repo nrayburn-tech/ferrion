@@ -10,6 +10,7 @@
 //! attribution exists, it gives nothing for the files' entries, which are counted as not
 //! compared.
 
+pub mod attribute;
 mod compare;
 mod ferrion;
 mod oracle;
