@@ -9,6 +9,8 @@
 
 use ferrion_syntax::TokenId;
 
+use crate::doc_comments::Layout;
+
 /// The column limit, counted in UTF-16 code units (SCOPE.md).
 pub const LINE_WIDTH: u32 = 100;
 
@@ -134,10 +136,11 @@ pub enum VerbatimKind {
     Copy { to_end: bool },
     /// A block comment, its later lines re-indented to the column it starts at.
     Comment,
-    /// A traditional doc comment, `token`, which A2 reflows at the column it starts at
-    /// (docs/design/formatter-completeness.md, "Where reflow happens"). Until then it prints as
-    /// written when it's one line, and re-indented as a [`VerbatimKind::Comment`] otherwise.
-    Doc { token: TokenId },
+    /// A traditional doc comment, `token`, reflowed at the column it starts at from its layout,
+    /// by its index in [`Document::doc_comments`] (docs/design/formatter-completeness.md, "Where
+    /// reflow happens"). Without one, the rules don't reflow it, and it prints as written when it's
+    /// one line, and re-indented as a [`VerbatimKind::Comment`] otherwise.
+    Doc { token: TokenId, layout: Option<u32> },
 }
 
 /// A finished document.
@@ -145,6 +148,8 @@ pub enum VerbatimKind {
 pub struct Document {
     pub elements: Vec<Element>,
     pub verbatims: Vec<Verbatim>,
+    /// The layouts of the doc comments that are reflowed, built once, filled by the printer.
+    pub doc_comments: Vec<Layout>,
 }
 
 /// The width of `text` in UTF-16 code units, as SCOPE.md counts columns. A Unicode escape counts
@@ -195,6 +200,7 @@ struct Open {
 pub struct DocumentBuilder {
     elements: Vec<Element>,
     verbatims: Vec<Verbatim>,
+    doc_comments: Vec<Layout>,
     open: Vec<Open>,
     position: u64,
     /// The `Alternative` elements' indices and the indices of their marks, whose widths
@@ -262,6 +268,17 @@ impl DocumentBuilder {
         let index = self.verbatims.len() as u32;
         self.verbatims.push(verbatim);
         self.elements.push(Element::Verbatim(index));
+    }
+
+    /// A doc comment, `verbatim` of [`VerbatimKind::Doc`], with its layout if it is reflowed.
+    pub fn doc_comment(&mut self, mut verbatim: Verbatim, layout: Option<Layout>) {
+        if let (Some(layout), VerbatimKind::Doc { layout: index, .. }) =
+            (layout, &mut verbatim.kind)
+        {
+            *index = Some(self.doc_comments.len() as u32);
+            self.doc_comments.push(layout);
+        }
+        self.verbatim(verbatim);
     }
 
     /// Starts a [`Element::Rewrite`] of the input's bytes `start..end`.
@@ -573,6 +590,7 @@ impl DocumentBuilder {
         Document {
             elements: self.elements,
             verbatims: self.verbatims,
+            doc_comments: self.doc_comments,
         }
     }
 }

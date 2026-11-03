@@ -1,12 +1,60 @@
 //! The safety properties on arbitrary input, for the `format` fuzz target in `fuzz/` and the
-//! tests of its reduced failures. Not part of the public API.
+//! tests of its reduced failures, and the doc comment reflow's, for the `javadoc` target. Not part
+//! of the public API.
 
 use std::sync::Arc;
 
 use ferrion_diagnostics::SourceText;
 use ferrion_parser::{ParseOptions, Severity, parse};
 
-use crate::{FormatOptions, Formatted, apply_edits, format_edits, format_tree, verify_parsed};
+use crate::{
+    FormatOptions, Formatted, apply_edits, doc_comments, format_edits, format_tree, verify,
+    verify_parsed,
+};
+
+/// The columns [`check_javadoc_reflow`] reflows a comment at, picked by its first byte: up to a
+/// little past the limit, where every line overflows.
+const REFLOW_COLUMNS: u32 = 104;
+
+/// Reads `bytes` as a traditional doc comment's content, the text between `/**` and `*/`, as the
+/// `javadoc` fuzz target does, and, if the rules reflow it, checks the reflow at a column the
+/// first byte picks (docs/design/formatter-completeness.md, "Testing"): reflowing the result at
+/// the same column gives it again, and both have the input's content, as the comments check
+/// compares it.
+pub fn check_javadoc_reflow(bytes: &[u8]) -> Result<(), String> {
+    let column = bytes.first().map_or(0, |&b| u32::from(b) % REFLOW_COLUMNS);
+    let content = match SourceText::decode(bytes) {
+        Ok(source) => source.text().to_owned(),
+        Err(_) => String::from_utf8_lossy(bytes).into_owned(),
+    };
+    if content.contains("*/") {
+        return Ok(());
+    }
+    let comment = format!("/**{content}*/");
+    let reflow = |text: &str| -> Option<String> {
+        let layout = doc_comments::javadoc::layout(text, 0, text.len() as u32)?;
+        Some(doc_comments::javadoc::render(&layout, text, column).join("\n"))
+    };
+    let Some(once) = reflow(&comment) else {
+        return Ok(());
+    };
+    let twice = reflow(&once).ok_or_else(|| format!("{once:?}, reflowed, isn't reflowed again"))?;
+    if twice != once {
+        return Err(format!(
+            "reflowing again at column {column} changes {once:?} to {twice:?}"
+        ));
+    }
+    let (before, after) = (
+        verify::doc_comments::content(&comment),
+        verify::doc_comments::content(&once),
+    );
+    if before != after {
+        return Err(format!(
+            "reflowing {comment:?} at column {column} changes its content: {before:?} to {after:?}"
+        ));
+    }
+    Ok(())
+}
 
 /// The releases [`check_bytes`] formats at: the parser's fuzzing releases, the LTS releases and
 /// the latest, which include both readings of `yield`.

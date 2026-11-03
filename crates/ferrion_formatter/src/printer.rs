@@ -234,8 +234,9 @@ fn run(document: &Document, source: &Source<'_>, record: bool) -> (Vec<u8>, Opti
                         printer.comment(text, input);
                         printer.ended_by_region = false;
                     }
-                    VerbatimKind::Doc { token } => {
-                        printer.doc_comment(text, &verbatim, token, input);
+                    VerbatimKind::Doc { token, layout } => {
+                        let layout = layout.map(|i| &document.doc_comments[i as usize]);
+                        printer.doc_comment(text, &verbatim, token, layout, input);
                         printer.ended_by_region = false;
                     }
                 }
@@ -360,20 +361,41 @@ impl Printer<'_> {
         self.record(input, at);
     }
 
-    /// Writes a traditional doc comment (`VerbatimKind::Doc`): for now, a one-line comment as
-    /// written and a longer one as [`Printer::comment`] re-indents it.
+    /// Writes a traditional doc comment (`VerbatimKind::Doc`): reflowed from its layout at the
+    /// column it starts at (docs/design/formatter-completeness.md, "Where reflow happens"), or,
+    /// without one, a one-line comment as written and a longer one as [`Printer::comment`]
+    /// re-indents it.
     fn doc_comment(
         &mut self,
         text: &str,
         verbatim: &crate::document::Verbatim,
         token: ferrion_syntax::TokenId,
+        layout: Option<&crate::doc_comments::Layout>,
         input: Range<u32>,
     ) {
-        if verbatim.breaks {
-            self.comment(text, input);
-        } else {
-            self.text(text, verbatim.first_width, Some(token.index()), input);
+        let Some(layout) = layout else {
+            if verbatim.breaks {
+                self.comment(text, input);
+            } else {
+                self.text(text, verbatim.first_width, Some(token.index()), input);
+            }
+            return;
+        };
+        self.start_text(text, None);
+        let at = self.out.len();
+        let lines =
+            crate::doc_comments::javadoc::render(layout, self.source.tree.text(), self.column);
+        let ending = self.source.line_ending.as_str().as_bytes();
+        for (i, line) in lines.iter().enumerate() {
+            if i > 0 {
+                self.out.extend_from_slice(ending);
+                self.column = 0;
+            }
+            self.out.extend_from_slice(line.as_bytes());
+            self.column += width(line);
         }
+        self.end_text(text, None);
+        self.record(input, at);
     }
 
     /// Copies `text` as written, with each line terminator replaced by the file's.

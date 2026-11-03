@@ -1,0 +1,17 @@
+
+ * {@snippet lang=java id='a b' region="r" :
+ *   if (x) {
+ *     y(); // @highlight substring="y"
+ *   }
+ * }
+ * {@snippet : one} {@snippet cla {@snippet lang=java id='a b' region="r" :
+ *   if (x) {
+ *     y(); // @highlight substring="y"
+ *   }
+ * }
+ * {@snippet : one} {@snippet class=Exÿÿÿÿÿÿÿÿÿÿÿÿÿÿample region=main}
+ * {@code
+ * @Override
+ * void x() {}
+ * } {@link #m(int count, List<? x {y}
+ * @param a the a

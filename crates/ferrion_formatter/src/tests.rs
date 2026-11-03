@@ -138,8 +138,8 @@ fn line_comments_lose_trailing_whitespace() {
 #[test]
 fn block_comments_are_re_indented() {
     assert_eq!(
-        formatted("class A {\n        /**\n         * Doc.\n         */\n    void m() {}\n}\n"),
-        "class A {\n  /**\n   * Doc.\n   */\n  void m() {}\n}\n"
+        formatted("class A {\n        /*\n         * Doc.\n         */\n    void m() {}\n}\n"),
+        "class A {\n  /*\n   * Doc.\n   */\n  void m() {}\n}\n"
     );
 }
 
