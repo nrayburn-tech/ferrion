@@ -712,6 +712,22 @@ impl<'t> Formatter<'t> {
     fn text(&mut self, token: SyntaxToken<'t>) {
         let text = token.text();
         match token.kind() {
+            // An unclosed comment, a lexical error only range formatting meets, runs to the end
+            // of the file: it is copied as written, with no line ending after it, which would be
+            // in it.
+            SyntaxKind::BlockComment | SyntaxKind::DocComment
+                if token.span().end as usize == self.tree.text().len()
+                    && (text.len() < 4 || !text.ends_with("*/")) =>
+            {
+                let span = token.span();
+                let verbatim = copied(
+                    self.tree.text(),
+                    span.start,
+                    span.end,
+                    VerbatimKind::Copy { to_end: true },
+                );
+                self.doc().verbatim(verbatim);
+            }
             SyntaxKind::TextBlock => {
                 let span = token.span();
                 let verbatim = copied(
