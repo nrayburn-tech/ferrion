@@ -96,6 +96,17 @@ pub fn verify_range(
             Some(bom + again[0].range.start as usize),
             "formatting the result again in the range changes it",
         )),
+        // Removing every import leaves the comments above them leading the code after, which an
+        // error can affect: the range's code is gone, not changed.
+        Err(_)
+            if expanded
+                .as_ref()
+                .is_some_and(|e| section_in(&before.tree, e))
+                && imports::has_imports(&before.tree)
+                && !imports::has_imports(&after.tree) =>
+        {
+            Ok(())
+        }
         Err(error) => Err(violation(
             Property::Idempotence,
             None,
