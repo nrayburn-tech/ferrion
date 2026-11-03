@@ -359,10 +359,19 @@ fn read_class(key: TypeKey, binary: Name, bytes: Arc<[u8]>, names: &Interner) ->
                     field_type(descriptor::parse_field(&text)?, names)
                 }
             };
+            let mut constant = None;
+            if access.contains(AccessFlags::FINAL) {
+                for attribute in field.attributes() {
+                    if let Ok(Attribute::ConstantValue(value)) = attribute.decode() {
+                        constant = class_constant(value, &ty, names);
+                    }
+                }
+            }
             Ok(ClassField {
                 name,
                 access: access.0,
                 ty,
+                constant,
             })
         };
         match read() {
@@ -599,4 +608,36 @@ fn flatten(sig: &TypeSignature<'_>, vars: &Vars<'_>, names: &Interner) -> Ty {
         }
     }
     Ty::of(parts)
+}
+
+/// A field's `ConstantValue` as a constant of the field's type: `int`, `short`, `char`, `byte`,
+/// and `boolean` fields all hold an `Integer` (JVMS 4.7.2). `None` if the attribute doesn't fit
+/// the type.
+fn class_constant(
+    value: ferrion_classfile::class::ConstantValue<'_>,
+    ty: &Ty,
+    names: &Interner,
+) -> Option<crate::constants::Constant> {
+    use crate::constants::Constant;
+    use ferrion_classfile::class::ConstantValue as V;
+    Some(match (ty.parts().first()?, value) {
+        (TyPart::Primitive(Primitive::Int), V::Int(v)) => Constant::Int(v),
+        (TyPart::Primitive(Primitive::Short), V::Int(v)) => Constant::Short(v as i16),
+        (TyPart::Primitive(Primitive::Char), V::Int(v)) => Constant::Char(v as u16),
+        (TyPart::Primitive(Primitive::Byte), V::Int(v)) => Constant::Byte(v as i8),
+        (TyPart::Primitive(Primitive::Boolean), V::Int(v)) => Constant::Boolean(v != 0),
+        (TyPart::Primitive(Primitive::Long), V::Long(v)) => Constant::Long(v),
+        (TyPart::Primitive(Primitive::Float), V::Float(bits)) => {
+            Constant::float(f32::from_bits(bits))
+        }
+        (TyPart::Primitive(Primitive::Double), V::Double(bits)) => {
+            Constant::double(f64::from_bits(bits))
+        }
+        (TyPart::Binary { binary, .. }, V::String(text))
+            if &*names.text(*binary) == "java/lang/String" =>
+        {
+            Constant::string(text.to_utf16().ok()?)
+        }
+        _ => return None,
+    })
 }

@@ -204,6 +204,9 @@ impl TypeContext<'_> {
             Type::Unknown(why) => w.out.push_str(match why {
                 Why::Limit => "unknown limit",
                 Why::Later => "unknown later",
+                Why::Calls => "unknown calls",
+                Why::LeftToB3c => "left-to-b3c inference",
+                Why::LeftToB3d => "left-to-b3d",
                 Why::Incomplete(_) => "unknown incomplete",
                 Why::Error(_) => "unknown error",
             }),

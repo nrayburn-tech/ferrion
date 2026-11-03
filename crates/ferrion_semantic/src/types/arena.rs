@@ -35,6 +35,14 @@ pub enum Why {
     Limit,
     /// A later milestone types it.
     Later,
+    /// A method invocation or class instance creation, whose method overload resolution
+    /// (W3, in B3b) chooses: everything that depends on one waits for it too.
+    Calls,
+    /// Needs inference (B3c): a lambda, a method reference, a poly conditional, an implicitly
+    /// typed lambda parameter.
+    LeftToB3c,
+    /// Patterns and `switch` expressions (B3d).
+    LeftToB3d,
     /// The answer needs a part of this type's hierarchy that didn't resolve.
     Incomplete(TypeKey),
     /// It depends on a name that didn't resolve.
@@ -91,7 +99,7 @@ pub struct CaptureVar {
 }
 
 /// One computation's types.
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct Arena {
     types: Vec<Type>,
     ids: Map<Type, TypeId>,
@@ -102,6 +110,18 @@ pub struct Arena {
     captures: Vec<CaptureVar>,
     errors: Vec<ErrorSymbol>,
     error_ids: Map<ErrorSymbol, ErrorId>,
+}
+
+/// An arena hashes as its types in order, which is what a result's fingerprint needs: two
+/// arenas built the same way hash the same.
+impl std::hash::Hash for Arena {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.types.hash(state);
+        self.arg_lists.hash(state);
+        self.type_lists.hash(state);
+        self.captures.hash(state);
+        self.errors.hash(state);
+    }
 }
 
 impl Arena {

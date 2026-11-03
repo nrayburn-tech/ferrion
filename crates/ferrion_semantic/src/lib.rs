@@ -10,14 +10,17 @@
 //! changes under them. docs/design/semantic-incremental.md describes the engine, and
 //! docs/design/semantic-names.md what it computes.
 
+pub mod attr;
 pub mod body;
 mod classes;
+pub mod constants;
 pub mod decl_names;
 mod engine;
 mod fingerprint;
 mod input;
 #[doc(hidden)]
 pub mod invariants;
+pub mod members;
 mod names;
 pub mod packages;
 mod resolve;

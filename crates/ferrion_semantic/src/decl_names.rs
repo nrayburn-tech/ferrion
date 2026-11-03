@@ -111,12 +111,16 @@ impl Snapshot {
     /// The names in `file`'s declarations, by node of its current tree ([`Snapshot::tree`]).
     pub fn decl_names(&self, file: FileId) -> Result<Arc<FileNames>, Cancelled> {
         self.check()?;
-        Ok(self
-            .shared()
+        Ok(self.decl_names_memo(file)?.value.clone())
+    }
+
+    pub(crate) fn decl_names_memo(
+        &self,
+        file: FileId,
+    ) -> Result<Arc<crate::engine::derived::Memo<FileNames>>, Cancelled> {
+        self.shared()
             .file_names
-            .get(self, &file, |reads| compute(reads, file))?
-            .value
-            .clone())
+            .get(self, &file, |reads| compute(reads, file))
     }
 
     /// The key the javac comparison matches `symbol` by (semantic.md, "The
