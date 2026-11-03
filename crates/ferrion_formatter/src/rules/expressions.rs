@@ -33,6 +33,7 @@ pub fn format<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         K::NewExpr => calls::new(f, node),
         K::MethodRefExpr => calls::method_ref(f, node),
         K::LambdaExpr => lambdas::lambda(f, node),
+        K::LambdaParameters => lambdas::parameters(f, node),
         K::ArrayAccessExpr => arrays::access(f, node),
         K::ArrayCreationExpr => arrays::creation(f, node),
         K::DimExpr => arrays::dim_expr(f, node),
