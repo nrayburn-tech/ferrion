@@ -195,4 +195,9 @@ class Lists {
     /*cccccccccccc*/ 9,
     10
   };
+
+  // A comment after a comma, then a space, is measured as printed: this fits in 100 columns.
+  void exactlyFull() {
+    f(a, /*ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ*/ b);
+  }
 }
