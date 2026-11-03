@@ -71,6 +71,10 @@ pub struct Excluded {
     pub generated_with_errors: u64,
     /// Of those, module declarations.
     pub module_declarations_with_errors: u64,
+    /// Of those, files of source sets that read Lombok-annotated types from source: javac
+    /// doesn't run Lombok on the source path, so the members it would generate for them aren't
+    /// there (hertzbeat's tests of its main source sets' types). They wait for B4.
+    pub reading_lombok_from_source: u64,
     /// javac threw on the file, even on its own, or never parsed it.
     pub crashes: u64,
     /// `module-info.java` the oracle didn't compile: output from before module declarations
@@ -144,6 +148,7 @@ impl Tally {
         e.javac_errors += o.javac_errors;
         e.generated_with_errors += o.generated_with_errors;
         e.module_declarations_with_errors += o.module_declarations_with_errors;
+        e.reading_lombok_from_source += o.reading_lombok_from_source;
         e.crashes += o.crashes;
         e.module_declarations += o.module_declarations;
         e.unanalyzed += o.unanalyzed;
@@ -304,15 +309,17 @@ impl Report {
         writeln!(
             out,
             "\nfiles: {} of the source sets and {} generated, {} of them module declarations; \
-             left out: {} with javac errors ({} of them generated, {} module declarations), {} \
-             javac never analyzed, {} javac crashed on, {} module declarations not compiled, {} in \
-             source sets Ferrion failed on; {} Lombok types left out",
+             left out: {} with javac errors ({} of them generated, {} module declarations, {} in \
+             source sets that read Lombok-annotated types from source, where Lombok doesn't run, \
+             until B4), {} javac never analyzed, {} javac crashed on, {} module declarations not \
+             compiled, {} in source sets Ferrion failed on; {} Lombok types left out",
             t.files - t.generated_files,
             t.generated_files,
             t.module_declarations,
             t.excluded.javac_errors,
             t.excluded.generated_with_errors,
             t.excluded.module_declarations_with_errors,
+            t.excluded.reading_lombok_from_source,
             t.excluded.unanalyzed,
             t.excluded.crashes,
             t.excluded.module_declarations,

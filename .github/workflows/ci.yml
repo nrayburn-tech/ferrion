@@ -143,10 +143,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      # The last is JAVA_HOME; JDK 21 is jedis's, which its names comparison runs on
+      # (JAVA_HOME_21_X64).
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: "27"
+          java-version: |
+            21
+            27
           cache: maven
       # cargo test checks that the tables come from the latest release; this checks that they're
       # what that JDK reports.
@@ -236,8 +240,8 @@ jobs:
         run: cargo oracle classfile --jdk "$JAVA_HOME" --release 27 jedis
         env:
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
-      # The fetched project's two source sets compile in about 15 seconds; the weekly oracle
-      # workflow runs every project.
+      # The fetched project's two source sets compile in about 15 seconds, on JDK 21, the one its
+      # lock names; the weekly oracle workflow runs every project.
       - name: Compare name resolution with javac
         run: cargo oracle names jedis
         env:

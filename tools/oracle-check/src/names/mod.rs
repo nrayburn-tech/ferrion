@@ -20,7 +20,7 @@ mod oracle;
 mod plan;
 mod report;
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Condvar, Mutex};
 use std::time::Instant;
@@ -61,8 +61,10 @@ options:
   --json <file>        also write the full report as JSON
   --oracle-jar <file>  the javac oracle (default: tools/javac-oracle/target/javac-oracle.jar)
 
-JAVA_HOME must point to a JDK that supports every source set's release (the newest GA JDK), and
-the projects must be checked out with their jars (`cargo corpus fetch`). The oracle's output is
+Each project's javac runs on the JDK its lock names, and Ferrion's side uses that JDK's platform:
+JDK N is FERRION_JDK_<N>, else JAVA_HOME_<N>_X64 or JAVA_HOME_<N>_ARM64 (as actions/setup-java sets
+them), else JAVA_HOME if it is JDK N, else one mise installed. The projects must be checked out with
+their jars (`cargo corpus fetch`), and their generated sources made (`cargo corpus generate`). The oracle's output is
 cached in target/oracle/names, or under FERRION_ORACLE_CACHE if it is set; generated sources are
 written to target/corpus/generated, or under FERRION_CORPUS_DIR.";
 
@@ -137,31 +139,33 @@ pub fn run(options: Options) -> Result<bool> {
     let dirs = Dirs::new()?;
     let projects = Project::load_all(&dirs.projects_file())?;
     let selected = corpus::select(&projects, &options.projects)?;
-    let oracle = NamesOracle::new(
-        options.jar.clone(),
-        options.heap.clone(),
-        options.processor_path.clone(),
-    )?;
     let cache_root = match std::env::var_os("FERRION_ORACLE_CACHE") {
         Some(dir) => PathBuf::from(dir),
         None => PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/oracle"),
     };
-    let cache = cache_root.join("names").join(&oracle.key);
     let scratch = cache_root.join("scratch");
     let known = Known::load()?;
 
     // Every selected project's source sets, each project's in an order that has dependencies
-    // first.
+    // first, and the JDK each project's lock names.
     let mut groups: Vec<Vec<SourceSet>> = Vec::new();
     let mut work: Vec<(usize, usize)> = Vec::new();
+    let mut jdks: BTreeMap<u32, PathBuf> = BTreeMap::new();
+    let mut project_jdks: HashMap<String, PathBuf> = HashMap::new();
     for project in &selected {
         let sets = plan::source_sets(&dirs, project)?;
+        let jdk = corpus::model::lock_jdk(&dirs, project)?;
+        if !jdks.contains_key(&jdk) {
+            let home = corpus::jdks::find(jdk)
+                .with_context(|| format!("{}'s lock names JDK {jdk}", project.name))?;
+            jdks.insert(jdk, home);
+        }
+        project_jdks.insert(project.name.clone(), jdks[&jdk].clone());
         if let Some(newest) = sets.iter().map(|s| s.release).max()
-            && newest > oracle.jdk
+            && newest > jdk
         {
             anyhow::bail!(
-                "JAVA_HOME is JDK {}, which can't compile {} for release {newest}",
-                oracle.jdk,
+                "{}'s lock names JDK {jdk}, which can't compile release {newest}",
                 project.name
             );
         }
@@ -175,6 +179,15 @@ pub fn run(options: Options) -> Result<bool> {
         }
         groups.push(sets);
     }
+    for (jdk, home) in &jdks {
+        eprintln!("JDK {jdk}: {}", home.display());
+    }
+    let oracle = NamesOracle::new(
+        options.jar.clone(),
+        options.heap.clone(),
+        options.processor_path.clone(),
+        &jdks,
+    )?;
     let ferrion;
     let resolver: &dyn Resolver = if options.javac_only {
         &StandIn
@@ -187,7 +200,7 @@ pub fn run(options: Options) -> Result<bool> {
                 (project, work.iter().filter(|&&(w, _)| w == g).count())
             })
             .collect();
-        ferrion = Ferrion::new(&counts, scratch.clone(), options.threads)?;
+        ferrion = Ferrion::new(&counts, &project_jdks, scratch.clone(), options.threads)?;
         &ferrion
     };
     let files: usize = work.iter().map(|&(g, i)| groups[g][i].files.len()).sum();
@@ -197,11 +210,13 @@ pub fn run(options: Options) -> Result<bool> {
         options.jobs.min(work.len().max(1))
     );
 
+    let lombok = Mutex::new(HashSet::new());
     let context = Shared {
         groups: &groups,
+        lombok: &lombok,
         oracle: &oracle,
         corpus: &dirs.corpus,
-        cache: &cache,
+        cache_root: &cache_root,
         scratch: &scratch,
         resolver,
         known: &known,
@@ -237,9 +252,11 @@ pub fn run(options: Options) -> Result<bool> {
 
 struct Shared<'a> {
     groups: &'a [Vec<SourceSet>],
+    /// The source sets with Lombok-annotated types, by group and index, as they're run.
+    lombok: &'a Mutex<HashSet<(usize, usize)>>,
     oracle: &'a NamesOracle,
     corpus: &'a Path,
-    cache: &'a Path,
+    cache_root: &'a Path,
     scratch: &'a Path,
     resolver: &'a dyn Resolver,
     known: &'a Known,
@@ -305,7 +322,7 @@ fn schedule(context: &Shared, work: &[(usize, usize)], jobs: usize) -> Result<Ve
                         }
                     };
                     let (group, i) = work[next];
-                    let result = run_set(context, &context.groups[group], i);
+                    let result = run_set(context, group, i);
                     let mut s = state.lock().unwrap();
                     match result {
                         Ok(result) => {
@@ -341,8 +358,9 @@ fn schedule(context: &Shared, work: &[(usize, usize)], jobs: usize) -> Result<Ve
         .collect()
 }
 
-/// Runs the oracle on one source set and compares its files.
-fn run_set(context: &Shared, sets: &[SourceSet], i: usize) -> Result<SetResult> {
+/// Runs the oracle on the source set `i` of `context.groups[group]` and compares its files.
+fn run_set(context: &Shared, group: usize, i: usize) -> Result<SetResult> {
+    let sets = &context.groups[group];
     let set = &sets[i];
     let Ran {
         output,
@@ -350,7 +368,13 @@ fn run_set(context: &Shared, sets: &[SourceSet], i: usize) -> Result<SetResult> 
         elapsed,
     } = context
         .oracle
-        .run(sets, set, context.corpus, context.cache, context.scratch)
+        .run(
+            sets,
+            set,
+            context.corpus,
+            context.cache_root,
+            context.scratch,
+        )
         .with_context(|| set.display())?;
     let mut tally = Tally {
         source_sets: 1,
@@ -402,6 +426,17 @@ fn run_set(context: &Shared, sets: &[SourceSet], i: usize) -> Result<SetResult> 
     }
     let ferrion: Result<Option<Resolved>, String> =
         context.resolver.resolve(sets, set, context.corpus);
+    // The source sets this one reads from source ran before it.
+    let reads_lombok = {
+        let lombok = context.lombok.lock().unwrap_or_else(|e| e.into_inner());
+        plan::closure(sets, set)
+            .into_iter()
+            .any(|d| lombok.contains(&(group, d)))
+    };
+    if output.files.iter().any(|f| !f.lombok.is_empty()) {
+        let mut lombok = context.lombok.lock().unwrap_or_else(|e| e.into_inner());
+        lombok.insert((group, i));
+    }
     if let Ok(Some(resolved)) = &ferrion {
         tally.ferrion_seconds = resolved.seconds;
     }
@@ -429,6 +464,7 @@ fn run_set(context: &Shared, sets: &[SourceSet], i: usize) -> Result<SetResult> 
             tally.excluded.javac_errors += 1;
             tally.excluded.generated_with_errors += u64::from(generated);
             tally.excluded.module_declarations_with_errors += u64::from(file.module);
+            tally.excluded.reading_lombok_from_source += u64::from(reads_lombok);
             row.error_files += 1;
             if let Some(first) = file.errors().next() {
                 let message = first.message.lines().next().unwrap_or("");

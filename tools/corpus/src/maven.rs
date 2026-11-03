@@ -34,7 +34,7 @@ const MAIN_SCOPES: [&str; 3] = ["compile", "provided", "system"];
 const COMPILER_LOGGER: &str = "org.apache.maven.plugin.compiler";
 
 /// Turns off the build caches of the Develocity Maven extension and of its predecessor.
-const BUILD_CACHE_OFF: [&str; 4] = [
+pub(crate) const BUILD_CACHE_OFF: [&str; 4] = [
     "-Ddevelocity.cache.local.enabled=false",
     "-Ddevelocity.cache.remote.enabled=false",
     "-Dgradle.cache.local.enabled=false",

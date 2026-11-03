@@ -13,6 +13,7 @@
 //! oracle writes them, so a cache restored under another corpus directory still applies. An entry
 //! is used only if the generated files it lists still exist, since the comparison reads them.
 
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -195,17 +196,23 @@ impl Output {
     }
 }
 
-/// The JDK and jar that run `names`.
+/// The jar that runs `names`, and the JDKs it runs on: each project's own, the one its lock
+/// names.
 pub struct NamesOracle {
-    java: PathBuf,
     jar: PathBuf,
     heap: String,
     /// Where every source set's processors are found instead of its own processor path, if
     /// given: an experiment.
     processor_path: Vec<PathBuf>,
-    /// Identifies the jar, the JDK, and the processor path.
+    /// The JDKs, by feature version.
+    jvms: BTreeMap<u32, Jvm>,
+}
+
+/// A JDK the oracle runs on.
+pub struct Jvm {
+    java: PathBuf,
+    /// Identifies the jar, the JDK, and the processor path: the cache's directory.
     pub key: String,
-    pub jdk: u32,
 }
 
 /// What running a source set gave.
@@ -217,12 +224,13 @@ pub struct Ran {
 }
 
 impl NamesOracle {
-    pub fn new(jar: PathBuf, heap: String, processor_path: Vec<PathBuf>) -> Result<NamesOracle> {
-        let java_home = PathBuf::from(
-            std::env::var_os("JAVA_HOME")
-                .context("JAVA_HOME must point to the JDK to run javac")?,
-        );
-        let jdk = corpus::lock::jdk_version(&java_home)?;
+    /// The oracle in `jar`, on each of `jdks`: a feature version and its JDK's home.
+    pub fn new(
+        jar: PathBuf,
+        heap: String,
+        processor_path: Vec<PathBuf>,
+        jdks: &BTreeMap<u32, PathBuf>,
+    ) -> Result<NamesOracle> {
         if !jar.exists() {
             bail!(
                 "{} doesn't exist; build it with `mvn --batch-mode --file tools/javac-oracle/pom.xml \
@@ -230,39 +238,58 @@ impl NamesOracle {
                 jar.display()
             );
         }
-        let mut hash = Sha256::new();
-        hash.update(FORMAT);
-        hash.update(b"\0");
-        hash.update(std::fs::read(&jar).with_context(|| format!("reading {}", jar.display()))?);
-        hash.update(b"\0");
-        hash.update(std::fs::read(java_home.join("release"))?);
-        for entry in &processor_path {
+        let bytes = std::fs::read(&jar).with_context(|| format!("reading {}", jar.display()))?;
+        let mut jvms = BTreeMap::new();
+        for (&version, home) in jdks {
+            let found = corpus::lock::jdk_version(home)?;
+            if found != version {
+                bail!("{} is JDK {found}, not JDK {version}", home.display());
+            }
+            let mut hash = Sha256::new();
+            hash.update(FORMAT);
             hash.update(b"\0");
-            hash.update(entry.as_os_str().as_encoded_bytes());
+            hash.update(&bytes);
+            hash.update(b"\0");
+            hash.update(std::fs::read(home.join("release"))?);
+            for entry in &processor_path {
+                hash.update(b"\0");
+                hash.update(entry.as_os_str().as_encoded_bytes());
+            }
+            let java = home
+                .join("bin")
+                .join(if cfg!(windows) { "java.exe" } else { "java" });
+            let key = hex(&hash.finalize())[..16].to_owned();
+            jvms.insert(version, Jvm { java, key });
         }
         Ok(NamesOracle {
-            java: java_home
-                .join("bin")
-                .join(if cfg!(windows) { "java.exe" } else { "java" }),
             jar,
             heap,
             processor_path,
-            key: hex(&hash.finalize())[..16].to_owned(),
-            jdk,
+            jvms,
         })
     }
 
-    /// The oracle's output for `set`, from the cache in `cache` when its inputs haven't changed.
-    /// `corpus` is the corpus directory, which paths in the output are relative to.
+    /// The JDK of feature version `version`, which [`NamesOracle::new`] was given.
+    pub fn jvm(&self, version: u32) -> Result<&Jvm> {
+        self.jvms
+            .get(&version)
+            .with_context(|| format!("the oracle wasn't given JDK {version}"))
+    }
+
+    /// The oracle's output for `set`, run on its project's JDK, from the cache under
+    /// `cache_root` when its inputs haven't changed. `corpus` is the corpus directory, which
+    /// paths in the output are relative to.
     pub fn run(
         &self,
         sets: &[SourceSet],
         set: &SourceSet,
         corpus: &Path,
-        cache: &Path,
+        cache_root: &Path,
         scratch: &Path,
     ) -> Result<Ran> {
         let start = Instant::now();
+        let jvm = self.jvm(set.jdk)?;
+        let cache = cache_root.join("names").join(&jvm.key);
         let sourcepath = plan::source_path(sets, set);
         let classpath = plan::class_path(sets, set);
         let processor_path = if self.processor_path.is_empty() {
@@ -322,7 +349,7 @@ impl NamesOracle {
             .chain(&set.generated_roots)
             .cloned()
             .collect();
-        let mut command = Command::new(&self.java);
+        let mut command = Command::new(&jvm.java);
         command
             .arg(format!("-Xmx{}", self.heap))
             // javac compiles on one thread; this keeps the JVM's own threads few.
@@ -375,11 +402,11 @@ impl NamesOracle {
             .stdout(File::create(&stdout)?)
             .stderr(File::create(&stderr)?)
             .status()
-            .with_context(|| format!("running {}", self.java.display()))?;
+            .with_context(|| format!("running {}", jvm.java.display()))?;
         let text = std::fs::read_to_string(&stdout).unwrap_or_default();
         let output = match Output::parse(&text) {
             Ok(output) => {
-                std::fs::create_dir_all(cache)?;
+                std::fs::create_dir_all(&cache)?;
                 let partial = cached.with_extension(format!("partial-{}", std::process::id()));
                 std::fs::write(&partial, &text)?;
                 std::fs::rename(&partial, &cached)?;

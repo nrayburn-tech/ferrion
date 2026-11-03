@@ -18,6 +18,8 @@ pub struct SourceSet {
     pub project: String,
     /// The model's id: `<module path>/<name>`, or the name alone for the root module.
     pub id: String,
+    /// The JDK the project's lock names, which javac runs on.
+    pub jdk: u32,
     pub release: u32,
     /// `Jdk` when the build compiles without `--release`: the oracle passes `-source` and
     /// `-target` instead.
@@ -100,6 +102,7 @@ fn javac_options(set: &ModelSourceSet) -> Vec<String> {
 /// The source sets of `project`'s model, in its order.
 pub fn source_sets(dirs: &Dirs, project: &Project) -> Result<Vec<SourceSet>> {
     let (model, missing) = corpus::model::project_model(dirs, project, None)?;
+    let jdk = corpus::model::lock_jdk(dirs, project)?;
     let mut processors = corpus::model::processors(dirs, project)?;
     let index: HashMap<&str, usize> = model
         .source_sets
@@ -167,6 +170,7 @@ pub fn source_sets(dirs: &Dirs, project: &Project) -> Result<Vec<SourceSet>> {
         sets.push(SourceSet {
             project: project.name.clone(),
             id: set.id.clone(),
+            jdk,
             release: set.java_release,
             platform: set.platform,
             javac: javac_options(set),
@@ -211,7 +215,7 @@ pub fn order(sets: &[SourceSet]) -> Vec<usize> {
 
 /// The source sets `set` reads from source: its dependencies in classpath order, then theirs that
 /// it doesn't list, and so on.
-fn closure(sets: &[SourceSet], set: &SourceSet) -> Vec<usize> {
+pub fn closure(sets: &[SourceSet], set: &SourceSet) -> Vec<usize> {
     let mut order = set.dependencies.clone();
     let mut seen: HashSet<usize> = order.iter().copied().collect();
     let mut next = 0;
@@ -315,6 +319,7 @@ mod tests {
         SourceSet {
             project: "p".into(),
             id: id.into(),
+            jdk: 21,
             release: 21,
             platform: PlatformKind::Release,
             javac: Vec::new(),
