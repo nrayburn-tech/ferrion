@@ -247,48 +247,59 @@ impl Resolver for Ferrion {
 
 /// Brings the engine's files under `root`, the generated-source root the oracle writes, up to
 /// date with what the oracle generated for the source set, which may be after the engine was
-/// built.
+/// built: the engine reads what an earlier run left, which the oracle writes again for a source
+/// set it runs. The changes are found with one snapshot and made after it's dropped, since the
+/// first change cancels it.
 fn sync_generated(engine: &Engine, set: SourceSetId, root: &Path) -> Result<(), String> {
-    let snapshot = engine.snapshot();
-    let mut ours: HashMap<PathBuf, FileId> = HashMap::new();
-    for &file in snapshot.files(set).map_err(cancelled)?.iter() {
-        let info = snapshot.file(file).map_err(cancelled)?;
-        if info.path.starts_with(root) {
-            ours.insert(info.path.to_path_buf(), file);
+    let mut changed: Vec<(FileId, Arc<str>)> = Vec::new();
+    let mut added: Vec<FileInput> = Vec::new();
+    let mut removed: Vec<FileId> = Vec::new();
+    {
+        let snapshot = engine.snapshot();
+        let mut ours: HashMap<PathBuf, FileId> = HashMap::new();
+        for &file in snapshot.files(set).map_err(cancelled)?.iter() {
+            let info = snapshot.file(file).map_err(cancelled)?;
+            if info.path.starts_with(root) {
+                ours.insert(info.path.to_path_buf(), file);
+            }
         }
-    }
-    let mut on_disk = HashSet::new();
-    for path in java_files(root) {
-        let Ok(bytes) = std::fs::read(&path) else {
-            continue;
-        };
-        let Ok(source) = SourceText::decode(bytes) else {
-            continue;
-        };
-        let text: Arc<str> = Arc::from(source.text());
-        match ours.get(&path) {
-            Some(&file) => {
-                if *snapshot.text(file).map_err(cancelled)? != *text {
-                    engine.set_text(file, text);
+        let mut on_disk = HashSet::new();
+        for path in java_files(root) {
+            let Ok(bytes) = std::fs::read(&path) else {
+                continue;
+            };
+            let Ok(source) = SourceText::decode(bytes) else {
+                continue;
+            };
+            let text: Arc<str> = Arc::from(source.text());
+            match ours.get(&path) {
+                Some(&file) => {
+                    if *snapshot.text(file).map_err(cancelled)? != *text {
+                        changed.push((file, text));
+                    }
                 }
+                None => added.push(FileInput {
+                    path: path.clone(),
+                    text,
+                    generated: true,
+                }),
             }
-            None => {
-                engine.add_file(
-                    set,
-                    FileInput {
-                        path: path.clone(),
-                        text,
-                        generated: true,
-                    },
-                );
-            }
+            on_disk.insert(path);
         }
-        on_disk.insert(path);
+        removed.extend(
+            ours.into_iter()
+                .filter(|(path, _)| !on_disk.contains(path))
+                .map(|(_, file)| file),
+        );
     }
-    for (path, file) in ours {
-        if !on_disk.contains(&path) {
-            engine.remove_file(file);
-        }
+    for (file, text) in changed {
+        engine.set_text(file, text);
+    }
+    for file in added {
+        engine.add_file(set, file);
+    }
+    for file in removed {
+        engine.remove_file(file);
     }
     Ok(())
 }

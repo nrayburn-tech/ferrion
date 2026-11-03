@@ -8,6 +8,7 @@ import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.MemberReferenceTree;
 import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
@@ -994,7 +995,15 @@ final class Names {
       public Void visitVariable(VariableTree node, Void unused) {
         Element element = trees.getElement(getCurrentPath());
         if (element != null && Keys.isLocal(element)) {
-          keys.declare(element, path, preferred(node));
+          // A compact constructor's parameter, which javac makes from the record component, is
+          // at its type's preferred position in javac 27, and at the component's start in javac
+          // 21 to 26 (its annotations included); the type's is used on every JDK.
+          TreePath parent = getCurrentPath().getParentPath();
+          boolean compact =
+              parent.getLeaf() instanceof MethodTree
+                  && keys.isCompactConstructor(trees.getElement(parent))
+                  && node.getType() != null;
+          keys.declare(element, path, preferred(compact ? node.getType() : node));
           if (implicitlyTyped(node)) {
             keys.implicitlyTyped.add(element);
           }
@@ -1282,6 +1291,11 @@ final class Names {
     private final Map<Element, Set<String>> methodNames = new IdentityHashMap<>();
     private final Map<Element, String> typeKeys = new IdentityHashMap<>();
     private final Path javaHome = Path.of(System.getProperty("java.home")).normalize();
+
+    /** Whether {@code element} is a record's compact constructor. */
+    boolean isCompactConstructor(Element element) {
+      return element instanceof ExecutableElement method && elements.isCompactConstructor(method);
+    }
 
     Keys(
         Elements elements,
