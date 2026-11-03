@@ -27,6 +27,11 @@
 //! opened, and runs it source set by source set: the project symbols once, then each source
 //! set's files, whose names are mapped and dropped file by file. The engine is dropped once the
 //! last of the project's source sets in the run is done.
+//!
+//! With `--replay`, a second engine per project starts with every file's text empty, resolves
+//! everything, and is then given each file's text as an edit; each source set's names from it
+//! must equal the first engine's (docs/design/semantic-incremental.md#checking-the-engine), or
+//! the source set fails.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -102,6 +107,9 @@ pub struct Ferrion {
     /// Where project models are written to be loaded.
     scratch: PathBuf,
     threads: usize,
+    /// Whether each project's names are also resolved by an engine that was given every file as
+    /// an edit, and compared.
+    replay: bool,
     /// Each project's engine, while some of its source sets are still to run.
     states: HashMap<String, Mutex<ProjectState>>,
 }
@@ -116,17 +124,20 @@ struct Loaded {
     engine: Engine,
     /// The engine's source sets by the model's id.
     sets: HashMap<String, SourceSetId>,
+    /// With `--replay`, the engine that started with every file empty.
+    replayed: Option<Engine>,
 }
 
 impl Ferrion {
     /// For a run over `work`: each project's name with the number of its source sets the run
     /// resolves, so that its engine is dropped after the last, and with `jdks`, each project's
-    /// JDK. Names are resolved on `threads` threads.
+    /// JDK. Names are resolved on `threads` threads, and with `replay` by a second engine too.
     pub fn new(
         work: &[(String, usize)],
         jdks: &HashMap<String, PathBuf>,
         scratch: PathBuf,
         threads: usize,
+        replay: bool,
     ) -> anyhow::Result<Ferrion> {
         let dirs = Dirs::new()?;
         let projects = Project::load_all(&dirs.projects_file())?;
@@ -146,6 +157,7 @@ impl Ferrion {
             jdks: jdks.clone(),
             scratch,
             threads: threads.max(1),
+            replay,
             states,
         })
     }
@@ -187,11 +199,48 @@ impl Ferrion {
             .enumerate()
             .map(|(i, set)| (set.name.clone(), SourceSetId::from_index(i)))
             .collect();
+        let replayed = if self.replay {
+            Some(replayed(&input, self.threads).map_err(cancelled)?)
+        } else {
+            None
+        };
         Ok(Loaded {
             engine: Engine::new(input),
             sets,
+            replayed,
         })
     }
+}
+
+/// An engine over `input` that has resolved every file with its text empty, and then been given
+/// each file's text as an edit, so that every entry it computed at first is out of date and must
+/// be verified or computed again.
+fn replayed(input: &ProjectInput, threads: usize) -> Result<Engine, Cancelled> {
+    let mut empty = input.clone();
+    let mut texts: HashMap<PathBuf, Arc<str>> = HashMap::new();
+    for set in &mut empty.source_sets {
+        for file in &mut set.files {
+            let text = std::mem::replace(&mut file.text, Arc::from(""));
+            texts.insert(file.path.clone(), text);
+        }
+    }
+    let engine = Engine::new(empty);
+    let mut edits = Vec::new();
+    {
+        let snapshot = engine.snapshot();
+        snapshot.run_batch(threads, |_| Ok(()))?;
+        for set in snapshot.source_sets()? {
+            for &file in snapshot.files(set)?.iter() {
+                if let Some(text) = texts.remove(&*snapshot.file(file)?.path) {
+                    edits.push((file, text));
+                }
+            }
+        }
+    }
+    for (file, text) in edits {
+        engine.set_text(file, text);
+    }
+    Ok(engine)
 }
 
 fn errors(errors: Vec<InputError>) -> String {
@@ -231,7 +280,15 @@ impl Resolver for Ferrion {
                 .get(&set.id)
                 .ok_or_else(|| format!("the project model has no source set {}", set.id))?;
             sync_generated(&loaded.engine, id, &set.generated)?;
-            set_names(&loaded.engine.snapshot(), id, corpus, self.threads).map_err(cancelled)
+            let names = set_names(&loaded.engine.snapshot(), id, corpus, self.threads)
+                .map_err(cancelled)?;
+            if let Some(replayed) = &loaded.replayed {
+                sync_generated(replayed, id, &set.generated)?;
+                let again =
+                    set_names(&replayed.snapshot(), id, corpus, self.threads).map_err(cancelled)?;
+                compare_replayed(&names, &again)?;
+            }
+            Ok(names)
         };
         let names = resolve();
         state.remaining = state.remaining.saturating_sub(1);
@@ -243,6 +300,37 @@ impl Resolver for Ferrion {
             seconds: start.elapsed().as_secs_f64(),
         }))
     }
+}
+
+/// Fails if the names the replayed engine gave differ from the first engine's, naming the first
+/// file that differs.
+fn compare_replayed(names: &SetNames, again: &SetNames) -> Result<(), String> {
+    let mut paths: Vec<&String> = names.keys().chain(again.keys()).collect();
+    paths.sort();
+    paths.dedup();
+    let differing: Vec<&String> = paths
+        .into_iter()
+        .filter(|path| names.get(*path) != again.get(*path))
+        .collect();
+    let Some(first) = differing.first() else {
+        return Ok(());
+    };
+    let (ours, theirs) = (names.get(*first), again.get(*first));
+    let detail = match (ours, theirs) {
+        (Some(ours), Some(theirs)) => match ours.iter().zip(theirs).find(|(a, b)| a != b) {
+            Some((a, b)) => format!(
+                "at bytes {}..{}, `{}` cold and `{}` replayed",
+                a.span.start, a.span.end, a.key, b.key
+            ),
+            None => format!("{} names cold and {} replayed", ours.len(), theirs.len()),
+        },
+        (Some(_), None) => "missing after the replay".to_owned(),
+        _ => "only after the replay".to_owned(),
+    };
+    Err(format!(
+        "names after replaying every file as an edit differ in {} files, first {first}: {detail}",
+        differing.len()
+    ))
 }
 
 /// Brings the engine's files under `root`, the generated-source root the oracle writes, up to
@@ -592,6 +680,39 @@ mod tests {
                 end: class + 5
             }),
             (11, 16)
+        );
+    }
+
+    #[test]
+    fn replayed_names_compared_file_by_file() {
+        let name = |start, key: &str| ResolvedName {
+            span: Span {
+                start,
+                end: start + 1,
+            },
+            key: key.to_owned(),
+        };
+        let names: SetNames = [
+            ("a/A.java".to_owned(), vec![name(0, "package a")]),
+            (
+                "a/B.java".to_owned(),
+                vec![name(3, "type a/B source a/B.java")],
+            ),
+        ]
+        .into();
+        assert_eq!(compare_replayed(&names, &names.clone()), Ok(()));
+
+        let mut again = names.clone();
+        again.get_mut("a/B.java").unwrap()[0].key = "type a/B class lib.jar".to_owned();
+        again.insert("a/C.java".to_owned(), Vec::new());
+        let error = compare_replayed(&names, &again).unwrap_err();
+        assert!(
+            error.contains("differ in 2 files, first a/B.java"),
+            "{error}"
+        );
+        assert!(
+            error.contains("`type a/B class lib.jar` replayed"),
+            "{error}"
         );
     }
 }
