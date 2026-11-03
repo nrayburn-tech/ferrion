@@ -119,12 +119,15 @@ impl<'t> Formatter<'t> {
         );
         self.comments_before(first);
         debug_assert!(self.in_region.is_none(), "a run reordered in a region");
-        for (i, unit) in units.iter().enumerate() {
-            if i > 0 {
-                self.space();
-            }
-            for &token in *unit {
-                self.text(token);
+        // A region copies the run as written, so its tokens emit nothing, as `token` does.
+        if self.in_region.is_none() {
+            for (i, unit) in units.iter().enumerate() {
+                if i > 0 {
+                    self.space();
+                }
+                for &token in *unit {
+                    self.text(token);
+                }
             }
         }
         self.last_token = Some(last);
