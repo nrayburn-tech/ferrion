@@ -127,6 +127,10 @@ const NOT_GJF: &[(&str, &str)] = &[
         "a block comment's text doesn't change: GJF adds a star to a doc comment's lines without \
          one (docs/style.md)",
     ),
+    (
+        "javadoc/placement",
+        "an unused import with a comment, here a doc comment, is kept (docs/style.md, \"Imports\")",
+    ),
     ("javadoc/pre-at", PRE_INDENTATION),
     ("javadoc/pre-at-code", PRE_INDENTATION),
     ("javadoc/pre-at-tags", PRE_INDENTATION),
