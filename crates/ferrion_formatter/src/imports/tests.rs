@@ -84,6 +84,19 @@ fn wildcards_modules_and_java_lang_stay() {
 }
 
 #[test]
+fn repeated_wildcards_modules_and_java_lang_go() {
+    assert_eq!(
+        formatted(
+            "package p;\n\nimport module java.base;\nimport a.*;\nimport java.lang.String;\n\
+             import module java.base;\nimport a.*;\nimport java.lang.String;\nimport static \
+             b.B.*;\nimport static b.B.*;\nimport module a.b;\nimport static a.b;\n\nclass T {\n  int x = b;\n}\n"
+        ),
+        "package p;\n\nimport static a.b;\nimport static b.B.*;\n\nimport module a.b;\nimport \
+         module java.base;\n\nimport a.*;\nimport java.lang.String;\n\nclass T {\n  int x = b;\n}\n"
+    );
+}
+
+#[test]
 fn what_counts_as_a_use() {
     let output = formatted(
         "package p;\n\nimport u.Local;\nimport u.Decl;\nimport u.Lbl;\nimport u.Sel;\nimport \

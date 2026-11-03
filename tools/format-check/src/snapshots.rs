@@ -63,10 +63,6 @@ const NOT_GJF: &[(&str, &str)] = &[
         "a comment belongs to the import below it, and GJF's to the one above (docs/style.md)",
     ),
     (
-        "imports/duplicate-wildcards",
-        "duplicate on-demand and module imports are kept (docs/style.md, proposed)",
-    ),
-    (
         "imports/escapes",
         "GJF rejects a Unicode escape in an import (docs/style.md)",
     ),

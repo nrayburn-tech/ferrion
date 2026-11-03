@@ -208,9 +208,10 @@ behaves as follows:
     - unused single-type imports and single static imports are removed. Usage is detected from
       syntax, and Javadoc references count as usage;
     - single-type imports of the file's own package are removed;
-    - module imports, wildcard imports, and `java.lang` imports are never added, removed, or expanded by
-      the formatter, because doing so safely needs type information. Linter rules handle them (see the
-      [Linter](#linter));
+    - an import repeated after the first is removed, whatever its kind;
+    - otherwise module imports, wildcard imports, and `java.lang` imports are never added, removed, or
+      expanded by the formatter, because doing so safely needs type information. Linter rules handle
+      them (see the [Linter](#linter));
     - a comment belongs to an import when it is on the same line after the import, or directly above
       it with no blank line in between. It moves with that import when sorting, and an import with a
       comment is never removed, even if unused;

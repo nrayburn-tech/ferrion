@@ -191,6 +191,19 @@ fn a_wrong_removal_fails() {
         "package p;\n\nimport b.B;\n\nclass C {\n  B b;\n  D d;\n}\n",
     )
     .unwrap();
+    // A repeat of any import may go, but a static import doesn't repeat a module import.
+    check(
+        "import module a.b;\nimport b.*;\nimport module a.b;\nimport b.*;\n\nclass C {}\n",
+        "import module a.b;\n\nimport b.*;\n\nclass C {}\n",
+    )
+    .unwrap();
+    assert_eq!(
+        property(
+            "import static a.b;\nimport module a.b;\n\nclass C {\n  int x = b;\n}\n",
+            "import static a.b;\n\nclass C {\n  int x = b;\n}\n"
+        ),
+        Property::Equivalence
+    );
 }
 
 #[test]
