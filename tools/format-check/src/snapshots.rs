@@ -91,7 +91,59 @@ const NOT_GJF: &[(&str, &str)] = &[
         "imports/suppression",
         "a ferrion-disable comment pins the import section (docs/style.md)",
     ),
+    (
+        "javadoc/departure-at-after-break",
+        "a word starting with `@` that a line break would put at the start of a line re-indents \
+         the comment only: GJF puts it there, where javadoc reads a block tag, and a second run \
+         adds a blank line before it (docs/style.md, proposed)",
+    ),
+    (
+        "javadoc/departure-blank-in-inline-tag",
+        "a blank line in an inline tag is a space: GJF adds a `<p>` in the tag, and another on \
+         each run (docs/style.md, proposed)",
+    ),
+    (
+        "javadoc/departure-escaped-at",
+        "a doc comment with a Unicode escape for a character other than a letter or digit is \
+         re-indented only (docs/style.md, proposed)",
+    ),
+    (
+        "javadoc/departure-hyphen-at-a-break",
+        "no line breaks after a word ending with a hyphen: GJF breaks there, then joins the two \
+         words on its next run (docs/style.md, proposed)",
+    ),
+    (
+        "javadoc/departure-stars",
+        "a line's leading stars all go, as javadoc reads them: GJF keeps all but one, adding \
+         them to the text (docs/style.md, proposed)",
+    ),
+    (
+        "javadoc/departure-uppercase-tag",
+        "a block tag whose name starts with an uppercase letter stays a block tag: GJF joins it \
+         into the text before it (docs/style.md, proposed)",
+    ),
+    (
+        "javadoc/fallback-starless-line",
+        "a block comment's text doesn't change: GJF adds a star to a doc comment's lines without \
+         one (docs/style.md)",
+    ),
+    ("javadoc/pre-at", PRE_INDENTATION),
+    ("javadoc/pre-at-code", PRE_INDENTATION),
+    ("javadoc/pre-at-tags", PRE_INDENTATION),
+    ("javadoc/pre-blank", PRE_INDENTATION),
+    ("javadoc/pre-indented", PRE_INDENTATION),
+    ("javadoc/pre-margin", PRE_INDENTATION),
+    ("javadoc/pre-starless", PRE_INDENTATION),
+    ("javadoc/pre-tags", PRE_INDENTATION),
+    (
+        "javadoc/regions",
+        "doc comments in disable regions are copied (docs/style.md)",
+    ),
 ];
+
+/// The reason for the snapshots of the `<pre>` departure.
+const PRE_INDENTATION: &str = "`<pre>` content keeps its indentation after the star, where GJF \
+                               removes a margin (docs/style.md)";
 
 /// Each snapshot's input under [`DIR`], in path order, as its path and its name in [`NOT_GJF`].
 fn inputs(dir: &Path) -> Result<Vec<(PathBuf, String)>> {
