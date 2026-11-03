@@ -138,6 +138,80 @@ const NOT_GJF: &[(&str, &str)] = &[
         "javadoc/regions",
         "doc comments in disable regions are copied (docs/style.md)",
     ),
+    (
+        "markdown/before-23",
+        "below release 23, a `///` comment is a line comment, and isn't reflowed (docs/style.md)",
+    ),
+    (
+        "markdown/departure-block-start",
+        "no line starts with a word that would start a block: GJF breaks before it, making a \
+         list, heading, quote, or fence, and `#` and fences change again on its next run \
+         (docs/style.md)",
+    ),
+    (
+        "markdown/departure-code-span",
+        "a code span is copied as written: GJF collapses its spaces (docs/style.md)",
+    ),
+    (
+        "markdown/departure-escapes",
+        "a `///` comment with a Unicode escape for other than a letter or digit is re-indented \
+         only (docs/style.md)",
+    ),
+    (
+        "markdown/departure-fallback-every-line",
+        "a `///` comment that isn't reflowed has every line moved: GJF moves only the first \
+         (docs/style.md)",
+    ),
+    (
+        "markdown/departure-hard-break",
+        "a two-space hard break is written with a backslash: GJF drops it and joins the lines \
+         (docs/style.md)",
+    ),
+    (
+        "markdown/departure-heading",
+        "a heading stays on one line: GJF wraps it, and the rest becomes a paragraph on its next \
+         run (docs/style.md)",
+    ),
+    (
+        "markdown/departure-html-blocks",
+        "an HTML block is copied as written, to the blank line that ends it: GJF reflows some \
+         with Javadoc's rules, and drops a block quote's `>` from a copied one (docs/style.md)",
+    ),
+    (
+        "markdown/departure-hyphen-at-a-break",
+        "no line breaks after a word ending with a hyphen: GJF breaks there, then joins the two \
+         words on its next run (docs/style.md)",
+    ),
+    (
+        "markdown/departure-item-first-block",
+        "a list item's first block starts on its marker's line: GJF puts the marker alone \
+         before a blank line, which ends the item on its next run (docs/style.md)",
+    ),
+    (
+        "markdown/departure-list-marker-spaces",
+        "one space follows a list marker: GJF keeps two, but continues the item at two, and its \
+         later paragraphs leave it on its next run (docs/style.md)",
+    ),
+    (
+        "markdown/departure-not-doc-comment",
+        "a long `///` comment that isn't a doc comment is a line comment, and isn't wrapped: GJF \
+         wraps it with `//` (docs/style.md)",
+    ),
+    (
+        "markdown/departure-snippet",
+        "a `///` comment with a `{@snippet}` is re-indented only: GJF makes the snippet a \
+         paragraph of its own (docs/style.md)",
+    ),
+    (
+        "markdown/departure-tags",
+        "a block tag whose body starts with fenced code, or holds an HTML block, is re-indented \
+         only: GJF indents the block's first line and not its others, changing what it holds \
+         (docs/style.md)",
+    ),
+    (
+        "markdown/regions",
+        "doc comments in disable regions are copied (docs/style.md)",
+    ),
 ];
 
 /// The reason for the snapshots of the `<pre>` departure.
