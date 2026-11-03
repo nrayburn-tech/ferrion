@@ -582,3 +582,16 @@ From the imports workstream, also accepted (2026-11-02):
    says so.
 8. **`verify`'s removal check** is the narrower one in "Checking it".
 9. **Unused `java.lang` imports are kept,** as SCOPE.md says, a departure.
+
+From the Javadoc workstream, also accepted (2026-11-02):
+
+10. **Six more Javadoc departures,** each where GJF's output changes on a second run or differs
+    from what javadoc reads (docs/style.md, "Doc comments"):
+    - a blank line in an inline tag is a space;
+    - a comment where a rule would start a line with an `@` word is re-indented only;
+    - a block tag named with an uppercase letter stays a tag;
+    - no line break right after a word ending with a hyphen;
+    - all leading stars go;
+    - a comment with a Unicode escape for other than a letter or digit is re-indented only.
+11. **A hyphen-ended word at a line's end joins the next line's first word,** as GJF joins them
+    (`well-` and `known` become `well-known`). `verify` allows exactly this join.

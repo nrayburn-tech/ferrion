@@ -95,32 +95,32 @@ const NOT_GJF: &[(&str, &str)] = &[
         "javadoc/departure-at-after-break",
         "a word starting with `@` that a line break would put at the start of a line re-indents \
          the comment only: GJF puts it there, where javadoc reads a block tag, and a second run \
-         adds a blank line before it (docs/style.md, proposed)",
+         adds a blank line before it (docs/style.md)",
     ),
     (
         "javadoc/departure-blank-in-inline-tag",
         "a blank line in an inline tag is a space: GJF adds a `<p>` in the tag, and another on \
-         each run (docs/style.md, proposed)",
+         each run (docs/style.md)",
     ),
     (
         "javadoc/departure-escaped-at",
         "a doc comment with a Unicode escape for a character other than a letter or digit is \
-         re-indented only (docs/style.md, proposed)",
+         re-indented only (docs/style.md)",
     ),
     (
         "javadoc/departure-hyphen-at-a-break",
         "no line breaks after a word ending with a hyphen: GJF breaks there, then joins the two \
-         words on its next run (docs/style.md, proposed)",
+         words on its next run (docs/style.md)",
     ),
     (
         "javadoc/departure-stars",
         "a line's leading stars all go, as javadoc reads them: GJF keeps all but one, adding \
-         them to the text (docs/style.md, proposed)",
+         them to the text (docs/style.md)",
     ),
     (
         "javadoc/departure-uppercase-tag",
         "a block tag whose name starts with an uppercase letter stays a block tag: GJF joins it \
-         into the text before it (docs/style.md, proposed)",
+         into the text before it (docs/style.md)",
     ),
     (
         "javadoc/fallback-starless-line",
