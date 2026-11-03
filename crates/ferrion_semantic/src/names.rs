@@ -129,6 +129,11 @@ impl Interner {
         names
     }
 
+    /// The path of the type a path's type is a member of, or `None` for a top-level type.
+    pub fn path_outer(&self, path: Path) -> Option<Path> {
+        read(&self.paths).paths[path.0 as usize].0
+    }
+
     /// A path's last name: the type's simple name.
     pub fn path_last(&self, path: Path) -> Name {
         read(&self.paths).paths[path.0 as usize].1

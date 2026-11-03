@@ -52,6 +52,11 @@ pub struct Tally {
     pub analyze_micros: u64,
     /// Ferrion's time.
     pub ferrion_seconds: f64,
+    /// The most fuel one relation query used, with the source set and query, and the largest
+    /// relations arena, in types.
+    pub relation_fuel: u64,
+    pub relation_fuel_query: String,
+    pub relation_arena: u64,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
@@ -82,6 +87,8 @@ pub struct Comparison {
     pub extra: u64,
     /// Ferrion's entries a later milestone types.
     pub left: u64,
+    /// Relation queries about a type javac couldn't resolve.
+    pub unresolved: u64,
 }
 
 impl Tally {
@@ -133,6 +140,7 @@ impl Tally {
         c.not_compared += o.not_compared;
         c.extra += o.extra;
         c.left += o.left;
+        c.unresolved += o.unresolved;
         merge_counts(&mut self.error_codes, &other.error_codes);
         merge_counts(&mut self.switch_errors, &other.switch_errors);
         self.files_with_only_switch_errors += other.files_with_only_switch_errors;
@@ -140,6 +148,11 @@ impl Tally {
         self.output_bytes += other.output_bytes;
         self.analyze_micros += other.analyze_micros;
         self.ferrion_seconds += other.ferrion_seconds;
+        if other.relation_fuel > self.relation_fuel {
+            self.relation_fuel = other.relation_fuel;
+            self.relation_fuel_query = other.relation_fuel_query.clone();
+        }
+        self.relation_arena = self.relation_arena.max(other.relation_arena);
     }
 
     pub fn mismatches(&self) -> u64 {
@@ -349,11 +362,13 @@ impl Report {
         writeln!(
             out,
             "\ncomparison: {} matched, {} mismatched, {} known, {} not compared (no Ferrion \
-             results); on Ferrion's side, {} extra and {} left to a later milestone",
+             results), {} relation queries about types javac couldn't resolve; on Ferrion's \
+             side, {} extra and {} left to a later milestone",
             c.matched,
             t.mismatches(),
             c.known.values().sum::<u64>(),
             c.not_compared,
+            c.unresolved,
             c.extra,
             c.left
         )
@@ -365,6 +380,15 @@ impl Report {
         }
         for (category, count) in &c.known {
             writeln!(out, "  known, {category}: {count}").unwrap();
+        }
+        if t.ferrion_seconds > 0.0 {
+            writeln!(
+                out,
+                "Ferrion: {:.1} s; the most fuel a relation query used: {} ({}); the largest \
+                 relations arena: {} types",
+                t.ferrion_seconds, t.relation_fuel, t.relation_fuel_query, t.relation_arena
+            )
+            .unwrap();
         }
 
         if !t.error_codes.is_empty() {

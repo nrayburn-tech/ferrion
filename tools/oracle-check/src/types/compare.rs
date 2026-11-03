@@ -67,6 +67,11 @@ pub struct Attributed {
     pub relations: Vec<Option<String>>,
     /// Ferrion's own time for the source set.
     pub seconds: f64,
+    /// The most fuel one relation query used, and the query.
+    pub fuel: u64,
+    pub fuel_query: String,
+    /// The types in the relations' arena at the end.
+    pub arena: u64,
 }
 
 /// Ferrion's type attribution, as the comparison runs it.
@@ -220,6 +225,8 @@ pub struct Compared {
     pub extra: u64,
     /// Ferrion's entries that a later milestone types (`left-to-...`).
     pub left: u64,
+    /// Relation queries about a type javac couldn't resolve: not compared.
+    pub unresolved: u64,
 }
 
 impl Compared {
@@ -419,7 +426,56 @@ pub fn javac_answer(relations: &Relations, query: &Query) -> String {
     }
 }
 
-/// Compares the relation queries' answers with Ferrion's: query `i` is at `[i, i]`.
+/// Whether a query is about a type javac couldn't resolve, or javac's answer has one: a class
+/// a jar names that javac's classpath lacks, which javac reports nothing about where nothing
+/// needs it (docs/design/types-oracle-normalization.md, "What is compared").
+fn unresolved(relations: &Relations, query: &Query, answer: &str) -> bool {
+    let error = |i: &usize| {
+        relations
+            .types
+            .get(*i)
+            .is_some_and(|t| t.contains("error "))
+    };
+    answer.contains("error ")
+        || dotted_descriptor(answer)
+        || match query {
+            Query::Subtype(s, t, _) | Query::Assignable(s, t, _) | Query::Same(s, t, _) => {
+                error(s) || error(t)
+            }
+            Query::Erasure(t, _) | Query::Capture(t, _) | Query::Supertypes(t, _) => error(t),
+            Query::Member(t, m, _) => error(t) || dotted_descriptor(m),
+            Query::Subsignature(t, m, n, _) => {
+                error(t) || dotted_descriptor(m) || dotted_descriptor(n)
+            }
+            Query::Overrides(m, n, _, _) => dotted_descriptor(m) || dotted_descriptor(n),
+            Query::Threw(..) => false,
+        }
+}
+
+/// Whether a method key's descriptor names a class with `.`s, which is how javac writes the
+/// erasure of a class it couldn't resolve (`()Lcom.google.Foo;`); a local class's
+/// `Llocal <file>:<offset>;` has a `.` in its file's name and isn't one.
+fn dotted_descriptor(text: &str) -> bool {
+    let Some(open) = text.find('(') else {
+        return false;
+    };
+    let mut rest = &text[open..];
+    while let Some(at) = rest.find('L') {
+        let after = &rest[at + 1..];
+        let Some(end) = after.find(';') else {
+            return false;
+        };
+        let name = &after[..end];
+        if !name.starts_with("local ") && name.contains('.') && !name.contains(['(', ')', ' ']) {
+            return true;
+        }
+        rest = &after[end + 1..];
+    }
+    false
+}
+
+/// Compares the relation queries' answers with Ferrion's: query `i` is at `[i, i]`; those
+/// about a type javac couldn't resolve are counted apart.
 pub fn compare_relations(relations: &Relations, ours: &[Option<String>]) -> Compared {
     let mut compared = Compared::default();
     for (i, query) in relations.queries.iter().enumerate() {
@@ -427,6 +483,10 @@ pub fn compare_relations(relations: &Relations, ours: &[Option<String>]) -> Comp
             continue;
         }
         let theirs = javac_answer(relations, query);
+        if unresolved(relations, query, &theirs) {
+            compared.unresolved += 1;
+            continue;
+        }
         let found = ours.get(i).and_then(Option::as_deref);
         let i = i as i64;
         compared.check(
