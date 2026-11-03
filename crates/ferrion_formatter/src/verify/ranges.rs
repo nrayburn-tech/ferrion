@@ -9,8 +9,9 @@ use std::sync::Arc;
 use ferrion_diagnostics::SourceText;
 use ferrion_parser::{ParseOptions, parse};
 use ferrion_syntax::comments::{CommentMap, is_comment};
-use ferrion_syntax::{SyntaxKind, SyntaxTree};
+use ferrion_syntax::{SyntaxKind, SyntaxToken, SyntaxTree};
 
+use super::imports::SectionComment;
 use super::{
     Property, Violation, doc_comments, equivalence, first_difference, has_errors, imports,
     normalize_comment, violation,
@@ -174,7 +175,9 @@ fn only_gap(tree: &SyntaxTree, range: Range<u32>) -> bool {
 
 /// Compares the two trees' comments in order: by kind, and by text as written, apart from a line
 /// comment's trailing whitespace, except those in the range's units outside disable regions,
-/// which compare as [`super::verify`] compares them.
+/// which compare as [`super::verify`] compares them. When the range holds the whole import
+/// section, the comments around the imports, which a rewrite moves, are compared as `verify`
+/// compares them.
 fn compare_comments(
     before: &SyntaxTree,
     after: &SyntaxTree,
@@ -187,18 +190,50 @@ fn compare_comments(
             .iter()
             .any(|r| r.start <= id && r.end.is_none_or(|end| id <= end))
     };
-    fn list(tree: &SyntaxTree) -> Vec<(SyntaxKind, &str, u32)> {
-        tree.tokens()
-            .filter(|t| is_comment(t.kind()))
-            .map(|t| (t.kind(), t.text(), t.span().start))
-            .collect()
+    // When the range rewrote the import section, its comments may have moved, and are compared
+    // as the whole file's are.
+    let rewritten = expanded.is_some_and(|e| section_in(before, e));
+    let section = |tree: &SyntaxTree| {
+        if rewritten {
+            imports::comment_region(tree)
+        } else {
+            0..0
+        }
+    };
+    let (section_a, section_b) = (section(before), section(after));
+    let in_section = |t: SyntaxToken<'_>, input: bool| -> SectionComment {
+        let text = if t.kind() == SyntaxKind::DocComment {
+            doc_comments::normalize(t.text())
+        } else {
+            normalize_comment(t.text(), input && t.kind() == SyntaxKind::LineComment)
+        };
+        SectionComment {
+            token: t.id(),
+            kind: t.kind(),
+            text,
+            start: t.span().start as usize,
+        }
+    };
+    let mut a_section = Vec::new();
+    let mut b_section = Vec::new();
+    let mut a = Vec::new();
+    let mut ids = Vec::new();
+    for t in before.tokens().filter(|t| is_comment(t.kind())) {
+        if section_a.contains(&t.id().index()) {
+            a_section.push(in_section(t, true));
+        } else {
+            a.push((t.kind(), t.text(), t.span().start));
+            ids.push(t.id());
+        }
     }
-    let (a, b) = (list(before), list(after));
-    let ids: Vec<_> = before
-        .tokens()
-        .filter(|t| is_comment(t.kind()))
-        .map(|t| t.id())
-        .collect();
+    let mut b = Vec::new();
+    for t in after.tokens().filter(|t| is_comment(t.kind())) {
+        if section_b.contains(&t.id().index()) {
+            b_section.push(in_section(t, false));
+        } else {
+            b.push((t.kind(), t.text(), t.span().start));
+        }
+    }
     let normalized = |i: usize, (kind, text, start): (SyntaxKind, &str, u32), input: bool| {
         let in_units = expanded.is_some_and(|e| e.units.contains(&start));
         if in_region(ids[i]) {
@@ -253,7 +288,21 @@ fn compare_comments(
             ),
         ));
     }
-    Ok(())
+    imports::compare_comments(before, after, &a_section, &b_section, bom)
+}
+
+/// Whether `expanded` holds all of `tree`'s imports, so that the range rewrote the section if
+/// whole-file formatting does.
+fn section_in(tree: &SyntaxTree, expanded: &Expanded) -> bool {
+    let mut imports = tree
+        .root()
+        .children()
+        .filter(|n| n.kind() == SyntaxKind::ImportDecl);
+    let Some(first) = imports.next() else {
+        return false;
+    };
+    let last = imports.last().unwrap_or(first);
+    expanded.units.start <= first.span().start && last.span().end <= expanded.units.end
 }
 
 /// Where `offset` of the input is in the text the edits give. An offset inside an edit's span
