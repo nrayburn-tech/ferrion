@@ -46,7 +46,7 @@ checks:
 
 options:
   --check        gjf: fail if a project's differing lines are above the number in
-                 tools/format-check/gjf-diff.toml
+                 tools/format-check/gjf-diff.toml, or its files compared below it
   --update       gjf: write the numbers of the projects compared to gjf-diff.toml
   --tracking <f> gjf: the tracking file (default: tools/format-check/gjf-diff.toml)
   --largest <N>  gjf: list the N files with the most differing lines (default: 10)

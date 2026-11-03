@@ -2,8 +2,8 @@
 # `cargo format-check gjf` (see "Google Java Format comparison" in docs/design/formatter.md).
 # `compared` and `identical` count files, and `differing-lines` is the sum of each compared file's
 # insertions plus deletions in a line diff. `cargo format-check gjf --check` fails if a project's
-# differing lines are above the number here; a change that lowers them records the new numbers
-# with `cargo format-check gjf --update`. This file's history is the record over time.
+# differing lines are above the number here, or its files compared below it; a change that lowers
+# the differing lines records the new numbers with `cargo format-check gjf --update`. This file's history is the record over time.
 #
 # These numbers are from the exit check (work order step 4): 18,071 lines in all, with 95.6% of the
 # files identical. Most of what's left is text blocks and long `//` comments, which are departures
