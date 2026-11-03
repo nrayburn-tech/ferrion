@@ -565,7 +565,9 @@ with the imports they belong to.
   the code after it). The comments above the first import stay at the top:
   a license header right above the imports doesn't move into the list. They keep the first
   import, as a comment keeps any import, as long as it stays first. A comment on the line after
-  the last import goes with what follows.
+  the last import goes with what follows, and so does a comment after the last import on its
+  line with code after it (`import u.Unused; /* c */ class T {}`), as any comment followed by code
+  on its line goes with that code: the import doesn't keep it, and may be removed.
 - **Pinned:** a section that a disable region overlaps, or that holds a formatter marker or a
   `ferrion-disable*` comment, is left as written, since directives never move. So is one with a
   comment after its last import at the end of the file, which has nothing after it to go with.
