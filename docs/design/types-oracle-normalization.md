@@ -264,14 +264,24 @@ For each source set, as in `names`:
    `instantiation` (the same method, another type as invoked), `finality`, and `answer` (a
    relation). A Ferrion value starting with `left-to-` (`left-to-b3c inference`) is a later
    milestone's, and counted apart. A mismatch listed in
-   `tools/oracle-check/differences/types-known.txt` (`<category> <file> <aspect> <start>-<end>`)
-   counts under its known category.
+   `tools/oracle-check/differences/types-known.txt` (`<category> <file> <aspect> <start>-<end>`,
+   and for a relation query `<category> <source set> relation <i>-<i>`) counts under its known
+   category.
+4. **Relation queries left out:** a query about a type javac couldn't resolve, where javac's
+   answer or one of the query's types has an `error` type in it, or a method key whose
+   descriptor names a class with dots (`builder()Lcom.google.Foo.Builder;`, javac's erasure of a
+   class it couldn't resolve), is counted apart, not compared: the class is one a jar names that
+   javac's compilation lacks, and that Ferrion's view has
+   ([W1's observation 12](semantic-type-relations.md#observations)). A query that needs a class or
+   member that a Lombok-annotated class's annotations make, which Ferrion has from B4, is Ferrion's
+   `left-to-b4 lombok`.
 
-Ferrion's side is the `Typer` trait in `tools/oracle-check/src/types/compare.rs`; until B3's
-attribution exists, a stand-in gives nothing, and every entry is counted as not compared.
-`--relations` compares the relation queries only, for B3a. Ferrion's type strings name local
-classes as javac's keys do, with the file relative to the corpus and UTF-16 offsets, as
-`names`' `oracle_key` converts keys.
+Ferrion's side is the `Typer` trait in `tools/oracle-check/src/types/compare.rs`. For the relation
+queries it is `tools/oracle-check/src/types/ferrion.rs`, over B3a's relations
+([type relations](semantic-type-relations.md#checking)); until B3b's attribution exists, it gives
+nothing for the files' entries, which are counted as not compared. `--relations` compares the
+relation queries only, for B3a. Ferrion's type strings name local classes as javac's keys do,
+with the file relative to the corpus and UTF-16 offsets, as `names`' `oracle_key` converts keys.
 
 ## Observations
 
@@ -346,8 +356,10 @@ On Temurin 27.0.1 unless a JDK is named, each on an input written for it.
     `GREEN { }` has a `NEW_CLASS` with the range of `{ }` choosing the anonymous class's
     constructor, and an implicit `super()` at `GREEN` choosing `Color.<init>()V`.
 16. **`directSupertypes` departs from JLS 4.10:** for `int[]` it gives one intersection,
-    `java/lang/Object&java/io/Serializable&java/lang/Cloneable`, where JLS 4.10.3 has three direct
-    supertypes; for an interface it includes `Object` even when the interface has
+    `java/io/Serializable&java/lang/Cloneable` (without `Object`, as W1 found; for another array,
+    the array of its component's first supertype:
+    [W1's observation 8](semantic-type-relations.md#observations)), where JLS 4.10.3 has three
+    direct supertypes; for an interface it includes `Object` even when the interface has
     superinterfaces (`List`: `Object` and `SequencedCollection`), as the API's documentation says
     and JLS 4.10.2 doesn't; and for a wildcard-parameterized type it substitutes the wildcards
     instead of capturing (`List<? extends Number>`: `SequencedCollection<? extends Number>`;
@@ -369,7 +381,8 @@ On Temurin 27.0.1 unless a JDK is named, each on an input written for it.
 
 ## Known differences
 
-None yet: they come with Ferrion's side, in B3's milestones.
+None for the relation queries (B3a): every one javac answered is matched, left to B4, or about a
+type javac couldn't resolve ([the corpus](#the-relations-comparison)). B3b's attribution brings the first.
 
 ## The corpus
 
@@ -412,6 +425,26 @@ types. javac's time is its own, summed over the JVMs; the output is the cached J
 
 The whole run took 864 s. javac's time per source set includes starting the JVM, the
 processors, and the relations, which `millis` covers.
+
+### The relations comparison
+
+`cargo oracle types --relations` on every locked project, from the cached javac side above, with
+B3a's relations as Ferrion's side (W1, on 2 November 2026: 13.8 s, Ferrion's side 9.4 s; the
+[design's results](semantic-type-relations.md#results) have memory, fuel, and arenas):
+
+| Project | Queries | Matched | Left to B4 (Lombok) | javac unresolved | javac threw | Mismatched |
+| --- | --- | --- | --- | --- | --- | --- |
+| caffeine | 138,888 | 138,802 | 0 | 54 | 32 | 0 |
+| guava | 30,925 | 30,925 | 0 | 0 | 0 | 0 |
+| helidon | 1,382,963 | 1,382,802 | 0 | 98 | 63 | 0 |
+| hertzbeat | 171,875 | 148,905 | 22,712 | 194 | 64 | 0 |
+| jedis | 15,204 | 15,203 | 0 | 0 | 1 | 0 |
+| lucene | 409,828 | 409,790 | 0 | 25 | 13 | 0 |
+| spring-data-jpa | 30,596 | 30,559 | 0 | 28 | 9 | 0 |
+| total | 2,180,279 | 2,156,986 | 22,712 | 399 | 182 | 0 |
+
+Every query but those left out matches; there are no known differences. Sampled sites whose owner
+is a local class match too, their keys and type strings converted as above.
 
 ### Analysis time per file
 
@@ -485,9 +518,9 @@ the slowest of them. The whole set took 371 s.
 
 ## Still to observe
 
-- The order of a `lub`'s parts on more inputs (observation 2's rule is from four): interfaces of
-  equal depth in different packages, and a class among them deeper than the interfaces.
 - Whether a variable arity call javac chose in phase 3 can be told from the oracle's output where
   the instantiated type alone doesn't say (a single array argument).
-- Ferrion's side of local classes in type strings, as `names`' `oracle_key` converts keys, once B3
-  writes them.
+
+W1 observed the order of a `lub`'s parts on more inputs (it holds:
+[W1's observation 2](semantic-type-relations.md#observations)), and wrote local classes in type
+strings, as `names`' `oracle_key` converts keys.
