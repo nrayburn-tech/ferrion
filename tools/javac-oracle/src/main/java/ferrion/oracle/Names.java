@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
@@ -176,12 +177,20 @@ final class Names {
   }
 
   static void main(List<String> args, PrintStream out) throws IOException {
+    main(args, out, new NamesCommand());
+  }
+
+  /**
+   * Compiles a source set as {@code names} does, and writes what {@code command} gives for each
+   * file: {@code names}, or {@code types} (see {@link Types}).
+   */
+  static void main(List<String> args, PrintStream out, Command command) throws IOException {
     Request request = parse(args);
     long start = System.nanoTime();
     Json trailer = new Json();
     trailer.beginObject().name("sourceSet").beginObject();
     try {
-      new Run(request, out, trailer).all();
+      new Run(request, out, trailer, command).all();
     } finally {
       trailer
           .name("millis")
@@ -255,17 +264,75 @@ final class Names {
     System.exit(2);
   }
 
+  /** What a command writes from a compilation: {@code names}, or {@link Types}. */
+  interface Command {
+    /**
+     * Whether each {@code module-info.java} is compiled on its own and written. Otherwise it is
+     * written as skipped.
+     */
+    boolean modules();
+
+    /** Writes a file's own fields, after its diagnostics. */
+    void write(Json json, FileContext file);
+
+    /**
+     * After the main compilation's files are written: what the command writes for the source set
+     * as a whole, one line per object. Not called for files compiled one at a time.
+     */
+    default void finish(PrintStream out) {}
+  }
+
+  /** A file of a compilation, as a {@link Command} sees it. */
+  record FileContext(
+      JavacTask task,
+      Trees trees,
+      Keys keys,
+      CompilationUnitTree unit,
+      String path,
+      long analyzeMicros) {}
+
+  /** The {@code names} command: every name's key (see {@link FileNames}). */
+  private static final class NamesCommand implements Command {
+    @Override
+    public boolean modules() {
+      return true;
+    }
+
+    @Override
+    public void write(Json json, FileContext file) {
+      FileNames names = new FileNames(file.trees(), file.keys(), file.unit(), file.path());
+      names.collect();
+      json.name("lombok").beginArray();
+      for (long[] range : names.lombok) {
+        json.beginArray().value(range[0]).value(range[1]).endArray();
+      }
+      json.endArray();
+      json.name("names").beginArray();
+      for (String[] name : names.names) {
+        json.beginArray();
+        json.value(Long.parseLong(name[0])).value(Long.parseLong(name[1]));
+        for (int i = 2; i < name.length; i++) {
+          json.value(name[i]);
+        }
+        json.endArray();
+      }
+      json.endArray();
+    }
+  }
+
   /** One run over a source set. */
   private static final class Run {
     private final Request request;
     private final PrintStream out;
     private final Json trailer;
+    private final Command command;
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 
-    Run(Request request, PrintStream out, Json trailer) {
+    Run(Request request, PrintStream out, Json trailer, Command command) {
       this.request = request;
       this.out = out;
       this.trailer = trailer;
+      this.command = command;
     }
 
     void all() throws IOException {
@@ -298,6 +365,7 @@ final class Names {
           }
           if (compiled != null) {
             compiled.write(files);
+            command.finish(out);
             compiled.writeOther(trailer);
           } else {
             oneAtATime(files, classes);
@@ -306,7 +374,20 @@ final class Names {
         writeProcessorRuns();
         trailer.name("moduleDiagnostics").beginArray();
         for (Path module : modules) {
-          modular(module, classes.resolve("modules"));
+          if (command.modules()) {
+            modular(module, classes.resolve("modules"));
+          } else {
+            Json json = new Json();
+            json.beginObject()
+                .name("file")
+                .value(relative(module))
+                .name("module")
+                .value(1)
+                .name("skipped")
+                .value("a module declaration")
+                .endObject();
+            out.println(json);
+          }
         }
         trailer.endArray();
       } finally {
@@ -414,7 +495,7 @@ final class Names {
                 }
               });
           task.analyze();
-          Compiled compiled = new Compiled(task, parsed, Set.of(), collector, null);
+          Compiled compiled = new Compiled(task, parsed, Set.of(), Map.of(), collector, null);
           compiled.writeFile(file.toUri(), relative(file), false, true);
           compiled.writeOtherDiagnostics(trailer);
         }
@@ -537,12 +618,14 @@ final class Names {
         // The units javac started analyzing a class of: attribution comes first, and flow
         // analysis, which ends the event, is skipped once there are errors.
         Set<URI> analyzed = new HashSet<>();
+        AnalyzeTimes times = new AnalyzeTimes();
         task.addTaskListener(
             new TaskListener() {
               @Override
               public void started(TaskEvent event) {
                 if (event.getKind() == TaskEvent.Kind.ANALYZE) {
                   analyzed.add(event.getSourceFile().toUri());
+                  times.event(event.getSourceFile().toUri(), true);
                 }
               }
 
@@ -550,20 +633,63 @@ final class Names {
               public void finished(TaskEvent event) {
                 if (event.getKind() == TaskEvent.Kind.PARSE) {
                   parsed.put(event.getSourceFile().toUri(), event.getCompilationUnit());
+                } else if (event.getKind() == TaskEvent.Kind.ANALYZE) {
+                  times.event(event.getSourceFile().toUri(), false);
                 }
               }
             });
         task.analyze();
-        return new Compiled(task, parsed, analyzed, collector, generated);
+        times.end();
+        return new Compiled(task, parsed, analyzed, times.micros, collector, generated);
+      }
+    }
+
+    /**
+     * The time javac spends analyzing each file's classes, from its {@code ANALYZE} events. javac
+     * 27 attributes every class, starting each one's event, and then runs flow analysis on each,
+     * finishing its event; older policies do both for a class before the next. So the time
+     * between two events is charged to the class whose event started it if it is a start
+     * (attribution, or both), and else to the class whose event ends it if that is a finish
+     * (flow analysis); time between a finish and a start is no class's. The last class's
+     * attribution and the first's flow analysis can't be told apart, and are both charged to the
+     * last class.
+     */
+    private static final class AnalyzeTimes {
+      final Map<URI, Long> micros = new HashMap<>();
+      private URI last;
+      private boolean lastStarted;
+      private long lastNanos;
+
+      void event(URI file, boolean started) {
+        long now = System.nanoTime();
+        if (last != null) {
+          URI charged = lastStarted ? last : started ? null : file;
+          if (charged != null) {
+            micros.merge(charged, (now - lastNanos) / 1_000, Long::sum);
+          }
+        }
+        last = file;
+        lastStarted = started;
+        lastNanos = now;
+      }
+
+      /** After {@code analyze()}: a class still open is charged until now. */
+      void end() {
+        if (last != null && lastStarted) {
+          micros.merge(last, (System.nanoTime() - lastNanos) / 1_000, Long::sum);
+        }
+        last = null;
       }
     }
 
     /** What one compilation produced. */
     private final class Compiled {
+      private final JavacTask task;
       private final Trees trees;
       private final Keys keys;
       private final Map<URI, CompilationUnitTree> parsed;
       private final Set<URI> analyzed;
+      private final Map<URI, Long> analyzeMicros;
       private final Map<URI, List<Diagnostic<? extends JavaFileObject>>> errors =
           new LinkedHashMap<>();
       private final List<Diagnostic<? extends JavaFileObject>> otherErrors = new ArrayList<>();
@@ -574,12 +700,15 @@ final class Names {
           JavacTask task,
           Map<URI, CompilationUnitTree> parsed,
           Set<URI> analyzed,
+          Map<URI, Long> analyzeMicros,
           Collector collector,
           Path generated) {
+        this.task = task;
         this.trees = Trees.instance(task);
         this.keys = new Keys(task.getElements(), task.getTypes(), this::relative);
         this.parsed = parsed;
         this.analyzed = analyzed;
+        this.analyzeMicros = analyzeMicros;
         this.generated = generated;
         for (Diagnostic<? extends JavaFileObject> diagnostic : collector.diagnostics) {
           if (diagnostic.getKind() != Diagnostic.Kind.ERROR) {
@@ -645,23 +774,8 @@ final class Names {
         if (unit == null) {
           json.name("crash").value("javac didn't parse the file");
         } else {
-          FileNames names = new FileNames(trees, keys, unit, path);
-          names.collect();
-          json.name("lombok").beginArray();
-          for (long[] range : names.lombok) {
-            json.beginArray().value(range[0]).value(range[1]).endArray();
-          }
-          json.endArray();
-          json.name("names").beginArray();
-          for (String[] name : names.names) {
-            json.beginArray();
-            json.value(Long.parseLong(name[0])).value(Long.parseLong(name[1]));
-            for (int i = 2; i < name.length; i++) {
-              json.value(name[i]);
-            }
-            json.endArray();
-          }
-          json.endArray();
+          long micros = analyzeMicros.getOrDefault(unit.getSourceFile().toUri(), 0L);
+          command.write(json, new FileContext(task, trees, keys, unit, path, micros));
         }
         json.endObject();
         out.println(json);
@@ -939,6 +1053,88 @@ final class Names {
   }
 
   /**
+   * Records where a file's locals and local classes are declared, which their keys name, before
+   * anything of the file is keyed.
+   */
+  static final class Declarations extends TreePathScanner<Void, Void> {
+    private final Trees trees;
+    private final Keys keys;
+    private final CompilationUnitTree unit;
+    private final String path;
+
+    Declarations(Trees trees, Keys keys, CompilationUnitTree unit, String path) {
+      this.trees = trees;
+      this.keys = keys;
+      this.unit = unit;
+      this.path = path;
+    }
+
+    @Override
+    public Void visitVariable(VariableTree node, Void unused) {
+      Element element = trees.getElement(getCurrentPath());
+      if (element != null && Keys.isLocal(element)) {
+        // A compact constructor's parameter, which javac makes from the record component, is
+        // at its type's preferred position in javac 27, and at the component's start in javac
+        // 21 to 26 (its annotations included); the type's is used on every JDK.
+        TreePath parent = getCurrentPath().getParentPath();
+        boolean compact =
+            parent.getLeaf() instanceof MethodTree
+                && keys.isCompactConstructor(trees.getElement(parent))
+                && node.getType() != null;
+        keys.declare(element, path, preferred(compact ? node.getType() : node));
+        if (implicitlyTyped(trees, unit, node)) {
+          keys.implicitlyTyped.add(element);
+        }
+      }
+      return super.visitVariable(node, null);
+    }
+
+    @Override
+    public Void visitClass(ClassTree node, Void unused) {
+      Element element = trees.getElement(getCurrentPath());
+      if (element instanceof TypeElement type && Keys.isLocalType(type)) {
+        keys.declare(element, path, preferred(node));
+      }
+      return super.visitClass(node, null);
+    }
+  }
+
+  /** `var` (javac's `VAR_TYPE`), or a lambda parameter without a type (no type tree). */
+  static boolean implicitlyTyped(Trees trees, CompilationUnitTree unit, VariableTree node) {
+    Tree type = node.getType();
+    return type == null
+        || type.getKind().name().equals("VAR_TYPE") // by name: older JDKs have no VAR_TYPE
+        || trees.getSourcePositions().getEndPosition(unit, type) < 0;
+  }
+
+  static long preferred(Tree tree) {
+    return ((JCTree) tree).getPreferredPosition();
+  }
+
+  /** Whether a class has, or has a member with, an annotation from a {@code lombok} package. */
+  static boolean isLombok(TypeElement type) {
+    if (hasLombok(type)) {
+      return true;
+    }
+    for (Element member : type.getEnclosedElements()) {
+      if (hasLombok(member)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean hasLombok(Element element) {
+    for (AnnotationMirror annotation : element.getAnnotationMirrors()) {
+      Element type = annotation.getAnnotationType().asElement();
+      if (type instanceof TypeElement t && t.getQualifiedName().toString().startsWith("lombok.")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * The names of one compilation unit.
    *
    * <p>A name's {@code context} is where the name chain it's part of appears ({@code a.b.c} is a
@@ -985,52 +1181,8 @@ final class Names {
     }
 
     void collect() {
-      new Declarations().scan(unit, null);
+      new Declarations(trees, keys, unit, path).scan(unit, null);
       scan(unit, null);
-    }
-
-    /** Records where locals and local classes are declared, which their keys name. */
-    private final class Declarations extends TreePathScanner<Void, Void> {
-      @Override
-      public Void visitVariable(VariableTree node, Void unused) {
-        Element element = trees.getElement(getCurrentPath());
-        if (element != null && Keys.isLocal(element)) {
-          // A compact constructor's parameter, which javac makes from the record component, is
-          // at its type's preferred position in javac 27, and at the component's start in javac
-          // 21 to 26 (its annotations included); the type's is used on every JDK.
-          TreePath parent = getCurrentPath().getParentPath();
-          boolean compact =
-              parent.getLeaf() instanceof MethodTree
-                  && keys.isCompactConstructor(trees.getElement(parent))
-                  && node.getType() != null;
-          keys.declare(element, path, preferred(compact ? node.getType() : node));
-          if (implicitlyTyped(node)) {
-            keys.implicitlyTyped.add(element);
-          }
-        }
-        return super.visitVariable(node, null);
-      }
-
-      @Override
-      public Void visitClass(ClassTree node, Void unused) {
-        Element element = trees.getElement(getCurrentPath());
-        if (element instanceof TypeElement type && Keys.isLocalType(type)) {
-          keys.declare(element, path, preferred(node));
-        }
-        return super.visitClass(node, null);
-      }
-    }
-
-    /** `var` (javac's `VAR_TYPE`), or a lambda parameter without a type (no type tree). */
-    private boolean implicitlyTyped(VariableTree node) {
-      Tree type = node.getType();
-      return type == null
-          || type.getKind().name().equals("VAR_TYPE") // by name: older JDKs have no VAR_TYPE
-          || positions.getEndPosition(unit, type) < 0;
-    }
-
-    private long preferred(Tree tree) {
-      return ((JCTree) tree).getPreferredPosition();
     }
 
     @Override
@@ -1054,28 +1206,6 @@ final class Names {
             });
       }
       return super.visitClass(node, null);
-    }
-
-    private boolean isLombok(TypeElement type) {
-      if (hasLombok(type)) {
-        return true;
-      }
-      for (Element member : type.getEnclosedElements()) {
-        if (hasLombok(member)) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    private static boolean hasLombok(Element element) {
-      for (AnnotationMirror annotation : element.getAnnotationMirrors()) {
-        Element type = annotation.getAnnotationType().asElement();
-        if (type instanceof TypeElement t && t.getQualifiedName().toString().startsWith("lombok.")) {
-          return true;
-        }
-      }
-      return false;
     }
 
     private void record(Tree node, String qualifier) {
@@ -1419,7 +1549,7 @@ final class Names {
     }
 
     /** A type's binary name with `/`, or `local <file>:<offset>` for a local class. */
-    private String owner(TypeElement type) {
+    String owner(TypeElement type) {
       if (isLocalType(type)) {
         String at = declared.get(type);
         return "local " + (at != null ? at : "? " + type.getSimpleName());

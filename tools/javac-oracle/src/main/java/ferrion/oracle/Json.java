@@ -45,6 +45,13 @@ final class Json {
     return this;
   }
 
+  Json value(boolean value) {
+    separate();
+    out.append(value);
+    needsComma = true;
+    return this;
+  }
+
   Json value(String value) {
     separate();
     out.append('"');
