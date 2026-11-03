@@ -84,6 +84,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "relations"
+path = "fuzz_targets/relations.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "classfile"
 path = "fuzz_targets/classfile.rs"
 test = false
