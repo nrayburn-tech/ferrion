@@ -21,7 +21,7 @@
 //! rewrites whose whole span is inside it), the edit of the gap before it, which gives the unit
 //! its indentation and the blank lines before it, and the line breaks of the gap after it: GJF
 //! normalizes the blank lines after a unit, and the trailing whitespace on its last line, but
-//! leaves the indentation of the line after it alone.
+//! leaves the indentation of the line after it alone (observed).
 
 use std::cell::OnceCell;
 use std::fmt;
@@ -35,6 +35,7 @@ use ferrion_syntax::{
 
 use crate::edits::{self, Edit};
 use crate::format::Formatter;
+use crate::printer::trim_end;
 use crate::{printer, printer_source, regions, rules};
 
 /// Why [`format_range`] can't format a range.
@@ -222,7 +223,7 @@ impl<'t> Ranges<'t> {
                 if !trailing(token) {
                     break;
                 }
-                units_end = token.span().end;
+                units_end = piece_end(token);
             }
             t = token.next_token();
         }
@@ -231,7 +232,7 @@ impl<'t> Ranges<'t> {
             .token_at_offset(units_start)
             .and_then(|t| t.prev_token())
             .and_then(piece_before)
-            .map_or(0, |t| t.span().end);
+            .map_or(0, piece_end);
         let after = tree
             .token_at_offset(units_end)
             .and_then(|t| piece_after(t, units_end))
@@ -258,7 +259,6 @@ impl<'t> Ranges<'t> {
                     last: token.id(),
                     owner,
                     kind: self.tree.node(owner).kind(),
-                    depth: self.owners.depth[owner.index()],
                 }),
             }
         }
@@ -292,8 +292,6 @@ pub struct Run {
     /// The unit, and its kind: the root's for tokens in no unit.
     pub owner: NodeId,
     pub kind: SyntaxKind,
-    /// How many units the unit is in, itself included.
-    pub depth: u32,
 }
 
 /// The code token a token the range touches stands for: itself for code, the code a comment is
@@ -313,6 +311,17 @@ fn anchor<'t>(comments: &CommentMap, token: SyntaxToken<'t>) -> Option<SyntaxTok
             }
         }
         _ => Some(token),
+    }
+}
+
+/// Where the piece of text `token` is ends: a line comment's trailing whitespace is the gap's
+/// after it, which the printer doesn't write.
+fn piece_end(token: SyntaxToken<'_>) -> u32 {
+    match token.kind() {
+        K::LineComment | K::DocLineComment => {
+            token.span().start + trim_end(token.text()).len() as u32
+        }
+        _ => token.span().end,
     }
 }
 
@@ -348,15 +357,12 @@ fn piece_after(token: SyntaxToken<'_>, offset: u32) -> Option<SyntaxToken<'_>> {
 /// that isn't inside an expression.
 struct Owners {
     owner: Vec<NodeId>,
-    /// For a unit, how many units it is in, itself included.
-    depth: Vec<u32>,
 }
 
 impl Owners {
     fn new(tree: &SyntaxTree) -> Owners {
         let count = tree.node_count();
         let mut owner = vec![NodeId::ROOT; count];
-        let mut depth = vec![0; count];
         let mut in_expression = vec![false; count];
         for node in tree.nodes() {
             let i = node.id().index();
@@ -368,14 +374,13 @@ impl Owners {
                 None => (NodeId::ROOT, false),
             };
             in_expression[i] = inside;
-            if !inside && is_unit(node) {
-                owner[i] = node.id();
-                depth[i] = depth[parent_owner.index()] + 1;
+            owner[i] = if !inside && is_unit(node) {
+                node.id()
             } else {
-                owner[i] = parent_owner;
-            }
+                parent_owner
+            };
         }
-        Owners { owner, depth }
+        Owners { owner }
     }
 
     fn of(&self, token: SyntaxToken<'_>) -> NodeId {
@@ -467,8 +472,9 @@ fn keep(text: &str, edits: &[Edit], expanded: &Expanded) -> Vec<Edit> {
 
 /// The part of `edit`, in the gap `gap` after the expanded range, that the range keeps: the
 /// output's line breaks, and the whitespace before them, with the input's indentation of the
-/// line after. When the input has no line break there, all of the output's gap; when the output
-/// has none and the input has, nothing.
+/// line after. When either has no line break there, all of the output's gap: code on the line
+/// after the units moves up onto it, as GJF moves an enum's `;` up after its last constant, and
+/// code on their last line moves to a line of its own (observed).
 fn line_breaks(text: &str, gap: Range<u32>, edit: &Edit) -> Option<Edit> {
     let input = &text[gap.start as usize..gap.end as usize];
     let output = [
@@ -480,8 +486,7 @@ fn line_breaks(text: &str, gap: Range<u32>, edit: &Edit) -> Option<Edit> {
     let after_last_break = |s: &str| s.rfind(['\n', '\r']).map(|i| i + 1);
     let wanted = match (after_last_break(input), after_last_break(&output)) {
         (Some(i), Some(o)) => [&output[..o], &input[i..]].concat(),
-        (Some(_), None) => return None,
-        (None, _) => output,
+        _ => output,
     };
     edits::gap_edit(input, wanted.as_bytes(), gap.start)
 }
