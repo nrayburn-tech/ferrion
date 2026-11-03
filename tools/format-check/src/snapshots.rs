@@ -38,6 +38,55 @@ const NOT_GJF: &[(&str, &str)] = &[
         "a comment between modifiers pins them (docs/style.md)",
     ),
     ("core/regions", "disable regions are copied (docs/style.md)"),
+    (
+        "imports/comment-after-last",
+        "a comment on the line after the last import stays with what follows (docs/style.md)",
+    ),
+    (
+        "imports/comment-keeps-duplicate",
+        "a duplicate import with a comment is kept, so the comment isn't lost (docs/style.md)",
+    ),
+    (
+        "imports/comment-keeps-unused",
+        "an unused import with a comment is kept (docs/style.md)",
+    ),
+    (
+        "imports/comments-above",
+        "a comment belongs to the import below it, and GJF's to the one above (docs/style.md)",
+    ),
+    (
+        "imports/duplicate-wildcards",
+        "duplicate on-demand and module imports are kept (docs/style.md, proposed)",
+    ),
+    (
+        "imports/escapes",
+        "GJF rejects a Unicode escape in an import (docs/style.md)",
+    ),
+    (
+        "imports/floating-comments",
+        "GJF rejects a header after a blank line, a block comment between imports, and a comment \
+         inside one (docs/style.md)",
+    ),
+    (
+        "imports/header-above-first",
+        "an unused first import right below a comment is kept (docs/style.md)",
+    ),
+    (
+        "imports/java-lang-and-wildcards",
+        "java.lang and wildcard imports are never removed (docs/style.md)",
+    ),
+    (
+        "imports/markdown-before-23",
+        "below release 23, a `///` comment isn't a doc comment and uses no import (docs/style.md)",
+    ),
+    (
+        "imports/markers",
+        "formatter markers pin the import section (docs/style.md)",
+    ),
+    (
+        "imports/suppression",
+        "a ferrion-disable comment pins the import section (docs/style.md)",
+    ),
 ];
 
 /// Each snapshot's input under [`DIR`], in path order, as its path and its name in [`NOT_GJF`].
