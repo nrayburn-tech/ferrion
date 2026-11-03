@@ -178,21 +178,26 @@ small project.
 Ferrion's side (`tools/oracle-check/src/names/ferrion.rs`) builds one engine per project from its
 model and type inputs, runs the project symbols once, and resolves each source set's names after
 the oracle has run it, dropping each file's names once they are compared
-([normalization](semantic-oracle-normalization.md#ferrions-side)). On every corpus project
-(jedis, guava, caffeine, spring-data-jpa, lucene, hertzbeat, helidon), 4,188,020 names in B2's
-part were compared: 4,181,145 match, 6,875 are known differences in five categories, and none is
+([normalization](semantic-oracle-normalization.md#ferrions-side)). Each project runs on the JDK
+its lock names, javac and Ferrion's platform alike (decision 1 of the
+[corpus inputs review](#the-corpus-inputs-review)). On every corpus project (jedis, guava,
+caffeine, spring-data-jpa, lucene, hertzbeat, helidon), 4,199,479 names in B2's part were
+compared: 4,193,632 match, 5,847 are known differences in three categories, and none is
 unexplained ([the comparison](semantic-oracle-normalization.md#the-comparison),
 [known differences](semantic-oracle-normalization.md#known-differences)). Ferrion's side took
-12.6 s for all seven, on 4 threads, and at most 864 MB for one project (lucene). The pull-request
-job, `cargo oracle names jedis`, fails on any mismatch not listed in
+11.1 s for all seven, on 4 threads, and at most 864 MB for one project (lucene, measured in W6b).
+The pull-request job, `cargo oracle names jedis`, fails on any mismatch not listed in
 `tools/oracle-check/differences/names-known.txt`, and on a source set Ferrion fails on.
 
-Two of the categories are Ferrion bugs in its inputs rather than differences to keep, 19 names in
-guava: a platform wrapped once per source set, and a JDK-internal package missing from a `-source
-8` platform. The rest stay until B3 (`case` labels of a selector B2 can't type, and statically
-imported overloads) or are a difference of origin only (lucene's patched platform classes).
-Dependency source sets resolved in their own view (decision 1 of the project symbols review)
-cost no name in the corpus.
+The known differences left are B3's and B4's: `case` labels of a selector B2 can't type (1,012),
+statically imported overloads (4,830, nearly all in caffeine's generated code), and five calls of
+a method Lombok generates, named by its type (`QueryResult.builder()`), which javac sees in
+hertzbeat now that Lombok runs on its JDK 25. W6b's three other categories were Ferrion's or the
+tooling's, and are fixed in W6c: a platform wrapped once per source set (guava's `Map.Entry`, 8
+names), a JDK-internal package missing from a `-source 8` platform (11), and lucene's patched
+platform classes keyed as the platform's rather than the patch jar's (1,014). Dependency source
+sets resolved in their own view (decision 1 of the project symbols review) cost no name in the
+corpus.
 
 ### What the exit criterion means
 
@@ -383,3 +388,26 @@ follow-up once W6b's comparison has landed:
    `generate-sources`, or the Gradle generator tasks), so the generated-source roots of plugins
    other than processors, and processor jars a build makes for itself (caffeine's), exist on CI as
    they did when locking. The weekly job runs it.
+
+As built in W6c:
+
+1. Each project's javac runs on the JDK its lock names, which `corpus::jdks` finds
+   (`FERRION_JDK_<N>`, `JAVA_HOME_<N>_X64` as `actions/setup-java` sets it, `JAVA_HOME`, or a JDK
+   mise installed), and Ferrion's side opens the same JDK for the project's platform: jedis,
+   guava, spring-data-jpa, and lucene on JDK 21, caffeine on 26, hertzbeat on 25, and helidon on
+   27. The oracle's jar is built for Java 21, since `names` uses only javac's public API, and with
+   a fixed `project.build.outputTimestamp`, so a rebuild gives the same bytes and the cache's key
+   holds. The CI workflows set up each JDK a run needs. On JDK 21, guava's test that uses
+   `java.lang.classfile` reports `package java.lang.classfile does not exist`, as its build would,
+   and is left out. The report counts the files with errors in source sets that read
+   Lombok-annotated types from source, which wait for B4.
+2. Processors that only check code run, as built in W6a.
+3. `corpus generate` makes what each lock names from its build's output and fetching doesn't
+   give: the generated-source roots of plugins other than processors, and the files in the
+   checkout on a classpath, processor path, or patch path (caffeine's
+   `build/errorprone/caffeine-3.3.0.jar`, which its build downloads). For Maven, the modules
+   with such a path run to `process-sources`, or to `process-test-sources` for a test source
+   set's, since Helidon's build makes its ANTLR lexers package-private with a plugin after
+   `generate-sources`; for Gradle, an init script runs the tasks whose declared outputs are the
+   paths. On a fresh fetch, Helidon's, caffeine's, and spring-data-jpa's came out byte for byte as
+   the lock's builds left them. The weekly job runs it after `corpus fetch`.
