@@ -74,6 +74,11 @@ pub trait Platform: Send + Sync + fmt::Debug {
     fn is_visible(&self, package: &PackageName) -> bool;
     /// The module of the class `name`, when the platform has it and knows its module.
     fn module_of(&self, name: &ClassName) -> Option<String>;
+    /// The jar or directory the class `name` comes from when a `--patch-module` adds it to the
+    /// platform, rather than the platform's own; `None` for the platform's classes.
+    fn patched_from(&self, _name: &ClassName) -> Option<PathBuf> {
+        None
+    }
 }
 
 impl Platform for PlatformApi {

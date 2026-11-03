@@ -45,6 +45,7 @@ impl ProjectInput {
     ) -> (ProjectInput, Vec<SkippedFile>) {
         let mut skipped = Vec::new();
         let mut input = ProjectInput::default();
+        let mut platforms = Platforms::default();
         for set in project.source_sets() {
             let mut files = Vec::new();
             for (roots, generated) in [(&set.roots, false), (&set.generated_roots, true)] {
@@ -66,7 +67,7 @@ impl ProjectInput {
             match types {
                 Some(types) => {
                     let types = types.source_set(set.id);
-                    source_set.platform = Some(configured(set, types));
+                    source_set.platform = Some(platforms.configured(set, types));
                     source_set.classpath = types
                         .entries
                         .iter()
@@ -104,39 +105,60 @@ impl ProjectInput {
     }
 }
 
-/// A source set's platform as its compile options make it. Code in the unnamed module, as every
-/// source set's is, sees the packages the platform's module graph exports to it: from the default
-/// root modules and `--add-modules`'s, with `--add-exports`'s to `ALL-UNNAMED` added. Compiled
-/// with `-source` and `-target` before release 9, which has no modules, it sees every package of
-/// the JDK (observed with javac 27: `sun.security.jca` and `jdk.internal.misc` resolve with
-/// `-source 8`, and aren't visible with `-source 11`). A `--patch-module`'s classes are found
-/// before the module's own. With none of these, it's the platform API as it is.
-fn configured(set: &SourceSet, types: &SourceSetTypes) -> Arc<dyn Platform> {
-    let options = &set.compile;
-    let all_visible = options.platform == PlatformKind::Jdk && set.release.value < 9;
-    if !all_visible
-        && options.add_modules.is_empty()
-        && options.add_exports.is_empty()
-        && types.patches.iter().all(|(_, entries)| entries.is_empty())
-    {
-        return types.platform.clone();
+/// The platforms made so far, so that source sets with the same platform API and compile
+/// options share one: the engine numbers each platform as one class source, and the same class
+/// from two would be two types (a member type inherited through a dependency's types and the
+/// reader's own would be ambiguous).
+#[derive(Default)]
+struct Platforms {
+    configured: Vec<(Arc<PlatformApi>, bool, CompileOptions, Arc<dyn Platform>)>,
+}
+
+impl Platforms {
+    /// A source set's platform as its compile options make it. Code in the unnamed module, as
+    /// every source set's is, sees the packages the platform's module graph exports to it: from
+    /// the default root modules and `--add-modules`'s, with `--add-exports`'s to `ALL-UNNAMED`
+    /// added. Compiled with `-source` and `-target` before release 9, which has no modules, it
+    /// sees every package of the JDK (observed with javac 27: `sun.security.jca` and
+    /// `jdk.internal.misc` resolve with `-source 8`, and aren't visible with `-source 11`). A
+    /// `--patch-module`'s classes are found before the module's own. With none of these, it's
+    /// the platform API as it is.
+    fn configured(&mut self, set: &SourceSet, types: &SourceSetTypes) -> Arc<dyn Platform> {
+        let options = &set.compile;
+        let all_visible = options.platform == PlatformKind::Jdk && set.release.value < 9;
+        if !all_visible
+            && options.add_modules.is_empty()
+            && options.add_exports.is_empty()
+            && types.patches.iter().all(|(_, entries)| entries.is_empty())
+        {
+            return types.platform.clone();
+        }
+        let api = types.platform.clone();
+        let same = |(other, other_all, other_options, _): &&(_, bool, CompileOptions, _)| {
+            Arc::ptr_eq(other, &api) && *other_all == all_visible && other_options == options
+        };
+        if let Some((.., platform)) = self.configured.iter().find(same) {
+            return platform.clone();
+        }
+        let visible = if all_visible {
+            None
+        } else {
+            visible(&api, options)
+        };
+        let patches = types
+            .patches
+            .iter()
+            .map(|(module, entries)| (module.clone(), entries.clone()))
+            .collect();
+        let platform: Arc<dyn Platform> = Arc::new(Configured {
+            api: api.clone(),
+            visible,
+            patches,
+        });
+        self.configured
+            .push((api, all_visible, options.clone(), platform.clone()));
+        platform
     }
-    let api = types.platform.clone();
-    let visible = if all_visible {
-        None
-    } else {
-        visible(&api, options)
-    };
-    let patches = types
-        .patches
-        .iter()
-        .map(|(module, entries)| (module.clone(), entries.clone()))
-        .collect();
-    Arc::new(Configured {
-        api,
-        visible,
-        patches,
-    })
 }
 
 /// The packages the unnamed module sees in `api` with `options`, in internal form, or `None` when
@@ -210,6 +232,14 @@ impl Platform for Configured {
             }
         }
         self.api.module_of(name)
+    }
+
+    fn patched_from(&self, name: &ClassName) -> Option<PathBuf> {
+        self.patches
+            .iter()
+            .flat_map(|(_, entries)| entries)
+            .find(|entry| entry.entry.find(name).ok().flatten().is_some())
+            .map(|entry| entry.path.clone())
     }
 }
 
