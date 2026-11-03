@@ -1513,5 +1513,12 @@ with only `b = 2;` in range gives
   inside the expanded range). GJF reorders them only when the range it was given holds the whole
   run, so with only `static` or an annotation on the line above in range, it formats the
   declaration but leaves `final public static`. Case: `tests/ranges/modifiers-partly.java`.
+- **A comment between two units on one line (proposed)** goes with the code formatting puts it
+  beside: `class A { /* c */ int x;` with only `class A {` in range is left as it is, and with
+  only `int x;` in range gives the comment and the field lines of their own. GJF counts the
+  comment with the code before it on its line, so it gives both lines of their own for the
+  header, and leaves the comment on the `{` line for the field, where formatting the whole result
+  then keeps it, though formatting the whole input gives it a line of its own: a range would take
+  the file where whole-file formatting doesn't. Case: `tests/ranges/comment-after-header.java`.
 - **Syntax errors:** a range is formatted unless an error's unit overlaps it; GJF refuses a file
   with any error (SCOPE.md).
