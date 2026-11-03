@@ -443,7 +443,7 @@ decided at the start:
   other with the code after it. Deciding by the input, as GJF does, takes the file where
   whole-file formatting doesn't: with `class A { /* c */ int x;` and only `int x;` in range, the
   comment would stay on the `{` line, where formatting the whole result keeps it, though the
-  whole input's formatting gives it a line of its own (a departure, proposed in docs/style.md).
+  whole input's formatting gives it a line of its own (a departure, decision 15).
 - **A disable region** is copied as written, in a range as in a file.
 - **Errors:** a range is formatted unless an error's unit overlaps its expanded range (below),
   where GJF refuses any file with an error.
@@ -694,3 +694,6 @@ From the ranges workstream, also accepted (2026-11-02):
 14. **The parser issues the range test found** (the stray-token error placement in `expr_stmt`,
     and unclosed-block recovery not looking past annotations) are follow-ups after A2, recorded
     in "Ranges".
+15. **A comment between two units on one line goes with the code formatting puts it beside,** so
+    formatting a range and then the whole file agree; GJF goes by the code beside it in the
+    input, a departure (docs/style.md).
