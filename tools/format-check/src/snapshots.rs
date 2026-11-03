@@ -39,6 +39,14 @@ const NOT_GJF: &[(&str, &str)] = &[
     ),
     ("core/regions", "disable regions are copied (docs/style.md)"),
     (
+        "core/comments",
+        "an unused import with a comment is kept (docs/style.md, \"Imports\")",
+    ),
+    (
+        "declarations/compilation-unit",
+        "an unused import with a comment is kept (docs/style.md, \"Imports\")",
+    ),
+    (
         "imports/comment-after-last",
         "a comment on the line after the last import stays with what follows (docs/style.md)",
     ),

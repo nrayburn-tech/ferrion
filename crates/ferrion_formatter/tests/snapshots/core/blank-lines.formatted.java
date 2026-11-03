@@ -1,9 +1,5 @@
 package p;
 
-import a.B;
-
-import c.D;
-
 class A {
 
   int a;

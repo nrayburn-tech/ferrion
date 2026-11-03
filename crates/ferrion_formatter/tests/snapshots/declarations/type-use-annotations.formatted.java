@@ -1,6 +1,6 @@
-import org.jspecify.annotations.Nullable;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import javax.annotation.CheckForNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jspecify.annotations.Nullable;
 
 abstract class TypeUseAnnotations {
   @Nullable String a() {

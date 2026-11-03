@@ -4,7 +4,6 @@
 package p; // trailing the package
 
 import a.B; /* trailing, then a line break */
-import c.D;
 
 // leading the class, on its own line
 /** The class's doc comment. */
