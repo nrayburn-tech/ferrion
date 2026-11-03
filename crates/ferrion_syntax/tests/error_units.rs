@@ -92,6 +92,15 @@ fn an_unclosed_body_affects_its_declaration() {
 }
 
 #[test]
+fn an_unclosed_body_with_a_stray_token_affects_its_declaration() {
+    // The block closes at `private`, so its last token is the `}` of the `if`, not its own.
+    assert_eq!(
+        units("class A {\n  void a() {\n    if (b) {}\n    .\n  private int c;\n}\n"),
+        ["void a() {\n    if (b) {}\n    ."]
+    );
+}
+
+#[test]
 fn imports_and_packages_are_units() {
     assert_eq!(
         units("package p\nimport a.B;\nimport a.C\nclass A {}\n"),
