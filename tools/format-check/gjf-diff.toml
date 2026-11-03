@@ -14,13 +14,13 @@
 
 [jedis]
 compared = 1060
-identical = 1013
-differing-lines = 296
+identical = 1014
+differing-lines = 270
 
 [guava]
 compared = 1531
-identical = 1520
-differing-lines = 71
+identical = 1521
+differing-lines = 67
 
 [caffeine]
 compared = 707
@@ -30,19 +30,19 @@ differing-lines = 488
 [spring-data-jpa]
 compared = 612
 identical = 572
-differing-lines = 3304
+differing-lines = 3328
 
 [lucene]
 compared = 5968
-identical = 5907
-differing-lines = 281
+identical = 5906
+differing-lines = 279
 
 [hertzbeat]
 compared = 1384
-identical = 1292
-differing-lines = 2591
+identical = 1293
+differing-lines = 2612
 
 [helidon]
 compared = 4439
-identical = 4026
-differing-lines = 11015
+identical = 4019
+differing-lines = 11132
