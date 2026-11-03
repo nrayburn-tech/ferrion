@@ -26,8 +26,9 @@ use crate::{Edit, FormatOptions, apply_edits, format_range, regions};
 /// them gives a file that parses to the same tree as the input (apart from the rewrites, as
 /// [`super::verify`] compares trees), with no new errors and the same comments (those in the
 /// range as `verify` compares them, the others as written); and that formatting that file again
-/// in the same range, moved by the edits, gives no edits. An input with syntax errors is checked
-/// the same way: its tree is compared, `Error` nodes and all.
+/// in the same range, moved by the edits, changes nothing the range formatted (a comment moved to
+/// a line of its own can take the second run on to the code after it). An input with syntax
+/// errors is checked the same way: its tree is compared, `Error` nodes and all.
 pub fn verify_range(
     input: &SourceText,
     range: Range<u32>,
@@ -88,14 +89,25 @@ pub fn verify_range(
     imports::compare(&before.tree, &after.tree, bom)?;
     compare_comments(&before.tree, &after.tree, expanded.as_ref(), bom)?;
 
+    // What the range formatted, the gap before its units included, in the result. Formatting
+    // can move a comment to a line of its own, where it goes with the code after it, so a second
+    // run in the same range may reach further, but it changes nothing the first formatted.
+    let formatted = expanded.as_ref().map_or(0..0, |e| {
+        moved(edits, e.before, false)..moved(edits, e.units.end, false)
+    });
     let moved = moved(edits, range.start, false)..moved(edits, range.end, true);
     match format_range(&after.tree, &output, moved) {
-        Ok(again) if again.is_empty() => Ok(()),
-        Ok(again) => Err(violation(
-            Property::Idempotence,
-            Some(bom + again[0].range.start as usize),
-            "formatting the result again in the range changes it",
-        )),
+        Ok(again) => match again.iter().find(|edit| {
+            edit.range.start < formatted.end && formatted.start < edit.range.end
+                || edit.range.is_empty() && formatted.contains(&edit.range.start)
+        }) {
+            None => Ok(()),
+            Some(edit) => Err(violation(
+                Property::Idempotence,
+                Some(bom + edit.range.start as usize),
+                "formatting the result again in the range changes what it formatted",
+            )),
+        },
         // Removing every import leaves the comments above them leading the code after, which an
         // error can affect: the range's code is gone, not changed.
         Err(_)
