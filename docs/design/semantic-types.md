@@ -14,7 +14,7 @@ stop, when their turn comes.
 | B3b, attribution and overloads | [Attribution](semantic-attribution.md) | A second walk over each body, after B2's names: standalone expression types, field and method lookups on expression types, overload resolution for calls that need no inference, constant folding, and member tables as shared entries. |
 | B3c, inference | Later | JLS chapter 18, poly expressions, lambdas, method references, diamond, `var` from poly initializers. Its design is written when B3b closes. |
 | B3d, patterns and flow | Later | Switch expressions and patterns, records and sealed types, exhaustiveness, definite assignment, effective finality, reachability. Its design is written when B3c closes. |
-| The oracle | [Types oracle normalization](types-oracle-normalization.md) | `javac-oracle types` and `relations`, and `cargo oracle types`: what javac reports, the type and constant string formats, what is compared. Written with the oracle, in W0. |
+| The oracle | [Types oracle normalization](types-oracle-normalization.md) | `javac-oracle types`, with relation queries in the same run, and `cargo oracle types`: what javac reports, the type and constant string formats, what is compared, twenty observations, the corpus run. Written with the oracle, in W0. |
 
 ## What B3 serves
 
@@ -85,18 +85,46 @@ time limit, and nothing defined one before B3. The proposal is made from data, i
 
 1. **Now:** W0's oracle records how long javac spends analyzing each file (attribution and flow,
    timed per compilation unit), across the corpus and javac's stress inputs. The distribution,
-   and the slowest files, are recorded in [the measurements](#measurements) below.
+   the slowest files, and the provisional limits are in [the measurements](#measurements) below.
 2. **At B3c's review,** when inference exists and is the part most likely to blow up, Ferrion's own
    distribution is measured the same way, and the limits are set: the fuel per body at a multiple
    of the corpus's largest use, and the wall-clock backstop per file at a multiple of the slowest
    file's time, with the margin chosen from the two distributions. Until then B3a and B3b run with
-   provisional limits ten times above anything measured, so a limit firing in the corpus is a bug
-   report rather than a result.
+   provisional limits about ten times above anything measured in the corpus, so a limit firing
+   there is a bug report rather than a result.
 
 ### Measurements
 
-To be filled from W0's corpus run before this design's review: javac's analysis time per file
-(median, 99th percentile, maximum, the slowest twenty), and for javac's stress inputs the slowest.
+From W0's corpus run ([analysis time per file](types-oracle-normalization.md#analysis-time-per-file)):
+javac's `ANALYZE` time (attribution and flow) for each of the 16,709 compared files, on each
+project's own JDK (21 to 27). A source set's first files carry the JVM's warm-up, so they are left
+out of the row that measures a file's own cost:
+
+| | Median | p90 | p99 | p99.9 | Max |
+| --- | --- | --- | --- | --- | --- |
+| Every compared file | 1.6 ms | 17.5 ms | 122 ms | 431 ms | 1,129 ms |
+| But each source set's first 5 files | 1.4 ms | 11.9 ms | 74 ms | 323 ms | 1,129 ms |
+
+- **The slowest corpus files** are large API surfaces with thousands of overloaded calls (jedis's
+  `CommandObjects`, 1,129 ms, and `Jedis`, 867 ms), ANTLR's generated parsers (spring-data-jpa's
+  `EqlParser`, 906 ms), and guava's collection classes (`Maps`, 563 ms).
+- **javac's stress tests** (975 files under `generics/inference`, `generics/diamond`, `lambda`,
+  `patterns`, `expswitch`, `perf`, and files named for nesting or chains): one outlier,
+  `generics/inference/8048838/T8048838.java` at 5,031 ms, a method with 100 type parameters each
+  bounded by the next, called once; then 488 ms and 458 ms; everything else under 165 ms, each
+  with about 40 ms of warm-up.
+- **Noise:** the machine was shared during the run, and the same file measured up to three times
+  apart between two runs, so these are upper bounds. The numbers set at B3c's review are measured
+  again on a quiet machine.
+
+What follows for the limits:
+
+- The second row is the measure of a file's own cost, and the fuel budget is set against
+  Ferrion's own distribution of the same kind.
+- A fixed input like `T8048838` is what the limit is for: it should run out of fuel and be
+  `Unknown(Limit)` within the backstop, rather than the limit being raised to fit it.
+- **Provisional limits for B3a and B3b:** a wall-clock backstop of 10 s per file, about ten times
+  the slowest corpus file, and fuel that W1 sizes so that no corpus file uses a tenth of it.
 
 ## The crates
 
@@ -143,7 +171,7 @@ known differences. What each milestone compares:
 
 | Milestone | Compared with javac | Counted, not compared |
 | --- | --- | --- |
-| B3a | Relation queries over the corpus's declared types: subtype, assignable, same type, erasure, direct supertypes, capture, member types as seen from a type, subsignature; `lub` through the types of conditional expressions whose operands B2 already types. | Queries involving a type that didn't resolve. |
+| B3a | Relation queries over the corpus's declared types (2,180,279 in W0's run): subtype, assignable, same type, erasure, direct supertypes, capture, member types as seen from a type, subsignature, overrides; `lub` through the types of conditional expressions whose operands B2 already types. | Queries involving a type that didn't resolve, or a class file javac couldn't read (`threw`, 182). |
 | B3b | Types of standalone expressions, chosen methods of calls that need no inference, constant values; B2's two B3 categories (`case-label`, `static-import-overload`) settled. | Anything that needs inference or a later milestone: `left-to-b3c`, `left-to-b3d`. |
 | B3c | Everything else of types and chosen methods: generic calls, diamond, lambdas, method references, poly conditionals, `var` from poly initializers, inferred type arguments. | Patterns and switches. |
 | B3d | Switch and pattern types, exhaustiveness and other switch errors, effective finality, definite assignment as javac reports it, reachability as javac reports it, the remaining constant values. | Nothing: B3's exit. |
@@ -176,25 +204,44 @@ The exit criterion compares with javac, so where javac and the JLS disagree, Fer
 javac and records the departure as an observation, with the small input that shows it, in the
 milestone's design. Ferrion never learns javac from its source (the [clean-room
 policy](../../CONTRIBUTING.md#clean-room-policy)): only from running it, through the oracle and
-on small inputs. Departures in `lub`, capture, and inference are known to exist; one is already
-observed below, and W0 is recording more.
+on small inputs. W0 recorded twenty observations in
+[types oracle normalization](types-oracle-normalization.md#observations); the departures from the
+JLS among them, and what Ferrion does about each:
 
-**Observation 1** (Temurin 27.0.1, `var x = c ? 1 : "a";`): javac types `x` as an intersection
-`Object & Serializable & Comparable<? extends INT#2> & Constable & ConstantDesc`, where `INT#2` is
-the same intersection with `Comparable<?>`: the infinite type of JLS 4.10.4 is cut off after one
-level of recursion, and `Object` is kept as the intersection's first part. Ferrion's `lub` has to
-cut off at the same depth to compare equal (question 2).
+- **`lub` cuts its recursion off** (its observation 1): `var x = c ? 1 : "a";` is
+  `Serializable & Comparable<? extends Serializable & Comparable<?> & Constable & ConstantDesc> &
+  Constable & ConstantDesc`: javac computes one level more than the operands and then writes
+  `Comparable<?>`, where JLS 4.10.4 gives an infinite type. Inference's `lub` (`List.of(1, 2.0)`)
+  is cut off the same way. Ferrion's `lub` cuts off at the same depth (question 2). (javac's
+  diagnostics print `Object` as an extra first part; the API's type doesn't have it.)
+- **An intersection's parts are ordered** (observation 2): the class first, then interfaces
+  deepest first, then by qualified name, whichever operand comes first. The JLS doesn't order
+  them; Ferrion orders `lub`'s and `glb`'s results the same way, and W1 observes the rule on more
+  inputs, since it was inferred from four.
+- **`Types.directSupertypes` and `Types.asMemberOf` depart from JLS 4.10.2 and 4.5.2**
+  (observations 16, 17): for `int[]` one intersection rather than three types, `Object` among an
+  interface's supertypes even when it has superinterfaces, wildcards substituted rather than
+  captured. These are javac's API, not how javac types programs, so Ferrion implements the JLS and
+  its relations adapter converts its answers to the API's shape for the comparison
+  ([type relations](semantic-type-relations.md#checking)).
+- **Folded `float` and `double` text is the compiling JDK's** (observation 13): `"" + 1.0E23` is
+  `1.0E23` on JDK 27 and `9.999999999999999E22` on JDK 17, since `Double.toString` changed in
+  JDK 19. Every corpus project builds on JDK 21 or later; Ferrion folds with JDK 19's algorithm
+  ([constants](semantic-attribution.md#constants)).
 
 ## Work order
 
 On `b3/integration`, cut from main at 3273dd6:
 
-0. **W0, the oracle side** (running alongside this design): `javac-oracle types` and `relations`,
-   `cargo oracle types` with a stand-in for Ferrion, the type and constant string formats in
-   [types oracle normalization](types-oracle-normalization.md), per-file analysis times, and a
-   corpus run of javac's side alone.
+0. **W0, the oracle side** (done, alongside this design): `javac-oracle types`, which reports
+   relation queries in the same run as types so each source set compiles once; `cargo oracle
+   types` (and `--relations` for B3a alone) with a stand-in for Ferrion; the type and constant
+   string formats in [types oracle normalization](types-oracle-normalization.md); per-file
+   analysis times; CI jobs; and a corpus run of javac's side alone: 4,447,710 expressions,
+   1,329,951 calls, 849,929 constants, 460,541 variables, and 2,180,279 relation queries in 16,709
+   compared files, 514 MB of output, in 864 s.
 1. **W1, type relations (B3a):** `types`: the arena, translation, relations, `lub` and `glb`,
-   conversions and contexts, member types as seen from a type; the relations adapter for
+   conversions and contexts, member types as seen from a type; Ferrion's relations side for
    `cargo oracle types --relations`; property tests and the fuzz target. One agent: its parts
    build on each other.
 2. **B3a review stop,** after W1's corpus comparison.
@@ -244,3 +291,17 @@ keeping the machine near four agents in total.
    non-answer rooted in a removed symbol.
 8. **The work order:** W1 alone for B3a; W2, then W3 and W4 for B3b; at most two B3 agents at
    once while A2 runs.
+
+From W0, the oracle (each recommended by W0, and by this design):
+
+9. **Two javac internals in the oracle:** constant values come from `Type.constValue()` and
+   effective finality from javac's `EFFECTIVELY_FINAL` flag, read by name, since the public API
+   has no other route to either. Both were checked against the JLS on small inputs, on JDK 21,
+   25, 26, and 27; `names` already reads javac's trees.
+10. **Relations inside `types`,** not a separate `relations` command, so each source set compiles
+    once; `cargo oracle types --relations` compares them alone for B3a.
+11. **Type strings without origins:** a class in a type string is its binary name, without where it
+    came from, since `names` already compares that.
+12. **What the public API doesn't expose isn't compared:** inferred type arguments on their own,
+    constructor and method reference types, and which phase chose a method. A call's type as
+    invoked covers inferred arguments wherever the signature mentions them.
