@@ -13,8 +13,10 @@
 //! releases each is meant for.
 
 pub mod fetch;
+pub mod generate;
 mod gradle;
 pub mod jdk_tests;
+pub mod jdks;
 pub mod lock;
 mod maven;
 pub mod model;

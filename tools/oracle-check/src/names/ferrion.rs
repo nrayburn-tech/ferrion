@@ -33,7 +33,6 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
-use anyhow::Context as _;
 use corpus::Dirs;
 use corpus::project::Project;
 use ferrion_classfile::ArchiveCache;
@@ -93,12 +92,13 @@ impl Resolver for StandIn {
     }
 }
 
-/// `ferrion_semantic` over each corpus project's model, with its jars and the JDK at
-/// `JAVA_HOME`, the oracle's.
+/// `ferrion_semantic` over each corpus project's model, with its jars and the JDK its lock
+/// names, the oracle's.
 pub struct Ferrion {
     dirs: Dirs,
     projects: Vec<Project>,
-    java_home: PathBuf,
+    /// Each project's JDK.
+    jdks: HashMap<String, PathBuf>,
     /// Where project models are written to be loaded.
     scratch: PathBuf,
     threads: usize,
@@ -120,19 +120,16 @@ struct Loaded {
 
 impl Ferrion {
     /// For a run over `work`: each project's name with the number of its source sets the run
-    /// resolves, so that its engine is dropped after the last. Names are resolved on `threads`
-    /// threads.
+    /// resolves, so that its engine is dropped after the last, and with `jdks`, each project's
+    /// JDK. Names are resolved on `threads` threads.
     pub fn new(
         work: &[(String, usize)],
+        jdks: &HashMap<String, PathBuf>,
         scratch: PathBuf,
         threads: usize,
     ) -> anyhow::Result<Ferrion> {
         let dirs = Dirs::new()?;
         let projects = Project::load_all(&dirs.projects_file())?;
-        let java_home = PathBuf::from(
-            std::env::var_os("JAVA_HOME")
-                .context("JAVA_HOME must point to the JDK to run javac")?,
-        );
         let states = work
             .iter()
             .map(|(project, remaining)| {
@@ -146,7 +143,7 @@ impl Ferrion {
         Ok(Ferrion {
             dirs,
             projects,
-            java_home,
+            jdks: jdks.clone(),
             scratch,
             threads: threads.max(1),
             states,
@@ -160,8 +157,9 @@ impl Ferrion {
             .iter()
             .find(|p| p.name == name)
             .ok_or_else(|| format!("unknown project `{name}`"))?;
-        let (model, _) = corpus::model::project_model(&self.dirs, project, Some(&self.java_home))
-            .map_err(|e| format!("{e:#}"))?;
+        let jdk = self.jdks.get(name).map(PathBuf::as_path);
+        let (model, _) =
+            corpus::model::project_model(&self.dirs, project, jdk).map_err(|e| format!("{e:#}"))?;
         let dir = self
             .scratch
             .join(format!("names-model-{}", std::process::id()));

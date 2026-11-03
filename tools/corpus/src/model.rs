@@ -189,6 +189,11 @@ pub fn processors(dirs: &Dirs, project: &Project) -> Result<BTreeMap<String, Pro
     Ok(found)
 }
 
+/// The JDK the project's lock was made with, which its build and the javac oracle run on.
+pub fn lock_jdk(dirs: &Dirs, project: &Project) -> Result<u32> {
+    Ok(locked(dirs, project)?.jdk)
+}
+
 /// The project's lock, which must be for its commit.
 fn locked(dirs: &Dirs, project: &Project) -> Result<Lock> {
     let lock =

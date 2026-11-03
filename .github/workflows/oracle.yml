@@ -257,10 +257,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: taiki-e/checkout-action@7d1e50e93dc4fb3bba58f85018fadf77898aee8b # v1.4.2
+      # Each project's build and javac run on the JDK its lock names (JAVA_HOME_<N>_X64); the
+      # last, 27, is JAVA_HOME, which builds the oracle.
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
-          java-version: "27"
+          java-version: |
+            21
+            25
+            26
+            27
           cache: maven
       - name: Build the javac oracle
         working-directory: tools/javac-oracle
@@ -271,6 +277,13 @@ jobs:
       # cache doesn't save them.
       - name: Fetch the corpus
         run: cargo corpus fetch
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      # What the builds generate other than with annotation processors, which the oracle runs:
+      # Helidon's templates, ANTLR's and protobuf's output, caffeine's code generator's and the
+      # jar its processor paths name.
+      - name: Generate the corpus's sources
+        run: cargo corpus generate
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
       # Every source set of every project, two javac JVMs at a time on the runner's 16 GB.

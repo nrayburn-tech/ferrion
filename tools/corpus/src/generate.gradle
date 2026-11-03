@@ -1,0 +1,44 @@
+// Init script used by `corpus generate`. Adds a `ferrionCorpusGenerate` task to the root project
+// that depends on every task whose declared outputs are one of the paths listed in the file the
+// FERRION_CORPUS_WANTED environment variable names (one absolute path per line), or are inside
+// one, so that running it makes those paths, and builds only what their tasks need. Only the
+// tasks of the project each path is in (the one with the deepest directory holding it) are
+// looked at.
+
+def wanted = new File(System.getenv('FERRION_CORPUS_WANTED')).readLines()
+    .findAll { !it.isBlank() }
+    .collect { new File(it).toPath().normalize() }
+
+rootProject {
+    tasks.register('ferrionCorpusGenerate')
+}
+
+gradle.projectsEvaluated {
+    def projects = gradle.rootProject.allprojects
+    def owners = wanted.collect { path ->
+        projects.findAll { path.startsWith(it.projectDir.toPath().normalize()) }
+            .max { it.projectDir.toPath().nameCount }
+    }.findAll { it != null }.unique()
+    def producers = []
+    owners.each { p ->
+        p.tasks.names.each { name ->
+            def outputs
+            try {
+                outputs = p.tasks.getByName(name).outputs.files.files
+            } catch (Exception ignored) {
+                // A task that can't be created here, or whose outputs can't be resolved before
+                // it runs, isn't one the build needs for the paths.
+                return
+            }
+            def makes = outputs.any { f ->
+                def path = f.toPath().normalize()
+                wanted.any { path.startsWith(it) }
+            }
+            if (makes) {
+                producers << p.tasks.getByName(name)
+            }
+        }
+    }
+    producers.each { logger.quiet("ferrion: generating with ${it.path}") }
+    gradle.rootProject.tasks.named('ferrionCorpusGenerate').configure { dependsOn(producers) }
+}
