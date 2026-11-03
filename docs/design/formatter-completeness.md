@@ -372,21 +372,42 @@ pub enum RangeError {
 ```
 
 `--lines` and an editor's selection are converted to byte ranges by their callers (A3, A5), and
-several ranges are several calls.
+several ranges are several calls. A range past the end of the text is cut at it, and an empty
+range touches nothing. (Built in A2: `crate::range`. What any range of a tree needs, the comment
+map, the units, the error units, and the whole-file edits, is in a `Ranges` value that the range
+test and the fuzz target reuse for many ranges; it isn't public API.)
 
 ### What GJF does
 
-With `--lines`, `--offset`, and `--length` (observed):
+With `--lines`, `--offset`, and `--length` (observed; the ranges workstream re-checked the cases
+this section first left open, and corrected two, marked):
 
 - **The range becomes tokens:** a range that touches no token (a blank line, indentation, the
-  space inside `int  a`) changes nothing, and a comment counts with the token after it.
-- **It expands to units:** a whole statement or member declaration, lambda and anonymous class
-  bodies in it included. For a statement or declaration with a block (`if`, a method, a class),
-  the unit is the header up to `{`, and each statement inside is a unit of its own. Touching one
-  word at the end of a long line re-wraps the whole statement. A `}` alone changes nothing.
-- **Whitespace around the unit** is normalized: its indentation and the blank lines on both sides.
-- **A declaration's doc comment, modifiers, and annotations** belong to its unit, and are
-  rewritten only when the unit is in range.
+  space inside `int  a`) changes nothing. A comment counts with the code it is placed with: a
+  comment trailing code on its line (`a(); // c`) with that code, any other with the code after it
+  (corrected: not always the token after).
+- **It expands to units:** a statement in a block or a `switch` group, a `switch` label (`case 1:`)
+  or rule (`case 1 -> f();`), a member, an enum constant, an import, the package declaration.
+  Lambda bodies, anonymous class bodies, and `switch` expressions in a unit are part of it: a range
+  inside a lambda body formats the whole statement the lambda is in, and one inside an anonymous
+  class's method the whole field or statement around the class. A body that isn't a block
+  (`if (a)` then `f();` on the next line) is part of its statement, which joins them. For a
+  statement or declaration with a block (`if`, a method, a class), each run of its own tokens
+  around its blocks is a unit: `if (a) {`, `} else {`, `} catch (E e) {`, `} while (a);`, and
+  the `}` alone; each statement inside is a unit of its own. Touching one word at the end of a
+  long line re-wraps the whole statement. A `}` alone is re-indented, and blank lines before it
+  removed (corrected: it changes nothing only when it is already right).
+- **Whitespace around the unit:** the gap before it is the whole-file output's, its blank lines,
+  its indentation, and the trailing whitespace of the line before. The gap after it gets the
+  whole-file output's line breaks, so the blank lines after it and the trailing whitespace on its
+  last line, but the line after keeps its indentation. Code after the unit on its last line moves
+  to a line of its own, indented (`a(); b(); c();` with `b` in range gives three lines, `c();`
+  otherwise as written), and code that whole-file formatting puts on the unit's last line moves up
+  onto it (an enum's `;` on the line after its last constant).
+- **A declaration's doc comment, modifiers, and annotations** belong to its unit. GJF reorders
+  modifiers only when all of the run is in the range given, not the expanded one: with only a
+  field's annotation, on the line above, in range, the field is formatted and `final public
+  static` is left (observed).
 - **Imports are always sorted and pruned,** whatever the range, and blank lines around the import
   section change with them.
 - **Any syntax error** in the file makes GJF refuse it.
@@ -405,7 +426,10 @@ decided at the start:
 - **Rewrites** apply only when their whole construct is in the expanded range: the whole import
   section for sorting and removal (a departure: GJF always fixes the imports), the whole run for
   modifier reordering, the whole comment for doc comment reflow. A declaration's modifiers and doc
-  comment are in its header's unit, so in practice they follow GJF.
+  comment are in its header's unit, so they are rewritten whenever the header is in range, where
+  GJF reorders the modifiers only when the range given holds all of them (a departure, proposed in
+  docs/style.md, "Range formatting"). A rewrite that is cut, such as the import section for a
+  range on one import, changes nothing, its whitespace included, since its output is one edit.
 - **A disable region** is copied as written, in a range as in a file.
 - **Errors:** a range is formatted unless an error's unit overlaps its expanded range (below),
   where GJF refuses any file with an error.
@@ -417,7 +441,20 @@ affected by an error, and the
 [error recovery design](parser-error-recovery.md#what-a-syntax-error-affects) says what an error
 affects: its **unit**, the innermost statement, member declaration, import, package declaration,
 or module directive containing it, or the whole declaration for an error in its header.
-`SyntaxNode::error_unit`, promised there, isn't built yet; A2 builds it in `ferrion_syntax`.
+`SyntaxNode::error_unit` and `SyntaxTree::error_units` build it in `ferrion_syntax` (A2):
+
+- **Where each error is:** the parser's builder marks the node an error is reported in with
+  `OWN_ERROR`, beside `CONTAINS_ERROR` on its ancestors, so the units start from those nodes.
+- **An `Error` node in a list** of statements or members (a block, a `switch` group, a class body,
+  the compilation unit), such as a stray `)` between two statements, is a unit of its own: it
+  stands in an item's place, and the items around it are whole. The parser reports the error at a
+  token that can't start a statement in the block, then puts the token in an `Error` node, so a
+  list that is closed by its own `}`, has an `Error` item, and holds no character the lexer
+  couldn't read doesn't make itself a unit for that error.
+- **An error outside every unit** (a stray character between top-level declarations) is the whole
+  file's, and so is the unit of an error in a node no unit contains; every range is then
+  affected. So is every range when an error unit holds a disable region's start or end, which
+  would leave the region's copying undefined.
 
 The rules lay out only trees without errors, so for a range, **each error unit is copied as
 written**: the formatter emits the unit's text as one `Verbatim`, its comments included, and lays
@@ -432,7 +469,8 @@ unit or the units around it change; the range test measures how often.
 1. builds the document for the whole tree, error units copied, and prints it with edits;
 2. expands the range to units (above);
 3. returns `RangeError::Affected` if an error unit overlaps the expanded range;
-4. keeps the edits inside the expanded range, and each rewrite's only if its construct is inside.
+4. keeps the edits inside the expanded range (each rewrite's only if its construct is inside),
+   the gap before it, and the line breaks of the gap after it (above).
 
 In a file without errors, step 1 is `format_edits`. Formatting the whole tree for a range costs a
 whole file's formatting (A1: under a millisecond for most corpus files), which keeps the code
@@ -440,8 +478,22 @@ paths one; a range never needs less than its file's comments and import plan any
 
 The rest of the tree is formatted as in the clean file, because nothing outside an error unit
 reads inside it, with one exception: the type-use annotations the file imports (A1's
-`type_use_imports`), which an error in an import can lose. The range test checks the claim on the
-whole corpus.
+`type_use_imports`), which an error in an import, or before the imports, can lose. The range test
+checks the claim on the whole corpus.
+
+**The range test** (`cargo format-check ranges`) breaks each corpus file at tokens picked with a
+seeded generator, deleting each or replacing it with one of `goto`, `)`, `]`, `}`, `;`, `=`, or
+`.`, and formats every run of a unit's tokens away from the change through `format_range`. A
+broken file's run is matched with the clean file's run that has the same tokens at the shifted
+offsets, the same kind of unit, and the same kinds of nodes around it, and whose range expands
+to the same span; it is then compared with the clean file's output there: its text, the gap
+before it, and the line breaks after it (the gaps only next to units that match too, since they
+depend on both sides). A run without a match is one whose structure recovery shifted. With seed 1
+and two tokens per file, over the corpus's 15,724 files: 31,444 copies (3,800 still parse, 62
+are affected as a whole), 2.94 million runs away from the change, 3.5% of them affected by the
+error, and of the rest 5.7% shifted (25.6% after a broken brace, 3 to 8% for other tokens) and
+2,673,257 the same as in the clean file; 30, in copies whose imports changed, are the type-use
+exception, and none differ otherwise.
 
 ## Safety properties
 
