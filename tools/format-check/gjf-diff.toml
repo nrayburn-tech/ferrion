@@ -5,7 +5,7 @@
 # differing lines are above the number here; a change that lowers them records the new numbers
 # with `cargo format-check gjf --update`. This file's history is the record over time.
 #
-# These numbers are from the GJF diff (work order step 3): 18,242 lines in all, with 95.6% of the
+# These numbers are from the exit check (work order step 4): 18,071 lines in all, with 95.6% of the
 # files identical. Most of what's left is text blocks and long `//` comments, which are departures
 # (docs/style.md). The first pass over the core gave 72,212 lines, with 90% identical; the
 # construct rules (step 2) gave 74,204, with 88%. The formatter's core, whose first rule printed
@@ -19,8 +19,8 @@ differing-lines = 321
 
 [guava]
 compared = 1531
-identical = 1519
-differing-lines = 111
+identical = 1520
+differing-lines = 71
 
 [caffeine]
 compared = 708
@@ -34,8 +34,8 @@ differing-lines = 3304
 
 [lucene]
 compared = 5968
-identical = 5906
-differing-lines = 288
+identical = 5907
+differing-lines = 281
 
 [hertzbeat]
 compared = 1384
@@ -44,5 +44,5 @@ differing-lines = 2591
 
 [helidon]
 compared = 4439
-identical = 4023
-differing-lines = 11139
+identical = 4026
+differing-lines = 11015
