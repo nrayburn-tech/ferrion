@@ -18,15 +18,16 @@
 //!
 //! **Matching units.** Outside the change, the broken text is the clean text, shifted by the
 //! change after it, so a broken run is matched with the clean run that has the same tokens at
-//! the shifted offsets, the same kind of unit, and the same depth of units around it, and whose
+//! the shifted offsets, the same kind of unit, and the same kinds of nodes around it, and whose
 //! range expands to the same span, comments included. A run without such a match is one whose
 //! structure recovery shifted (a lost `}` puts what follows in another block, for example): it
 //! can't be compared, and the share of those is reported per category of the token broken.
 //!
 //! One unit a run is formatted in per broken copy, picked at random, is also checked with
 //! `verify_range`. A difference in a compared unit, a `verify_range` violation, or a panic is a
-//! failure; a difference after a change inside an import is counted apart, as the design's one
-//! known exception (the type-use annotations a file imports, which a broken import can lose).
+//! failure; a difference in a copy whose imports aren't the clean file's is counted apart, as the
+//! design's one known exception (the type-use annotations a file imports, which an error in the
+//! imports, or before them, can lose).
 
 use std::collections::{BTreeMap, HashMap};
 use std::fmt;
@@ -164,7 +165,7 @@ struct Tally {
     /// Runs without a clean match: recovery shifted the structure.
     shifted: usize,
     equal: usize,
-    /// Runs that differ after a change inside an import.
+    /// Runs that differ in a copy whose imports aren't the clean file's.
     import_differences: usize,
     failures: usize,
 }
@@ -442,13 +443,6 @@ fn check_file(
         .into_iter()
         .map(|run| (run_span(tree, &run), run))
         .collect();
-    let in_import = |offset: u32| {
-        tree.token_at_offset(offset).is_some_and(|t| {
-            t.parent()
-                .ancestors()
-                .any(|n| n.kind() == SyntaxKind::ImportDecl)
-        })
-    };
     for i in 0..per_file {
         let token = tokens[rng.below(tokens.len())];
         let kind = if i % 2 == 0 {
@@ -476,7 +470,6 @@ fn check_file(
         let category = category(token.kind());
         let tally = stats.tallies.entry(category).or_default();
         tally.mutations += 1;
-        let import = in_import(span.start);
         let mut failures = Vec::new();
         let checked = panic::catch_unwind(AssertUnwindSafe(|| {
             check_mutation(
@@ -485,7 +478,6 @@ fn check_file(
                 &clean_output,
                 &clean_runs,
                 &mutation,
-                import,
                 rng,
                 tally,
                 &mut failures,
@@ -511,6 +503,14 @@ fn check_file(
     }
 }
 
+/// The text of `tree`'s imports, in order.
+fn imports(tree: &SyntaxTree) -> Vec<&str> {
+    tree.nodes()
+        .filter(|n| n.kind() == SyntaxKind::ImportDecl)
+        .map(|n| n.text())
+        .collect()
+}
+
 /// The span of `run`'s tokens, from the first's start to the last's end.
 fn run_span(tree: &SyntaxTree, run: &Run) -> (u32, u32) {
     (
@@ -526,7 +526,6 @@ fn check_mutation(
     clean_output: &Output,
     clean_runs: &HashMap<(u32, u32), Run>,
     mutation: &Mutation,
-    import: bool,
     rng: &mut Rng,
     tally: &mut Tally,
     failures: &mut Vec<String>,
@@ -542,6 +541,7 @@ fn check_mutation(
         return;
     }
     let tree = &parsed.tree;
+    let imports_changed = imports(tree) != imports(&clean.parsed.tree);
     if tree.error_units().first() == Some(&tree.root()) {
         tally.whole_file += 1;
         return;
@@ -572,7 +572,13 @@ fn check_mutation(
         let matched = (|| {
             let span = (mutation.to_clean(start)?, mutation.to_clean(end)?);
             let clean_run = clean_runs.get(&span)?;
-            if clean_run.kind != run.kind || clean_run.depth != run.depth {
+            if clean_run.kind != run.kind
+                || !clean_tree
+                    .node(clean_run.owner)
+                    .ancestors()
+                    .map(|n| n.kind())
+                    .eq(tree.node(run.owner).ancestors().map(|n| n.kind()))
+            {
                 return None;
             }
             let first = clean_tree.token(clean_run.first).span();
@@ -620,7 +626,7 @@ fn check_mutation(
             neighbours,
         ) {
             Ok(()) => tally.equal += 1,
-            Err(_) if import => tally.import_differences += 1,
+            Err(_) if imports_changed => tally.import_differences += 1,
             Err(difference) => {
                 failures.push(format!("the unit at {start}..{end}: {difference}"));
             }
