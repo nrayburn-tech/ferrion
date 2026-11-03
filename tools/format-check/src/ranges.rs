@@ -600,6 +600,7 @@ fn check_mutation(
         }
         matches.push(matched.map(|clean_expanded| (expanded, clean_expanded)));
     }
+    let removed_section = ranges.kept_imports().is_some_and(|kept| kept.is_empty());
     let mut formatted = Vec::new();
     for (i, run) in runs.iter().enumerate() {
         let Some((expanded, clean_expanded)) = &matches[i] else {
@@ -617,10 +618,13 @@ fn check_mutation(
         };
         // The gaps around the units depend on the units on either side too, so they are
         // compared only next to a unit that matches.
-        let neighbours = (
-            i > 0 && matches[i - 1].is_some(),
-            matches.get(i + 1).is_some_and(Option::is_some),
-        );
+        // A range leaves the gaps next to an import section whose imports are all removed as
+        // the section was, where the clean file's output has them for the section gone.
+        let compared = |j: usize| {
+            matches.get(j).is_some_and(Option::is_some)
+                && !(removed_section && runs[j].kind == SyntaxKind::ImportDecl)
+        };
+        let neighbours = (i > 0 && compared(i - 1), compared(i + 1));
         match compare(
             &broken_text,
             &edits,
