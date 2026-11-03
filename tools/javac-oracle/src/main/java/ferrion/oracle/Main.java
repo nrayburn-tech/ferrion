@@ -17,7 +17,8 @@ import java.util.Set;
  * Dumps what javac produces for each Java source file, one JSON object per line.
  *
  * <p>Usage: {@code javac-oracle --release <N> [--sections <name,...>] <file | @list-file>...}, or
- * {@code javac-oracle names ...} for the names of a source set (see {@link Names}). A
+ * {@code javac-oracle names ...} for the names of a source set (see {@link Names}), or {@code
+ * javac-oracle types ...} for its types (see {@link Types}). A
  * list file holds one path per line. Each file is analyzed on its own, so a javac failure on one
  * file is reported for that file and the rest still run. {@code --sections} limits the output to
  * the named sections (see {@link Oracle}); by default, every section is written.
@@ -39,14 +40,19 @@ public final class Main {
       "usage: javac-oracle --release <N> [--sections <name,...>] <file | @list-file>...";
 
   public static void main(String[] args) throws IOException {
-    if (args.length > 0 && args[0].equals("names")) {
+    if (args.length > 0 && (args[0].equals("names") || args[0].equals("types"))) {
       List<String> rest = List.of(args).subList(1, args.length);
+      boolean types = args[0].equals("types");
       PrintStream out =
           new PrintStream(new FileOutputStream(FileDescriptor.out), false, StandardCharsets.UTF_8);
       onLargeStack(
           () -> {
             try {
-              Names.main(rest, out);
+              if (types) {
+                Types.main(rest, out);
+              } else {
+                Names.main(rest, out);
+              }
             } catch (IOException e) {
               throw new UncheckedIOException(e);
             }
