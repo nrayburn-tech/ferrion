@@ -31,7 +31,7 @@ use ferrion_syntax::SyntaxTree;
 
 pub use edits::{Edit, apply_edits};
 pub use range::{RangeError, format_range};
-pub use verify::{Property, Violation, verify, verify_parsed};
+pub use verify::{Property, Violation, verify, verify_parsed, verify_range};
 
 /// How to format a file. There are no style options.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
