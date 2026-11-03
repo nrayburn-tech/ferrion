@@ -297,6 +297,13 @@ fn invariants_catch_broken_trees() {
     assert!(error.contains("parsed as Identifier"), "{error}");
     let error = broken(|tree| tree.nodes[3].flags = flags::CONTAINS_ERROR);
     assert!(error.contains("CONTAINS_ERROR"), "{error}");
+    let error = broken(|tree| tree.nodes[0].flags = flags::CONTAINS_ERROR);
+    assert!(error.contains("without an error of its own"), "{error}");
+    let error = broken(|tree| tree.nodes[0].flags = flags::OWN_ERROR);
+    assert!(
+        error.contains("OWN_ERROR without CONTAINS_ERROR"),
+        "{error}"
+    );
 }
 
 /// Runs `f` on a thread with a small stack, so that recursion shows up as a stack overflow.

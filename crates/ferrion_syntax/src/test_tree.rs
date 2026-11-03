@@ -168,10 +168,12 @@ pub(crate) fn build_for(text: &str, events: Events, release: u32) -> SyntaxTree 
                 nodes[node].token_end = TokenId::from_index(last_end);
                 nodes[node].subtree_end = NodeId::from_index(nodes.len());
                 if let Some(&parent) = open.last() {
-                    nodes[parent].flags |= nodes[node].flags;
+                    nodes[parent].flags |= nodes[node].flags & flags::CONTAINS_ERROR;
                 }
             }
-            Step::Error => nodes[*open.last().unwrap()].flags |= flags::CONTAINS_ERROR,
+            Step::Error => {
+                nodes[*open.last().unwrap()].flags |= flags::CONTAINS_ERROR | flags::OWN_ERROR
+            }
         }
     }
     let tree = SyntaxTree::new(Arc::from(text), tokens, token_kinds, nodes, release);

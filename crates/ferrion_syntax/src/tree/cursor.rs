@@ -62,6 +62,12 @@ impl<'t> SyntaxNode<'t> {
         self.raw().flags & flags::CONTAINS_ERROR != 0
     }
 
+    /// Whether the node has an error of its own, not only in its children: it is an `Error`
+    /// node, it lacks a token or a child, or one of its direct tokens has a lexical error.
+    pub fn has_own_error(self) -> bool {
+        self.raw().flags & flags::OWN_ERROR != 0
+    }
+
     /// From the start of its first token to the end of its last. For the root, the whole text.
     pub fn span(self) -> Span {
         let node = self.raw();

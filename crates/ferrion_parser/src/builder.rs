@@ -28,7 +28,8 @@ pub(crate) enum Event {
     Finish,
     /// Consumes the next non-trivia token, recording `kind` as the kind it was parsed as.
     Token { kind: SyntaxKind },
-    /// Marks the innermost open node, and so its ancestors, as containing an error.
+    /// Marks the innermost open node as having an error of its own, and so its ancestors as
+    /// containing one.
     Error,
     /// A `Start` that was abandoned or moved.
     Tombstone,
@@ -189,7 +190,9 @@ impl Builder {
         if node.flags & flags::CONTAINS_ERROR != 0
             && let Some(&parent) = self.stack.last()
         {
-            self.nodes[parent.index()].flags |= flags::CONTAINS_ERROR;
+            // A dropped node's error becomes its parent's own.
+            let own = if empty { flags::OWN_ERROR } else { 0 };
+            self.nodes[parent.index()].flags |= flags::CONTAINS_ERROR | own;
         }
     }
 
@@ -207,7 +210,7 @@ impl Builder {
 
     fn mark_error(&mut self) {
         if let Some(&id) = self.stack.last() {
-            self.nodes[id.index()].flags |= flags::CONTAINS_ERROR;
+            self.nodes[id.index()].flags |= flags::CONTAINS_ERROR | flags::OWN_ERROR;
         }
     }
 
