@@ -514,3 +514,21 @@ At most five agents at once with A2's and B3's, heavy jobs through the shared sl
 9. **Globs are anchored** to the working directory, as ESLint's are: `*.java` matches only
    top-level files. The alternative is gitignore's rule, where a glob without `/` matches at any
    depth. Recommended: ESLint's, since SCOPE.md models the config on it.
+
+## Decisions made in review
+
+The user accepted all nine recommendations (2026-11-02):
+
+1. **`--java-version` stays required** for `format`, with `1.8` accepted for 8.
+2. **The linter keys** have the proposed shapes: `plugins` an array of names, `baseline` a path,
+   `linterOptions.reportUnusedDisableDirectives` a level, and an optional `name` on entries.
+3. **Explicitly passed files** that are disabled, don't end in `.java`, or are outside the working
+   directory are skipped with a note, as ignored ones are.
+4. **`--stdin` echoes its input** when the file is ignored, disabled, or has syntax errors.
+5. **Files are written in place.**
+6. **An I/O error on one file exits 1,** and the run goes on.
+7. **Dependencies:** `clap` and `globset`; hand-written JSONC, excerpts, and suggestions;
+   `jsonschema` for tests only.
+8. **The work order** stands: the config agent now, the CLI after A2, a stop for the message
+   catalog.
+9. **Globs are anchored** to the working directory, as ESLint's are.
