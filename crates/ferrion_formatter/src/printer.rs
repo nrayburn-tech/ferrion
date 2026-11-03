@@ -361,10 +361,10 @@ impl Printer<'_> {
         self.record(input, at);
     }
 
-    /// Writes a traditional doc comment (`VerbatimKind::Doc`): reflowed from its layout at the
-    /// column it starts at (docs/design/formatter-completeness.md, "Where reflow happens"), or,
-    /// without one, a one-line comment as written and a longer one as [`Printer::comment`]
-    /// re-indents it.
+    /// Writes a doc comment (`VerbatimKind::Doc`): reflowed from its layout at the column it
+    /// starts at (docs/design/formatter-completeness.md, "Where reflow happens"), or, without one,
+    /// a one-line comment as written and a longer one as [`Printer::comment`] re-indents it. A
+    /// Markdown comment, a run of `///` lines, always has one.
     fn doc_comment(
         &mut self,
         text: &str,
@@ -383,8 +383,12 @@ impl Printer<'_> {
         };
         self.start_text(text, None);
         let at = self.out.len();
-        let lines =
-            crate::doc_comments::javadoc::render(layout, self.source.tree.text(), self.column);
+        let source = self.source.tree.text();
+        let lines = if text.starts_with("///") {
+            crate::doc_comments::markdown::render(layout, source, self.column)
+        } else {
+            crate::doc_comments::javadoc::render(layout, source, self.column)
+        };
         let ending = self.source.line_ending.as_str().as_bytes();
         for (i, line) in lines.iter().enumerate() {
             if i > 0 {

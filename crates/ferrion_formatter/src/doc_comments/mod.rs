@@ -11,12 +11,14 @@
 //! - **Fill, at print time:** [`fill`] breaks each paragraph into lines at the column, greedily,
 //!   and [`javadoc::render`] puts the comment's decoration around them.
 //!
-//! The layout and the fill don't know about Javadoc's HTML, so a Markdown comment can be laid out
-//! into the same paragraphs, with its own glue (a word that would start a block can't start a
-//! line, as `@` can't) and its own decoration around the filled lines.
+//! The layout and the fill don't know about Javadoc's HTML, so [`markdown::layout`] lays a `///`
+//! comment out into the same paragraphs, with its own glue (a word that would start a block can't
+//! start a line, as `@` can't), and [`markdown::render`] puts its own decoration around the filled
+//! lines: `///`, and the block quotes' `>` and the list items' indentation each paragraph is in.
 
 pub(crate) mod fill;
 pub(crate) mod javadoc;
+pub(crate) mod markdown;
 
 pub(crate) use fill::{Columns, fill};
 
@@ -30,6 +32,23 @@ pub struct Layout {
     pub lines: Vec<Segment>,
     /// Whether the comment has a block tag, which keeps it off one line (Javadoc's shape rule).
     pub tags: bool,
+    /// For a Markdown comment, what each paragraph's lines start with, by paragraph; empty for
+    /// Javadoc.
+    pub prefixes: Vec<Prefix>,
+}
+
+/// What the lines of a paragraph of a Markdown comment start with, after `/// `: the `>` of the
+/// block quotes it is in and the indentation of the list items, each as wide as the paragraph's
+/// [`indent`](Paragraph::indent) or [`hanging`](Paragraph::hanging) indentation.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Prefix {
+    /// Before its first line's text. A list item's marker is a word of the paragraph instead.
+    pub first: Box<str>,
+    /// Before its later lines' text.
+    pub rest: Box<str>,
+    /// The blank lines before it: the `>` of the block quotes it shares with the paragraph before
+    /// it.
+    pub blank: Box<str>,
 }
 
 /// Lines filled from a run of words, starting on a line of their own.

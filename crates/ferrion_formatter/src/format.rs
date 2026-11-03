@@ -57,6 +57,11 @@ pub struct Formatter<'t> {
     error_units: Vec<(TokenId, TokenId)>,
     /// How many of `error_units` were copied.
     copied_units: usize,
+    /// The runs of `///` lines the rules reflow, each printed as one piece, and the next to reach.
+    markdown: Vec<doc_comments::markdown::Run>,
+    next_run: usize,
+    /// The last line of the run being placed, whose lines print with its first.
+    in_run: Option<TokenId>,
 }
 
 impl<'t> Formatter<'t> {
@@ -68,6 +73,7 @@ impl<'t> Formatter<'t> {
             .into_iter()
             .map(|unit| (unit.first_token().id(), unit.last_token().id()))
             .collect();
+        let markdown = doc_comments::markdown::runs(tree, &regions);
         Formatter {
             tree,
             comments,
@@ -83,6 +89,9 @@ impl<'t> Formatter<'t> {
             type_use_imports: 0,
             error_units,
             copied_units: 0,
+            markdown,
+            next_run: 0,
+            in_run: None,
         }
     }
 
@@ -586,6 +595,13 @@ impl<'t> Formatter<'t> {
             }
             return;
         }
+        if let Some(last) = self.in_run {
+            if comment.token >= last {
+                self.in_run = None;
+                self.after_comment(comment, token);
+            }
+            return;
+        }
         self.before_comment(comment, token);
         if let Some(&region) = self.regions.get(self.next_region)
             && region.start == comment.token
@@ -594,14 +610,54 @@ impl<'t> Formatter<'t> {
             self.start_region(region);
             return;
         }
+        if self.starts_run(token) {
+            self.run(comment, token);
+            return;
+        }
         self.text(token);
         self.after_comment(comment, token);
+    }
+
+    /// Whether `token` is the first line of a run of `///` lines the rules reflow.
+    fn starts_run(&self, token: SyntaxToken<'t>) -> bool {
+        self.markdown
+            .get(self.next_run)
+            .is_some_and(|run| run.first == token.id())
+    }
+
+    /// Emits the run of `///` lines starting with `comment` as one piece of copied text, which the
+    /// printer reflows at its column (docs/design/formatter-completeness.md, "Where reflow
+    /// happens"). Its other lines are placed with it.
+    fn run(&mut self, comment: Comment, token: SyntaxToken<'t>) {
+        let run = &mut self.markdown[self.next_run];
+        self.next_run += 1;
+        let (first, last) = (run.first, run.last);
+        let layout = std::mem::take(&mut run.layout);
+        let span = (token.span().start, self.tree.token(last).span().end);
+        let verbatim = copied(
+            self.tree.text(),
+            span.0,
+            span.1,
+            VerbatimKind::Doc {
+                token: first,
+                layout: None,
+            },
+        );
+        self.doc().doc_comment(verbatim, Some(layout));
+        self.comment_break = false;
+        if last == first {
+            self.after_comment(comment, token);
+        } else {
+            self.in_run = Some(last);
+        }
     }
 
     fn before_comment(&mut self, comment: Comment, token: SyntaxToken<'t>) {
         match comment.line_breaks_before {
             // A doc comment starts its line, as GJF prints it (observed).
-            0 if token.kind() == SyntaxKind::DocComment => self.hard_line(),
+            0 if token.kind() == SyntaxKind::DocComment || self.starts_run(token) => {
+                self.hard_line();
+            }
             // A space goes between code and a comment after it on its line, as GJF puts one
             // (`f(x);// c` gives `f(x); // c`), except after a `(`, `.`, or `<`, where the space
             // goes after the comment instead (`f( /* c */x)` gives `f(/* c */ x)`; observed).

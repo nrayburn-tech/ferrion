@@ -19,6 +19,9 @@ ferrion_lexer.workspace = true
 ferrion_parser.workspace = true
 ferrion_stack.workspace = true
 ferrion_syntax.workspace = true
+# For asking whether a word would start a Markdown block at the start of a line
+# (docs/design/formatter-completeness.md, "Markdown").
+pulldown-cmark.workspace = true
 
 [lints]
 workspace = true

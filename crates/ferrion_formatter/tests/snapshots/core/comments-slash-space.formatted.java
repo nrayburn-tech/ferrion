@@ -2,11 +2,7 @@
 class A {
   //
   //
-  ///
-  ////
-  /// a Markdown doc comment
-  ///without a space
-  ////four
+  /// / a Markdown doc comment without a space /four
   // -----
   // ====
   // !bang

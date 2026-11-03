@@ -136,10 +136,11 @@ pub enum VerbatimKind {
     Copy { to_end: bool },
     /// A block comment, its later lines re-indented to the column it starts at.
     Comment,
-    /// A traditional doc comment, `token`, reflowed at the column it starts at from its layout,
-    /// by its index in [`Document::doc_comments`] (docs/design/formatter-completeness.md, "Where
-    /// reflow happens"). Without one, the rules don't reflow it, and it prints as written when it's
-    /// one line, and re-indented as a [`VerbatimKind::Comment`] otherwise.
+    /// A doc comment, reflowed at the column it starts at from its layout, by its index in
+    /// [`Document::doc_comments`] (docs/design/formatter-completeness.md, "Where reflow happens"):
+    /// a traditional one, `token`, or a run of `///` lines starting with `token`. Without a layout,
+    /// the rules don't reflow it, and it prints as written when it's one line, and re-indented as a
+    /// [`VerbatimKind::Comment`] otherwise; a `///` run without one isn't a piece of its own.
     Doc { token: TokenId, layout: Option<u32> },
 }
 
