@@ -21,8 +21,10 @@ jdk = 27
 # - `--skip-reflowing-long-strings`: Ferrion doesn't split long strings (SCOPE.md).
 # - `--cleanup=false`: 2.0.0's default cleanup removes redundant semicolons, empty annotation
 #   parentheses, and the parentheses around a lambda's single parameter, which Ferrion doesn't.
-# - `--skip-javadoc-formatting`, `--skip-sorting-imports`, `--skip-removing-unused-imports`: A1
-#   doesn't reflow doc comments or touch imports. A2 drops these three.
+# - `--skip-javadoc-formatting`: A1 doesn't reflow doc comments. A2 drops it.
+#
+# There are no import flags: Ferrion sorts the import section and removes unused imports as GJF
+# does, apart from the departures in docs/style.md ("Imports").
 #
 # Observed with these flags, running GJF 2.0.0 on Temurin 27 (its source wasn't consulted):
 #
@@ -48,6 +50,4 @@ flags = [
     "--skip-reflowing-long-strings",
     "--cleanup=false",
     "--skip-javadoc-formatting",
-    "--skip-sorting-imports",
-    "--skip-removing-unused-imports",
 ]
