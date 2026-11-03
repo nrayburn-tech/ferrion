@@ -389,3 +389,15 @@ W1's questions, for B3a's review stop, each with a recommendation:
    W1's brief didn't ask for: keep it? Recommended: yes; it costs seconds over javac's side.
 6. **Fuel:** keep `DEFAULT_FUEL` at 10,000 per query until W2 measures each body's use?
    Recommended: yes.
+
+## Decisions made in review
+
+At B3a's review stop (2 November 2026), questions 2 to 6 were accepted as recommended:
+
+- **Raw qualified inner classes:** W2 makes B2's `TyPart::Class` record that a qualifier was
+  written only if attribution meets the case.
+- **Lombok:** queries that need a class or member Lombok generates stay counted apart, as
+  `left-to-b4 lombok`.
+- **Types javac couldn't resolve** stay counted apart, not as known differences.
+- **The weekly oracle workflow** keeps comparing relations, with Ferrion's side, for every project.
+- **Fuel:** `DEFAULT_FUEL` stays 10,000 per query until W2 measures each body's use.
