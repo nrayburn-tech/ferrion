@@ -168,7 +168,12 @@ impl Jar {
                     let Some(version) = parse_version(number) else {
                         continue;
                     };
-                    if (9..=release).contains(&version) && !path.is_empty() {
+                    // `JarFile` serves names under `META-INF/` from the base only: a versioned
+                    // `META-INF/` entry neither replaces a base one nor adds a name.
+                    if (9..=release).contains(&version)
+                        && !path.is_empty()
+                        && !path.starts_with("META-INF/")
+                    {
                         candidates.push((path, version, entry.index()));
                     }
                 }
@@ -337,7 +342,10 @@ mod tests {
             .stored("META-INF/versions/11/p/C.class", b"11 C")
             .stored("META-INF/versions/17/p/B.class", b"17 B")
             .stored("META-INF/versions/x/p/B.class", b"x B")
-            .stored("META-INF/versions/9/module-info.class", b"9 module");
+            .stored("META-INF/versions/9/module-info.class", b"9 module")
+            .stored("META-INF/LICENSE.txt", b"base license")
+            .stored("META-INF/versions/9/META-INF/LICENSE.txt", b"9 license")
+            .stored("META-INF/versions/9/META-INF/jpms.args", b"9 args");
         Arc::new(ZipArchive::from_bytes(Arc::from(b.finish())).unwrap())
     }
 
@@ -371,6 +379,12 @@ mod tests {
         assert!(jar21.find("META-INF/versions/11/p/C.class").is_none());
         assert_eq!(jar21.find("p/r.txt").unwrap().read().unwrap(), b"base r");
         assert!(jar21.has_package("") && !jar21.has_package("q"));
+        // Names under `META-INF/` come from the base only, as in `coherence-26.07.jar`.
+        assert_eq!(
+            jar21.find("META-INF/LICENSE.txt").unwrap().read().unwrap(),
+            b"base license"
+        );
+        assert!(jar21.find("META-INF/jpms.args").is_none());
     }
 
     #[test]

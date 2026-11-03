@@ -892,7 +892,8 @@ const STRICT_ERROR: &str = "Error: Access Flags: Unmatched bit position 0x800 fo
 
 /// What javap prints, among a class's lines, for any other flag a class file's version leaves
 /// undefined at its location (such as `ACC_PRIVATE` on the JDK 11 image's generated `Holder`
-/// classes). javap names no such bit; the renderer doesn't either, and the hex value is compared.
+/// classes, or `ACC_VARARGS` on methods of a version 46 class file). javap names no such bit, and
+/// prints it in hex only on the class's flags line; the renderer does the same.
 const FLAG_ERROR: &str = "Error: Access Flags: Unmatched bit position";
 
 /// Renders Ferrion's model of `bytes` and compares it with javap's output.

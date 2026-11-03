@@ -116,6 +116,10 @@ true`, read for release R:
   highest such N wins;
 - names that only exist under `META-INF/versions/N/` with N ≤ R exist for release R;
 - entries under `META-INF/versions/N/` with N > R, or N not an integer, are ignored;
+- a `<name>` under `META-INF/` comes from the base only: `JarFile` doesn't look for versioned
+  copies of those names, so `META-INF/versions/N/META-INF/x` neither overrides `META-INF/x` nor
+  adds it (the corpus's `coherence-26.07.jar` has `META-INF/versions/22/META-INF/jpms.args` and
+  no base one);
 - for release 8, a multi-release jar's `META-INF/versions/` entries are ignored entirely: they
   aren't names of their own either, as `JarFile`'s versioned view at release 8 shows;
 - in a jar without the attribute, `META-INF/versions/` entries are ordinary entries, as

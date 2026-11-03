@@ -12,7 +12,7 @@ use std::fmt::Write as _;
 use anyhow::{Context, Result, anyhow};
 use ferrion_classfile::class::{
     AccessFlags, Annotation, Annotations, Attribute, AttributeInfo, Attributes, ClassFile,
-    ConstantValue, ElementValue, Member, TypeAnnotationTarget, TypePathStep,
+    ConstantValue, ElementValue, Member, TypeAnnotationTarget, TypePathStep, Version,
 };
 use ferrion_classfile::descriptor::{self, ElementType, FieldType};
 use ferrion_classfile::signature::{
@@ -81,9 +81,10 @@ pub fn render(class: &ClassFile) -> Result<Vec<String>> {
     let version = class.version();
     out.line(2, &format!("minor version: {}", version.minor));
     out.line(2, &format!("major version: {}", version.major));
+    let defined = Defined::at(version);
     out.line(
         2,
-        &flags_line(class.access().0, class.access().0, &CLASS_FLAGS),
+        &flags_line(class.access().0, defined.class, &CLASS_FLAGS, true),
     );
     out.line(2, &format!("this_class: {this}"));
     match class.super_class()? {
@@ -101,28 +102,11 @@ pub fn render(class: &ClassFile) -> Result<Vec<String>> {
         ),
     );
     out.line(0, "{");
-    // ACC_STRICT is undefined for methods from version 61 (JVMS 4.6): javap 27 then neither
-    // names the flag nor prints `strictfp`, and reports an error the comparison leaves out.
-    let strict_undefined = version.major >= 61;
     for field in class.fields() {
-        member(
-            &mut out,
-            strict_undefined,
-            &this,
-            &field,
-            false,
-            is_interface,
-        )?;
+        member(&mut out, &defined, &this, &field, false, is_interface)?;
     }
     for method in class.methods() {
-        member(
-            &mut out,
-            strict_undefined,
-            &this,
-            &method,
-            true,
-            is_interface,
-        )?;
+        member(&mut out, &defined, &this, &method, true, is_interface)?;
     }
     out.line(0, "}");
     attributes(&mut out, class.attributes(), 0)?;
@@ -168,27 +152,88 @@ const METHOD_FLAGS: [(u16, &str); 12] = [
     (0x1000, "ACC_SYNTHETIC"),
 ];
 
-/// `flags: (0x0021) ACC_PUBLIC, ACC_SUPER`: the value `shown`, and the names of the bits of
-/// `flags`.
-fn flags_line(shown: u16, flags: u16, names: &[(u16, &str)]) -> String {
-    let mut line = format!("flags: ({shown:#06x})");
-    let mut known = 0;
-    let mut first = true;
-    for &(bit, name) in names {
-        if flags & bit != 0 {
-            known |= bit;
-            line.push_str(if first { " " } else { ", " });
-            line.push_str(name);
-            first = false;
+/// The flags a class file's version defines at each location, as javap 27 reads them: the ones
+/// `java.lang.reflect.AccessFlag` gives the location for the version's `ClassFileFormatVersion`.
+/// javap reports any other bit as an error the comparison leaves out (`FLAG_ERROR`).
+struct Defined {
+    class: u16,
+    field: u16,
+    method: u16,
+}
+
+impl Defined {
+    fn at(version: Version) -> Defined {
+        // javap reads a preview version (a minor version other than 0, from version 56) as the
+        // latest release.
+        let major = if version.major >= 56 && version.minor != 0 {
+            u16::MAX
+        } else {
+            version.major
+        };
+        let since = |first: u16, bits: u16| if major >= first { bits } else { 0 };
+        let java5 = AccessFlags::SYNTHETIC | AccessFlags::ENUM;
+        // ACC_STRICT is defined for methods from version 46 to 60 (JVMS 4.6).
+        let strict = if (46..=60).contains(&major) {
+            AccessFlags::STRICT
+        } else {
+            0
+        };
+        Defined {
+            class: AccessFlags::PUBLIC
+                | AccessFlags::FINAL
+                | AccessFlags::SUPER
+                | AccessFlags::INTERFACE
+                | AccessFlags::ABSTRACT
+                | since(49, java5 | AccessFlags::ANNOTATION)
+                | since(53, AccessFlags::MODULE),
+            field: AccessFlags::PUBLIC
+                | AccessFlags::PRIVATE
+                | AccessFlags::PROTECTED
+                | AccessFlags::STATIC
+                | AccessFlags::FINAL
+                | AccessFlags::VOLATILE
+                | AccessFlags::TRANSIENT
+                | since(49, java5),
+            method: AccessFlags::PUBLIC
+                | AccessFlags::PRIVATE
+                | AccessFlags::PROTECTED
+                | AccessFlags::STATIC
+                | AccessFlags::FINAL
+                | AccessFlags::SYNCHRONIZED
+                | AccessFlags::NATIVE
+                | AccessFlags::ABSTRACT
+                | strict
+                | since(
+                    49,
+                    AccessFlags::BRIDGE | AccessFlags::VARARGS | AccessFlags::SYNTHETIC,
+                ),
         }
     }
-    // A bit the class file's version leaves undefined at the location is printed in hex, after
-    // an error line the comparison leaves out (except ACC_STRICT on methods from version 61, which
-    // javap leaves out, so the caller masks it).
-    let unknown = flags & !known;
-    if unknown != 0 {
-        line.push_str(if first { " " } else { ", " });
-        let _ = write!(line, "{unknown:#x}");
+}
+
+/// `flags: (0x0021) ACC_PUBLIC, ACC_SUPER`: `flags`, and the names of its bits that `defined`
+/// holds. javap prints any other bit in hex, highest first, on a class's line (`undefined_in_hex`)
+/// and leaves it out on a field's or a method's.
+fn flags_line(flags: u16, defined: u16, names: &[(u16, &str)], undefined_in_hex: bool) -> String {
+    let mut line = format!("flags: ({flags:#06x})");
+    let mut parts: Vec<String> = names
+        .iter()
+        .filter(|&&(bit, _)| flags & defined & bit != 0)
+        .map(|&(_, name)| name.to_owned())
+        .collect();
+    if undefined_in_hex {
+        let undefined = flags & !defined;
+        parts.extend(
+            (0..16)
+                .rev()
+                .map(|shift| 1u16 << shift)
+                .filter(|bit| undefined & bit != 0)
+                .map(|bit| format!("{bit:#x}")),
+        );
+    }
+    if !parts.is_empty() {
+        line.push(' ');
+        line.push_str(&parts.join(", "));
     }
     line
 }
@@ -350,7 +395,7 @@ fn field_type(t: &FieldType<'_>) -> String {
 /// One field or method: its declaration, descriptor, flags, and attributes.
 fn member(
     out: &mut Out,
-    strict_undefined: bool,
+    defined: &Defined,
     this: &str,
     member: &Member<'_>,
     is_method: bool,
@@ -360,7 +405,8 @@ fn member(
     let descriptor = text(member.descriptor()?)?;
     let declaration = if is_method {
         method_declaration(
-            strict_undefined,
+            // javap prints `strictfp` only where the version defines ACC_STRICT.
+            defined.method & AccessFlags::STRICT == 0,
             this,
             member,
             &name,
@@ -373,17 +419,12 @@ fn member(
     out.line(2, &declaration);
     out.line(4, &format!("descriptor: {descriptor}"));
     let flags = member.access().0;
-    if !is_method {
-        out.line(4, &flags_line(flags, flags, &FIELD_FLAGS));
-    } else if strict_undefined {
-        // javap names neither ACC_STRICT nor an unknown bit for it.
-        out.line(
-            4,
-            &flags_line(flags, flags & !AccessFlags::STRICT, &METHOD_FLAGS),
-        );
+    let line = if is_method {
+        flags_line(flags, defined.method, &METHOD_FLAGS, false)
     } else {
-        out.line(4, &flags_line(flags, flags, &METHOD_FLAGS));
-    }
+        flags_line(flags, defined.field, &FIELD_FLAGS, false)
+    };
+    out.line(4, &line);
     attributes(out, member.attributes(), 4)
 }
 
@@ -1190,6 +1231,72 @@ mod tests {
         assert_eq!(java_float(f32::from_bits(1)), "1.4E-45");
         assert_eq!(java_double(0.5), "0.5");
         assert_eq!(java_double(2e-3), "0.002");
+    }
+
+    /// javap 27's lines for flags a class file's version doesn't define, as it prints them for
+    /// ASM's varargs methods in `accessors-smart-1.1.jar` (version 46) and the JDK 11 image's
+    /// `DirectMethodHandle$Holder` (`ACC_PRIVATE` on a class of version 52).
+    #[test]
+    fn flags_the_version_does_not_define() {
+        let at = |major, minor| Defined::at(Version { major, minor });
+        let public_static_varargs = 0x0089;
+        assert_eq!(
+            flags_line(
+                public_static_varargs,
+                at(46, 0).method,
+                &METHOD_FLAGS,
+                false
+            ),
+            "flags: (0x0089) ACC_PUBLIC, ACC_STATIC"
+        );
+        assert_eq!(
+            flags_line(
+                public_static_varargs,
+                at(49, 0).method,
+                &METHOD_FLAGS,
+                false
+            ),
+            "flags: (0x0089) ACC_PUBLIC, ACC_STATIC, ACC_VARARGS"
+        );
+        assert_eq!(
+            flags_line(0x0080, at(46, 0).method, &METHOD_FLAGS, false),
+            "flags: (0x0080)"
+        );
+        let public_strict = 0x0801;
+        assert_eq!(
+            flags_line(public_strict, at(45, 3).method, &METHOD_FLAGS, false),
+            "flags: (0x0801) ACC_PUBLIC"
+        );
+        assert_eq!(
+            flags_line(public_strict, at(60, 0).method, &METHOD_FLAGS, false),
+            "flags: (0x0801) ACC_PUBLIC, ACC_STRICT"
+        );
+        assert_eq!(
+            flags_line(public_strict, at(61, 0).method, &METHOD_FLAGS, false),
+            "flags: (0x0801) ACC_PUBLIC"
+        );
+        // A preview version is the latest release.
+        assert_eq!(
+            flags_line(public_strict, at(56, 0xffff).method, &METHOD_FLAGS, false),
+            "flags: (0x0801) ACC_PUBLIC"
+        );
+        let synthetic_enum = 0x5000;
+        assert_eq!(
+            flags_line(synthetic_enum, at(48, 0).field, &FIELD_FLAGS, false),
+            "flags: (0x5000)"
+        );
+        assert_eq!(
+            flags_line(synthetic_enum, at(49, 0).field, &FIELD_FLAGS, false),
+            "flags: (0x5000) ACC_SYNTHETIC, ACC_ENUM"
+        );
+        assert_eq!(
+            flags_line(0x0032, at(52, 0).class, &CLASS_FLAGS, true),
+            "flags: (0x0032) ACC_FINAL, ACC_SUPER, 0x2"
+        );
+        assert_eq!(
+            flags_line(0x9021, at(48, 0).class, &CLASS_FLAGS, true),
+            "flags: (0x9021) ACC_PUBLIC, ACC_SUPER, 0x8000, 0x1000"
+        );
     }
 
     #[test]
