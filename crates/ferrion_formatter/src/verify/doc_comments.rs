@@ -19,9 +19,26 @@
 //!   the next word (`well-` then `known` is `well-known`).
 //!
 //! What's left must be the same, in order. A comment that fell back keeps its text apart from
-//! re-indenting, so it also passes when its text compares as any block comment's does.
+//! re-indenting, so it also passes when its text compares as any block comment's does. A
+//! Markdown doc comment is compared by its parsed blocks ([`markdown`]).
 
 use ferrion_doc_comments::{BlockTag, Inline, InlineTagContent, Span, TagArgument, parse_javadoc};
+
+pub(crate) mod markdown;
+
+/// A Markdown doc comment's text as the comments check compares it: the comment whose `///` lines
+/// are at `lines` in `text`, by its lines' texts as any line comment's are compared, or by its
+/// parsed content.
+pub(super) fn normalize_markdown(text: &str, lines: &[Span]) -> Compared {
+    let joined: Vec<String> = lines
+        .iter()
+        .map(|line| super::normalize_comment(&text[line.start as usize..line.end as usize], false))
+        .collect();
+    Compared {
+        text: joined.join("\n"),
+        content: Some(markdown::content(text, lines)),
+    }
+}
 
 /// A comment as the comments check compares it.
 #[derive(Debug)]

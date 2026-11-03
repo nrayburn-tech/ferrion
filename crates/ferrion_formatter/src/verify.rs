@@ -319,19 +319,39 @@ fn comments(before: &SyntaxTree, after: &SyntaxTree, bom: usize) -> Result<(), V
             0..0
         };
         let mut regions = regions.into_iter().peekable();
+        // A `///` doc comment outside regions is compared as one comment, since reflow changes its
+        // lines.
+        let mut runs = doc_comments::markdown::runs(tree).into_iter().peekable();
+        let mut run_end = None;
         let mut in_section = Vec::new();
         let mut rest = Vec::new();
         for t in tree
             .tokens()
             .filter(|t| ferrion_syntax::comments::is_comment(t.kind()))
         {
+            if run_end.is_some_and(|end| t.id() <= end) {
+                continue;
+            }
             // The comments come in order, so the regions they're past are dropped.
             while regions
                 .next_if(|r| r.end.is_some_and(|end| end < t.id()))
                 .is_some()
             {}
             let in_region = regions.peek().is_some_and(|r| r.start <= t.id());
-            let text = if t.kind() == SyntaxKind::DocComment && !in_region {
+            while runs.next_if(|&(_, last)| last < t.id()).is_some() {}
+            let text = if let Some(&(first, last)) = runs.peek()
+                && first == t.id()
+                && !in_region
+                && !regions.peek().is_some_and(|r| r.start <= last)
+            {
+                let spans: Vec<_> = (first.index()..=last.index())
+                    .map(|i| tree.token(ferrion_syntax::TokenId::from_index(i)))
+                    .filter(|t| t.kind() == SyntaxKind::DocLineComment)
+                    .map(|t| t.span())
+                    .collect();
+                run_end = Some(last);
+                doc_comments::normalize_markdown(tree.text(), &spans)
+            } else if t.kind() == SyntaxKind::DocComment && !in_region {
                 doc_comments::normalize(t.text())
             } else {
                 doc_comments::Compared::text(normalize_comment(
