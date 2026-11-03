@@ -1,5 +1,5 @@
 use super::*;
-use crate::testing::{Scratch, render};
+use crate::testing::{Scratch, json, render};
 use crate::{InputFlags, PATH_SEPARATOR};
 use ferrion_classfile::ClassName;
 use ferrion_classfile::testing::{ZipBuilder, sample_module_info};
@@ -26,12 +26,7 @@ fn entries(types: &SourceSetTypes, scratch: &Scratch) -> Vec<String> {
         .entries
         .iter()
         .map(|entry| match entry {
-            TypeEntry::Classes(classes) => classes
-                .path
-                .strip_prefix(&scratch.0)
-                .unwrap()
-                .display()
-                .to_string(),
+            TypeEntry::Classes(classes) => scratch.relative(&classes.path),
             TypeEntry::SourceSet(id) => format!("source set {}", id.value.index()),
         })
         .collect()
@@ -113,8 +108,9 @@ fn jdk_problems() {
         "error: $DIR/jre17 has no lib/ct.sym, so it serves only release 17\n  from: --jdk"
     );
     let errors = open(&flags(11, &scratch.dir("empty"), &[]), &scratch).unwrap_err();
+    let not_found = scratch.not_found();
     assert!(
-        errors.starts_with("error: $DIR/empty isn't a JDK: No such file or directory"),
+        errors.starts_with(&format!("error: $DIR/empty isn't a JDK: {not_found}")),
         "{errors}"
     );
     assert!(
@@ -313,11 +309,7 @@ fn module_path() {
         .iter()
         .map(|entry| match entry {
             TypeEntry::Classes(c) => (
-                c.path
-                    .strip_prefix(&scratch.0)
-                    .unwrap()
-                    .display()
-                    .to_string(),
+                scratch.relative(&c.path),
                 c.module.as_deref(),
                 c.on_module_path,
             ),
@@ -377,13 +369,13 @@ fn source_sets_in_a_model() {
     scratch.dir("test");
     let model = format!(
         r#"{{"formatVersion": 1, "sourceSets": [
-            {{"id": "main", "javaRelease": 8, "jdk": "{jdk}", "sourceRoots": ["main"],
+            {{"id": "main", "javaRelease": 8, "jdk": {jdk}, "sourceRoots": ["main"],
               "classpath": [{{"path": "a.jar"}}]}},
             {{"id": "test", "javaRelease": 8, "sourceRoots": ["test"],
               "classpath": [{{"path": "a.jar"}}, {{"sourceSet": "main"}}, {{"path": "a.jar"}}]}},
             {{"id": "newer", "javaRelease": 11, "jdk": "jdk8", "sourceRoots": []}}
         ]}}"#,
-        jdk = jdk.display()
+        jdk = json(&jdk)
     );
     scratch.write("model.json", model.as_bytes());
     let flags = InputFlags {
@@ -425,9 +417,9 @@ fn patched_modules_and_the_jdks_own_api() {
     let model = |patch: &str| {
         format!(
             r#"{{"formatVersion": 2, "sourceSets": [{{"id": "main", "javaRelease": 8,
-                "platform": "jdk", "jdk": "{jdk}", "sourceRoots": ["main"],
+                "platform": "jdk", "jdk": {jdk}, "sourceRoots": ["main"],
                 "patchModules": {{"java.base": ["{patch}"]}}}}]}}"#,
-            jdk = jdk.display()
+            jdk = json(&jdk)
         )
     };
     let flags = InputFlags {

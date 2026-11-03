@@ -20,8 +20,36 @@ impl Scratch {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         // Canonical, so that paths in messages and comparisons match what the file system says
-        // (macOS's temporary directory is behind a symbolic link).
-        Scratch(dir.canonicalize().unwrap())
+        // (macOS's temporary directory is behind a symbolic link), without the `\\?\` prefix
+        // Windows gives a canonical path, which a path a user passes doesn't have.
+        let dir = dir.canonicalize().unwrap();
+        let dir = match dir.to_str().and_then(|d| d.strip_prefix(r"\\?\")) {
+            Some(plain) => PathBuf::from(plain),
+            None => dir,
+        };
+        Scratch(dir)
+    }
+
+    /// `path`, absolute on Unix (`/opt/jdk`), as an input resolves it: itself, or on Windows,
+    /// where a path without a drive isn't absolute, on the scratch directory's drive.
+    pub(crate) fn rooted(&self, path: &str) -> PathBuf {
+        self.0.join(path)
+    }
+
+    /// `path`, under the scratch directory, relative to it and with `/` between its parts.
+    pub(crate) fn relative(&self, path: &Path) -> String {
+        path.strip_prefix(&self.0)
+            .unwrap()
+            .display()
+            .to_string()
+            .replace('\\', "/")
+    }
+
+    /// The operating system's message for a file that doesn't exist, as an error shows it.
+    pub(crate) fn not_found(&self) -> String {
+        std::fs::metadata(self.path("not-there"))
+            .unwrap_err()
+            .to_string()
     }
 
     pub(crate) fn path(&self, name: &str) -> PathBuf {
@@ -99,7 +127,7 @@ impl Drop for Scratch {
 }
 
 /// The problems as the CLI prints them, one blank line between each, with the scratch
-/// directory's path written as `$DIR`.
+/// directory's path written as `$DIR` and `/` between a path's parts on every platform.
 pub(crate) fn render(problems: &[InputError], scratch: &Path) -> String {
     problems
         .iter()
@@ -107,4 +135,10 @@ pub(crate) fn render(problems: &[InputError], scratch: &Path) -> String {
         .collect::<Vec<_>>()
         .join("\n\n")
         .replace(&scratch.display().to_string(), "$DIR")
+        .replace('\\', "/")
+}
+
+/// `path` as a JSON string, quoted and escaped, for a project model a test writes.
+pub(crate) fn json(path: &Path) -> String {
+    serde_json::to_string(path).unwrap()
 }

@@ -80,7 +80,7 @@ fn single_source_set_from_flags() {
     assert_eq!(
         set.jdk,
         Some(Given {
-            value: "/opt/home-jdk".into(),
+            value: scratch.rooted("/opt/home-jdk"),
             origin: Origin::JavaHome
         })
     );
@@ -97,7 +97,7 @@ fn single_source_set_from_flags() {
     let flags = InputFlags {
         jdk: Some("jdks/21".into()),
         classpath: Some(String::new()),
-        module_path: Some("mods:../lib/m.jar".into()),
+        module_path: Some(format!("mods{PATH_SEPARATOR}../lib/m.jar")),
         ..flags(21)
     };
     let project = Project::load(&flags, &env).unwrap();
@@ -141,7 +141,7 @@ fn classpath_flag() {
         paths(classpath),
         [
             (scratch.path("lib/a.jar"), Origin::Flag("--classpath")),
-            ("/abs/classes".into(), Origin::Flag("--classpath")),
+            (scratch.rooted("/abs/classes"), Origin::Flag("--classpath")),
         ]
     );
 }
@@ -233,10 +233,11 @@ fn classpath_flag_problems() {
         ..flags(21)
     };
     let errors = load_errors(&missing, &scratch);
+    let not_found = scratch.not_found();
     assert!(
-        errors.starts_with(
-            "error: can't read the classpath file `gone.txt`: No such file or directory"
-        ),
+        errors.starts_with(&format!(
+            "error: can't read the classpath file `gone.txt`: {not_found}"
+        )),
         "{errors}"
     );
     assert!(errors.ends_with("\n  from: --classpath-file"), "{errors}");
@@ -316,7 +317,7 @@ fn project_model() {
     assert_eq!(
         main.jdk,
         Some(Given {
-            value: "/opt/jdk-21".into(),
+            value: scratch.rooted("/opt/jdk-21"),
             origin: origin("core/main")
         })
     );
@@ -328,7 +329,7 @@ fn project_model() {
                 origin: origin("core/main")
             }),
             ClassPathItem::Path(Given {
-                value: "/m2/guava.jar".into(),
+                value: scratch.rooted("/m2/guava.jar"),
                 origin: origin("core/main")
             }),
             ClassPathItem::Path(Given {
@@ -342,7 +343,7 @@ fn project_model() {
     assert_eq!(
         test.jdk,
         Some(Given {
-            value: "/opt/flag-jdk".into(),
+            value: scratch.rooted("/opt/flag-jdk"),
             origin: Origin::Flag("--jdk")
         })
     );
@@ -428,8 +429,11 @@ fn unreadable_and_malformed_models() {
         ..InputFlags::default()
     };
     let errors = load_errors(&flags, &scratch);
+    let not_found = scratch.not_found();
     assert!(
-        errors.starts_with("error: can't read the project model `gone.json`: No such file"),
+        errors.starts_with(&format!(
+            "error: can't read the project model `gone.json`: {not_found}"
+        )),
         "{errors}"
     );
     assert!(errors.ends_with("\n  from: --project-model"), "{errors}");
