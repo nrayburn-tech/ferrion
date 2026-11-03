@@ -305,3 +305,35 @@ From W0, the oracle (each recommended by W0, and by this design):
 12. **What the public API doesn't expose isn't compared:** inferred type arguments on their own,
     constructor and method reference types, and which phase chose a method. A call's type as
     invoked covers inferred arguments wherever the signature mentions them.
+
+## Decisions made in review
+
+The user reviewed this design, with [type relations](semantic-type-relations.md),
+[attribution](semantic-attribution.md), and W0's oracle, and accepted every recommendation
+("Accept, start W1"):
+
+1. **Constant folding** is B3b's, with a derived entry per constant field; B3d keeps flow and
+   switches.
+2. **javac over the JLS** where they disagree, each departure an observation with its input.
+3. **An arena per computation,** not one interner for the engine.
+4. **Member tables** are shared derived entries per type and view, which settles W5's question
+   from B2.
+5. **B3b's line:** calls that need inference, and what depends on them, are `left-to-b3c`, counted
+   and compared from B3c.
+6. **The time limit:** fuel per body and a wall-clock backstop per file, provisionally 10 s, with
+   both set at B3c's review from distributions measured on a quiet machine.
+7. **The removed-symbols check** as defined: an answer differing from javac's must be a non-answer
+   rooted in a removed symbol.
+8. **The work order:** W1 alone for B3a, then W2, W3, and W4 for B3b, at most two B3 agents at
+   once while A2 runs.
+9. **The oracle's two javac internals** (constant values, effective finality) stay.
+10. **Relations inside `types`,** compared alone with `--relations`.
+11. **Type strings without origins.**
+12. **What the public API doesn't expose isn't compared.**
+
+And the milestone documents' own questions:
+
+- **Casting legality** ([type relations](semantic-type-relations.md#questions-for-review)): the
+  kind of conversion for correct programs, and `Unknown` for legality typing doesn't need.
+- **Per-file results** ([attribution](semantic-attribution.md#questions-for-review)), split per
+  body only if W4's edit benchmark needs it.
