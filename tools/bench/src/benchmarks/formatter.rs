@@ -36,7 +36,7 @@ fn corpus(inputs: &Inputs) -> anyhow::Result<Prepared> {
         }
         // The line ending and byte-order mark come from the text: corpus_sources has decoded the
         // file already, so a byte-order mark is gone, and formatting adds none.
-        let source = SourceText::decode(file.text.as_bytes())?;
+        let source = SourceText::from_utf8(file.text.as_bytes())?;
         trees.push((parsed.tree, source));
     }
     let bytes = trees.iter().map(|(tree, _)| tree.text().len() as u64).sum();

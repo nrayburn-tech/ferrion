@@ -6,7 +6,7 @@ use std::sync::Arc;
 use ferrion_diagnostics::SourceText;
 use ferrion_parser::{ParseOptions, Severity, parse};
 
-use crate::{FormatOptions, Formatted, format_tree, verify};
+use crate::{FormatOptions, Formatted, format_tree, verify_parsed};
 
 /// The releases [`check_bytes`] formats at: the parser's fuzzing releases, the LTS releases and
 /// the latest, which include both readings of `yield`.
@@ -41,5 +41,5 @@ pub fn check_source(source: &SourceText, release: u32) -> Result<(), String> {
         Formatted::Changed(output) => output,
         Formatted::Skipped(_) => return Err("a file without errors was skipped".to_owned()),
     };
-    verify(source, &output, &FormatOptions { release }).map_err(|v| v.to_string())
+    verify_parsed(source, &parsed, &output, &FormatOptions { release }).map_err(|v| v.to_string())
 }
