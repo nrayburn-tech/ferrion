@@ -4,6 +4,7 @@
 //! ("Declarations") describes the style.
 //!
 //! - [`unit`]: the compilation unit, packages, imports, names, and modules;
+//! - [`imports`]: the import section;
 //! - [`annotations`]: modifiers, annotations, and their arguments;
 //! - [`types`]: type declarations, their clauses and bodies, and enum constants;
 //! - [`members`]: fields and variables, methods and constructors, initializers, and parameters.
@@ -11,6 +12,7 @@
 mod annotations;
 
 pub(crate) use annotations::local_variable;
+mod imports;
 mod members;
 mod types;
 mod unit;

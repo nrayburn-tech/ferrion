@@ -5,9 +5,11 @@
 //! (`printer`). [`format`] parses first, and [`verify`] checks the four safety properties for an
 //! input and its output. Every piece of text in the output is a token of the input, copied from
 //! the source; the formatter writes only whitespace of its own, and reorders tokens only to put
-//! modifiers in order.
+//! modifiers in order. [`format_edits`] gives the same output as edits of the input
+//! (docs/design/formatter-completeness.md, "Edits").
 
 mod document;
+mod edits;
 mod format;
 #[doc(hidden)]
 pub mod invariants;
@@ -23,6 +25,7 @@ use ferrion_diagnostics::{LineEnding, SourceText};
 use ferrion_parser::{ParseDiagnostic, ParseOptions, Severity, parse};
 use ferrion_syntax::SyntaxTree;
 
+pub use edits::{Edit, apply_edits};
 pub use verify::{Property, Violation, verify, verify_parsed};
 
 /// How to format a file. There are no style options.
@@ -55,19 +58,41 @@ pub fn format_tree(tree: &SyntaxTree, source: &SourceText) -> Formatted {
         return Formatted::Skipped(Vec::new());
     }
     let document = format::Formatter::new(tree).format_root();
-    let output = printer::print(
-        &document,
-        &printer::Source {
-            tree,
-            line_ending: source.line_ending().unwrap_or(LineEnding::Lf),
-            bom: source.has_bom(),
-        },
-    );
+    let output = printer::print(&document, &printer_source(tree, source));
     let bom = if source.has_bom() { 3 } else { 0 };
     if output.len() == bom + source.text().len() && &output[bom..] == source.text().as_bytes() {
         Formatted::Unchanged
     } else {
         Formatted::Changed(output)
+    }
+}
+
+/// The edits that turn `source` into what [`format_tree`] gives for it, in order and not
+/// overlapping, each touching only what changes: whitespace between two tokens, or a whole
+/// piece the formatter rewrote (a reordered modifier run, a re-indented comment). They are on
+/// `source.text()`, after any byte-order mark, which no edit touches. `None` for a tree that
+/// holds a syntax error, which [`format_tree`] skips.
+pub fn format_edits(tree: &SyntaxTree, source: &SourceText) -> Option<Vec<Edit>> {
+    debug_assert_eq!(tree.text(), source.text(), "the tree isn't the source's");
+    if tree.root().contains_error() {
+        return None;
+    }
+    let document = format::Formatter::new(tree).format_root();
+    let (output, pieces) = printer::print_recorded(&document, &printer_source(tree, source));
+    let bom = if source.has_bom() { 3 } else { 0 };
+    let edits = edits::from_pieces(source.text(), &output, bom, &pieces);
+    debug_assert!(
+        apply_edits(source.text(), &edits).as_bytes() == &output[bom..],
+        "the edits don't give the output"
+    );
+    Some(edits)
+}
+
+fn printer_source<'a>(tree: &'a SyntaxTree, source: &SourceText) -> printer::Source<'a> {
+    printer::Source {
+        tree,
+        line_ending: source.line_ending().unwrap_or(LineEnding::Lf),
+        bom: source.has_bom(),
     }
 }
 

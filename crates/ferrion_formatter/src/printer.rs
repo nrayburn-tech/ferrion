@@ -3,6 +3,8 @@
 //! width. Printing is linear in the number of elements plus the output, and never fails: a line
 //! goes over the limit when nothing in the groups lets it break.
 
+use std::ops::Range;
+
 use ferrion_diagnostics::LineEnding;
 use ferrion_syntax::SyntaxTree;
 
@@ -28,6 +30,24 @@ struct Frame {
     /// group outside any hug.
     decide: bool,
     indent: u32,
+    /// Whether it is a [`Element::Rewrite`].
+    rewrite: bool,
+}
+
+/// A piece of the input written to the output, for the edit record (`crate::edits`): `input`
+/// is its span in the tree's text, and `output` where it went in the output, byte-order mark
+/// included. Pieces come in output order, and their inputs in input order, since only a rewrite
+/// reorders, and a rewrite is one piece.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Piece {
+    pub input: Range<u32>,
+    pub output: Range<usize>,
+}
+
+/// A rewrite being printed: its input span, and where its output starts, once it has any.
+struct OpenRewrite {
+    input: Range<u32>,
+    output: Option<usize>,
 }
 
 /// The text written last, for the check that two pieces of text written side by side don't run
@@ -54,11 +74,24 @@ struct Printer<'a> {
     pending_indent: u32,
     /// Whether the last thing written was a region that runs to the end of the file.
     ended_by_region: bool,
+    /// The edit record, when asked for.
+    pieces: Option<Vec<Piece>>,
+    rewrites: Vec<OpenRewrite>,
 }
 
 /// Prints `document` and returns the file's bytes: the byte-order mark if there is one, the text
 /// with the source's line ending, and one line ending at the end if there is any text.
 pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
+    run(document, source, false).0
+}
+
+/// [`print`], with the record of where each piece of the input went.
+pub fn print_recorded(document: &Document, source: &Source<'_>) -> (Vec<u8>, Vec<Piece>) {
+    let (out, pieces) = run(document, source, true);
+    (out, pieces.unwrap_or_default())
+}
+
+fn run(document: &Document, source: &Source<'_>, record: bool) -> (Vec<u8>, Option<Vec<Piece>>) {
     let text = source.tree.text();
     let mut printer = Printer {
         source,
@@ -69,6 +102,8 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
         last: None,
         pending_indent: 0,
         ended_by_region: false,
+        pieces: record.then(Vec::new),
+        rewrites: Vec::new(),
     };
     if source.bom {
         printer.out.extend_from_slice(UTF8_BOM);
@@ -80,15 +115,21 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
         flat: false,
         decide: true,
         indent: 0,
+        rewrite: false,
     }];
     for (index, element) in elements.iter().enumerate() {
         let top = *stack.last().expect("the root frame is never popped");
         let indent = top.indent;
         match *element {
             Element::Token { token, len, width } => {
-                let start = source.tree.token(token).span().start as usize;
-                let text = &text[start..start + len as usize];
-                printer.text(text, width, Some(token.index()));
+                let start = source.tree.token(token).span().start;
+                let input = start..start + len;
+                printer.text(
+                    &text[input.start as usize..input.end as usize],
+                    width,
+                    Some(token.index()),
+                    input,
+                );
                 printer.ended_by_region = false;
             }
             Element::Space => {
@@ -134,14 +175,17 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
                     flat,
                     decide: !flat,
                     indent: top.indent,
+                    rewrite: false,
                 });
             }
             Element::Indent(kind) => stack.push(Frame {
                 indent: top.indent + kind.width(),
+                rewrite: false,
                 ..top
             }),
             Element::IndentIfBroken { group } => stack.push(Frame {
                 indent: top.indent + if broken[group as usize] { 4 } else { 0 },
+                rewrite: false,
                 ..top
             }),
             Element::FillBreak { soft, next } => {
@@ -157,22 +201,41 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
             Element::Alternative { .. } | Element::BreaksWith { .. } => {}
             Element::Hug => stack.push(Frame {
                 decide: true,
+                rewrite: false,
                 ..top
             }),
+            Element::Rewrite { start, end } => {
+                printer.rewrites.push(OpenRewrite {
+                    input: start..end,
+                    output: None,
+                });
+                stack.push(Frame {
+                    rewrite: true,
+                    ..top
+                });
+            }
             Element::End => {
-                stack.pop();
+                let frame = stack.pop();
                 assert!(!stack.is_empty(), "an End without a container");
+                if frame.is_some_and(|f| f.rewrite) {
+                    printer.end_rewrite();
+                }
             }
             Element::Verbatim(verbatim) => {
                 let verbatim = document.verbatims[verbatim as usize];
-                let text = &text[verbatim.start as usize..verbatim.end as usize];
+                let input = verbatim.start..verbatim.end;
+                let text = &text[input.start as usize..input.end as usize];
                 match verbatim.kind {
                     VerbatimKind::Copy { to_end } => {
-                        printer.copy(text, verbatim.first_width);
+                        printer.copy(text, verbatim.first_width, input);
                         printer.ended_by_region = to_end;
                     }
                     VerbatimKind::Comment => {
-                        printer.comment(text);
+                        printer.comment(text, input);
+                        printer.ended_by_region = false;
+                    }
+                    VerbatimKind::Doc { token } => {
+                        printer.doc_comment(text, &verbatim, token, input);
                         printer.ended_by_region = false;
                     }
                 }
@@ -184,7 +247,7 @@ pub fn print(document: &Document, source: &Source<'_>) -> Vec<u8> {
         let ending = source.line_ending.as_str();
         printer.out.extend_from_slice(ending.as_bytes());
     }
-    printer.out
+    (printer.out, printer.pieces)
 }
 
 impl Printer<'_> {
@@ -250,22 +313,76 @@ impl Printer<'_> {
         }
     }
 
-    fn text(&mut self, text: &str, width: u32, token: Option<usize>) {
+    /// Records that the input's `input` was written to the output from `at` to its end: one
+    /// piece, or part of the rewrite being printed.
+    fn record(&mut self, input: Range<u32>, at: usize) {
+        let Some(pieces) = &mut self.pieces else {
+            return;
+        };
+        if self.rewrites.is_empty() {
+            pieces.push(Piece {
+                input,
+                output: at..self.out.len(),
+            });
+        } else {
+            for rewrite in &mut self.rewrites {
+                rewrite.output.get_or_insert(at);
+            }
+        }
+    }
+
+    /// Ends the innermost rewrite. The outermost is recorded as one piece.
+    fn end_rewrite(&mut self) {
+        let rewrite = self
+            .rewrites
+            .pop()
+            .expect("a rewrite's End without its start");
+        if self.rewrites.is_empty()
+            && let Some(pieces) = &mut self.pieces
+        {
+            let at = rewrite.output.unwrap_or(self.out.len());
+            pieces.push(Piece {
+                input: rewrite.input,
+                output: at..self.out.len(),
+            });
+        }
+    }
+
+    fn text(&mut self, text: &str, width: u32, token: Option<usize>, input: Range<u32>) {
         if text.is_empty() {
             return;
         }
         self.start_text(text, token);
+        let at = self.out.len();
         self.out.extend_from_slice(text.as_bytes());
         self.column += width;
         self.end_text(text, token);
+        self.record(input, at);
+    }
+
+    /// Writes a traditional doc comment (`VerbatimKind::Doc`): for now, a one-line comment as
+    /// written and a longer one as [`Printer::comment`] re-indents it.
+    fn doc_comment(
+        &mut self,
+        text: &str,
+        verbatim: &crate::document::Verbatim,
+        token: ferrion_syntax::TokenId,
+        input: Range<u32>,
+    ) {
+        if verbatim.breaks {
+            self.comment(text, input);
+        } else {
+            self.text(text, verbatim.first_width, Some(token.index()), input);
+        }
     }
 
     /// Copies `text` as written, with each line terminator replaced by the file's.
-    fn copy(&mut self, text: &str, first_width: u32) {
+    fn copy(&mut self, text: &str, first_width: u32, input: Range<u32>) {
         if text.is_empty() {
             return;
         }
         self.start_text(text, None);
+        let at = self.out.len();
         let ending = self.source.line_ending.as_str().as_bytes();
         let mut lines = Lines::new(text);
         let first = lines.next().unwrap_or_default();
@@ -277,6 +394,7 @@ impl Printer<'_> {
             self.column = width(line);
         }
         self.end_text(text, None);
+        self.record(input, at);
     }
 
     /// Writes a block comment that spans lines, its later lines re-indented to the column it
@@ -287,8 +405,9 @@ impl Printer<'_> {
     /// the stars it has one column after the `/` too, and moves its other lines by the amount that
     /// puts the least indented star there. Trailing whitespace is removed, and lines of only
     /// whitespace are left empty and don't count as the least indented.
-    fn comment(&mut self, text: &str) {
+    fn comment(&mut self, text: &str, input: Range<u32>) {
         self.start_text(text, None);
+        let at = self.out.len();
         let column = self.column;
         let ending = self.source.line_ending.as_str().as_bytes();
         let mut lines = Lines::new(text);
@@ -330,6 +449,7 @@ impl Printer<'_> {
             self.column = pad + width(rest);
         }
         self.end_text(text, None);
+        self.record(input, at);
     }
 }
 

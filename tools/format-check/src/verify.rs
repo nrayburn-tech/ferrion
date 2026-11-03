@@ -2,7 +2,8 @@
 //! safety properties of SCOPE.md on the output with the formatter's `verify`: idempotence,
 //! equivalence, comments kept, and no new syntax errors (see "Safety properties" in
 //! docs/design/formatter.md). Files the formatter skips, for syntax or version errors, are counted;
-//! skipping isn't a failure. A panic, or a property that doesn't hold, is.
+//! skipping isn't a failure. A panic, or a property that doesn't hold, is, and so is an output
+//! that `format_edits` applied to the input doesn't give.
 //!
 //! Throughput counts only the time spent parsing and formatting, as `format` does: megabytes (10^6
 //! bytes) and files per second, on one thread, summed over every release a file is formatted at.
@@ -136,11 +137,13 @@ fn check_all(sources: &[Source], verbose: bool) -> Stats {
                     };
                     let start = Instant::now();
                     let verified = panic::catch_unwind(AssertUnwindSafe(|| {
-                        formatter::verify_parsed(&text, &parsed, &output, &options)
+                        formatter::verify_parsed(&text, &parsed, &output, &options)?;
+                        Ok::<_, formatter::Violation>(edits_give(&text, &parsed, &output))
                     }));
                     stats.verify_time += start.elapsed();
                     match verified {
-                        Ok(Ok(())) => None,
+                        Ok(Ok(true)) => None,
+                        Ok(Ok(false)) => Some("the edits don't give the output".to_owned()),
                         Ok(Err(violation)) => Some(violation.to_string()),
                         Err(_) => Some("verify panicked".to_owned()),
                     }
@@ -154,6 +157,15 @@ fn check_all(sources: &[Source], verbose: bool) -> Stats {
         }
     }
     stats
+}
+
+/// Whether `format_edits`, applied to `text`, gives `output`, the formatter's output for it.
+fn edits_give(text: &SourceText, parsed: &Parse, output: &[u8]) -> bool {
+    let Some(edits) = formatter::format_edits(&parsed.tree, text) else {
+        return false;
+    };
+    let bom = if text.has_bom() { 3 } else { 0 };
+    formatter::apply_edits(text.text(), &edits).as_bytes() == &output[bom..]
 }
 
 /// `text` parsed at `release`, and formatted unless the parse has errors, as `format` does, with

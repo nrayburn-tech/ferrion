@@ -3,20 +3,22 @@
 use ferrion_syntax::{NodeOrToken, SyntaxKind as K, SyntaxNode};
 
 use super::annotations::{own_lines, record_type_use_imports};
-use super::{emit, first_token, parts, types};
+use super::{emit, first_token, imports, parts, types};
 use crate::document::IndentKind;
 use crate::format::Formatter;
 use crate::rules::comments::has_comments_before;
 use crate::rules::space_between;
 
 /// The rule for a compilation unit: a blank line after the package declaration and after the
-/// imports, the imports in input order with the input's blank lines between them, and the
-/// types and members with the blank lines of a class body between them.
+/// import section ([`imports::section`]), and the types and members with the blank lines of a
+/// class body between them.
 pub(super) fn compilation_unit<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     record_type_use_imports(f, node);
+    let parts = parts(node);
     let mut previous: Option<NodeOrToken<'t>> = None;
     let mut previous_spaced = false;
-    for part in parts(node) {
+    let mut i = 0;
+    while let Some(&part) = parts.get(i) {
         let kind = part.kind();
         if kind == K::Eof {
             emit(f, part);
@@ -25,15 +27,22 @@ pub(super) fn compilation_unit<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) 
         let spaced = types::spaced_member(f, part);
         match previous.map(|p| p.kind()) {
             None => {}
-            Some(K::PackageDecl) => f.blank_line(),
-            Some(K::ImportDecl) if kind == K::ImportDecl => {
-                f.line_break_before(first_token(part));
-            }
-            Some(K::ImportDecl) => f.blank_line(),
+            Some(K::PackageDecl | K::ImportDecl) => f.blank_line(),
             Some(_) => types::member_break(f, previous_spaced, part, spaced),
         }
-        emit(f, part);
-        previous = Some(part);
+        if kind == K::ImportDecl {
+            let end = i + parts[i..]
+                .iter()
+                .take_while(|p| p.kind() == K::ImportDecl)
+                .count();
+            imports::section(f, &parts[i..end]);
+            previous = Some(parts[end - 1]);
+            i = end;
+        } else {
+            emit(f, part);
+            previous = Some(part);
+            i += 1;
+        }
         previous_spaced = spaced;
     }
 }

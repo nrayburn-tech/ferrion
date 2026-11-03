@@ -185,10 +185,12 @@ one function, so the GJF comparison can find any it misses.
 A doc comment's lines depend on the column the comment starts at, which only the printer knows.
 So reflow is done by the printer, not the builder:
 
-- **A new element, `DocComment { token, layout }`,** replaces the comment's `Token` or `Verbatim`.
-  `layout` indexes a side table of laid-out comments built with the document: the parsed comment
-  (`ferrion_doc_comments`), cut into words, breaks, and verbatim runs (see below). The builder
-  does everything that doesn't depend on the column, once.
+- **A new kind of copied text, `VerbatimKind::Doc`,** carries every traditional doc comment, one
+  line or more (built in the core step, printing as A1 did). The Javadoc workstream gives it a
+  layout: the parsed comment (`ferrion_doc_comments`), cut into words, breaks, and verbatim runs
+  (see below), in a side table of the document. The builder does everything that doesn't depend
+  on the column, once. A Markdown comment is several `DocLineComment` tokens, so the Markdown
+  workstream makes a run one piece of copied text.
 - **The printer fills it** at the column it is at, with the 100-column limit counted in UTF-16 code
   units, as for code. A doc comment always starts and ends a line (GJF moves `int y = /** x */ 2;`
   to put the comment on a line of its own, observed), so it forces its groups to break and the
@@ -328,21 +330,23 @@ pub struct Edit {
 pub fn format_edits(tree: &SyntaxTree, source: &SourceText) -> Option<Vec<Edit>>;
 ```
 
-- **Gaps.** For each pair of adjacent tokens written, the printer compares the whitespace it
-  writes between them with the input's; where they differ, that is one edit over the input's gap.
-  Comments are tokens here, so an edit never spans a comment that doesn't change.
+- **Gaps.** For each pair of adjacent pieces of text written (tokens and copied text), the
+  whitespace written between them is compared with the input's; where they differ, that is one
+  edit, without the bytes the two share at either end. Comments are pieces too, so an edit never
+  spans a comment that doesn't change.
 - **Rewritten constructs** are one edit each, over their whole input span: a reordered modifier
   run, the import section when it changes, and a comment whose text changes (reflow,
   re-indenting, or the space after `//`). A rewrite is atomic, so an edit list never holds
-  half of one.
-- **Whole files** are the same list applied: `format_tree` is `format_edits` applied to the input,
-  so the two can't disagree, and the A1 tests cover both.
+  half of one. A rule marks a rewrite with an `Element::Rewrite { start, end }` container around
+  what it emits, which prints nothing of its own.
+- **Whole files:** `format_tree` and `format_edits` print the same document, and the edits
+  applied to the input give `format_tree`'s output. A debug assertion in `format_edits`, the unit
+  and snapshot tests, the fuzz target, and `format-check verify` over the corpus check it.
 - **Byte-order mark and final line ending:** the edits are on `SourceText::text`, after the mark,
   which no edit touches; adding the final line ending is an edit at the end.
 
-The printer records, for each token it writes, its offset in the output; edits come from walking
-that record against the input's tokens once. It costs a `Vec<u32>` per token, and only the edit
-API asks for it.
+The printer records, for each piece it writes, its input span and its output range; edits come
+from walking that record once. Only the edit API asks for it.
 
 ## Ranges
 
@@ -484,9 +488,8 @@ What A2 adds to [the four properties](formatter.md#safety-properties):
 
 On `a2/integration`, at most four agents at once, heavy jobs through the shared slot lock.
 
-1. **Core (one workstream, first):** the `Edit` record in the printer and `format_edits`, with
-   `format_tree` built on it; the `DocComment` element, printing as A1's re-indenting so nothing
-   changes yet; a hook in the compilation unit rule for a rewritten import section; and `verify`'s
+1. **Core (one workstream, first):** the `Edit` record in the printer and `format_edits`, checked
+   against `format_tree`; `VerbatimKind::Doc`, printing as A1 did so nothing changes yet; a hook in the compilation unit rule for a rewritten import section; and `verify`'s
    new comparisons as no-ops the workstreams fill in. Small, and it gives the four workstreams
    disjoint files.
 2. **In parallel, one each:**

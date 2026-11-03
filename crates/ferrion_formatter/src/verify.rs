@@ -17,6 +17,9 @@ use crate::printer::{Lines, trim_end};
 use crate::regions;
 use crate::{FormatOptions, Formatted, format_tree, modifiers};
 
+mod doc_comments;
+mod imports;
+
 /// A safety property.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Property {
@@ -136,6 +139,7 @@ pub fn verify_parsed(
         ));
     }
     equivalence(&before.tree, &after.tree, bom)?;
+    imports::compare(&before.tree, &after.tree, bom)?;
     comments(&before.tree, &after.tree, bom)?;
     match format_tree(&after.tree, &output_source) {
         Formatted::Unchanged => Ok(()),
@@ -175,25 +179,28 @@ struct TokenSignature<'t> {
     parent: usize,
 }
 
-/// Compares the two trees: their nodes' kinds and subtree sizes in pre-order, then their tokens
-/// other than trivia, by kind, text, and the node they're in, with each run of keyword modifiers
-/// sorted. Comparing nodes catches what tokens alone can't, such as `>` `>` no longer being a
-/// shift.
+/// Compares the two trees outside their imports, which [`imports::compare`] compares: their
+/// nodes' kinds and subtree sizes in pre-order, then their tokens other than trivia, by kind,
+/// text, and the node they're in, with each run of keyword modifiers sorted. Comparing nodes
+/// catches what tokens alone can't, such as `>` `>` no longer being a shift.
 fn equivalence(before: &SyntaxTree, after: &SyntaxTree, bom: usize) -> Result<(), Violation> {
-    let shape = |tree: &SyntaxTree| -> Vec<(SyntaxKind, usize)> {
+    let (kept_before, kept_after) = (imports::Kept::new(before), imports::Kept::new(after));
+    let shape = |tree: &SyntaxTree, kept: &imports::Kept| -> Vec<(SyntaxKind, usize)> {
         tree.nodes()
-            .map(|n| {
-                (
-                    n.kind(),
-                    n.subtree().end.index() - n.subtree().start.index(),
-                )
-            })
+            .filter(|n| kept.index(n.id()).is_some())
+            .map(|n| (n.kind(), kept.count(n.subtree())))
             .collect()
     };
-    let (a, b) = (shape(before), shape(after));
+    let (a, b) = (shape(before, &kept_before), shape(after, &kept_after));
     if let Some(i) = first_difference(&a, &b) {
-        let offset =
-            (i < b.len()).then(|| bom + after.nodes().nth(i).unwrap().span().start as usize);
+        let offset = (i < b.len()).then(|| {
+            let node = after
+                .nodes()
+                .filter(|n| kept_after.index(n.id()).is_some())
+                .nth(i)
+                .unwrap();
+            bom + node.span().start as usize
+        });
         let describe = |nodes: &[(SyntaxKind, usize)]| {
             nodes
                 .get(i)
@@ -209,9 +216,12 @@ fn equivalence(before: &SyntaxTree, after: &SyntaxTree, bom: usize) -> Result<()
             ),
         ));
     }
-    let (a, b) = (tokens(before), tokens(after));
+    let (a, b) = (tokens(before, &kept_before), tokens(after, &kept_after));
     if let Some(i) = first_difference(&a, &b) {
-        let output_tokens: Vec<_> = after.tokens().filter(|t| !t.is_trivia()).collect();
+        let output_tokens: Vec<_> = after
+            .tokens()
+            .filter(|t| !t.is_trivia() && kept_after.index(t.parent().id()).is_some())
+            .collect();
         let offset = output_tokens.get(i).map(|t| bom + t.span().start as usize);
         let describe = |tokens: &[TokenSignature<'_>]| {
             tokens.get(i).map_or("nothing".to_owned(), |t| {
@@ -231,12 +241,16 @@ fn equivalence(before: &SyntaxTree, after: &SyntaxTree, bom: usize) -> Result<()
     Ok(())
 }
 
-/// The tokens of `tree` that aren't trivia, each run of keyword modifiers sorted. A text block
-/// is compared apart from its line terminators, which the formatter converts.
-fn tokens(tree: &SyntaxTree) -> Vec<TokenSignature<'_>> {
+/// The tokens of `tree` that aren't trivia, outside its imports, each run of keyword modifiers
+/// sorted. A text block is compared apart from its line terminators, which the formatter
+/// converts.
+fn tokens<'t>(tree: &'t SyntaxTree, kept: &imports::Kept) -> Vec<TokenSignature<'t>> {
     let mut position = vec![usize::MAX; tree.token_count()];
     let mut signatures = Vec::new();
     for token in tree.tokens().filter(|t| !t.is_trivia()) {
+        let Some(parent) = kept.index(token.parent().id()) else {
+            continue;
+        };
         position[token.id().index()] = signatures.len();
         let text = match token.kind() {
             SyntaxKind::TextBlock => {
@@ -247,7 +261,7 @@ fn tokens(tree: &SyntaxTree) -> Vec<TokenSignature<'_>> {
         signatures.push(TokenSignature {
             kind: token.kind(),
             text,
-            parent: token.parent().id().index(),
+            parent,
         });
     }
     for node in tree.nodes().filter(|n| n.kind() == SyntaxKind::Modifiers) {
@@ -265,7 +279,9 @@ fn tokens(tree: &SyntaxTree) -> Vec<TokenSignature<'_>> {
                 .map(|t| TokenSignature {
                     kind: t.kind(),
                     text: Cow::Borrowed(t.text()),
-                    parent: t.parent().id().index(),
+                    parent: kept
+                        .index(t.parent().id())
+                        .expect("a modifier in an import"),
                 })
                 .collect();
             for (i, signature) in sorted.into_iter().enumerate() {
@@ -282,7 +298,8 @@ fn tokens(tree: &SyntaxTree) -> Vec<TokenSignature<'_>> {
 /// it.
 fn comments(before: &SyntaxTree, after: &SyntaxTree, bom: usize) -> Result<(), Violation> {
     let list = |tree: &SyntaxTree, input: bool| -> Vec<(SyntaxKind, String, usize)> {
-        let regions = if input && tree.text().contains("@formatter:") {
+        // Both sides' regions: a doc comment in one is copied, so it isn't compared as reflowed.
+        let regions = if tree.text().contains("@formatter:") {
             regions::find(tree, &CommentMap::new(tree))
         } else {
             Vec::new()
@@ -297,14 +314,15 @@ fn comments(before: &SyntaxTree, after: &SyntaxTree, bom: usize) -> Result<(), V
                     .is_some()
                 {}
                 let in_region = regions.peek().is_some_and(|r| r.start <= t.id());
-                (
-                    t.kind(),
+                let text = if t.kind() == SyntaxKind::DocComment && !in_region {
+                    doc_comments::normalize(t.text())
+                } else {
                     normalize_comment(
                         t.text(),
                         input && !in_region && t.kind() == SyntaxKind::LineComment,
-                    ),
-                    t.span().start as usize,
-                )
+                    )
+                };
+                (t.kind(), text, t.span().start as usize)
             })
             .collect()
     };
