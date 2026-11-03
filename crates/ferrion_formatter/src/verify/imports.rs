@@ -7,9 +7,14 @@
 use std::collections::{HashMap, HashSet};
 use std::ops::Range;
 
+use ferrion_doc_comments::markdown::{Block, Inline as MarkdownInline, LinkTarget};
+use ferrion_doc_comments::{
+    Inline, InlineTagContent, Reference, TagArgument, markdown_comment_runs, parse_javadoc,
+    parse_markdown,
+};
 use ferrion_lexer::TokenKind;
-use ferrion_syntax::comments::{CommentMap, Element, Placement};
-use ferrion_syntax::{NodeId, SyntaxKind, SyntaxNode, SyntaxTree, TokenId};
+use ferrion_syntax::comments::{CommentMap, Element, MARKDOWN_DOC_COMMENT_RELEASE, Placement};
+use ferrion_syntax::{NodeId, SyntaxKind, SyntaxNode, SyntaxToken, SyntaxTree, TokenId};
 
 use super::{Property, Violation, violation};
 use crate::imports::cooked;
@@ -129,9 +134,9 @@ fn imports(tree: &SyntaxTree) -> Vec<Import<'_>> {
 /// input's, and every import of the input missing from the output is one the formatter may remove,
 /// checked without the plan. A single-type or single static import may go when:
 ///
-/// - no identifier in the output outside the imports, declarations included, and no word in any
-///   doc comment, has its simple name: that over-approximates its uses, so a removal the plan got
-///   wrong can't pass;
+/// - no identifier in the output outside the imports that may refer to it, and no reference in
+///   any doc comment, has its simple name ([`Names`]): that over-approximates its uses, so a
+///   removal the plan got wrong can't pass;
 /// - an import with the same name is still there (a duplicate);
 /// - it is a single-type import of a type of the file's own package.
 pub(super) fn compare(
@@ -183,8 +188,8 @@ pub(super) fn compare(
             let names = names.get_or_insert_with(|| Names::new(after));
             if names.identifiers.contains(import.simple_name()) {
                 Err("an identifier in the output has its simple name")
-            } else if names.doc_words.contains(import.simple_name()) {
-                Err("a doc comment in the output has its simple name")
+            } else if names.doc_references.contains(import.simple_name()) {
+                Err("a doc comment in the output names it")
             } else {
                 Ok(())
             }
@@ -200,17 +205,18 @@ pub(super) fn compare(
     Ok(())
 }
 
-/// The output's names that could be uses of an import: its identifiers outside the imports, and
-/// the words of its doc comments, with Unicode escapes translated.
+/// The output's names that could be uses of an import, found without the plan's rules and
+/// counting more than they do: its identifiers outside the imports other than declared names,
+/// labels, and names after `.` or `::`, which never refer to an import; and the first segment of
+/// every type in every reference of every doc comment, attached or not.
 struct Names {
     identifiers: HashSet<String>,
-    doc_words: HashSet<String>,
+    doc_references: HashSet<String>,
 }
 
 impl Names {
     fn new(tree: &SyntaxTree) -> Names {
         let mut identifiers = HashSet::new();
-        let mut doc_words = HashSet::new();
         // The imports' tokens, which come in order, as the tokens do.
         let mut imports = tree
             .root()
@@ -221,25 +227,162 @@ impl Names {
         for token in tree.tokens() {
             while imports.next_if(|r| r.end <= token.id()).is_some() {}
             let in_import = imports.peek().is_some_and(|r| r.start <= token.id());
-            if token.lexer_kind() == TokenKind::Identifier {
-                if !in_import {
-                    identifiers.insert(cooked(token).into_owned());
+            if token.lexer_kind() == TokenKind::Identifier && !in_import && may_refer(token) {
+                identifiers.insert(cooked(token).into_owned());
+            }
+        }
+        let mut doc_references = HashSet::new();
+        let mut found = |reference: &Reference| {
+            for ty in reference.types() {
+                if let Some(first) = ty.name.segments.first() {
+                    doc_references.insert(first.text.clone());
                 }
-            } else if matches!(
-                token.kind(),
-                SyntaxKind::DocComment | SyntaxKind::DocLineComment
-            ) {
-                for word in cooked(token)
-                    .split(|c: char| !(c.is_alphanumeric() || c == '_' || c == '$'))
-                    .filter(|w| !w.is_empty())
-                {
-                    doc_words.insert(word.to_owned());
+            }
+        };
+        for token in tree.tokens().filter(|t| t.kind() == SyntaxKind::DocComment) {
+            let javadoc = parse_javadoc(tree.text(), token.span());
+            javadoc_inlines(&javadoc.description, &mut found);
+            for tag in &javadoc.tags {
+                tag_argument(tag.argument.as_ref(), &mut found);
+                javadoc_inlines(&tag.body, &mut found);
+            }
+        }
+        if tree.release() >= MARKDOWN_DOC_COMMENT_RELEASE {
+            for lines in markdown_comment_runs(tree.lexer_tokens()) {
+                let markdown = parse_markdown(tree.text(), &lines);
+                markdown_blocks(&markdown.description, &mut found);
+                for tag in &markdown.tags {
+                    tag_argument(tag.argument.as_ref(), &mut found);
+                    markdown_blocks(&tag.body, &mut found);
                 }
             }
         }
         Names {
             identifiers,
-            doc_words,
+            doc_references,
+        }
+    }
+}
+
+/// Whether `token`, an identifier, may refer to an imported type or member: not a declaration's
+/// own name, a label, or a name after `.` or `::`.
+fn may_refer(token: SyntaxToken<'_>) -> bool {
+    let declared = matches!(
+        token.parent().kind(),
+        SyntaxKind::ClassDecl
+            | SyntaxKind::InterfaceDecl
+            | SyntaxKind::EnumDecl
+            | SyntaxKind::RecordDecl
+            | SyntaxKind::AnnotationTypeDecl
+            | SyntaxKind::MethodDecl
+            | SyntaxKind::ConstructorDecl
+            | SyntaxKind::CompactConstructorDecl
+            | SyntaxKind::VariableDeclarator
+            | SyntaxKind::FormalParameter
+            | SyntaxKind::CatchParameter
+            | SyntaxKind::TypeParameter
+            | SyntaxKind::LambdaParameter
+            | SyntaxKind::EnumConstant
+            | SyntaxKind::RecordComponent
+            | SyntaxKind::TypePattern
+            | SyntaxKind::LabeledStmt
+            | SyntaxKind::BreakStmt
+            | SyntaxKind::ContinueStmt
+    );
+    !declared
+        && token
+            .prev_non_trivia()
+            .is_none_or(|t| !matches!(t.kind(), SyntaxKind::Dot | SyntaxKind::ColonColon))
+}
+
+type Found<'a> = dyn FnMut(&Reference) + 'a;
+
+fn tag_argument(argument: Option<&TagArgument>, found: &mut Found<'_>) {
+    match argument {
+        Some(TagArgument::Reference(reference)) => found(reference),
+        Some(TagArgument::SerialField { ty: Some(ty), .. }) => found(&Reference {
+            span: ty.span,
+            text: String::new(),
+            module: None,
+            qualifier: Some(ty.clone()),
+            member: None,
+            fragment: None,
+        }),
+        _ => {}
+    }
+}
+
+/// Every reference of an inline tag, and of its descriptive content through `inner`.
+fn tag<D>(content: &InlineTagContent<D>, found: &mut Found<'_>, inner: fn(&D, &mut Found<'_>)) {
+    match content {
+        InlineTagContent::Link { reference, label }
+        | InlineTagContent::LinkPlain { reference, label } => {
+            if let Some(reference) = reference {
+                found(reference);
+            }
+            inner(label, found);
+        }
+        // `{@value X}` without a member names a field, not a type (the design, "Removal").
+        InlineTagContent::Value {
+            reference: Some(reference),
+            ..
+        } if reference.member.is_some() => found(reference),
+        InlineTagContent::InheritDoc {
+            supertype: Some(reference),
+        } => found(reference),
+        InlineTagContent::Index { description, .. }
+        | InlineTagContent::Return(description)
+        | InlineTagContent::Summary(description) => inner(description, found),
+        _ => {}
+    }
+}
+
+fn javadoc_inlines(inlines: &[Inline], found: &mut Found<'_>) {
+    for inline in inlines {
+        if let Inline::Tag(t) = inline {
+            tag(&t.content, found, |d, found| javadoc_inlines(d, found));
+        }
+    }
+}
+
+fn markdown_blocks(blocks: &[Block], found: &mut Found<'_>) {
+    for block in blocks {
+        match block {
+            Block::Paragraph { content, .. }
+            | Block::Heading { content, .. }
+            | Block::Html { content, .. } => markdown_inlines(content, found),
+            Block::BlockQuote { blocks, .. } => markdown_blocks(blocks, found),
+            Block::List { items, .. } => {
+                for item in items {
+                    markdown_blocks(&item.blocks, found);
+                }
+            }
+            Block::Table { head, rows, .. } => {
+                for cell in std::iter::once(head).chain(rows).flat_map(|r| &r.cells) {
+                    markdown_inlines(&cell.content, found);
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn markdown_inlines(inlines: &[MarkdownInline], found: &mut Found<'_>) {
+    for inline in inlines {
+        match inline {
+            MarkdownInline::Link {
+                target, content, ..
+            } => {
+                if let LinkTarget::Element(reference) = target {
+                    found(reference);
+                }
+                markdown_inlines(content, found);
+            }
+            MarkdownInline::Emphasis { content, .. }
+            | MarkdownInline::Strong { content, .. }
+            | MarkdownInline::Image { content, .. } => markdown_inlines(content, found),
+            MarkdownInline::Tag(t) => tag(&t.content, found, |d, found| markdown_blocks(d, found)),
+            _ => {}
         }
     }
 }
