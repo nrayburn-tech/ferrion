@@ -10,5 +10,9 @@ publish.workspace = true
 ferrion_diagnostics.workspace = true
 globset.workspace = true
 
+[dev-dependencies]
+jsonschema.workspace = true
+serde_json.workspace = true
+
 [lints]
 workspace = true

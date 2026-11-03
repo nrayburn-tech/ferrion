@@ -1,4 +1,4 @@
-//! `ferrion.jsonc`: loading, validation, and flat-config resolution.
+//! `ferrion.jsonc`: loading, validation, flat-config resolution, and the JSON Schema.
 //!
 //! A config is loaded from text ([`Config::from_text`], for an editor buffer) or from a file
 //! ([`Config::from_path`]); nothing else here touches the file system. Loading checks the whole
@@ -14,6 +14,7 @@ mod glob;
 pub mod jsonc;
 pub mod keys;
 mod model;
+mod schema;
 mod suggest;
 mod validate;
 
@@ -29,6 +30,7 @@ pub use model::{
     Config, Entry, FormatSettings, IgnoredBy, Level, LinterOptions, Resolution, ResolvedRule, Rule,
     Sourced,
 };
+pub use schema::{SCHEMA_PATH, json_schema};
 pub use suggest::{did_you_mean, edit_distance};
 
 /// The config file's name in the working directory, where it is read from by default.

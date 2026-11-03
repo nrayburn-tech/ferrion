@@ -1,6 +1,7 @@
 //! Generates the syntax tree's `SyntaxKind` and typed syntax views from
-//! `crates/ferrion_syntax/java.grammar`, and formats them with rustfmt. Run it with `cargo codegen`
-//! after changing the grammar; CI checks that the generated files are up to date.
+//! `crates/ferrion_syntax/java.grammar`, and formats them with rustfmt, and the JSON Schema of
+//! `ferrion.jsonc` from the config's key tables (`crates/ferrion_config/src/keys.rs`). Run it with
+//! `cargo codegen` after changing either; CI checks that the generated files are up to date.
 
 mod ast;
 mod grammar;
@@ -21,7 +22,10 @@ pub const HEADER: &str = "\
 
 fn main() -> ExitCode {
     if std::env::args().len() > 1 {
-        eprintln!("usage: codegen\n\nRegenerates {KINDS} and {AST} from {GRAMMAR}.");
+        eprintln!(
+            "usage: codegen\n\nRegenerates {KINDS} and {AST} from {GRAMMAR}, and {}.",
+            ferrion_config::SCHEMA_PATH
+        );
         return ExitCode::FAILURE;
     }
     match run() {
@@ -49,6 +53,11 @@ fn run() -> Result<(), String> {
             .map_err(|e| format!("can't write {}: {e}", path.display()))?;
         rustfmt(&path)?;
     }
+    let schema = root.join(ferrion_config::SCHEMA_PATH);
+    std::fs::create_dir_all(schema.parent().unwrap())
+        .map_err(|e| format!("can't create {}: {e}", schema.display()))?;
+    std::fs::write(&schema, ferrion_config::json_schema())
+        .map_err(|e| format!("can't write {}: {e}", schema.display()))?;
     Ok(())
 }
 
