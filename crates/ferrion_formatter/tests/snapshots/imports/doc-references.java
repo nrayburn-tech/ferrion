@@ -21,10 +21,14 @@ import u.Exc;
 import u.Uses;
 import u.Provides;
 import u.ParamDoc;
+import u.Before;
 import u.Field;
+import u.InBody;
+import u.Dangling;
 import static u.S.member;
 import static u.S.called;
 
+/** {@link Before} */
 /**
  * Prose. {@link Link} {@link LinkM#m} {@linkplain LinkPlain text} {@link #m(LinkParam)} {@link
  * LinkArr[]} {@link String LinkLabel} {@link Gen<String>} {@link QualFirst.Inner} {@link
@@ -42,4 +46,11 @@ import static u.S.called;
 class T<Q> {
   /** {@link Field} */
   int f;
+
+  void m() {
+    /** {@link InBody} */
+    int x;
+  }
+
+  /** {@link Dangling} */
 }

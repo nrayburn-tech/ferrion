@@ -9,11 +9,12 @@ use std::ops::Range;
 
 use ferrion_doc_comments::markdown::{Block, Inline as MarkdownInline, LinkTarget};
 use ferrion_doc_comments::{
-    Inline, InlineTagContent, Reference, TagArgument, markdown_comment_runs, parse_javadoc,
-    parse_markdown,
+    Inline, InlineTagContent, Reference, TagArgument, parse_javadoc, parse_markdown,
 };
 use ferrion_lexer::TokenKind;
-use ferrion_syntax::comments::{CommentMap, Element, MARKDOWN_DOC_COMMENT_RELEASE, Placement};
+use ferrion_syntax::comments::{
+    CommentMap, DocCommentKind, Element, Placement, can_have_doc_comment, doc_comment,
+};
 use ferrion_syntax::{NodeId, SyntaxKind, SyntaxNode, SyntaxToken, SyntaxTree, TokenId};
 
 use super::{Property, Violation, violation};
@@ -135,7 +136,7 @@ fn imports(tree: &SyntaxTree) -> Vec<Import<'_>> {
 /// checked without the plan. A single-type or single static import may go when:
 ///
 /// - no identifier in the output outside the imports that may refer to it, and no reference in
-///   any doc comment, has its simple name ([`Names`]): that over-approximates its uses, so a
+///   an attached doc comment, has its simple name ([`Names`]): that over-approximates its uses, so a
 ///   removal the plan got wrong can't pass;
 /// - an import with the same name is still there (a duplicate);
 /// - it is a single-type import of a type of the file's own package.
@@ -208,7 +209,8 @@ pub(super) fn compare(
 /// The output's names that could be uses of an import, found without the plan's rules and
 /// counting more than they do: its identifiers outside the imports other than declared names,
 /// labels, and names after `.` or `::`, which never refer to an import; and the first segment of
-/// every type in every reference of every doc comment, attached or not.
+/// every type in every reference of every doc comment javadoc reads: the one javac attaches to
+/// each declaration (`ferrion_syntax::comments::doc_comment`).
 struct Names {
     identifiers: HashSet<String>,
     doc_references: HashSet<String>,
@@ -239,21 +241,31 @@ impl Names {
                 }
             }
         };
-        for token in tree.tokens().filter(|t| t.kind() == SyntaxKind::DocComment) {
-            let javadoc = parse_javadoc(tree.text(), token.span());
-            javadoc_inlines(&javadoc.description, &mut found);
-            for tag in &javadoc.tags {
-                tag_argument(tag.argument.as_ref(), &mut found);
-                javadoc_inlines(&tag.body, &mut found);
+        let mut seen = HashSet::new();
+        for node in tree.nodes().filter(|n| can_have_doc_comment(n.kind())) {
+            let Some(doc) = doc_comment(node) else {
+                continue;
+            };
+            if !seen.insert(doc.first_token().id()) {
+                continue;
             }
-        }
-        if tree.release() >= MARKDOWN_DOC_COMMENT_RELEASE {
-            for lines in markdown_comment_runs(tree.lexer_tokens()) {
-                let markdown = parse_markdown(tree.text(), &lines);
-                markdown_blocks(&markdown.description, &mut found);
-                for tag in &markdown.tags {
-                    tag_argument(tag.argument.as_ref(), &mut found);
-                    markdown_blocks(&tag.body, &mut found);
+            match doc.kind() {
+                DocCommentKind::Javadoc => {
+                    let javadoc = parse_javadoc(tree.text(), doc.span());
+                    javadoc_inlines(&javadoc.description, &mut found);
+                    for tag in &javadoc.tags {
+                        tag_argument(tag.argument.as_ref(), &mut found);
+                        javadoc_inlines(&tag.body, &mut found);
+                    }
+                }
+                DocCommentKind::Markdown => {
+                    let lines: Vec<_> = doc.tokens().map(|t| t.span()).collect();
+                    let markdown = parse_markdown(tree.text(), &lines);
+                    markdown_blocks(&markdown.description, &mut found);
+                    for tag in &markdown.tags {
+                        tag_argument(tag.argument.as_ref(), &mut found);
+                        markdown_blocks(&tag.body, &mut found);
+                    }
                 }
             }
         }
@@ -487,10 +499,12 @@ pub(super) fn compare_comments(
     if a.is_empty() {
         return Ok(());
     }
-    let text = |list: &[SectionComment], token: TokenId| -> String {
-        list.iter()
-            .find(|c| c.token == token)
-            .map_or_else(String::new, |c| c.text.clone())
+    let texts = |list: &[SectionComment]| -> HashMap<TokenId, String> {
+        list.iter().map(|c| (c.token, c.text.clone())).collect()
+    };
+    let (texts_a, texts_b) = (texts(a), texts(b));
+    let text = |texts: &HashMap<TokenId, String>, token: TokenId| -> String {
+        texts.get(&token).cloned().unwrap_or_default()
     };
     let (map_a, map_b) = (CommentMap::new(before), CommentMap::new(after));
     let (imports_a, imports_b) = (imports(before), imports(after));
@@ -498,7 +512,7 @@ pub(super) fn compare_comments(
     for (k, import) in imports_a.iter().enumerate() {
         let mut owned: Vec<String> = belonging(&map_a, import.node, k > 0)
             .into_iter()
-            .map(|t| text(a, t))
+            .map(|t| text(&texts_a, t))
             .collect();
         if owned.is_empty() {
             continue;
@@ -508,7 +522,7 @@ pub(super) fn compare_comments(
             !used[j] && other.tokens == import.tokens && {
                 let mut with: Vec<String> = belonging(&map_b, other.node, true)
                     .into_iter()
-                    .map(|t| text(b, t))
+                    .map(|t| text(&texts_b, t))
                     .collect();
                 with.sort();
                 contains(&with, &owned)

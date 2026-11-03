@@ -17,6 +17,7 @@ import u.Thr;
 import u.Uses;
 import u.Value;
 
+/** {@link Before} */
 /**
  * Prose. {@link Link} {@link LinkM#m} {@linkplain LinkPlain text} {@link #m(LinkParam)} {@link
  * LinkArr[]} {@link String LinkLabel} {@link Gen<String>} {@link QualFirst.Inner} {@link
@@ -34,4 +35,11 @@ import u.Value;
 class T<Q> {
   /** {@link Field} */
   int f;
+
+  void m() {
+    /** {@link InBody} */
+    int x;
+  }
+
+  /** {@link Dangling} */
 }
