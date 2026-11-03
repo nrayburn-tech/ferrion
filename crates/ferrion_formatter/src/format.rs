@@ -14,6 +14,10 @@
 //!   exceptions, through [`Formatter::reordered_run`] and [`Formatter::rewritten_imports`].
 //! - **Disable regions:** at a region's `off` comment it emits the region's text as written, and
 //!   until the region's `on` comment, tokens, comments, and whitespace emit nothing.
+//! - **Error units:** in a tree with syntax errors, which only range formatting formats, each
+//!   unit an error affects (`SyntaxTree::error_units`) is emitted as written, its comments
+//!   included, in place of its rule's output (docs/design/formatter-completeness.md, "Files with
+//!   syntax errors"); see [`Formatter::copies`].
 
 use ferrion_syntax::comments::{Comment, CommentMap, Element as CommentElement, Placement};
 use ferrion_syntax::{SyntaxKind, SyntaxNode, SyntaxToken, SyntaxTree, TokenId};
@@ -48,12 +52,22 @@ pub struct Formatter<'t> {
     capped_indents: u32,
     /// The type-use annotations the file imports (see [`Formatter::type_use_imports`]).
     type_use_imports: u32,
+    /// The error units, by their first and last tokens, in source order: empty for a tree
+    /// without errors.
+    error_units: Vec<(TokenId, TokenId)>,
+    /// How many of `error_units` were copied.
+    copied_units: usize,
 }
 
 impl<'t> Formatter<'t> {
     pub fn new(tree: &'t SyntaxTree) -> Formatter<'t> {
         let comments = CommentMap::new(tree);
         let regions = regions::find(tree, &comments);
+        let error_units = tree
+            .error_units()
+            .into_iter()
+            .map(|unit| (unit.first_token().id(), unit.last_token().id()))
+            .collect();
         Formatter {
             tree,
             comments,
@@ -67,6 +81,8 @@ impl<'t> Formatter<'t> {
             comment_break: false,
             capped_indents: 0,
             type_use_imports: 0,
+            error_units,
+            copied_units: 0,
         }
     }
 
@@ -92,9 +108,13 @@ impl<'t> Formatter<'t> {
     }
 
     /// Emits `token`, the next token of the input that isn't trivia, with the comments before it
-    /// and the comments trailing it.
+    /// and the comments trailing it. A token of an error unit copies the unit instead, once (see
+    /// [`Formatter::copies`]).
     pub fn token(&mut self, token: SyntaxToken<'t>) {
         let id = token.id();
+        if self.copies_range(id, id) {
+            return;
+        }
         self.check_next(id, id);
         self.comments_before(id);
         if self.in_region.is_none() {
@@ -196,6 +216,76 @@ impl<'t> Formatter<'t> {
         }
         self.last_token = Some(plan.last_code);
         self.next_comment = plan.comments.end;
+    }
+
+    /// Whether `node` is in an error unit, which is copied as written rather than laid out:
+    /// [`crate::rules::node`] asks before running a node's rule. The unit is copied the first
+    /// time this is asked for a node in it, or [`Formatter::token`] is called with a token of it;
+    /// after that, its nodes and tokens emit nothing, as in a disable region.
+    ///
+    /// The unit's text, from its first token to its last, comments included, is one `Verbatim`.
+    /// The comments before it are placed as usual, and so are the comments trailing it. A unit
+    /// starts its own line in the output, inside a block, a body, or the import section, so the
+    /// layout around it is the clean file's.
+    pub fn copies(&mut self, node: SyntaxNode<'t>) -> bool {
+        self.copies_range(node.first_token().id(), node.last_token().id())
+    }
+
+    /// [`Formatter::copies`] for the tokens from `first` to `last`.
+    fn copies_range(&mut self, first: TokenId, last: TokenId) -> bool {
+        if self.copied_units > 0 {
+            let (_, end) = self.error_units[self.copied_units - 1];
+            if last <= end {
+                return true;
+            }
+        }
+        let Some(&(start, end)) = self.error_units.get(self.copied_units) else {
+            return false;
+        };
+        if first < start || last > end {
+            return false;
+        }
+        self.copy_unit(start, end);
+        true
+    }
+
+    /// Emits the error unit from `first` to `last` as written (see [`Formatter::copies`]).
+    fn copy_unit(&mut self, first: TokenId, last: TokenId) {
+        self.check_next(first, last);
+        debug_assert!(
+            !self.regions.iter().any(|r| {
+                (first..=last).contains(&r.start)
+                    || r.end.is_some_and(|e| (first..=last).contains(&e))
+            }),
+            "a disable region starts or ends in an error unit"
+        );
+        self.comments_before(first);
+        self.copied_units += 1;
+        if self.in_region.is_none() {
+            let text = self.tree.text();
+            let to_end = self.tree.token(last).kind() == SyntaxKind::Eof;
+            let end = if to_end {
+                text.len() as u32
+            } else {
+                self.tree.token(last).span().end
+            };
+            let verbatim = copied(
+                text,
+                self.tree.token(first).span().start,
+                end,
+                VerbatimKind::Copy { to_end },
+            );
+            self.doc().verbatim(verbatim);
+            self.comment_break = false;
+        }
+        // The comments in the unit are in its text.
+        while let Some(comment) = self.comments.comments().get(self.next_comment)
+            && comment.token < last
+        {
+            self.next_comment += 1;
+        }
+        self.last_token = Some(last);
+        self.trailing_comments(last);
     }
 
     /// Starts a rewrite of the input's tokens from `first` to `last`, which the rule then emits in

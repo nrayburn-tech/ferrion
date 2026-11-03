@@ -46,8 +46,8 @@ pub enum Area {
     Types,
 }
 
-/// The area of `kind`, a node kind. The `Error` node, which is never in a tree the formatter
-/// formats, and token kinds have none.
+/// The area of `kind`, a node kind. The `Error` node, which the formatter only meets in an error
+/// unit it copies, and token kinds have none.
 pub fn area(kind: SyntaxKind) -> Option<Area> {
     Some(match kind {
         K::CompilationUnit
@@ -165,9 +165,13 @@ pub fn area(kind: SyntaxKind) -> Option<Area> {
     })
 }
 
-/// Formats `node` with its kind's rule. Every rule recurses through here, which grows the stack
-/// when it runs low (docs/design/parser-deep-nesting.md).
+/// Formats `node` with its kind's rule, or copies it as written if it is in an error unit (see
+/// [`Formatter::copies`]). Every rule recurses through here, which grows the stack when it runs
+/// low (docs/design/parser-deep-nesting.md).
 pub fn node<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
+    if f.copies(node) {
+        return;
+    }
     ferrion_stack::ensure_stack(|| match area(node.kind()) {
         Some(Area::Declarations) => declarations::format(f, node),
         Some(Area::Statements) => statements::format(f, node),
