@@ -1,0 +1,14 @@
+package p;
+
+import x.X;
+import y.Y;
+// About X.
+import z.Z;
+
+// About Y.
+
+class T {
+  Z z;
+  Y y;
+  X x;
+}

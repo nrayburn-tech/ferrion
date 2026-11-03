@@ -1,0 +1,10 @@
+package p;
+
+import a.A;
+// About the class.
+import z.Z;
+
+class T {
+  Z z;
+  A a;
+}
