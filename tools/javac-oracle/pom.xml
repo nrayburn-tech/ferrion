@@ -18,9 +18,14 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!-- javac's internal packages can't be exported with release, so source and target are used. -->
-    <maven.compiler.source>25</maven.compiler.source>
-    <maven.compiler.target>25</maven.compiler.target>
+    <!-- A fixed time for the jar's entries, so a rebuild gives the same bytes: the oracle's output
+         is cached by a hash of the jar. -->
+    <project.build.outputTimestamp>2026-01-01T00:00:00Z</project.build.outputTimestamp>
+    <!-- javac's internal packages can't be exported with release, so source and target are used.
+         21, so that `names`, which uses javac's public API only, runs on each corpus project's own
+         JDK; the other commands use javac's internals as the newest JDK has them, and run on it. -->
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
 
     <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
     <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
