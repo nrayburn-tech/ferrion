@@ -19,6 +19,9 @@ use crate::{FormatOptions, Formatted, format_tree, modifiers};
 
 pub(crate) mod doc_comments;
 mod imports;
+mod ranges;
+
+pub use ranges::verify_range;
 
 /// A safety property.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -34,6 +37,9 @@ pub enum Property {
     Comments,
     /// The output has no syntax or version errors.
     NoNewErrors,
+    /// A range's edits stay in its units and the gaps around them, and change only whitespace
+    /// outside the units (docs/design/formatter-completeness.md, "Safety properties").
+    Range,
 }
 
 impl fmt::Display for Property {
@@ -43,6 +49,7 @@ impl fmt::Display for Property {
             Property::Equivalence => "equivalence",
             Property::Comments => "comments",
             Property::NoNewErrors => "no new errors",
+            Property::Range => "range",
         })
     }
 }
