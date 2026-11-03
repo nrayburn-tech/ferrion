@@ -35,15 +35,14 @@ pub(super) fn compilation_unit<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) 
                 .iter()
                 .take_while(|p| p.kind() == K::ImportDecl)
                 .count();
+            let emitted = imports::section(f, &parts[i..end]);
+            i = end;
             // A section whose imports are all removed leaves the blank line after it to what came
             // before, as a second run sees it.
-            if imports::section(f, &parts[i..end]) {
-                previous = Some(parts[end - 1]);
-            } else {
-                i = end;
+            if !emitted {
                 continue;
             }
-            i = end;
+            previous = Some(parts[end - 1]);
         } else {
             emit(f, part);
             previous = Some(part);
