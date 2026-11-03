@@ -243,8 +243,9 @@ jobs:
         env:
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
       # The fetched project's two source sets compile in about 15 seconds, on JDK 21, the one its
-      # lock names; the weekly oracle workflow runs every project.
+      # lock names; the weekly oracle workflow runs every project. With --replay, a second engine
+      # given every file as an edit must resolve the same names as a cold one.
       - name: Compare name resolution with javac
-        run: cargo oracle names jedis
+        run: cargo oracle names --replay jedis
         env:
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle

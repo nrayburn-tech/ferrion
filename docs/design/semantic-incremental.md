@@ -548,6 +548,13 @@ differential:
 - **Corpus:** `oracle-check` runs the comparison with javac twice, once from a cold engine and once
   after replaying each file as an edit, and the results must be identical.
 
+  As built, `cargo oracle names --replay` gives each project a second engine. That engine has every
+  file's text empty and runs a whole batch, then is given each file's text as an edit. For each
+  source set, its names must equal the cold engine's, or the source set fails. Across the corpus,
+  every source set's names were equal: 19.9 s on Ferrion's side, against 11.1 s without, with a
+  peak of 1.8 GB. Skipping one file's edit makes the check fail. CI runs it on jedis for each pull
+  request and on every project weekly.
+
 ## What was consulted
 
 - salsa 0.28.5's documentation, tests, and source, as a dependency candidate under MIT OR

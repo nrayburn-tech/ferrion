@@ -23,7 +23,9 @@ For each source set of each corpus project's model (`corpus::model`, from its lo
   the key of the element `Trees.getElement` gives.
 - **Ferrion:** for each file, a range and a key for every name `ferrion_semantic` resolves, in the
   oracle's terms (see [Ferrion's side](#ferrions-side)). `--javac-only` runs javac's side alone,
-  and counts every name as not compared.
+  and counts every name as not compared. `--replay` also resolves each project with an engine
+  that was given every file as an edit, and fails a source set whose names differ
+  ([Checking the engine](semantic-incremental.md#checking-the-engine)).
 
 The check then:
 

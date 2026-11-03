@@ -57,6 +57,9 @@ options:
                        path or its classpath: an experiment
   --threads <N>        resolve Ferrion's names on N threads (default: 4)
   --javac-only         run javac's side alone, and compare nothing
+  --replay             also resolve each project with a second engine that starts with every file
+                       empty and is then given each file's text as an edit, and fail on a source
+                       set whose names differ from the first engine's
   --limit <N>          show the first N failures (default: 10)
   --json <file>        also write the full report as JSON
   --oracle-jar <file>  the javac oracle (default: tools/javac-oracle/target/javac-oracle.jar)
@@ -76,6 +79,7 @@ pub struct Options {
     pub processor_path: Vec<PathBuf>,
     pub threads: usize,
     pub javac_only: bool,
+    pub replay: bool,
     pub limit: usize,
     pub json: Option<PathBuf>,
     pub jar: PathBuf,
@@ -91,6 +95,7 @@ pub fn parse_args(args: impl Iterator<Item = String>, usage: fn(&str) -> !) -> O
         processor_path: Vec::new(),
         threads: 4,
         javac_only: false,
+        replay: false,
         limit: 10,
         json: None,
         jar: repository.join("tools/javac-oracle/target/javac-oracle.jar"),
@@ -121,6 +126,7 @@ pub fn parse_args(args: impl Iterator<Item = String>, usage: fn(&str) -> !) -> O
                 options.threads = number("--threads", text).max(1);
             }
             "--javac-only" => options.javac_only = true,
+            "--replay" => options.replay = true,
             "--limit" => {
                 let text = value("--limit");
                 options.limit = number("--limit", text);
@@ -201,7 +207,13 @@ pub fn run(options: Options) -> Result<bool> {
                 (project, work.iter().filter(|&&(w, _)| w == g).count())
             })
             .collect();
-        ferrion = Ferrion::new(&counts, &project_jdks, scratch.clone(), options.threads)?;
+        ferrion = Ferrion::new(
+            &counts,
+            &project_jdks,
+            scratch.clone(),
+            options.threads,
+            options.replay,
+        )?;
         &ferrion
     };
     let files: usize = work.iter().map(|&(g, i)| groups[g][i].files.len()).sum();
@@ -563,6 +575,7 @@ mod tests {
         assert_eq!(options.source_sets, ["main"]);
         assert_eq!((options.jobs, options.heap.as_str()), (3, "2g"));
         assert_eq!(parse("").jobs, 2);
+        assert!(parse("--replay").replay && !parse("").replay);
     }
 
     #[test]
