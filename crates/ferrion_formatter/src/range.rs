@@ -12,10 +12,10 @@
 //! of their own. Each run is formatted on its own, as GJF formats a `}` alone, or `} else {`.
 //!
 //! **The expanded range** is the runs of the tokens the range touches, everything between them,
-//! the comments before the first that don't trail the code before them, and the comments
-//! trailing the last. A comment the range touches counts with the code it is placed with: a
-//! trailing comment with the code before it, any other with the code after it, as GJF counts
-//! them.
+//! the comments before the first that don't trail the code before them, and the comments after
+//! the last that trail it or are on its line (`a(); /* c */ b();` with `a();`, as GJF counts it).
+//! A comment the range touches counts with the code it is placed with: a trailing comment with
+//! the code before it, any other with the code after it.
 //!
 //! **The edits kept** are those inside the expanded range (gaps, re-indented comments, and
 //! rewrites whose whole span is inside it), the edit of the gap before it, which gives the unit
@@ -214,16 +214,22 @@ impl<'t> Ranges<'t> {
             }
             t = token.prev_token();
         }
+        // A comment on the last line of the units goes with them, as GJF counts it, even one
+        // leading code after it on that line (`a(); /* c */ b();`).
         let mut units_end = last.span().end;
+        let mut same_line = true;
         let mut t = last.next_token();
         while let Some(token) = t
             && token.is_trivia()
         {
-            if is_comment(token.kind()) {
-                if !trailing(token) {
+            if token.kind() == K::LineTerminator {
+                same_line = false;
+            } else if is_comment(token.kind()) {
+                if !same_line && !trailing(token) {
                     break;
                 }
                 units_end = piece_end(token);
+                same_line &= !token.text().contains(['\n', '\r']);
             }
             t = token.next_token();
         }
@@ -482,10 +488,9 @@ fn keep(text: &str, edits: &[Edit], expanded: &Expanded) -> Vec<Edit> {
 /// output's line breaks, and the whitespace before them, with the input's indentation of the
 /// line after. When either has no line break there, all of the output's gap: code on the line
 /// after the units moves up onto it, as GJF moves an enum's `;` up after its last constant, and
-/// code on their last line moves to a line of its own (observed). A comment after them, `before`
-/// one, stays on its line, since it belongs to the code after it, whose layout it decides: the
-/// whole file formats `{ /* c */ int x;` with the comment on a line of its own, but `{` then
-/// `/* c */ int x;` with the comment and `int x;` on one line.
+/// code on their last line moves to a line of its own (observed). A comment on the line after
+/// them, `before` one, stays there, since it belongs to the code after it, whose layout it
+/// decides.
 fn line_breaks(text: &str, gap: Range<u32>, edit: &Edit, before: bool) -> Option<Edit> {
     let input = &text[gap.start as usize..gap.end as usize];
     let output = [

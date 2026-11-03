@@ -98,11 +98,20 @@ fn the_gap_after_keeps_the_next_lines_indentation() {
 }
 
 #[test]
-fn a_comment_after_the_units_keeps_its_line() {
-    // Moving the comment to the next line would leave `/* c */ int x;`, which formatting the
-    // whole file keeps on one line, where it formats the input with the comment alone.
+fn a_comment_on_the_units_last_line_goes_with_them() {
+    // As GJF counts it. Moving only the comment to the next line would leave `/* c */ int x;`,
+    // which formatting the whole file keeps on one line, where it formats the input with the
+    // comment on a line of its own.
     let text = "class A { /* c */ int x;\n}\n";
-    assert_eq!(formatted(text, "class").unwrap(), text);
+    assert_eq!(
+        formatted(text, "class").unwrap(),
+        "class A {\n  /* c */\n  int x;\n}\n"
+    );
+    let text = "class A {\n  void f() {\n    a();   /* c */ b();\n  }\n}\n";
+    assert_eq!(
+        formatted(text, "a()").unwrap(),
+        "class A {\n  void f() {\n    a(); /* c */\n    b();\n  }\n}\n"
+    );
 }
 
 #[test]
