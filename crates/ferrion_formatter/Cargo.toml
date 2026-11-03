@@ -8,8 +8,8 @@ publish.workspace = true
 
 [dependencies]
 ferrion_diagnostics.workspace = true
-# For the references in doc comments that count as uses of imports
-# (docs/design/formatter-completeness.md, "Removal").
+# For doc comment reflow (docs/design/formatter-completeness.md, "Doc comments"), and the
+# references in doc comments that count as uses of imports ("Removal").
 ferrion_doc_comments.workspace = true
 ferrion_java_version.workspace = true
 # For names with Unicode escapes translated, as imports compare them.
