@@ -158,7 +158,7 @@ tools run.
 
 - **Imports:**
   - sorted into groups, with `import module` statements in their own group;
-  - unused single-type imports removed, with usage detected from syntax and Javadoc references
+  - unused single-type and single static imports removed, with usage detected from syntax and Javadoc references
     counting as usage;
   - imports of the file's own package removed;
   - module, wildcard, and `java.lang` imports left alone;

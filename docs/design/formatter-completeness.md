@@ -78,11 +78,11 @@ GJF's order (observed), which Ferrion matches:
 
 ### Removal
 
-An import is **removable** if it is a single-type import (not static, not on demand, not a module
-import) and one of these holds:
+An import is **removable** if it is a single-type or single static import (not on demand, not a
+module import) and one of these holds:
 
 - **Unused:** its simple name has no use in the file (below).
-- **Own package:** its qualifier is the file's package, such as `p.q.A` in `package p.q;`. A nested
+- **Own package** (single-type only): its qualifier is the file's package, such as `p.q.A` in `package p.q;`. A nested
   type, `p.q.A.B`, isn't covered.
 - **A duplicate** of an import kept earlier.
 
@@ -95,7 +95,8 @@ GJF also removes `java.lang` imports (`java.lang.String`), the package's own wil
 and `java.lang.*`, and unused single static imports (all observed). SCOPE.md says `java.lang` and
 wildcard imports are never removed, because doing it safely needs type information: removing
 `java.lang.String` changes the program if the package declares a `String`. Ferrion keeps them, a
-departure. Unused single static imports are review question 1.
+departure. Unused single static imports are removed too, as GJF removes them (decided in
+review): no identifier with the member's name means no use.
 
 **A use** is, as GJF counts it (observed):
 
@@ -124,7 +125,8 @@ the next import stays with the one before it, and a header after a blank line, a
 anywhere between imports, or a comment inside an import makes GJF reject the whole file ("Imports
 not contiguous"). It also drops a duplicate's comment. On a section GJF has already sorted the two
 rules put every comment in the same place, because each comment sits between the same two imports
-either way, so files formatted with GJF don't change. Ferrion follows SCOPE.md (review question 2):
+either way, so files formatted with GJF don't change. Ferrion follows SCOPE.md (decided in
+review):
 
 - **Owned:** a comment trailing an import on its line, the comments directly above it with no
   blank line (any kind: `//`, `/* */`, `/** */`), and comments inside it (`import /* c */ a.B;`)
@@ -148,7 +150,8 @@ each kept import is emitted once and each removed import's tokens are not.
 ### Checking it
 
 `verify`'s equivalence compares the sections as multisets of import names, and checks each import
-missing from the output **independently of the plan**: it is a single-type import, has no
+missing from the output **independently of the plan**: it is a single-type or single static
+import, has no
 identifier with its simple name anywhere in the output outside the imports, and no word with that
 name in any doc comment. That over-approximates uses (any doc comment, any identifier), so it
 can't pass a removal the plan got wrong, though it could, in principle, reject a correct one; the
@@ -250,7 +253,7 @@ indentation after `* ` over every line of the comment, and inside `<pre>{@code`,
 common indentation (observed). javadoc keeps whitespace after the stars, so that shifts what the
 rendered `<pre>` shows, which is a change of meaning. Ferrion keeps each `<pre>` line's text after
 its star as written. Files GJF has already formatted don't change, since their margins are
-already gone. (Review question 3.)
+already gone. (Decided in review.)
 
 ### Markdown
 
@@ -287,7 +290,7 @@ from it there:
   already kept (observed).
 - **Fallback re-indents every line.** GJF moves only a fallback comment's first line and leaves
   the other `///` lines at their old columns (observed: stable, but misaligned). Ferrion moves every
-  line by the same amount, as A1 does for a block comment's later lines. (Review question 4.)
+  line by the same amount, as A1 does for a block comment's later lines. (Decided in review.)
 - **A tab after `///`** is read by CommonMark as indentation (a tab stops at 4), so a line that
   starts with one may be an indented code block. GJF reflowed it as text; Ferrion takes the parse's
   word for it, and falls back if it's code.
@@ -380,7 +383,7 @@ With `--lines`, `--offset`, and `--length` (observed):
 
 ### What a range changes
 
-Ferrion expands a range as GJF does (review question 5), and keeps the rewrites to the range, as
+Ferrion expands a range as GJF does (decided in review), and keeps the rewrites to the range, as
 decided at the start:
 
 - **Units.** The range is expanded to the units its tokens are in, as GJF's are (a statement, a
@@ -548,3 +551,17 @@ Each goes in `docs/style.md` with its snapshot, once approved:
    only the gaps the range covers, which keeps edits smallest but can half-break a statement.
 6. **Work order.** A small core step, then four agents (imports, Javadoc, Markdown, ranges), with
    Markdown waiting on the Javadoc fill for its last part. Recommended as written.
+
+## Decisions made in review
+
+The user accepted all six recommendations (2026-11-02):
+
+1. **Unused single static imports are removed,** as GJF does, and SCOPE.md and the roadmap now say
+   so.
+2. **Import comments follow SCOPE.md:** a comment belongs to the import on its line or directly
+   below it, and floating comments move to the top of the section.
+3. **`<pre>` indentation is kept** as written, a departure.
+4. **A Markdown comment that can't be reflowed** has every line re-indented, a departure.
+5. **Ranges expand to units,** as GJF's do, with rewrites only inside the expanded range.
+6. **The work order** stands: the core step, then imports, Javadoc, Markdown, and ranges in
+   parallel.
