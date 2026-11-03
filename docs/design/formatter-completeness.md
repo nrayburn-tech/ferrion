@@ -116,8 +116,11 @@ little would break the program, and `verify` checks it independently (below).
 
 ### Comments
 
-SCOPE.md's rule: a comment belongs to an import when it is on the same line after it, or directly
-above it with no blank line between. It moves with that import, and the import is kept. A comment
+SCOPE.md's rule: a comment belongs to an import when it is on the same line after it, with no
+code after it on that line, or directly above it with no blank line between. A comment followed by
+code on its line belongs to that code, as the comment map places it, so the import doesn't keep it
+(decided after the ranges work; keeping the import broke idempotence, since the first run moves
+the comment to the code's line). It moves with that import, and the import is kept. A comment
 that belongs to no import, such as a group header followed by a blank line, moves to the top of
 the section, keeping its order.
 

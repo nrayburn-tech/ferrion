@@ -212,8 +212,9 @@ behaves as follows:
     - otherwise module imports, wildcard imports, and `java.lang` imports are never added, removed, or
       expanded by the formatter, because doing so safely needs type information. Linter rules handle
       them (see the [Linter](#linter));
-    - a comment belongs to an import when it is on the same line after the import, or directly above
-      it with no blank line in between. It moves with that import when sorting, and an import with a
+    - a comment belongs to an import when it is on the same line after the import, with no code
+      after it on that line, or directly above it with no blank line in between. A comment followed
+      by code on its line belongs to that code. It moves with that import when sorting, and an import with a
       comment is never removed, even if unused;
     - comments that belong to no import (such as a group header followed by a blank line) move to the
       top of the import section, keeping their order relative to each other.
