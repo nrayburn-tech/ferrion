@@ -23,12 +23,15 @@
 //! normalizes the blank lines after a unit, and the trailing whitespace on its last line, but
 //! leaves the indentation of the line after it alone.
 
+use std::cell::OnceCell;
 use std::fmt;
 use std::ops::Range;
 
 use ferrion_diagnostics::SourceText;
 use ferrion_syntax::comments::{CommentMap, Placement, is_comment};
-use ferrion_syntax::{NodeId, SyntaxKind as K, SyntaxKind, SyntaxNode, SyntaxToken, SyntaxTree};
+use ferrion_syntax::{
+    NodeId, SyntaxKind as K, SyntaxKind, SyntaxNode, SyntaxToken, SyntaxTree, TokenId,
+};
 
 use crate::edits::{self, Edit};
 use crate::format::Formatter;
@@ -80,39 +83,197 @@ pub fn format_range(
     source: &SourceText,
     range: Range<u32>,
 ) -> Result<Vec<Edit>, RangeError> {
-    debug_assert_eq!(tree.text(), source.text(), "the tree isn't the source's");
-    let comments = CommentMap::new(tree);
-    let Some(expanded) = expand(tree, &comments, range) else {
-        return Ok(Vec::new());
-    };
-    let units = tree.error_units();
-    let regions = regions::find(tree, &comments);
-    let span = |unit: &SyntaxNode<'_>| {
-        let span = unit.span();
-        span.start..span.end
-    };
-    let pins_region = |unit: &SyntaxNode<'_>| {
-        let tokens = unit.token_range();
-        regions
+    Ranges::new(tree, source).format(range)
+}
+
+/// Range formatting for one tree and as many ranges as wanted: what [`format_range`] finds for
+/// any range (the comment map, the units, the error units) is found once, and the tree is
+/// formatted once, the first time a range needs it. For the range test and the fuzz target.
+pub struct Ranges<'t> {
+    tree: &'t SyntaxTree,
+    source: &'t SourceText,
+    comments: CommentMap,
+    owners: Owners,
+    /// The error units' spans, in order.
+    error_units: Vec<Range<u32>>,
+    /// An error unit holding the start or end of a disable region, which affects every range.
+    pins_region: Option<Range<u32>>,
+    /// Whole-file formatting's edits, error units copied.
+    edits: OnceCell<Vec<Edit>>,
+}
+
+impl<'t> Ranges<'t> {
+    pub fn new(tree: &'t SyntaxTree, source: &'t SourceText) -> Ranges<'t> {
+        debug_assert_eq!(tree.text(), source.text(), "the tree isn't the source's");
+        let comments = CommentMap::new(tree);
+        let units = tree.error_units();
+        let regions = regions::find(tree, &comments);
+        let pins_region = units
             .iter()
-            .any(|r| tokens.contains(&r.start) || r.end.is_some_and(|e| tokens.contains(&e)))
-    };
-    if let Some(unit) = units.iter().find(|unit| {
-        let span = span(unit);
-        span.start < expanded.units.end && expanded.units.start < span.end || pins_region(unit)
-    }) {
-        return Err(RangeError::Affected { error: span(unit) });
+            .find(|unit| {
+                let tokens = unit.token_range();
+                regions.iter().any(|r| {
+                    tokens.contains(&r.start) || r.end.is_some_and(|e| tokens.contains(&e))
+                })
+            })
+            .map(|unit| span(*unit));
+        Ranges {
+            tree,
+            source,
+            owners: Owners::new(tree),
+            comments,
+            error_units: units.into_iter().map(span).collect(),
+            pins_region,
+            edits: OnceCell::new(),
+        }
     }
-    let document = Formatter::new(tree).format_root();
-    let (output, pieces) = printer::print_recorded(&document, &printer_source(tree, source));
-    let bom = if source.has_bom() { 3 } else { 0 };
-    let edits = edits::from_pieces(source.text(), &output, bom, &pieces);
-    Ok(keep(source.text(), edits, &expanded))
+
+    /// [`format_range`] for `range`.
+    pub fn format(&self, range: Range<u32>) -> Result<Vec<Edit>, RangeError> {
+        let Some(expanded) = self.expand(range) else {
+            return Ok(Vec::new());
+        };
+        if let Some(error) = self.affected(&expanded) {
+            return Err(RangeError::Affected { error });
+        }
+        Ok(keep(self.source.text(), self.edits(), &expanded))
+    }
+
+    /// The error unit that keeps `expanded` from being formatted, if any: one overlapping its
+    /// units, or one holding a disable region's start or end.
+    pub fn affected(&self, expanded: &Expanded) -> Option<Range<u32>> {
+        let units = &expanded.units;
+        // The error units are in order and don't overlap: the first ending after the units'
+        // start is the only one that can overlap them.
+        let next = self.error_units.partition_point(|u| u.end <= units.start);
+        self.error_units
+            .get(next)
+            .filter(|u| u.start < units.end)
+            .or(self.pins_region.as_ref())
+            .cloned()
+    }
+
+    /// Whole-file formatting's edits for the tree, error units copied as written.
+    pub fn edits(&self) -> &[Edit] {
+        self.edits.get_or_init(|| {
+            let (tree, source) = (self.tree, self.source);
+            let document = Formatter::new(tree).format_root();
+            let (output, pieces) =
+                printer::print_recorded(&document, &printer_source(tree, source));
+            let bom = if source.has_bom() { 3 } else { 0 };
+            edits::from_pieces(source.text(), &output, bom, &pieces)
+        })
+    }
+
+    /// `range` expanded to its units (see the module's documentation), or `None` if it touches
+    /// no token.
+    pub fn expand(&self, range: Range<u32>) -> Option<Expanded> {
+        let (tree, comments) = (self.tree, &self.comments);
+        let text_len = tree.text().len() as u32;
+        let (start, end) = (range.start.min(text_len), range.end.min(text_len));
+        if start >= end {
+            return None;
+        }
+        let mut anchors: Option<(SyntaxToken<'_>, SyntaxToken<'_>)> = None;
+        let mut token = tree.token_at_offset(start);
+        while let Some(t) = token
+            && t.span().start < end
+        {
+            if let Some(anchor) = anchor(comments, t) {
+                let (first, last) = anchors.get_or_insert((anchor, anchor));
+                if anchor.id() < first.id() {
+                    *first = anchor;
+                }
+                if anchor.id() > last.id() {
+                    *last = anchor;
+                }
+            }
+            token = t.next_token();
+        }
+        let (first, last) = anchors?;
+        let first = self.owners.run_start(first);
+        let last = self.owners.run_end(last);
+        let trailing = |token: SyntaxToken<'_>| {
+            comments
+                .get(token.id())
+                .is_some_and(|c| c.placement == Placement::Trailing)
+        };
+
+        // The comments before the first token that lead it, and those trailing the last.
+        let mut units_start = first.span().start;
+        let mut t = first.prev_token();
+        while let Some(token) = t
+            && token.is_trivia()
+        {
+            if is_comment(token.kind()) {
+                if trailing(token) {
+                    break;
+                }
+                units_start = token.span().start;
+            }
+            t = token.prev_token();
+        }
+        let mut units_end = last.span().end;
+        let mut t = last.next_token();
+        while let Some(token) = t
+            && token.is_trivia()
+        {
+            if is_comment(token.kind()) {
+                if !trailing(token) {
+                    break;
+                }
+                units_end = token.span().end;
+            }
+            t = token.next_token();
+        }
+
+        let before = tree
+            .token_at_offset(units_start)
+            .and_then(|t| t.prev_token())
+            .and_then(piece_before)
+            .map_or(0, |t| t.span().end);
+        let after = tree
+            .token_at_offset(units_end)
+            .and_then(|t| piece_after(t, units_end))
+            .map_or(text_len, |t| t.span().start);
+        Some(Expanded {
+            units: units_start..units_end,
+            before,
+            after,
+        })
+    }
+
+    /// Every run of a unit's own tokens in the tree, in order (see the module's documentation).
+    pub fn runs(&self) -> Vec<Run> {
+        let mut runs: Vec<Run> = Vec::new();
+        for token in self.tree.tokens() {
+            if token.is_trivia() || token.kind() == K::Eof {
+                continue;
+            }
+            let owner = self.owners.of(token);
+            match runs.last_mut() {
+                Some(run) if run.owner == owner => run.last = token.id(),
+                _ => runs.push(Run {
+                    first: token.id(),
+                    last: token.id(),
+                    owner,
+                    kind: self.tree.node(owner).kind(),
+                    depth: self.owners.depth[owner.index()],
+                }),
+            }
+        }
+        runs
+    }
+}
+
+fn span(node: SyntaxNode<'_>) -> Range<u32> {
+    let span = node.span();
+    span.start..span.end
 }
 
 /// A range expanded to its units.
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub(crate) struct Expanded {
+pub struct Expanded {
     /// From the start of the units' first piece of text (a token or a comment) to the end of
     /// their last.
     pub units: Range<u32>,
@@ -123,87 +284,16 @@ pub(crate) struct Expanded {
     pub after: u32,
 }
 
-/// `range` expanded to its units (see the module's documentation), or `None` if it touches no
-/// token.
-pub(crate) fn expand(
-    tree: &SyntaxTree,
-    comments: &CommentMap,
-    range: Range<u32>,
-) -> Option<Expanded> {
-    let text_len = tree.text().len() as u32;
-    let (start, end) = (range.start.min(text_len), range.end.min(text_len));
-    if start >= end {
-        return None;
-    }
-    let mut anchors: Option<(SyntaxToken<'_>, SyntaxToken<'_>)> = None;
-    let mut token = tree.token_at_offset(start);
-    while let Some(t) = token
-        && t.span().start < end
-    {
-        if let Some(anchor) = anchor(comments, t) {
-            let (first, last) = anchors.get_or_insert((anchor, anchor));
-            if anchor.id() < first.id() {
-                *first = anchor;
-            }
-            if anchor.id() > last.id() {
-                *last = anchor;
-            }
-        }
-        token = t.next_token();
-    }
-    let (first, last) = anchors?;
-    let owners = Owners::new(tree);
-    let first = owners.run_start(first);
-    let last = owners.run_end(last);
-
-    // The comments before the first token that lead it, and those trailing the last.
-    let mut units_start = first.span().start;
-    let mut t = first.prev_token();
-    while let Some(token) = t
-        && token.is_trivia()
-    {
-        if is_comment(token.kind()) {
-            if comments
-                .get(token.id())
-                .is_some_and(|c| c.placement == Placement::Trailing)
-            {
-                break;
-            }
-            units_start = token.span().start;
-        }
-        t = token.prev_token();
-    }
-    let mut units_end = last.span().end;
-    let mut t = last.next_token();
-    while let Some(token) = t
-        && token.is_trivia()
-    {
-        if is_comment(token.kind()) {
-            if !comments
-                .get(token.id())
-                .is_some_and(|c| c.placement == Placement::Trailing)
-            {
-                break;
-            }
-            units_end = token.span().end;
-        }
-        t = token.next_token();
-    }
-
-    let before = tree
-        .token_at_offset(units_start)
-        .and_then(|t| t.prev_token())
-        .and_then(|t| piece_before(t))
-        .map_or(0, |t| t.span().end);
-    let after = tree
-        .token_at_offset(units_end)
-        .and_then(|t| piece_after(t, units_end))
-        .map_or(text_len, |t| t.span().start);
-    Some(Expanded {
-        units: units_start..units_end,
-        before,
-        after,
-    })
+/// A run of a unit's own tokens, which a range touching any of them formats.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Run {
+    pub first: TokenId,
+    pub last: TokenId,
+    /// The unit, and its kind: the root's for tokens in no unit.
+    pub owner: NodeId,
+    pub kind: SyntaxKind,
+    /// How many units the unit is in, itself included.
+    pub depth: u32,
 }
 
 /// The code token a token the range touches stands for: itself for code, the code a comment is
@@ -258,12 +348,15 @@ fn piece_after(token: SyntaxToken<'_>, offset: u32) -> Option<SyntaxToken<'_>> {
 /// that isn't inside an expression.
 struct Owners {
     owner: Vec<NodeId>,
+    /// For a unit, how many units it is in, itself included.
+    depth: Vec<u32>,
 }
 
 impl Owners {
     fn new(tree: &SyntaxTree) -> Owners {
         let count = tree.node_count();
         let mut owner = vec![NodeId::ROOT; count];
+        let mut depth = vec![0; count];
         let mut in_expression = vec![false; count];
         for node in tree.nodes() {
             let i = node.id().index();
@@ -275,13 +368,14 @@ impl Owners {
                 None => (NodeId::ROOT, false),
             };
             in_expression[i] = inside;
-            owner[i] = if !inside && is_unit(node) {
-                node.id()
+            if !inside && is_unit(node) {
+                owner[i] = node.id();
+                depth[i] = depth[parent_owner.index()] + 1;
             } else {
-                parent_owner
-            };
+                owner[i] = parent_owner;
+            }
         }
-        Owners { owner }
+        Owners { owner, depth }
     }
 
     fn of(&self, token: SyntaxToken<'_>) -> NodeId {
@@ -352,16 +446,20 @@ fn is_unit(node: SyntaxNode<'_>) -> bool {
 
 /// The edits of `edits`, whole-file formatting's for `text`, that `expanded` keeps (see the
 /// module's documentation).
-fn keep(text: &str, edits: Vec<Edit>, expanded: &Expanded) -> Vec<Edit> {
+fn keep(text: &str, edits: &[Edit], expanded: &Expanded) -> Vec<Edit> {
     let (units, before, after) = (&expanded.units, expanded.before, expanded.after);
+    let first = edits.partition_point(|e| e.range.end < before);
     let mut kept = Vec::new();
-    for edit in edits {
+    for edit in &edits[first..] {
         let range = &edit.range;
+        if range.start > after {
+            break;
+        }
         // Inside the units, or in the gap before them.
         if range.start >= before && range.end <= units.end {
-            kept.push(edit);
+            kept.push(edit.clone());
         } else if range.start >= units.end && range.end <= after {
-            kept.extend(line_breaks(text, units.end..after, &edit));
+            kept.extend(line_breaks(text, units.end..after, edit));
         }
     }
     kept
