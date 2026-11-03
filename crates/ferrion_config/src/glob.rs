@@ -288,7 +288,10 @@ mod tests {
         assert!(g.is_match("a*.java"));
         assert!(!g.is_match("ab.java"));
         assert!(glob("\\[x\\].java").is_match("[x].java"));
-        assert!(glob("a\\\\b").is_match("a\\b"));
+        // A `\` in a file name, which only Unix allows: globset reads it as `/` on Windows.
+        if cfg!(unix) {
+            assert!(glob("a\\\\b").is_match("a\\b"));
+        }
         assert!(glob("\\{a\\}").is_match("{a}"));
     }
 
