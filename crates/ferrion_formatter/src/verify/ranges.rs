@@ -205,7 +205,11 @@ fn compare_comments(
         let text = if t.kind() == SyntaxKind::DocComment {
             doc_comments::normalize(t.text())
         } else {
-            normalize_comment(t.text(), input && t.kind() == SyntaxKind::LineComment)
+            // Only a comment the range formats gets the space after its `//`.
+            let formatted = input
+                && expanded.is_some_and(|e| e.units.contains(&t.span().start))
+                && !in_region(t.id());
+            normalize_comment(t.text(), formatted && t.kind() == SyntaxKind::LineComment)
         };
         SectionComment {
             token: t.id(),
