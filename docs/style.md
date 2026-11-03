@@ -406,12 +406,14 @@ with the imports they belong to.
 - **Comments:** a comment belongs to an import when it is inside it, on its line after it, or
   directly above it with no blank line between, and moves with it. A comment that belongs to no
   import, such as a group header followed by a blank line, moves to the top of the section, in
-  order, with a blank line after the last. The comments above the first import stay at the top:
+  order, with a blank line after the last (a line break after a doc comment, which stays next to
+  the code after it). The comments above the first import stay at the top:
   a license header right above the imports doesn't move into the list. They keep the first
   import, as a comment keeps any import, as long as it stays first. A comment on the line after
   the last import goes with what follows.
 - **Pinned:** a section that a disable region overlaps, or that holds a formatter marker or a
-  `ferrion-disable*` comment, is left as written, since directives never move.
+  `ferrion-disable*` comment, is left as written, since directives never move. So is one with a
+  comment after its last import at the end of the file, which has nothing after it to go with.
 
 ```java
 package com.example;
