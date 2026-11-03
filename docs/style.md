@@ -205,24 +205,24 @@ comments are. A doc comment in a disable region is copied. The snapshots in
   ```
 - **A doc comment in a disable region** is copied, where GJF reflows it (SCOPE.md). Snapshot:
   `javadoc/regions`.
-- **A blank line in an inline tag (proposed)** is a space, as any whitespace in one is. GJF puts a
+- **A blank line in an inline tag** is a space, as any whitespace in one is. GJF puts a
   `<p>` there, inside the tag, and adds another on each run. Snapshot:
   `javadoc/departure-blank-in-inline-tag`.
-- **A word starting with `@` after `<br>` (proposed):** a comment where a rule would put such a
+- **A word starting with `@` after `<br>`:** a comment where a rule would put such a
   word at the start of a line, such as `Text<br>@foo`, is re-indented only. GJF puts it there,
   where javadoc reads a block tag, and a second run adds a blank line before it. Snapshot:
   `javadoc/departure-at-after-break`.
-- **A block tag named with an uppercase letter (proposed),** such as `@Override` at the start of a
+- **A block tag named with an uppercase letter,** such as `@Override` at the start of a
   line, stays a block tag, as javadoc reads it. GJF joins it into the text before it, and it
   becomes text. Snapshot: `javadoc/departure-uppercase-tag`.
-- **No line break after a word ending with a hyphen (proposed):** the fill doesn't break a line
+- **No line break after a word ending with a hyphen:** the fill doesn't break a line
   right after `well-`, where the next run would join it to the word after it; the word moves down
   with the next. GJF breaks there, then joins the two words on its next run. Snapshot:
   `javadoc/departure-hyphen-at-a-break`.
-- **Leading stars (proposed):** all the stars at the start of a line go, as javadoc reads them.
+- **Leading stars:** all the stars at the start of a line go, as javadoc reads them.
   GJF keeps all but one, so `**text` becomes `* text`, adding a star to what javadoc shows.
   Snapshot: `javadoc/departure-stars`.
-- **Unicode escapes for other than letters and digits (proposed):** a comment with one, such as
+- **Unicode escapes for other than letters and digits:** a comment with one, such as
   `\u0040`, is re-indented only. It could stand for something the rules read, such as a block
   tag's `@`, where the reflow sees only text. GJF reflows it. Snapshot:
   `javadoc/departure-escaped-at`.
