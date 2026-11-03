@@ -16,6 +16,7 @@
 
 use std::sync::Arc;
 
+use ferrion_classfile::ClassName;
 use ferrion_syntax::ast::{self, AstNode};
 use ferrion_syntax::{NodeId, SyntaxKind, SyntaxNode};
 
@@ -246,15 +247,21 @@ impl Snapshot {
                     None => "source ?".to_owned(),
                 }
             }
-            TypeKey::Class { source, .. } => self.class_source_text(source),
+            TypeKey::Class { source, .. } => self.class_source_text(source, &binary),
             TypeKey::Local { .. } => unreachable!("handled above"),
         };
         Ok(format!("type {binary} {origin}"))
     }
 
-    fn class_source_text(&self, source: ClassSourceId) -> String {
+    /// Where the class `binary` of `source` came from: a classpath entry, or the platform, or
+    /// the entry a `--patch-module` added it to the platform from, which javac names as the
+    /// class's origin.
+    fn class_source_text(&self, source: ClassSourceId, binary: &str) -> String {
         match self.shared().classes.source(source) {
-            ClassSource::Platform(_) => "class platform".to_owned(),
+            ClassSource::Platform(platform) => match platform.patched_from(&ClassName::new(binary)) {
+                Some(path) => format!("class {}", path.display()),
+                None => "class platform".to_owned(),
+            },
             ClassSource::Entry(entry) => format!("class {}", entry.path.display()),
         }
     }

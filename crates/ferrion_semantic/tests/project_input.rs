@@ -3,9 +3,12 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
-use ferrion_project::model::{ModelEntry, ModelSourceSet, ProjectModel};
-use ferrion_project::{Environment, InputFlags, Project};
+use ferrion_classfile::testing::{ClassBuilder, ZipBuilder};
+use ferrion_classfile::{ArchiveCache, ClassName};
+use ferrion_project::model::{ModelEntry, ModelSourceSet, PlatformKind, ProjectModel};
+use ferrion_project::{Environment, InputFlags, Project, TypeInputs};
 use ferrion_semantic::{ClassPathInput, ProjectInput, SourceSetId};
 
 /// A directory under the target directory, emptied first.
@@ -19,6 +22,36 @@ fn scratch(name: &str) -> PathBuf {
 fn write(path: &Path, text: &str) {
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(path, text).unwrap();
+}
+
+/// A jar holding a class of each name.
+fn jar(path: &Path, classes: &[&str]) {
+    let mut b = ZipBuilder::new();
+    for class in classes {
+        b.stored(
+            &format!("{class}.class"),
+            &ClassBuilder::new(class).finish(),
+        );
+    }
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(path, b.finish()).unwrap();
+}
+
+/// Loads `model`, written to `dir`, with its type inputs opened.
+fn load(dir: &Path, model: &ProjectModel) -> (Project, TypeInputs) {
+    let model_path = dir.join("model.json");
+    fs::write(&model_path, model.to_json().unwrap()).unwrap();
+    let flags = InputFlags {
+        project_model: Some(model_path),
+        ..InputFlags::default()
+    };
+    let env = Environment {
+        working_dir: dir.to_path_buf(),
+        java_home: None,
+    };
+    let project = Project::load(&flags, &env).unwrap();
+    let (types, _) = TypeInputs::open(&project, &ArchiveCache::new()).unwrap();
+    (project, types)
 }
 
 #[test]
@@ -106,4 +139,56 @@ fn a_model_becomes_the_engine_inputs() {
     ));
     // Without type inputs, there is no platform.
     assert!(test.platform.is_none());
+}
+
+/// Source sets with the same platform and compile options share one platform, so the engine has
+/// one class source for it: two would make the same class two types, and a member type
+/// inherited through a dependency's type and the reader's own (guava's `Map.Entry`) ambiguous. A
+/// patched platform is another, and names the patch as where its classes come from.
+#[test]
+fn source_sets_with_the_same_options_share_a_platform() {
+    let dir = scratch("project-input-platforms");
+    // JDK 8, which `-source 8` sees whole.
+    write(&dir.join("jdk/release"), "JAVA_VERSION=\"1.8.0_502\"\n");
+    jar(
+        &dir.join("jdk/jre/lib/rt.jar"),
+        &["java/lang/Object", "java/util/Map", "java/util/Map$Entry"],
+    );
+    jar(&dir.join("api.jar"), &["java/lang/foreign/Arena"]);
+    for root in ["main", "test", "patched"] {
+        fs::create_dir_all(dir.join(root)).unwrap();
+    }
+    let set = |id: &str, classpath: Vec<ModelEntry>| ModelSourceSet {
+        id: id.to_owned(),
+        java_release: 8,
+        platform: PlatformKind::Jdk,
+        jdk: Some(dir.join("jdk")),
+        source_roots: vec![dir.join(id)],
+        classpath,
+        ..ModelSourceSet::default()
+    };
+    let mut patched = set("patched", Vec::new());
+    patched
+        .patch_modules
+        .insert("java.base".to_owned(), vec![dir.join("api.jar")]);
+    let model = ProjectModel {
+        format_version: ferrion_project::model::FORMAT_VERSION,
+        source_sets: vec![
+            set("main", Vec::new()),
+            set("test", vec![ModelEntry::source_set("main")]),
+            patched,
+        ],
+    };
+    let (project, types) = load(&dir, &model);
+    let (input, _) = ProjectInput::from_project(&project, Some(&types));
+    let platform = |i: usize| input.source_sets[i].platform.clone().unwrap();
+    assert!(Arc::ptr_eq(&platform(0), &platform(1)));
+    assert!(!Arc::ptr_eq(&platform(0), &platform(2)));
+
+    let arena = ClassName::new("java/lang/foreign/Arena");
+    let object = ClassName::new("java/lang/Object");
+    assert_eq!(platform(2).patched_from(&arena), Some(dir.join("api.jar")));
+    assert_eq!(platform(2).patched_from(&object), None);
+    assert!(platform(2).find(&object).unwrap().is_some());
+    assert_eq!(platform(0).patched_from(&object), None);
 }
