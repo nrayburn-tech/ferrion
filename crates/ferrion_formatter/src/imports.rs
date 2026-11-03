@@ -15,7 +15,8 @@
 //!   unit as Java strings compare, as GJF orders them (observed).
 //! - **Removal:** a single-type or single static import goes when its simple name has no use, a
 //!   single-type import when it names a type of the file's own package, and either when it
-//!   repeats an import kept before it, unless a comment belongs to it. Uses are the identifiers
+//!   repeats an import kept before it, unless a comment belongs to it. Wildcard, module, and
+//!   `java.lang` imports are never removed (SCOPE.md). Uses are the identifiers
 //!   GJF counts and the references in attached doc comments ([`unused`]).
 
 use std::collections::HashSet;
@@ -86,7 +87,8 @@ struct Import<'t> {
     /// The imported name as compared: its dots, its member for a static import, and `.*` on
     /// demand, with Unicode escapes translated.
     name: String,
-    /// Whether it is a single-type or single static import, the only kinds ever removed.
+    /// Whether it may be removed: a single-type or single static import, other than a `java.lang`
+    /// one, which SCOPE.md never removes.
     single: bool,
     /// The comments before it, after the previous import's: the floating ones, then from
     /// `above` the ones directly above it. Empty for the first import, whose are outside.
@@ -267,7 +269,7 @@ pub fn plan<'t>(
     })
 }
 
-/// An import's group, its name as compared, and whether it is single-type or single static.
+/// An import's group, its name as compared, and whether it may be removed (`Import::single`).
 fn name(node: SyntaxNode<'_>) -> (Group, String, bool) {
     let mut group = Group::Other;
     let mut name = String::new();
@@ -283,7 +285,14 @@ fn name(node: SyntaxNode<'_>) -> (Group, String, bool) {
             }
         }
     }
-    (group, name, !on_demand && group != Group::Module)
+    // `java.lang.String`, but not `java.lang.Thread.State` or a static import.
+    let java_lang =
+        group == Group::Other && name.rsplit_once('.').is_some_and(|(q, _)| q == "java.lang");
+    (
+        group,
+        name,
+        !on_demand && group != Group::Module && !java_lang,
+    )
 }
 
 /// A token's text with Unicode escapes translated, as names compare.
