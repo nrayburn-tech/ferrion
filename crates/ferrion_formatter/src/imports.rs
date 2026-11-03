@@ -136,6 +136,23 @@ pub fn plan<'t>(
     if imports.iter().any(|n| n.contains_error()) {
         return None;
     }
+    // Nor is one next to an error's unit: the error's recovery read the tokens around it, and
+    // with imports moved or gone, the file could parse to another tree (`package a.` before
+    // `import b.C;` takes `import` as part of its name once the import goes).
+    if tree.root().contains_error() {
+        let before = first.first_token().prev_non_trivia().map(|t| t.id());
+        let after = last.last_token().next_non_trivia().map(|t| t.id());
+        let next_to = |unit: &SyntaxNode<'_>| {
+            let tokens = unit.token_range();
+            before.is_some_and(|t| tokens.contains(&t))
+                || after.is_some_and(|t| tokens.contains(&t))
+        };
+        let touches_error =
+            |t: Option<TokenId>| t.is_some_and(|t| tree.token(t).kind() == K::ErrorToken);
+        if touches_error(before) || touches_error(after) || tree.error_units().iter().any(next_to) {
+            return None;
+        }
+    }
     // Imports split by an empty declaration (`;`), which older releases allow, aren't one
     // section, and sorting across the `;` would move it.
     let unit = first.parent()?;
