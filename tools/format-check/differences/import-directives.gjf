@@ -1,0 +1,14 @@
+package p;
+
+import a.A;
+import y.Y;
+// @formatter:on
+import z.Z;
+
+// @formatter:off
+
+class T {
+  Z z;
+  Y y;
+  A a;
+}

@@ -74,23 +74,23 @@ differences` checks against GJF and Ferrion both.
 
 ## Declarations
 
-The compilation unit, package and imports, type declarations and their bodies, members,
+The compilation unit and package, type declarations and their bodies, members,
 annotations, enums, records, and `module-info.java`.
 
 ### The compilation unit
 
-The package declaration, the imports, and the types, in input order. A blank line follows the
-package declaration and the last import, whatever the input has. Between imports, the input's
-blank lines are kept, at most one. Neither the package declaration nor an import ever breaks,
-however long. Imports aren't sorted or removed.
+The package declaration, the import section ([Imports](#imports)), and the types, in input
+order. A blank line follows the package declaration and the import section, whatever the input
+has. Neither the package declaration nor an import ever breaks, however long.
 
 ```java
 package com.example;
 
 import java.util.List;
-import static java.util.Map.entry;
 
-class A {}
+class A {
+  List<String> names;
+}
 ```
 
 ### Annotations on declarations
@@ -378,6 +378,90 @@ module com.example {
       com.example.client;
 }
 ```
+
+## Imports
+
+The import section runs from the first import to the last, with the comments trailing the last on
+its line. Its imports are sorted into groups and pruned, as GJF does it, and its comments move
+with the imports they belong to.
+
+- **Groups:** static imports, then `import module`, then all other imports, with a blank line
+  between groups and none inside one. `java`, `javax`, and the rest share the last group.
+- **Order:** within a group, by the whole name as written with its dots (and, for a static import,
+  its member), compared character by character, not segment by segment: `a.B$` sorts before
+  `a.B.C`, and `$` < `*` < `.` < digits < uppercase < `_` < lowercase < other characters. Names
+  compare by UTF-16 code unit, as Java strings do, so `a.b𝔸` (a surrogate pair) sorts before
+  `a.bｚ`, as in GJF. A name's Unicode escapes are translated first.
+- **Removed:** a single-type or single static import whose simple name has no use in the file; a
+  single-type import of a type of the file's own package (`p.q.A` in `package p.q;`, but not
+  `p.q.A.B`); and an import repeated after the first. A use is an identifier in the code other than
+  a declaration's own name, a label, the member after `::`, or a later segment of a qualified name
+  (`Pkg.a.b()` uses `Pkg`; `x.Sel.y()` doesn't use `Sel`), or, in the doc comment attached to a
+  declaration, the first segment of a type in a reference: `{@link X}`, `{@linkplain X}`,
+  `{@link #m(P1, P2[])}`, `{@value X#F}`, `@see X`, `@throws X`, `@exception X`, `@uses X`,
+  `@provides X`, and in `///` comments from Java 23 on, `[X]` and `[text][X]`. Prose, labels,
+  `{@code}`, `{@literal}`, and `{@value X}` without a member aren't uses.
+- **Kept:** wildcard imports, module imports, `java.lang` imports, and any import a comment
+  belongs to (below).
+- **Comments:** a comment belongs to an import when it is inside it, on its line after it, or
+  directly above it with no blank line between, and moves with it. A comment that belongs to no
+  import, such as a group header followed by a blank line, moves to the top of the section, in
+  order, with a blank line after the last. The comments above the first import stay at the top:
+  a license header right above the imports doesn't move into the list. They keep the first
+  import, as a comment keeps any import, as long as it stays first. A comment on the line after
+  the last import goes with what follows.
+- **Pinned:** a section that a disable region overlaps, or that holds a formatter marker or a
+  `ferrion-disable*` comment, is left as written, since directives never move.
+
+```java
+package com.example;
+
+// Imports for the cache.
+import static java.util.Objects.requireNonNull;
+
+import module java.base;
+
+import com.example.cache.Cache; // The one we wrote.
+// Kept for the generated code, though nothing uses it.
+import com.example.cache.Unused;
+import java.util.List;
+
+class A {
+  List<Cache> caches = requireNonNull(List.of());
+}
+```
+
+### Departures
+
+- **`java.lang` and wildcard imports** stay, used or not: `import java.lang.String;`,
+  `import java.lang.*;`, and the package's own `import p.q.*;`, which GJF removes. Removing them
+  safely needs type information (SCOPE.md): `java.lang.String` matters if the package declares a
+  `String`. Case: `import-java-lang`.
+- **An import with a comment** is kept, unused, repeated, or the first import right below a
+  comment. GJF removes it, moving the comment to the import before it, and drops a repeated
+  import's comment (SCOPE.md: no comment is lost). Case: `import-comment-kept`.
+- **A comment belongs to the import below it**, as SCOPE.md says: GJF has a `//` comment belong to
+  the import above it, so on imports it sorts, a comment about one import goes with another. On a
+  section GJF has sorted, the two agree. Case: `import-comment-above`.
+- **Comments GJF rejects:** a header after a blank line, a block comment between imports or
+  trailing one, and a comment inside an import make GJF reject the file ("Imports not
+  contiguous"). Ferrion moves the header to the top and the others with their imports. Snapshot:
+  `imports/floating-comments`.
+- **A comment on the line after the last import** goes with what follows, as the comments design
+  places it. GJF moves it into the imports, with the import above it. Case:
+  `import-comment-after-last`.
+- **Directives pin the section:** formatter markers and `ferrion-disable*` comments in the imports
+  leave the section as written. GJF sorts across them, which can put `@formatter:on` above
+  `@formatter:off` (SCOPE.md: directives never move). Case: `import-directives`.
+- **Unicode escapes** in an import, which GJF rejects, are translated to sort and to match uses.
+  Snapshot: `imports/escapes`.
+- **`///` comments before Java 23** are plain line comments, so their links aren't uses: GJF,
+  which knows no Java version, keeps `import u.Md;` for `/// [Md]` in a Java 21 file, and Ferrion
+  removes it. Snapshot: `imports/markdown-before-23`.
+- **Repeated wildcard and module imports** stay, both copies, which GJF merges (**proposed**).
+  SCOPE.md says wildcard and module imports are never removed; a repeated one is as safe to
+  remove as a repeated single-type import, so the alternative is to merge them as GJF does and
+  amend SCOPE.md. Case: `import-duplicate-on-demand`.
 
 ## Statements
 

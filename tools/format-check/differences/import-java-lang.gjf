@@ -1,0 +1,8 @@
+package p.q;
+
+import java.lang.Thread.State;
+
+class T {
+  String s;
+  State t;
+}
