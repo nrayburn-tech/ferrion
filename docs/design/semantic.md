@@ -247,6 +247,52 @@ the heavy-job lock shared between them. W4 and W5 follow in turn; W5's areas (st
 expressions, patterns) can split across agents once W4's lookups exist. A review stop after W2,
 before W4, checks the engine against this design while it is still small.
 
+## Results
+
+B2 closed on 2 November 2026, with W1 to W6c on `b2/integration`.
+
+- **The exit criterion:** on every corpus project, at the JDK and releases its lock names, there
+  are 4,199,479 names in B2's part. 4,193,632 resolve to javac's key, 5,847 are known differences
+  in three categories (B3's two and B4's one), and none is unexplained. Left out are 445 files with
+  javac errors (442 of them hertzbeat's tests, which read Lombok-annotated types from source) and
+  554 Lombok-annotated types. No source set fails on Ferrion's side.
+- **The incremental conditions,** measured on lucene in W5
+  ([body names](semantic-incremental.md#with-body-names-w5)):
+  - **cancellation:** the setter returns in microseconds, and a run stops in a median of 0.10 ms.
+    The slowest was 3.1 ms with the tree cache, and 60 ms with trees dropped, when a parse was in
+    flight, since the parser doesn't poll;
+  - **threads:** a cold run takes 3.4 s on one thread and 1.9 s on four, with the body phase
+    scaling worse than the phases before it;
+  - **an edit inside a body** recomputes that file's body names, and no other file's;
+  - **memory:** 83 MB is kept after a cold run with trees dropped (summaries and project symbols),
+    against 50 MB of text.
+- **The engine is checked against a fresh one:**
+  - The differential edit test runs against a fresh engine.
+  - The `semantic_edits` fuzz target serves as the resolution fuzz target too: its first file is
+    any text, resolved through to body names.
+  - `cargo oracle names --replay` checks every corpus source set. A second engine per project
+    resolves every file empty, then is given each file's text as an edit, and its names must equal
+    a cold engine's. They do on every source set, and skipping one file's edit makes the check
+    fail. CI runs it on jedis for pull requests and on the whole corpus weekly.
+- **Ferrion's side** of the whole corpus took 11.1 s, using at most 864 MB for one project. With
+  `--replay` it took 19.9 s and 1.8 GB.
+
+What B2 leaves:
+
+- **For B3:**
+  - Names qualified by an expression's type, and chosen overloads: 644,154 of javac's names in the
+    corpus.
+  - The `case-label` (1,012) and `static-import-overload` (4,830) differences, which attribution
+    settles.
+  - Whether body lookups of fields and methods become shared derived entries, once B3 is profiled
+    (W5's question).
+  - A parser that polls for cancellation, if a parse in flight has to stop sooner than 60 ms.
+- **For B4:** the members Lombok generates (`lombok-member`, 5), and the files and types left out
+  for Lombok.
+- **For the linter and formatter:** generated files and types are marked (`Project::is_generated`,
+  `FileInput::generated`, a summary's `generated`). Skipping them is up to the rules, and to the
+  formatter's file selection once it reads the project model.
+
 ## What was consulted
 
 - **Specifications:** the Java Language Specification, Java SE 27 edition: chapter 6 (names,
@@ -411,3 +457,16 @@ As built in W6c:
    `generate-sources`; for Gradle, an init script runs the tasks whose declared outputs are the
    paths. On a fresh fetch, Helidon's, caffeine's, and spring-data-jpa's came out byte for byte as
    the lock's builds left them. The weekly job runs it after `corpus fetch`.
+
+### The W6c review
+
+After W6c, the user accepted its two recommendations:
+
+1. **`lombok-member`** stays a known difference until B4. The alternative was leaving out method
+   names whose searched type is Lombok-annotated, which would hide more than it explains.
+2. **JDK 26 on CI** comes from Temurin, as the other JDKs do. If the weekly run's
+   `actions/setup-java` can't supply Temurin 26, that step switches to `distribution: corretto`.
+
+The closing review added the replay check its design called for
+([Checking the engine](semantic-incremental.md#checking-the-engine)), and the [results](#results)
+record where B2 ended.
