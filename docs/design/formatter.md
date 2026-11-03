@@ -11,6 +11,9 @@ The formatter builds on the [syntax tree](parser-syntax-tree.md), the
 [comment classification](parser-comments.md), the [deep-nesting rules](parser-deep-nesting.md), and
 the [error units](parser-error-recovery.md) of Phase 2.
 
+A2's rewrites (imports and doc comments), edits, and range formatting are designed in
+[formatter-completeness.md](formatter-completeness.md).
+
 ## Decision
 
 - **A flat Wadler–Leijen document.** The formatter turns the tree into a document of text, line
