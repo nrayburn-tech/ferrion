@@ -23,7 +23,7 @@ use ferrion_diagnostics::{LineEnding, SourceText};
 use ferrion_parser::{ParseDiagnostic, ParseOptions, Severity, parse};
 use ferrion_syntax::SyntaxTree;
 
-pub use verify::{Property, Violation, verify};
+pub use verify::{Property, Violation, verify, verify_parsed};
 
 /// How to format a file. There are no style options.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

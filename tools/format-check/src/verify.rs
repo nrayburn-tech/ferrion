@@ -4,16 +4,19 @@
 //! docs/design/formatter.md). Files the formatter skips, for syntax or version errors, are counted;
 //! skipping isn't a failure. A panic, or a property that doesn't hold, is.
 //!
-//! Throughput counts only the time spent in `format`, which parses and formats: megabytes (10^6
+//! Throughput counts only the time spent parsing and formatting, as `format` does: megabytes (10^6
 //! bytes) and files per second, on one thread, summed over every release a file is formatted at.
-//! `verify`'s time is reported separately, and the process's peak resident set at the end.
+//! `verify`'s time, which reuses that parse of the input, is reported separately, and the
+//! process's peak resident set at the end.
 
 use std::panic::{self, AssertUnwindSafe};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use corpus::sources::Source;
 use ferrion_diagnostics::SourceText;
 use ferrion_formatter::{self as formatter, FormatOptions, Formatted};
+use ferrion_parser::{Parse, ParseOptions, Severity, parse};
 
 use crate::{Options, on_small_stack};
 
@@ -113,18 +116,17 @@ fn check_all(sources: &[Source], verbose: bool) -> Stats {
             }
             let options = FormatOptions { release };
             let start = Instant::now();
-            let formatted =
-                panic::catch_unwind(AssertUnwindSafe(|| formatter::format(&text, &options)));
+            let formatted = panic::catch_unwind(AssertUnwindSafe(|| format(&text, release)));
             stats.format_time += start.elapsed();
             stats.formats += 1;
             stats.bytes += text.text().len() as u64;
             let failure = match formatted {
                 Err(_) => Some("format panicked".to_owned()),
-                Ok(Formatted::Skipped(_)) => {
+                Ok((_, Formatted::Skipped(_))) => {
                     stats.skipped += 1;
                     None
                 }
-                Ok(formatted) => {
+                Ok((parsed, formatted)) => {
                     let output = match formatted {
                         Formatted::Changed(output) => {
                             stats.changed += 1;
@@ -134,7 +136,7 @@ fn check_all(sources: &[Source], verbose: bool) -> Stats {
                     };
                     let start = Instant::now();
                     let verified = panic::catch_unwind(AssertUnwindSafe(|| {
-                        formatter::verify(&text, &output, &options)
+                        formatter::verify_parsed(&text, &parsed, &output, &options)
                     }));
                     stats.verify_time += start.elapsed();
                     match verified {
@@ -152,6 +154,24 @@ fn check_all(sources: &[Source], verbose: bool) -> Stats {
         }
     }
     stats
+}
+
+/// `text` parsed at `release`, and formatted unless the parse has errors, as `format` does, with
+/// the parse kept for `verify_parsed`.
+fn format(text: &SourceText, release: u32) -> (Parse, Formatted) {
+    let parsed = parse(Arc::from(text.text()), ParseOptions { release });
+    let errors: Vec<_> = parsed
+        .diagnostics
+        .iter()
+        .filter(|d| d.severity == Severity::Error)
+        .cloned()
+        .collect();
+    let formatted = if errors.is_empty() {
+        formatter::format_tree(&parsed.tree, text)
+    } else {
+        Formatted::Skipped(errors)
+    };
+    (parsed, formatted)
 }
 
 /// The process's peak resident set, in bytes.
