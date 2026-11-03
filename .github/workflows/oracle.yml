@@ -113,6 +113,10 @@ jobs:
         run: cargo format-check verify jdk-tests
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Check range formatting on every corpus file, broken at random tokens
+        run: cargo format-check ranges
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
       - name: Check the diff against Google Java Format on every corpus project
         run: cargo format-check gjf --check
         env:

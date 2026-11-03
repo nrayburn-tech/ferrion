@@ -321,6 +321,14 @@ cargo format-check verify
 Like `cargo parser-check`, it takes project names, `jdk-tests`, and `jdk-deep-nesting`. Any
 failure fails the run; files with syntax errors are skipped and counted.
 
+The range test breaks each file at seeded random tokens and checks that every unit the error
+doesn't affect formats, through `format_range`, as the clean file formats there; it reports how
+often recovery shifts units so that they can't be compared:
+
+```bash
+cargo format-check ranges --seed 1 --per-file 2
+```
+
 The formatter's style follows Google Java Format 2.0.0, pinned in `tools/format-check/gjf.toml`
 and downloaded on first use into the corpus's jar cache. Never read GJF's source; learn what it
 does by running it, and write down what you find (see

@@ -263,6 +263,10 @@ jobs:
         run: cargo format-check verify jedis
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+      - name: Check range formatting on the corpus project's files, broken at random tokens
+        run: cargo format-check ranges jedis
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
       # These download the pinned Google Java Format jar (tools/format-check/gjf.toml) into the
       # corpus directory, and run it on this job's JDK.
       - name: Check the departures from Google Java Format
