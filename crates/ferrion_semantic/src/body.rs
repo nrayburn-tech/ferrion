@@ -189,7 +189,7 @@ fn declaration_at(decl: SyntaxNode<'_>) -> u32 {
 /// for the component's type is, since javac makes the parameter from the component (observed:
 /// `String` in `@A String a`, the last `.` of `java.lang.String`, the `<` of `List<String>`, the
 /// first `[` or its annotation in an array type, and the `...` of `String... f`).
-fn component_type_at(component: ast::RecordComponent<'_>) -> u32 {
+pub fn component_type_at(component: ast::RecordComponent<'_>) -> u32 {
     if let Some(varargs) = component.varargs() {
         return varargs.syntax().span().start;
     }

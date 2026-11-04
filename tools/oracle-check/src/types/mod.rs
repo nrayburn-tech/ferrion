@@ -6,14 +6,15 @@
 //! types, chosen methods, constant values, variables' finality, and answers to type relation
 //! queries are compared with Ferrion's ([`compare`]). Files with javac's language errors, files
 //! javac never analyzed or threw on, and Lombok-annotated types are left out, as in `names`.
-//! Ferrion's side ([`ferrion`]) answers the relation queries with B3a's relations; until B3b's
-//! attribution exists, it gives nothing for the files' entries, which are counted as not
-//! compared.
+//! Ferrion's side answers the relation queries with B3a's relations ([`ferrion`]), and gives the
+//! files' entries from B3b's attribution ([`attribution`]). What waits for overload resolution or
+//! a later milestone is counted apart.
 
 pub mod attribute;
-mod compare;
+mod attribution;
+pub(crate) mod compare;
 mod ferrion;
-mod oracle;
+pub(crate) mod oracle;
 mod report;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -25,10 +26,10 @@ use corpus::Dirs;
 use corpus::project::Project;
 use ferrion_diagnostics::SourceText;
 
-use self::compare::{Known, Mismatch, StandIn, Typer, compare, compare_relations};
+use self::compare::{Known, Mismatch, StandIn, Typer, compare, compare_relations, fits_text};
 use self::ferrion::FerrionTyper;
 use self::oracle::{FORMAT, Output, is_switch_error};
-use self::report::{FileTime, MismatchRow, Report, SetRow, Tally};
+use self::report::{ExtraRow, FileTime, MismatchRow, Report, SetRow, Tally};
 use crate::names::ferrion::{Ferrion, Offsets};
 use crate::names::oracle::{NamesOracle, OracleCommand, Ran};
 use crate::names::plan::{self, SourceSet};
@@ -42,9 +43,9 @@ names` does, and compares javac's attributed types, chosen methods, constant val
 finality, and answers to type relation queries about a sample of each source set's declared types
 with Ferrion's. Files with javac errors, files javac never analyzed, and Lombok-annotated types are
 left out. Fails on a mismatch that isn't a known difference
-(tools/oracle-check/differences/types-known.txt). Ferrion answers the relation queries; until
-B3b's attribution exists, it gives nothing for the files' entries, which are counted as not
-compared.
+(tools/oracle-check/differences/types-known.txt), or an entry Ferrion gives where javac has none.
+What Ferrion leaves to a later milestone (`left-to-b3c`, `left-to-b3d`), and what waits for
+overload resolution, is counted apart.
 
 options:
   --source-set <id>    only this source set of each project (repeatable); the ones it depends on
@@ -53,6 +54,7 @@ options:
   --heap <size>        each JVM's maximum heap (default: 4g)
   --relation-types <N> ask the relations about N declared types per source set (default: 48)
   --relations          compare the relation queries only (B3a)
+  --threads <N>        attribute N files of a source set at a time (default: 4)
   --javac-only         run javac's side alone, and compare nothing
   --slowest <N>        list the N files javac took longest to analyze (default: 20)
   --limit <N>          show the first N failures (default: 10)
@@ -71,6 +73,7 @@ pub struct Options {
     pub heap: String,
     pub relation_types: usize,
     pub relations_only: bool,
+    pub threads: usize,
     pub javac_only: bool,
     pub slowest: usize,
     pub limit: usize,
@@ -87,6 +90,7 @@ pub fn parse_args(args: impl Iterator<Item = String>, usage: fn(&str) -> !) -> O
         heap: "4g".to_owned(),
         relation_types: 48,
         relations_only: false,
+        threads: 4,
         javac_only: false,
         slowest: 20,
         limit: 10,
@@ -115,6 +119,10 @@ pub fn parse_args(args: impl Iterator<Item = String>, usage: fn(&str) -> !) -> O
                 options.relation_types = number("--relation-types", text);
             }
             "--relations" => options.relations_only = true,
+            "--threads" => {
+                let text = value("--threads");
+                options.threads = number("--threads", text).max(1);
+            }
             "--javac-only" => options.javac_only = true,
             "--slowest" => {
                 let text = value("--slowest");
@@ -188,8 +196,8 @@ pub fn run(options: Options) -> Result<bool> {
         Vec::new(),
         &jdks,
     )?;
-    // Ferrion's side answers the relation queries (B3a); attribution of the files' entries
-    // comes with B3b.
+    // Ferrion's side answers the relation queries (B3a) and, unless they are all that is
+    // compared, gives the files' entries (B3b).
     let ferrion;
     let typer: &dyn Typer = if options.javac_only {
         &StandIn
@@ -202,13 +210,11 @@ pub fn run(options: Options) -> Result<bool> {
                 (project, work.iter().filter(|&&(w, _)| w == g).count())
             })
             .collect();
-        ferrion = FerrionTyper::new(Ferrion::new(
-            &counts,
-            &project_jdks,
-            scratch.clone(),
-            1,
-            false,
-        )?);
+        let threads = (!options.relations_only).then_some(options.threads);
+        ferrion = FerrionTyper::new(
+            Ferrion::new(&counts, &project_jdks, scratch.clone(), 1, false)?,
+            threads,
+        );
         &ferrion
     };
     let files: usize = work.iter().map(|&(g, i)| groups[g][i].files.len()).sum();
@@ -256,6 +262,8 @@ pub fn run(options: Options) -> Result<bool> {
             .merge(&result.tally);
         report.source_sets.push(result.row);
         report.mismatches.extend(result.mismatches);
+        report.extras.extend(result.extras);
+        report.stale_generated.extend(result.stale_generated);
         report.crashes.extend(result.crashes);
         report.errors.extend(result.errors);
         report.times.extend(result.times);
@@ -292,6 +300,8 @@ struct SetResult {
     tally: Tally,
     row: SetRow,
     mismatches: Vec<MismatchRow>,
+    extras: Vec<ExtraRow>,
+    stale_generated: Vec<String>,
     crashes: Vec<(String, String)>,
     errors: Vec<(String, String)>,
     times: Vec<FileTime>,
@@ -334,6 +344,8 @@ fn run_set(context: &Shared, group: usize, i: usize) -> Result<SetResult> {
         tally: Tally::default(),
         row: row.clone(),
         mismatches: Vec::new(),
+        extras: Vec::new(),
+        stale_generated: Vec::new(),
         crashes: Vec::new(),
         errors: Vec::new(),
         times: Vec::new(),
@@ -375,7 +387,6 @@ fn run_set(context: &Shared, group: usize, i: usize) -> Result<SetResult> {
         tally.relation_arena = attributed.arena;
         let compared = compare_relations(&output.relations, &attributed.relations);
         tally.comparison.matched += compared.matched;
-        tally.comparison.extra += compared.extra;
         tally.comparison.left += compared.left;
         tally.comparison.unresolved += compared.unresolved;
         for mismatch in compared.mismatches {
@@ -438,6 +449,15 @@ fn run_set(context: &Shared, group: usize, i: usize) -> Result<SetResult> {
             tally.excluded.ferrion_failures += 1;
             continue;
         }
+        let bytes = std::fs::read(context.corpus.join(&file.file))
+            .with_context(|| format!("reading {}", file.file))?;
+        let source = SourceText::decode(bytes).map_err(|e| anyhow!("{}: {e}", file.file))?;
+        // A cached run's processors may have written other text than what is there now.
+        if generated && !fits_text(file, source.text()) {
+            tally.excluded.stale_generated += 1;
+            result.stale_generated.push(display);
+            continue;
+        }
         tally.compared_files += 1;
         tally.lombok_types += file.lombok.len() as u64;
         tally.analyze_micros += file.analyze_micros;
@@ -454,13 +474,36 @@ fn run_set(context: &Shared, group: usize, i: usize) -> Result<SetResult> {
             tally.comparison.not_compared += entries;
             continue;
         };
-        let bytes = std::fs::read(context.corpus.join(&file.file))
-            .with_context(|| format!("reading {}", file.file))?;
-        let source = SourceText::decode(bytes).map_err(|e| anyhow!("{}: {e}", file.file))?;
         let compared = compare(file, ours, &Offsets::new(&source));
         tally.comparison.matched += compared.matched;
-        tally.comparison.extra += compared.extra;
+        for (aspect, count) in &compared.matched_by {
+            *tally
+                .comparison
+                .matched_by
+                .entry(aspect.name())
+                .or_default() += count;
+        }
         tally.comparison.left += compared.left;
+        tally.comparison.waiting += compared.waiting;
+        tally.comparison.implicit_parameters += compared.implicit_parameters;
+        tally.comparison.dropped_annotations += compared.dropped_annotations;
+        for ((aspect, label), count) in &compared.apart {
+            *tally
+                .comparison
+                .apart
+                .entry(format!("{} {label}", aspect.name()))
+                .or_default() += count;
+        }
+        tally.comparison.extra += compared.extras.len() as u64;
+        for extra in compared.extras {
+            result.extras.push(ExtraRow {
+                file: display.clone(),
+                aspect: extra.aspect.name(),
+                start: extra.start,
+                end: extra.end,
+                ferrion: extra.ferrion,
+            });
+        }
         for mismatch in compared.mismatches {
             record(
                 context,
@@ -550,6 +593,7 @@ mod tests {
         assert_eq!(options.source_sets, ["main"]);
         assert_eq!((options.jobs, options.relation_types), (3, 8));
         assert!(options.relations_only && !parse("").relations_only);
+        assert_eq!(parse("--threads 2").threads, 2);
         assert_eq!((parse("").jobs, parse("").slowest), (2, 20));
         assert!(parse("--javac-only").javac_only);
     }

@@ -6,9 +6,10 @@
 //! variables' finality and types; and, per source set, answers to the oracle's relation queries.
 //! Entries are matched by javac's range (an implicit call by its start alone), and compared as
 //! strings. A Ferrion value starting with `left-to-` (`left-to-b3c inference`) says a later
-//! milestone types it: counted apart, never a mismatch.
+//! milestone types it, and [`WAITING`] that it waits for overload resolution: counted apart, never
+//! a mismatch.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::Path;
 
 use anyhow::{Context, Result, bail};
@@ -17,6 +18,9 @@ use ferrion_diagnostics::Span;
 use super::oracle::{Answer, FileOutput, Query, Relations};
 use crate::names::ferrion::Offsets;
 use crate::names::plan::SourceSet;
+
+/// A Ferrion value that waits for overload resolution (W3's calls), counted apart.
+pub const WAITING: &str = "waiting-for-calls";
 
 /// An expression's type or a constant's value, as Ferrion gives it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -54,6 +58,16 @@ pub struct FileTypes {
     pub constants: Vec<Typed>,
     pub calls: Vec<TypedCall>,
     pub variables: Vec<TypedVariable>,
+    /// The byte offsets of javac's parameters of implicit constructors, an anonymous class's and
+    /// a record's, which have no counterpart: the class's own position, where no other variable
+    /// can be.
+    pub implicit_parameters: Vec<u32>,
+    /// Calls javac made up aren't given yet: until overload resolution they wait.
+    pub implicit_calls_wait: bool,
+    /// The byte ranges of annotations on record components, whose values javac drops from its
+    /// trees unless the annotation applies to fields: entries in them are compared if javac has
+    /// them, and counted apart if it doesn't.
+    pub component_annotations: Vec<Span>,
 }
 
 /// What Ferrion gave for a source set.
@@ -216,15 +230,34 @@ pub struct Mismatch {
     pub category: Category,
 }
 
+/// A Ferrion entry where javac has none.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Extra {
+    pub aspect: Aspect,
+    pub start: i64,
+    pub end: i64,
+    pub ferrion: String,
+}
+
 /// The comparison of one file, or of a source set's relations.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Compared {
     pub matched: u64,
+    /// By aspect.
+    pub matched_by: BTreeMap<Aspect, u64>,
     pub mismatches: Vec<Mismatch>,
     /// Ferrion's entries where javac has none.
-    pub extra: u64,
+    pub extras: Vec<Extra>,
     /// Ferrion's entries that a later milestone types (`left-to-...`).
     pub left: u64,
+    /// Ferrion's entries that wait for overload resolution.
+    pub waiting: u64,
+    /// Entries counted apart, by aspect and what they wait for (`left-to-b3c`, ...).
+    pub apart: BTreeMap<(Aspect, String), u64>,
+    /// javac's parameters of implicit constructors: no counterpart.
+    pub implicit_parameters: u64,
+    /// Ferrion's entries in annotations on record components that javac dropped from its trees.
+    pub dropped_annotations: u64,
     /// Relation queries about a type javac couldn't resolve: not compared.
     pub unresolved: u64,
 }
@@ -232,8 +265,18 @@ pub struct Compared {
 impl Compared {
     fn check(&mut self, entry: Mismatch, category: impl Fn(&str, &str) -> Category) {
         match &entry.ferrion {
-            Some(ours) if ours.starts_with("left-to-") => self.left += 1,
-            Some(ours) if *ours == entry.javac => self.matched += 1,
+            Some(ours) if ours.starts_with("left-to-") => {
+                self.left += 1;
+                self.count_apart(entry.aspect, ours);
+            }
+            Some(ours) if ours == WAITING => {
+                self.waiting += 1;
+                self.count_apart(entry.aspect, ours);
+            }
+            Some(ours) if *ours == entry.javac => {
+                self.matched += 1;
+                *self.matched_by.entry(entry.aspect).or_default() += 1;
+            }
             Some(ours) => {
                 let category = category(&entry.javac, ours);
                 self.mismatches.push(Mismatch { category, ..entry });
@@ -244,6 +287,42 @@ impl Compared {
             }),
         }
     }
+}
+
+impl Compared {
+    fn count_apart(&mut self, aspect: Aspect, value: &str) {
+        let label = value.split(' ').next().unwrap_or(value).to_owned();
+        *self.apart.entry((aspect, label)).or_default() += 1;
+    }
+}
+
+/// Whether javac's entries for a file could be trees of `text`. Annotation processors can write a
+/// different text from the same inputs (helidon's `__ServiceDescriptor`s order their sets as a
+/// hash set iterates), and a cached run says nothing of the text it saw: a tree that can't be at
+/// its range says that isn't the text there now.
+pub fn fits_text(file: &FileOutput, text: &str) -> bool {
+    let units: Vec<u16> = text.encode_utf16().collect();
+    file.expressions.iter().all(|e| {
+        let (Ok(start), Ok(end)) = (usize::try_from(e.start), usize::try_from(e.end)) else {
+            return false;
+        };
+        let Some(tree) = units.get(start..end) else {
+            return false;
+        };
+        let first = tree.first().copied().unwrap_or(0);
+        let last = tree.last().copied().unwrap_or(0);
+        let is = |unit: u16, c: char| unit == c as u16;
+        let name = |unit: u16| {
+            char::from_u32(u32::from(unit)).is_none_or(|c| c != ' ' && c != '(' && c != '"')
+        };
+        match e.kind.as_str() {
+            "STRING_LITERAL" => is(first, '"') && is(last, '"'),
+            "IDENTIFIER" => tree.iter().all(|&u| name(u)),
+            "METHOD_INVOCATION" => is(last, ')'),
+            "PARENTHESIZED" => is(first, '(') && is(last, ')'),
+            _ => true,
+        }
+    })
 }
 
 /// Compares a file's entries, but those in Lombok-annotated types, with Ferrion's.
@@ -285,7 +364,12 @@ pub fn compare(file: &FileOutput, ours: &FileTypes, offsets: &Offsets) -> Compar
         );
     }
     for c in file.constants.iter().filter(|c| !file.in_lombok(c.start)) {
-        let found = constants.get(&(c.start, c.end));
+        // Without a constant, an expression that has no type yet can't have one either.
+        let found = constants.get(&(c.start, c.end)).or_else(|| {
+            expressions
+                .get(&(c.start, c.end))
+                .filter(|value| value.starts_with("left-to-") || **value == WAITING)
+        });
         used.insert((Aspect::Constant, c.start, c.end));
         compared.check(
             mismatch(Aspect::Constant, c.start, c.end, "", c.value.clone(), found),
@@ -296,6 +380,11 @@ pub fn compare(file: &FileOutput, ours: &FileTypes, offsets: &Offsets) -> Compar
         used.insert((Aspect::Call, c.start, c.end));
         let found = calls.get(&(c.start, c.end));
         let method = found.map(|f| f.method.as_str());
+        if found.is_none() && c.end < 0 && ours.implicit_calls_wait {
+            compared.waiting += 1;
+            compared.count_apart(Aspect::Call, WAITING);
+            continue;
+        }
         compared.check(
             mismatch(
                 Aspect::Call,
@@ -324,7 +413,16 @@ pub fn compare(file: &FileOutput, ours: &FileTypes, offsets: &Offsets) -> Compar
             );
         }
     }
+    let implicit: HashSet<i64> = ours
+        .implicit_parameters
+        .iter()
+        .map(|&at| offsets.utf16(at))
+        .collect();
     for v in file.variables.iter().filter(|v| !file.in_lombok(v.offset)) {
+        if v.kind == "PARAMETER" && implicit.contains(&v.offset) {
+            compared.implicit_parameters += 1;
+            continue;
+        }
         used.insert((Aspect::Variable, v.offset, v.offset));
         let found = variables.get(&v.offset);
         let finality = found.map(|f| f.finality.as_str());
@@ -353,14 +451,30 @@ pub fn compare(file: &FileOutput, ours: &FileTypes, offsets: &Offsets) -> Compar
         );
     }
 
+    let dropped: Vec<(i64, i64)> = ours
+        .component_annotations
+        .iter()
+        .map(|&span| offsets.range(span))
+        .collect();
     let extra = |aspect: Aspect, range: (i64, i64), value: &str, compared: &mut Compared| {
-        if used.contains(&(aspect, range.0, range.1)) {
+        if used.contains(&(aspect, range.0, range.1)) || file.in_lombok(range.0) {
             return;
         }
-        if value.starts_with("left-to-") {
+        if dropped.iter().any(|&(s, e)| s <= range.0 && range.1 <= e) {
+            compared.dropped_annotations += 1;
+        } else if value.starts_with("left-to-") {
             compared.left += 1;
+            compared.count_apart(aspect, value);
+        } else if value == WAITING {
+            compared.waiting += 1;
+            compared.count_apart(aspect, value);
         } else {
-            compared.extra += 1;
+            compared.extras.push(Extra {
+                aspect,
+                start: range.0,
+                end: range.1,
+                ferrion: value.to_owned(),
+            });
         }
     };
     for (&range, value) in &expressions {
@@ -702,6 +816,7 @@ mod tests {
                 finality: "mutable".into(),
                 ty: "java/lang/String".into(),
             }],
+            ..FileTypes::default()
         };
         let compared = compare(&file(), &ours, &offsets);
         let categories: Vec<_> = compared
@@ -722,7 +837,8 @@ mod tests {
         assert_eq!(compared.matched, 4);
         assert_eq!(compared.left, 1);
         // The expression at 10-11.
-        assert_eq!(compared.extra, 1);
+        assert_eq!(compared.extras.len(), 1);
+        assert_eq!(compared.extras[0].ferrion, "int");
     }
 
     #[test]
@@ -738,6 +854,101 @@ mod tests {
         // Three expressions, a constant, two calls, and a variable's finality and type: the
         // expression in the Lombok type isn't compared.
         assert_eq!(compared.mismatches.len(), 8);
+    }
+
+    #[test]
+    fn waiting_values_are_counted_apart() {
+        let offsets = Offsets::from_text("x ? a : b y;", false);
+        let ours = FileTypes {
+            expressions: vec![typed(0, 1, WAITING)],
+            calls: vec![TypedCall {
+                span: Span { start: 2, end: 7 },
+                implicit: false,
+                method: WAITING.into(),
+                ty: None,
+            }],
+            implicit_parameters: vec![8],
+            implicit_calls_wait: true,
+            ..FileTypes::default()
+        };
+        let compared = compare(&file(), &ours, &offsets);
+        // The expression, its constant, and both calls, one of them javac's own.
+        assert_eq!(compared.waiting, 4);
+        assert_eq!(compared.apart[&(Aspect::Call, WAITING.to_owned())], 2);
+        assert_eq!(compared.apart[&(Aspect::Expression, WAITING.to_owned())], 1);
+        // The variable's kind is `LOCAL_VARIABLE`: only a parameter is an implicit one.
+        assert_eq!(compared.implicit_parameters, 0);
+        assert!(
+            compared
+                .mismatches
+                .iter()
+                .any(|m| m.aspect == Aspect::Variable)
+        );
+    }
+
+    #[test]
+    fn javac_entries_that_cannot_be_trees_of_the_text() {
+        let entry = |start, end, kind: &str| Expression {
+            start,
+            end,
+            kind: kind.into(),
+            ty: 0,
+        };
+        let output = |expressions| FileOutput {
+            expressions,
+            ..FileOutput::default()
+        };
+        let text = r#"f("a", g);"#;
+        assert!(fits_text(
+            &output(vec![
+                entry(0, 9, "METHOD_INVOCATION"),
+                entry(2, 5, "STRING_LITERAL"),
+                entry(7, 8, "IDENTIFIER"),
+            ]),
+            text
+        ));
+        // Past its end, and not what each kind of tree looks like.
+        assert!(!fits_text(&output(vec![entry(7, 80, "IDENTIFIER")]), text));
+        assert!(!fits_text(
+            &output(vec![entry(0, 8, "METHOD_INVOCATION")]),
+            text
+        ));
+        assert!(!fits_text(
+            &output(vec![entry(1, 4, "STRING_LITERAL")]),
+            text
+        ));
+        assert!(!fits_text(&output(vec![entry(1, 3, "IDENTIFIER")]), text));
+        assert!(!fits_text(
+            &output(vec![entry(0, 3, "PARENTHESIZED")]),
+            text
+        ));
+    }
+
+    #[test]
+    fn annotations_javac_dropped_are_counted_apart() {
+        let offsets = Offsets::from_text("x ? a : b y;", false);
+        let ours = FileTypes {
+            expressions: vec![typed(11, 12, "int"), typed(3, 4, "int")],
+            component_annotations: vec![Span { start: 10, end: 12 }],
+            ..FileTypes::default()
+        };
+        let compared = compare(&file(), &ours, &offsets);
+        assert_eq!(compared.dropped_annotations, 1);
+        assert_eq!(compared.extras.len(), 1);
+    }
+
+    #[test]
+    fn extras_in_lombok_types_are_not_counted() {
+        let offsets = Offsets::from_text("x ? a : b y;", false);
+        let ours = FileTypes {
+            expressions: vec![typed(11, 12, "int")],
+            ..FileTypes::default()
+        };
+        let mut output = file();
+        output.lombok = vec![(10, 25)];
+        assert!(compare(&output, &ours, &offsets).extras.is_empty());
+        output.lombok.clear();
+        assert_eq!(compare(&output, &ours, &offsets).extras.len(), 1);
     }
 
     #[test]

@@ -19,24 +19,25 @@
 //!   couldn't find is one a Lombok-annotated class's annotations make, which is
 //!   `left-to-b4 lombok`.
 //!
-//! Each project's engine is the names comparison's ([`Ferrion`]), so a run loads it once.
+//! Each project's engine is the names comparison's ([`Ferrion`]), so a run loads it once. The
+//! files' entries are [`super::attribution`]'s.
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Mutex;
 use std::time::Instant;
 
-use ferrion_diagnostics::SourceText;
 use ferrion_semantic::summary::{Primitive, WildcardBound};
 use ferrion_semantic::symbols::{TypeKey, TypeVarOwner};
 use ferrion_semantic::types::{
     Context, DEFAULT_FUEL, Printed, Tri, Type, TypeArg, TypeContext, TypeId,
 };
-use ferrion_semantic::{Cancelled, FileId, Snapshot, SourceSetId};
+use ferrion_semantic::{Cancelled, Snapshot, SourceSetId};
 
+use super::attribution::{self, Localizer};
 use super::compare::{Attributed, Typer};
 use super::oracle::{Query, Relations};
-use crate::names::ferrion::{Ferrion, Offsets};
+use crate::names::ferrion::Ferrion;
 use crate::names::plan::SourceSet;
 
 /// What a source set's relations cost Ferrion: the most fuel one query used, and the arena's
@@ -52,13 +53,16 @@ pub struct Cost {
 pub struct FerrionTyper {
     ferrion: Ferrion,
     costs: Mutex<HashMap<String, Cost>>,
+    /// How many files at a time to attribute, or `None` to compare the relation queries alone.
+    attribution: Option<usize>,
 }
 
 impl FerrionTyper {
-    pub fn new(ferrion: Ferrion) -> FerrionTyper {
+    pub fn new(ferrion: Ferrion, attribution: Option<usize>) -> FerrionTyper {
         FerrionTyper {
             ferrion,
             costs: Mutex::new(HashMap::new()),
+            attribution,
         }
     }
 }
@@ -72,17 +76,22 @@ impl Typer for FerrionTyper {
         relations: &Relations,
     ) -> Result<Option<Attributed>, String> {
         let start = Instant::now();
-        let (answers, cost) = self.ferrion.with_set(set, |engine, id, _| {
+        let (answers, cost, files) = self.ferrion.with_set(set, |engine, id, _| {
+            let cancelled = |_| "cancelled with no edit running".to_owned();
             let snapshot = engine.snapshot();
-            let mut relater = Relater::new(&snapshot, id, corpus);
-            relater
+            let (answers, cost) = Relater::new(&snapshot, id, corpus)
                 .answer(relations)
-                .map_err(|_| "cancelled with no edit running".to_owned())
+                .map_err(cancelled)?;
+            let files = match self.attribution {
+                Some(threads) => attribution::set_files(&snapshot, id, corpus, threads),
+                None => Ok(HashMap::new()),
+            };
+            Ok((answers, cost, files.map_err(cancelled)?))
         })?;
         let mut costs = self.costs.lock().unwrap_or_else(|e| e.into_inner());
         costs.insert(set.display(), cost.clone());
         Ok(Some(Attributed {
-            files: HashMap::new(),
+            files,
             relations: answers,
             seconds: start.elapsed().as_secs_f64(),
             fuel: cost.fuel,
@@ -96,11 +105,8 @@ impl Typer for FerrionTyper {
 struct Relater<'s> {
     cx: TypeContext<'s>,
     snapshot: &'s Snapshot,
-    view: SourceSetId,
     corpus: &'s Path,
-    /// The view's files by path, made when a local class is first named.
-    files: Option<HashMap<PathBuf, FileId>>,
-    offsets: HashMap<PathBuf, Offsets>,
+    locals: Localizer<'s>,
     owners: HashMap<String, Option<TypeKey>>,
     /// Each class's methods by their keys in the oracle's form.
     methods: HashMap<TypeKey, HashMap<String, u32>>,
@@ -116,10 +122,8 @@ impl<'s> Relater<'s> {
         Relater {
             cx: snapshot.types(view),
             snapshot,
-            view,
             corpus,
-            files: None,
-            offsets: HashMap::new(),
+            locals: Localizer::new(snapshot, view, corpus),
             owners: HashMap::new(),
             methods: HashMap::new(),
             built: HashMap::new(),
@@ -320,68 +324,8 @@ impl<'s> Relater<'s> {
         false
     }
 
-    /// Converts each `local <path>:<byte offset>` in Ferrion's text to javac's form: the path
-    /// relative to the corpus, the offset in UTF-16 code units.
     fn oracle_form(&mut self, text: &str) -> Result<String, Cancelled> {
-        let prefix = format!("local {}/", self.corpus.display());
-        if !text.contains(&prefix) {
-            return Ok(text.to_owned());
-        }
-        let mut out = String::with_capacity(text.len());
-        let mut rest = text;
-        while let Some(at) = rest.find(&prefix) {
-            out.push_str(&rest[..at]);
-            out.push_str("local ");
-            rest = &rest[at + prefix.len()..];
-            let colon = rest.find(':').unwrap_or(rest.len());
-            let relative = &rest[..colon];
-            out.push_str(relative);
-            rest = &rest[colon..];
-            if let Some(after) = rest.strip_prefix(':') {
-                let digits = after.bytes().take_while(u8::is_ascii_digit).count();
-                let byte: u32 = after[..digits].parse().unwrap_or(0);
-                let offsets = self.offsets_of(&self.corpus.join(relative))?;
-                out.push(':');
-                out.push_str(&offsets.utf16(byte).to_string());
-                rest = &after[digits..];
-            }
-        }
-        out.push_str(rest);
-        Ok(out)
-    }
-
-    fn offsets_of(&mut self, path: &Path) -> Result<&Offsets, Cancelled> {
-        if !self.offsets.contains_key(path) {
-            let file = self.file(path)?;
-            let offsets = match file {
-                Some(file) => {
-                    let text = self.snapshot.text(file)?;
-                    let bom = std::fs::read(path)
-                        .is_ok_and(|bytes| bytes.starts_with(&[0xef, 0xbb, 0xbf]));
-                    Offsets::from_text(&text, bom)
-                }
-                None => match std::fs::read(path)
-                    .ok()
-                    .and_then(|b| SourceText::decode(b).ok())
-                {
-                    Some(source) => Offsets::new(&source),
-                    None => Offsets::from_text("", false),
-                },
-            };
-            self.offsets.insert(path.to_path_buf(), offsets);
-        }
-        Ok(&self.offsets[path])
-    }
-
-    fn file(&mut self, path: &Path) -> Result<Option<FileId>, Cancelled> {
-        if self.files.is_none() {
-            let mut files = HashMap::new();
-            for &file in self.snapshot.files(self.view)?.iter() {
-                files.insert(self.snapshot.file(file)?.path.to_path_buf(), file);
-            }
-            self.files = Some(files);
-        }
-        Ok(self.files.as_ref().and_then(|f| f.get(path).copied()))
+        self.locals.oracle_form(text)
     }
 
     /// A class named as the oracle names owners: a binary name, or `local <file>:<offset>`.
@@ -397,10 +341,10 @@ impl<'s> Relater<'s> {
                 let (path, offset) = local.rsplit_once(':').unwrap_or((local, ""));
                 let offset: i64 = offset.parse().unwrap_or(-1);
                 let path = self.corpus.join(path);
-                match self.file(&path)? {
+                match self.locals.file(&path)? {
                     Some(file) => {
                         let body = self.snapshot.body_names(file)?;
-                        let offsets = self.offsets_of(&path)?;
+                        let offsets = self.locals.offsets_of(&path)?;
                         body.local_types
                             .iter()
                             .position(|t| offsets.utf16(t.at) == offset)

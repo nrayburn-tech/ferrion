@@ -13,5 +13,5 @@
 #
 #   <category> <file> <aspect> <start>-<end>
 #
-# None: B3a's relation queries have no known differences (docs/design/types-oracle-normalization.md,
-# "Known differences"); B3b's attribution adds the first.
+# None: B3a's relation queries and what B3b's walk types without overload resolution have no known
+# differences (docs/design/types-oracle-normalization.md, "Known differences").
