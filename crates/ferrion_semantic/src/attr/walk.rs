@@ -14,7 +14,7 @@ use crate::engine::derived::Reads;
 use crate::members::{self, FieldMember, Members};
 use crate::resolve::FileScope;
 use crate::summary::{Modifiers, Primitive, TypeKind, WildcardBound, modifiers};
-use crate::symbols::{Cause, ErrorSymbol, FieldRef, LeftToB3, TypeKey};
+use crate::symbols::{Cause, ErrorSymbol, FieldRef, TypeKey};
 use crate::types::{Context, Conversion, Steps, Tri, Type, TypeArg, TypeContext, TypeId, Why};
 use crate::{Cancelled, FileId, Interner, Name, Snapshot, SourceSetId};
 
@@ -39,6 +39,9 @@ struct Value {
     /// For a name or field access of a variable, the variable's type before capture: what an
     /// assignment or increment assigns to.
     variable: Option<TypeId>,
+    /// What the expression's type is recorded as, where that isn't `ty`: a multi-catch
+    /// parameter's union, whose `lub` `ty` is.
+    shown: Option<TypeId>,
 }
 
 /// A node entered and not yet left.
@@ -50,11 +53,13 @@ struct Frame {
     expected: Option<TypeId>,
 }
 
-/// A local variable or parameter: its type, and its value if it is a constant variable.
+/// A local variable or parameter: its type, its value if it is a constant variable, and what
+/// its type is recorded as, where that isn't `ty`: a multi-catch parameter's union.
 #[derive(Clone)]
 struct Local {
     ty: TypeId,
     constant: Option<Constant>,
+    shown: Option<TypeId>,
 }
 
 /// A class whose body the walk is in.
@@ -101,6 +106,8 @@ pub(crate) struct Walker<'s, 'r> {
     /// A `var` declared by an enhanced `for`, typed when its expression is left.
     for_each: Map<NodeId, NodeId>,
     local_tables: Map<TypeKey, Option<Arc<Members>>>,
+    /// Anonymous classes created with `<>`, whose supertype inference gives (B3c).
+    inferred_supertypes: crate::body::Set<TypeKey>,
     /// Constant fields of local classes, as their initializers are left.
     local_constants: Map<FieldRef, Constant>,
     nodes: usize,
@@ -312,6 +319,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             results: Vec::new(),
             for_each: Map::default(),
             local_tables: Map::default(),
+            inferred_supertypes: Default::default(),
             local_constants: Map::default(),
             nodes: 0,
             string: None,
@@ -382,6 +390,13 @@ impl<'s, 'r> Walker<'s, 'r> {
         out.compound = std::mem::take(&mut self.compound).into_boxed_slice();
         out.resolved = std::mem::take(&mut self.resolved).into_boxed_slice();
         out.fuel = std::mem::take(&mut self.body_fuel).into_boxed_slice();
+        let mut variables: Vec<(NodeId, TypeId)> = self
+            .locals
+            .iter()
+            .map(|(n, l)| (*n, l.shown.unwrap_or(l.ty)))
+            .collect();
+        variables.sort_by_key(|(n, _)| *n);
+        out.variables = variables.into_boxed_slice();
         out.local_members = tables.into_boxed_slice();
         out.arena = std::mem::replace(self.cx.arena_mut(), crate::types::Arena::new());
         out
@@ -455,7 +470,21 @@ impl<'s, 'r> Walker<'s, 'r> {
         } else if kind == SyntaxKind::ClassBody
             && let Some(&key) = self.local_of_node.get(&node.id())
         {
-            // An anonymous class's body.
+            // An anonymous class's body. Created with `<>`, its supertype's arguments are
+            // inference's (B3c), and its entry has none.
+            let diamond = node
+                .parent()
+                .and_then(ast::NewExpr::cast)
+                .and_then(|n| n.ty())
+                .is_some_and(|t| match t {
+                    ast::Type::ClassType(c) => c
+                        .type_arguments()
+                        .is_some_and(|a| a.arguments().next().is_none()),
+                    _ => false,
+                });
+            if diamond {
+                self.inferred_supertypes.insert(key);
+            }
             self.classes.push(Class {
                 node: node.id(),
                 key,
@@ -621,6 +650,10 @@ impl<'s, 'r> Walker<'s, 'r> {
     /// The type a type as written in a body or signature denotes, its names from the file's
     /// names (docs/design/semantic-attribution.md#the-walk).
     fn syntax_type(&mut self, ty: ast::Type<'_>) -> Result<TypeId, Cancelled> {
+        ferrion_stack::ensure_stack(|| self.syntax_type_inner(ty))
+    }
+
+    fn syntax_type_inner(&mut self, ty: ast::Type<'_>) -> Result<TypeId, Cancelled> {
         Ok(match ty {
             ast::Type::PrimitiveType(p) => match p.keyword().and_then(|k| primitive_of(k.kind())) {
                 Some(p) => self.primitive(p),
@@ -694,8 +727,12 @@ impl<'s, 'r> Walker<'s, 'r> {
         // arguments makes it raw, as javac has it (W1's observation 11).
         let outer = match c.qualifier() {
             Some(q) => {
-                let q = self.class_type(q)?;
-                self.cx.has_type_args(q).then_some(q)
+                let q = ferrion_stack::ensure_stack(|| self.class_type(q))?;
+                if self.cx.has_type_args(q) {
+                    Some(self.cx.outer_of_member(key, q)?)
+                } else {
+                    None
+                }
             }
             None => self.implicit_outer(key)?,
         };
@@ -704,22 +741,12 @@ impl<'s, 'r> Walker<'s, 'r> {
     }
 
     /// The outer type an inner class of a generic class has where it is used unqualified: as
-    /// the innermost class around the use sees it, or for a local class the summary's class.
+    /// the innermost class around the use sees it.
     fn implicit_outer(&mut self, key: TypeKey) -> Result<Option<TypeId>, Cancelled> {
-        let sites: Vec<TypeKey> = self
-            .classes
-            .iter()
-            .rev()
-            .map(|c| c.key)
-            .filter(|k| !matches!(k, TypeKey::Local { .. }))
-            .take(1)
-            .collect();
-        for site in sites {
-            if let Some(outer) = self.cx.implicit_outer_in(key, site)? {
-                return Ok(Some(outer));
-            }
+        match self.classes.last().map(|c| c.key) {
+            Some(site) => self.cx.implicit_outer_in(key, site),
+            None => Ok(None),
         }
-        Ok(None)
     }
 
     // -------------------------------------------------------------------------------------------
@@ -735,7 +762,8 @@ impl<'s, 'r> Walker<'s, 'r> {
         let value = self.value(node, &children, frame.expected)?;
         if let Some(value) = value {
             if value.what == What::Expr {
-                self.types.push((value.node, value.ty));
+                self.types
+                    .push((value.node, value.shown.unwrap_or(value.ty)));
                 if let Some(c) = &value.constant {
                     self.constants.push((value.node, c.clone()));
                 }
@@ -770,6 +798,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             constant: None,
             what: What::Expr,
             variable: None,
+            shown: None,
         }
     }
 
@@ -905,6 +934,7 @@ impl<'s, 'r> Walker<'s, 'r> {
                         Local {
                             ty: t,
                             constant: None,
+                            shown: None,
                         },
                     );
                 }
@@ -1009,15 +1039,26 @@ impl<'s, 'r> Walker<'s, 'r> {
             constant,
             what: What::Expr,
             variable: Some(ty),
+            shown: None,
         })
     }
 
     fn name(&mut self, node: SyntaxNode<'_>) -> Result<Value, Cancelled> {
         let id = node.id();
         let symbol = self.symbol(id).cloned();
+        if node
+            .parent()
+            .is_some_and(|p| p.kind() == SyntaxKind::SwitchLabel)
+            && let Some(value) = self.case_constant(node, symbol.as_ref())?
+        {
+            return Ok(value);
+        }
         Ok(match symbol {
             Some(Symbol::Local { node: decl, .. }) => match self.locals.get(&decl).cloned() {
-                Some(local) => self.variable(node, local.ty, local.constant)?,
+                Some(local) => Value {
+                    shown: local.shown,
+                    ..self.variable(node, local.ty, local.constant)?
+                },
                 None => {
                     let t = self.unknown(Why::Later);
                     self.expr(id, t)
@@ -1033,7 +1074,6 @@ impl<'s, 'r> Walker<'s, 'r> {
                     ..self.expr(id, t)
                 }
             }
-            Some(Symbol::LeftToB3(LeftToB3::ExpressionType)) => self.case_name(node)?,
             Some(Symbol::Error(e)) => {
                 let t = self.error_type(e);
                 self.expr(id, t)
@@ -1056,33 +1096,49 @@ impl<'s, 'r> Walker<'s, 'r> {
             constant: None,
             what: What::Type(key),
             variable: None,
+            shown: None,
         }
     }
 
-    /// A `case` label's simple name whose selector needed a type: the enum constant, if the
-    /// selector is an enum (B2's `case-label` difference).
-    fn case_name(&mut self, node: SyntaxNode<'_>) -> Result<Value, Cancelled> {
-        let selector = self.selectors.last().map(|s| s.1);
+    /// A `case` label's simple name, decided by the selector's type now that it has one
+    /// (JLS 14.11.1): a constant of the enum, if the selector is an enum, whatever variable B2
+    /// found in scope when it couldn't tell (its `case-label` difference); waiting with a
+    /// selector that has no type yet; else `None`, and it is a constant variable, as B2 has it.
+    fn case_constant(
+        &mut self,
+        node: SyntaxNode<'_>,
+        symbol: Option<&Symbol>,
+    ) -> Result<Option<Value>, Cancelled> {
+        let Some(selector) = self.selectors.last().map(|s| s.1) else {
+            return Ok(None);
+        };
+        if let Some(why) = self.non_answer(selector) {
+            let t = self.unknown(why);
+            return Ok(Some(self.expr(node.id(), t)));
+        }
         let name = ast::NameExpr::cast(node)
             .unwrap()
             .name()
             .map(|t| crate::summary::name_text(t, &self.names));
-        if let (Some(selector), Some(name)) = (selector, name)
-            && let Type::Class { key, .. } = self.cx.get(selector)
+        if let Type::Class { key, .. } = self.cx.get(selector)
+            && let Some(name) = name
             && self.cx.kind(key)? == Some(TypeKind::Enum)
             && let Some(index) = self.cx.field_named(key, name)?
         {
-            self.resolved
-                .push((node.id(), Symbol::Field { owner: key, name }));
+            let field = Symbol::Field { owner: key, name };
+            if symbol != Some(&field) {
+                self.resolved.push((node.id(), field));
+            }
             let t = self.cx.field_type(key, index)?;
-            return Ok(self.expr(node.id(), t));
+            return Ok(Some(self.expr(node.id(), t)));
         }
-        // A selector without a type yet (a call's, W3's) leaves its labels waiting with it.
-        let why = selector
-            .and_then(|s| self.non_answer(s))
-            .unwrap_or(Why::Later);
-        let t = self.unknown(why);
-        Ok(self.expr(node.id(), t))
+        Ok(match symbol {
+            Some(Symbol::LeftToB3(_)) => {
+                let t = self.unknown(Why::Later);
+                Some(self.expr(node.id(), t))
+            }
+            _ => None,
+        })
     }
 
     /// A field's index in its owner.
@@ -1102,6 +1158,33 @@ impl<'s, 'r> Walker<'s, 'r> {
         self.reads.constant(field)
     }
 
+    /// Whether `key` is an anonymous class created with `<>` and `owner` one of its supertypes,
+    /// so that a member of `owner` seen from it needs the arguments inference gives.
+    fn inherited_through_inference(
+        &mut self,
+        key: TypeKey,
+        owner: TypeKey,
+    ) -> Result<bool, Cancelled> {
+        if !self.inferred_supertypes.contains(&key) {
+            return Ok(false);
+        }
+        let Some(supers) = self.snapshot.supertypes(key)? else {
+            return Ok(false);
+        };
+        let direct: Vec<TypeKey> = supers
+            .superclass
+            .iter()
+            .chain(supers.interfaces.iter())
+            .filter_map(|s| s.as_ref().ok().copied())
+            .collect();
+        for class in direct {
+            if self.cx.is_subclass(class, owner)? {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
     /// A field named by its simple name: as a member of the innermost class around it that has
     /// it, or as declared for a static one.
     fn simple_field(
@@ -1119,6 +1202,10 @@ impl<'s, 'r> Walker<'s, 'r> {
         if !is_static {
             let keys: Vec<TypeKey> = self.classes.iter().rev().map(|c| c.key).collect();
             for key in keys {
+                if self.inherited_through_inference(key, owner)? {
+                    let t = self.unknown(Why::LeftToB3c);
+                    return Ok(self.expr(node.id(), t));
+                }
                 if self.cx.is_subclass(key, owner)? {
                     let this = self.cx.declared_type(key)?;
                     if let Tri::Yes(t) = self.cx.field_type_in(this, owner, field.index)? {
@@ -1386,6 +1473,9 @@ impl<'s, 'r> Walker<'s, 'r> {
                 self.unknown(why)
             }
             None => match current {
+                Some(key) if self.inferred_supertypes.contains(&key) => {
+                    self.unknown(Why::LeftToB3c)
+                }
                 Some(key) => match self.cx.superclass(key)? {
                     Some(t) => t,
                     None => self.unknown(Why::Incomplete(key)),
@@ -2075,7 +2165,27 @@ impl<'s, 'r> Walker<'s, 'r> {
                 for _ in p.dims() {
                     t = self.cx.arena_mut().array(t);
                 }
-                self.declare(node.id(), t, None);
+                // A multi-catch parameter's type is the `lub` of its alternatives, and javac
+                // records the union (observed:
+                // `java/lang/InterruptedException|java/lang/IllegalStateException`).
+                let shown = match p.ty() {
+                    Some(ast::Type::UnionType(u)) => {
+                        let mut parts = Vec::new();
+                        for alternative in u.types() {
+                            parts.push(self.syntax_type(alternative)?);
+                        }
+                        Some(self.cx.arena_mut().union(&parts))
+                    }
+                    _ => None,
+                };
+                self.locals.insert(
+                    node.id(),
+                    Local {
+                        ty: t,
+                        constant: None,
+                        shown,
+                    },
+                );
             }
             SyntaxKind::TypePattern => {
                 let p = ast::TypePattern::cast(node).unwrap();
@@ -2095,6 +2205,24 @@ impl<'s, 'r> Walker<'s, 'r> {
                     t = self.cx.arena_mut().array(t);
                 }
                 self.declare(node.id(), t, None);
+            }
+            // A condition converts to `boolean`: an unboxing, for a `Boolean`.
+            SyntaxKind::IfStmt
+            | SyntaxKind::WhileStmt
+            | SyntaxKind::DoStmt
+            | SyntaxKind::ForStmt
+            | SyntaxKind::AssertStmt => {
+                let condition = match node.kind() {
+                    SyntaxKind::IfStmt => ast::IfStmt::cast(node).unwrap().condition(),
+                    SyntaxKind::WhileStmt => ast::WhileStmt::cast(node).unwrap().condition(),
+                    SyntaxKind::DoStmt => ast::DoStmt::cast(node).unwrap().condition(),
+                    SyntaxKind::ForStmt => ast::ForStmt::cast(node).unwrap().condition(),
+                    _ => ast::AssertStmt::cast(node).unwrap().condition(),
+                };
+                if let Some(v) = child(children, id_of(condition)).cloned() {
+                    let boolean = self.primitive(Primitive::Boolean);
+                    self.record_conversion(&v, Context::Numeric, boolean)?;
+                }
             }
             SyntaxKind::ReturnStmt => {
                 let value = id_of(ast::ReturnStmt::cast(node).unwrap().value());
@@ -2149,7 +2277,14 @@ impl<'s, 'r> Walker<'s, 'r> {
     }
 
     fn declare(&mut self, node: NodeId, ty: TypeId, constant: Option<Constant>) {
-        self.locals.insert(node, Local { ty, constant });
+        self.locals.insert(
+            node,
+            Local {
+                ty,
+                constant,
+                shown: None,
+            },
+        );
     }
 
     /// A variable declarator: a local's type (`var` from its initializer's upward projection,
@@ -2207,7 +2342,7 @@ impl<'s, 'r> Walker<'s, 'r> {
         // A constant variable: final, of a primitive type or `String`, initialized with a
         // constant expression, converted by assignment to its type.
         let constant = match &init {
-            Some(v) if is_final && declared.is_some() => match (&v.constant, self.cx.get(ty)) {
+            Some(v) if is_final => match (&v.constant, self.cx.get(ty)) {
                 (Some(c), Type::Primitive(p)) => {
                     let fits = matches!(
                         self.cx.convert(Context::Assignment, v.ty, ty, Some(c))?,

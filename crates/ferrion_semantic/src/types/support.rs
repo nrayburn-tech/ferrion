@@ -197,6 +197,12 @@ impl TypeContext<'_> {
         self.top(|_| None, |cx| cx.implicit_outer(key, site))
     }
 
+    /// The outer type of the member class `key` written with the qualifier `o`
+    /// ([`TypeContext::member_outer`]).
+    pub(crate) fn outer_of_member(&mut self, key: TypeKey, o: TypeId) -> Result<TypeId, Cancelled> {
+        self.top(|_| o, |cx| cx.member_outer(key, o))
+    }
+
     /// A type variable's or capture variable's upper bound, the intersection of its bounds; any
     /// other type itself.
     pub fn upper_bound(&mut self, t: TypeId) -> Result<TypeId, Cancelled> {

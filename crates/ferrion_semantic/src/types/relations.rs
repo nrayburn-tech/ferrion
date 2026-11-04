@@ -360,6 +360,8 @@ impl TypeContext<'_> {
             Type::Error(e) => Ok(Tri::Unknown(Why::Error(e))),
             Type::Unknown(why) => Ok(Tri::Unknown(why)),
             Type::Primitive(_) | Type::Void | Type::Null => Ok(Tri::No),
+            // Only what a type is recorded as: relations ask about its `lub`.
+            Type::Union(_) => Ok(Tri::Unknown(Why::Later)),
         }
     }
 
@@ -438,6 +440,7 @@ impl TypeContext<'_> {
             Type::Error(e) => return Ok(Tri::Unknown(Why::Error(e))),
             Type::Unknown(why) => return Ok(Tri::Unknown(why)),
             Type::Void | Type::Null => Vec::new(),
+            Type::Union(_) => return Ok(Tri::Unknown(Why::Later)),
         }))
     }
 
@@ -471,17 +474,30 @@ impl TypeContext<'_> {
     }
 
     fn capture_with(&mut self, t: TypeId, memo: bool) -> R<TypeId> {
-        let Type::Class {
-            key,
-            outer,
-            args: Some(list),
-        } = self.arena.get(t)
-        else {
+        let Type::Class { key, outer, args } = self.arena.get(t) else {
             return Ok(t);
+        };
+        // The type it is a member of is captured too (W2's observation: a variable of type
+        // `Mall<? extends Number>.Shop<Integer>` reads as `Mall<capture#1 extends
+        // Number>.Shop<Integer>`).
+        let captured_outer = match outer {
+            Some(o) => Some(ferrion_stack::ensure_stack(|| self.capture_with(o, memo))?),
+            None => None,
+        };
+        let Some(list) = args else {
+            return Ok(if captured_outer == outer {
+                t
+            } else {
+                self.arena.class(key, captured_outer, None)
+            });
         };
         let args = self.arena.args(list).to_vec();
         if !args.iter().any(|a| matches!(a, TypeArg::Wildcard(_))) {
-            return Ok(t);
+            return Ok(if captured_outer == outer {
+                t
+            } else {
+                self.arena.class(key, captured_outer, Some(&args))
+            });
         }
         if memo && let Some(&c) = self.captured.get(&t) {
             return Ok(c);
@@ -491,6 +507,12 @@ impl TypeContext<'_> {
         let mut captures = Vec::new();
         for (i, arg) in args.iter().enumerate() {
             match *arg {
+                // `? super Object` captures to `Object` itself, its upper and lower bounds both
+                // (W2's observation in docs/design/semantic-attribution.md: `List<? super
+                // Object>` is `java/util/List<java/lang/Object>`).
+                TypeArg::Wildcard(Some((WildcardBound::Super, b))) if self.is_object(b)? => {
+                    new.push(TypeArg::Type(b));
+                }
                 TypeArg::Wildcard(w) => {
                     let c = self.arena.new_capture(TypeArg::Wildcard(w), key, i as u32);
                     new.push(TypeArg::Type(c));
@@ -499,7 +521,7 @@ impl TypeContext<'_> {
                 arg => new.push(arg),
             }
         }
-        let captured = self.arena.class(key, outer, Some(&new));
+        let captured = self.arena.class(key, captured_outer, Some(&new));
         // Memoized before its bounds are set, since they can capture `t` again; forgotten if
         // they can't be set.
         if memo {

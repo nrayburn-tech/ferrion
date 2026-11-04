@@ -135,3 +135,35 @@ fn a_signature_edit_that_changes_no_table_is_cut_off() {
     ]));
     assert_eq!(dumps, attribute(&fresh).1);
 }
+
+#[test]
+fn a_stale_snapshot_is_cancelled() {
+    let engine = Engine::new(project(FILES));
+    let stale = engine.snapshot();
+    let a = file(&engine, 0);
+    engine.set_text(a, Arc::from("package p;\npublic class A {}\n"));
+    assert!(stale.body_types(a).is_err());
+    assert!(stale.body_types(file(&engine, 2)).is_err());
+}
+
+/// Fuel is per body: one that runs out has the rest of its relation queries `Unknown(Limit)`,
+/// the walk carries on, and the next body starts afresh.
+#[test]
+fn a_body_out_of_fuel_is_unknown_and_the_next_is_not() {
+    let engine = Engine::new(project(&[(
+        "p/F.java",
+        "package p;\nclass F<T extends Comparable<T>> {\n    java.util.List<? extends T> xs;\n    Object a() { Object o = xs; Object p = xs; return p; }\n    Object b() { Object r = \"s\"; return r; }\n}\n",
+    )]));
+    let snapshot = engine.snapshot();
+    let f = file(&engine, 0);
+    let plenty = snapshot.attribute_with_fuel(f, 1 << 20).unwrap();
+    let most = plenty.most_fuel();
+    assert!(most > 1, "bodies use fuel: {most}");
+    let plenty = snapshot.dump_types(f, &plenty).unwrap();
+    assert!(!plenty.contains("unknown limit"), "{plenty}");
+    // Too little for `a`'s captures, enough for `b`.
+    let starved = snapshot.attribute_with_fuel(f, 2).unwrap();
+    let starved = snapshot.dump_types(f, &starved).unwrap();
+    assert!(starved.contains("`xs`: unknown limit"), "{starved}");
+    assert!(starved.contains("`\"s\"`: java/lang/String"), "{starved}");
+}

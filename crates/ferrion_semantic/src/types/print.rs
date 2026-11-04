@@ -196,6 +196,10 @@ impl TypeContext<'_> {
                 let parts = self.arena.list(list).to_vec();
                 self.join(w, &parts, "&")?;
             }
+            Type::Union(list) => {
+                let parts = self.arena.list(list).to_vec();
+                self.join(w, &parts, "|")?;
+            }
             Type::Error(e) => {
                 let name = self.names.text(self.arena.error_symbol(e).name);
                 w.out.push_str("error ");

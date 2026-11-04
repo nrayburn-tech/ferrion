@@ -18,7 +18,7 @@ use super::{Active, R, Tri, Type, TypeArg, TypeContext, TypeId, Why};
 use crate::Cancelled;
 use crate::body::Map;
 use crate::summary::WildcardBound;
-use crate::symbols::TypeKey;
+use crate::symbols::{TypeKey, TypeVarOwner};
 
 /// A candidate of a least upper bound: an erased class, or a type variable.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -480,6 +480,58 @@ impl TypeContext<'_> {
         })
     }
 
+    /// Whether the declared bound of `key`'s `index`th type parameter neither mentions one of
+    /// `key`'s type parameters nor fails to be a subtype of `u`: then upward projection gives
+    /// `?` rather than `? extends u` (JLS 4.10.5).
+    fn bound_says(&mut self, key: TypeKey, index: u32, u: TypeId) -> R<bool> {
+        let bounds = self.var_bounds(TypeVarOwner::Type(key), index)?.to_vec();
+        for &b in &bounds {
+            if self.mentions_params_of(b, key)? {
+                return Ok(false);
+            }
+        }
+        let bound = self.arena.intersection(&bounds);
+        Ok(self.subtype_(bound, u)?.is_yes())
+    }
+
+    /// Whether a type mentions a type parameter of the class `key`.
+    fn mentions_params_of(&mut self, t: TypeId, key: TypeKey) -> R<bool> {
+        self.step()?;
+        Ok(match self.arena.get(t) {
+            Type::Var(TypeVarOwner::Type(k), _) => k == key,
+            Type::Class { outer, args, .. } => {
+                if let Some(o) = outer
+                    && ferrion_stack::ensure_stack(|| self.mentions_params_of(o, key))?
+                {
+                    return Ok(true);
+                }
+                let args = args
+                    .map(|a| self.arena.args(a).to_vec())
+                    .unwrap_or_default();
+                for a in args {
+                    let t = match a {
+                        TypeArg::Type(t) | TypeArg::Wildcard(Some((_, t))) => t,
+                        TypeArg::Wildcard(None) => continue,
+                    };
+                    if ferrion_stack::ensure_stack(|| self.mentions_params_of(t, key))? {
+                        return Ok(true);
+                    }
+                }
+                false
+            }
+            Type::Array(c) => ferrion_stack::ensure_stack(|| self.mentions_params_of(c, key))?,
+            Type::Intersection(list) => {
+                for p in self.arena.list(list).to_vec() {
+                    if ferrion_stack::ensure_stack(|| self.mentions_params_of(p, key))? {
+                        return Ok(true);
+                    }
+                }
+                false
+            }
+            _ => false,
+        })
+    }
+
     /// The upward projection, or `None` where a capture variable's bound mentions itself, which
     /// leaves `?` (observation 9: `Enum<?>`'s capture projects to `Enum<?>`).
     fn upward(&mut self, t: TypeId, active: &mut Vec<TypeId>) -> R<Option<TypeId>> {
@@ -507,12 +559,19 @@ impl TypeContext<'_> {
                     .map(|a| self.arena.args(a).to_vec())
                     .unwrap_or_default();
                 let mut new = Vec::with_capacity(old.len());
-                for arg in old {
+                for (i, arg) in old.into_iter().enumerate() {
                     new.push(match arg {
                         TypeArg::Type(a) if !self.mentions_capture(a)? => arg,
                         TypeArg::Type(a) => {
                             match ferrion_stack::ensure_stack(|| self.upward(a, active))? {
-                                Some(u) if !self.is_object(u)? => {
+                                // `? extends U` unless the parameter's declared bound says as
+                                // much: it doesn't mention the class's parameters and is below
+                                // `U` (JLS 4.10.5; W2's observation: `var` of `(F<T, ?>) x`
+                                // with `F<T, A extends Annotation>` is `F<T,?>`).
+                                Some(u)
+                                    if !self.is_object(u)?
+                                        && !self.bound_says(key, i as u32, u)? =>
+                                {
                                     TypeArg::Wildcard(Some((WildcardBound::Extends, u)))
                                 }
                                 Some(_) | None => match self.downward(a)? {
