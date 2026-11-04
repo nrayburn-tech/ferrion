@@ -264,6 +264,7 @@ pub fn run(options: Options) -> Result<bool> {
         report.source_sets.push(result.row);
         report.mismatches.extend(result.mismatches);
         report.crashes.extend(result.crashes);
+        report.stale_generated.extend(result.stale_generated);
         report.errors.extend(result.errors);
     }
     report.wall_seconds = start.elapsed().as_secs_f64();
@@ -297,6 +298,7 @@ struct SetResult {
     row: SetRow,
     mismatches: Vec<MismatchRow>,
     crashes: Vec<(String, String)>,
+    stale_generated: Vec<String>,
     errors: Vec<(String, String)>,
 }
 
@@ -434,12 +436,14 @@ fn run_set(context: &Shared, group: usize, i: usize) -> Result<SetResult> {
                 row,
                 mismatches: Vec::new(),
                 crashes: Vec::new(),
+                stale_generated: Vec::new(),
                 errors: Vec::new(),
             });
         }
     };
     let mut mismatches = Vec::new();
     let mut crashes = Vec::new();
+    let mut stale_generated = Vec::new();
     let mut errors = Vec::new();
     if let Some(crash) = &output.set.crash {
         tally.source_set_crashes = 1;
@@ -515,6 +519,15 @@ fn run_set(context: &Shared, group: usize, i: usize) -> Result<SetResult> {
             tally.excluded.ferrion_failures += 1;
             continue;
         }
+        let bytes = std::fs::read(context.corpus.join(&file.file))
+            .with_context(|| format!("reading {}", file.file))?;
+        let source = SourceText::decode(bytes).map_err(|e| anyhow!("{}: {e}", file.file))?;
+        // A cached run's processors may have written other text than what is there now.
+        if generated && !compare::fits_text(file, source.text()) {
+            tally.excluded.stale_generated += 1;
+            stale_generated.push(display);
+            continue;
+        }
         tally.compared_files += 1;
         tally.lombok_types += file.lombok.len() as u64;
         let parts = compare::parts(file);
@@ -526,9 +539,6 @@ fn run_set(context: &Shared, group: usize, i: usize) -> Result<SetResult> {
             tally.comparison.not_compared += b2;
             continue;
         };
-        let bytes = std::fs::read(context.corpus.join(&file.file))
-            .with_context(|| format!("reading {}", file.file))?;
-        let source = SourceText::decode(bytes).map_err(|e| anyhow!("{}: {e}", file.file))?;
         let offsets = Offsets::new(&source);
         let ours = names.get(&file.file).map_or(&[][..], Vec::as_slice);
         let compared = compare::compare(file, &parts, ours, &offsets);
@@ -564,6 +574,7 @@ fn run_set(context: &Shared, group: usize, i: usize) -> Result<SetResult> {
         row,
         mismatches,
         crashes,
+        stale_generated,
         errors,
     })
 }
