@@ -153,6 +153,11 @@ jobs:
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
+      # No file panics, or takes more than the provisional 10 s. Without javac: about 3 s.
+      - name: Attribute javac's tests
+        run: cargo oracle attribute jdk-tests --json attribute-report.json
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
       - name: Upload the reports
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -346,11 +351,17 @@ jobs:
         run: cargo corpus generate
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
-      # The relation queries (B3a), with Ferrion's side: every source set compiles, and the report
-      # gives the entries, the relation queries, and javac's analysis time per file. Attribution's
-      # entries are compared from B3b.
-      - name: Compare type relations with javac
-        run: cargo oracle types --relations --jobs 2 --heap 5g --json types-report.json
+      # The relation queries (B3a) and the files' attribution (B3b), with Ferrion's side: every
+      # source set compiles, and the report gives the entries, the relation queries, and javac's
+      # analysis time per file.
+      - name: Compare type attribution and relations with javac
+        run: cargo oracle types --jobs 2 --heap 5g --json types-report.json
+        env:
+          FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
+          FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
+      # From the cache the step above filled: this runs no javac, and takes about two minutes.
+      - name: Check that a removed symbol is never a guess
+        run: cargo oracle removed --json removed-report.json
         env:
           FERRION_CORPUS_DIR: ${{ runner.temp }}/corpus
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
@@ -359,5 +370,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: types-report
-          path: types-report.json
+          path: |
+            types-report.json
+            removed-report.json
           if-no-files-found: ignore

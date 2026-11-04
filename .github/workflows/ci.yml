@@ -293,9 +293,14 @@ jobs:
         run: cargo oracle names --replay jedis
         env:
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
-      # The relation queries (B3a), with Ferrion's side, for the same project: about 15 seconds,
-      # nearly all of it javac's. Attribution's entries are counted, and compared from B3b.
-      - name: Compare type relations with javac
-        run: cargo oracle types --relations jedis
+      # The relation queries (B3a) and the files' attribution (B3b), with Ferrion's side, for the
+      # same project: about 15 seconds, nearly all of it javac's.
+      - name: Compare type attribution and relations with javac
+        run: cargo oracle types jedis
+        env:
+          FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
+      # From the cache the step above filled: no javac, a few seconds.
+      - name: Check that a removed symbol is never a guess
+        run: cargo oracle removed jedis
         env:
           FERRION_ORACLE_CACHE: ${{ runner.temp }}/oracle
