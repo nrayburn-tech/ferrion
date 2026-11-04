@@ -405,6 +405,14 @@ impl<K: Clone + Eq + Hash, V: Hash> DerivedTable<K, V> {
         self.shards.iter().map(|s| read(s).len()).sum()
     }
 
+    /// A sum over the entries' values.
+    pub(crate) fn sum(&self, of: impl Fn(&V) -> usize) -> usize {
+        self.shards
+            .iter()
+            .map(|s| read(s).values().map(|m| of(&m.value)).sum::<usize>())
+            .sum()
+    }
+
     pub(crate) fn stats(&self) -> TableStats {
         TableStats {
             computed: self.computed.load(Ordering::Relaxed),

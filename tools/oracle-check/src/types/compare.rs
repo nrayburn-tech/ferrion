@@ -6,8 +6,7 @@
 //! variables' finality and types; and, per source set, answers to the oracle's relation queries.
 //! Entries are matched by javac's range (an implicit call by its start alone), and compared as
 //! strings. A Ferrion value starting with `left-to-` (`left-to-b3c inference`) says a later
-//! milestone types it, and [`WAITING`] that it waits for overload resolution: counted apart, never
-//! a mismatch.
+//! milestone types it: counted apart, never a mismatch.
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::Path;
@@ -18,9 +17,6 @@ use ferrion_diagnostics::Span;
 use super::oracle::{Answer, FileOutput, Query, Relations};
 use crate::names::ferrion::Offsets;
 use crate::names::plan::SourceSet;
-
-/// A Ferrion value that waits for overload resolution (W3's calls), counted apart.
-pub const WAITING: &str = "waiting-for-calls";
 
 /// An expression's type or a constant's value, as Ferrion gives it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -62,8 +58,6 @@ pub struct FileTypes {
     /// a record's, which have no counterpart: the class's own position, where no other variable
     /// can be.
     pub implicit_parameters: Vec<u32>,
-    /// Calls javac made up aren't given yet: until overload resolution they wait.
-    pub implicit_calls_wait: bool,
     /// The byte ranges of annotations on record components, whose values javac drops from its
     /// trees unless the annotation applies to fields: entries in them are compared if javac has
     /// them, and counted apart if it doesn't.
@@ -250,8 +244,6 @@ pub struct Compared {
     pub extras: Vec<Extra>,
     /// Ferrion's entries that a later milestone types (`left-to-...`).
     pub left: u64,
-    /// Ferrion's entries that wait for overload resolution.
-    pub waiting: u64,
     /// Entries counted apart, by aspect and what they wait for (`left-to-b3c`, ...).
     pub apart: BTreeMap<(Aspect, String), u64>,
     /// javac's parameters of implicit constructors: no counterpart.
@@ -267,10 +259,6 @@ impl Compared {
         match &entry.ferrion {
             Some(ours) if ours.starts_with("left-to-") => {
                 self.left += 1;
-                self.count_apart(entry.aspect, ours);
-            }
-            Some(ours) if ours == WAITING => {
-                self.waiting += 1;
                 self.count_apart(entry.aspect, ours);
             }
             Some(ours) if *ours == entry.javac => {
@@ -368,7 +356,7 @@ pub fn compare(file: &FileOutput, ours: &FileTypes, offsets: &Offsets) -> Compar
         let found = constants.get(&(c.start, c.end)).or_else(|| {
             expressions
                 .get(&(c.start, c.end))
-                .filter(|value| value.starts_with("left-to-") || **value == WAITING)
+                .filter(|value| value.starts_with("left-to-"))
         });
         used.insert((Aspect::Constant, c.start, c.end));
         compared.check(
@@ -380,11 +368,6 @@ pub fn compare(file: &FileOutput, ours: &FileTypes, offsets: &Offsets) -> Compar
         used.insert((Aspect::Call, c.start, c.end));
         let found = calls.get(&(c.start, c.end));
         let method = found.map(|f| f.method.as_str());
-        if found.is_none() && c.end < 0 && ours.implicit_calls_wait {
-            compared.waiting += 1;
-            compared.count_apart(Aspect::Call, WAITING);
-            continue;
-        }
         compared.check(
             mismatch(
                 Aspect::Call,
@@ -464,9 +447,6 @@ pub fn compare(file: &FileOutput, ours: &FileTypes, offsets: &Offsets) -> Compar
             compared.dropped_annotations += 1;
         } else if value.starts_with("left-to-") {
             compared.left += 1;
-            compared.count_apart(aspect, value);
-        } else if value == WAITING {
-            compared.waiting += 1;
             compared.count_apart(aspect, value);
         } else {
             compared.extras.push(Extra {
@@ -857,25 +837,24 @@ mod tests {
     }
 
     #[test]
-    fn waiting_values_are_counted_apart() {
+    fn a_later_milestones_values_are_counted_apart() {
         let offsets = Offsets::from_text("x ? a : b y;", false);
+        let left = "left-to-b3c inference";
         let ours = FileTypes {
-            expressions: vec![typed(0, 1, WAITING)],
+            expressions: vec![typed(0, 1, left)],
             calls: vec![TypedCall {
                 span: Span { start: 2, end: 7 },
                 implicit: false,
-                method: WAITING.into(),
+                method: left.into(),
                 ty: None,
             }],
             implicit_parameters: vec![8],
-            implicit_calls_wait: true,
             ..FileTypes::default()
         };
         let compared = compare(&file(), &ours, &offsets);
-        // The expression, its constant, and both calls, one of them javac's own.
-        assert_eq!(compared.waiting, 4);
-        assert_eq!(compared.apart[&(Aspect::Call, WAITING.to_owned())], 2);
-        assert_eq!(compared.apart[&(Aspect::Expression, WAITING.to_owned())], 1);
+        let label = "left-to-b3c".to_owned();
+        assert_eq!(compared.apart[&(Aspect::Call, label.clone())], 1);
+        assert_eq!(compared.apart[&(Aspect::Expression, label)], 1);
         // The variable's kind is `LOCAL_VARIABLE`: only a parameter is an implicit one.
         assert_eq!(compared.implicit_parameters, 0);
         assert!(

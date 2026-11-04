@@ -4,7 +4,7 @@
 //! name are [`RELATIONS_JDK`](crate::testing::RELATIONS_JDK)'s stand-ins for the JDK's, and
 //! classes of the input itself where javac's answer doesn't depend on the JDK's members.
 
-use super::tests::{Expr, engine, expressions, ty};
+use super::tests::{Expr, engine, expressions, expressions_in, ty};
 use crate::SourceSetId;
 
 /// One call: its source text (white space collapsed), javac's key for its method, and its type as
@@ -18,7 +18,10 @@ struct CallRow {
 }
 
 fn calls(source: &str) -> Vec<CallRow> {
-    let engine = engine(&format!("//- file main Q.java\n{source}"));
+    calls_of(&engine(&format!("//- file main Q.java\n{source}")))
+}
+
+fn calls_of(engine: &crate::Engine) -> Vec<CallRow> {
     let snapshot = engine.snapshot();
     let file = snapshot.files(SourceSetId::from_index(0)).unwrap()[0];
     let types = snapshot.body_types(file).unwrap();
@@ -27,7 +30,10 @@ fn calls(source: &str) -> Vec<CallRow> {
         .calls
         .iter()
         .map(|(node, call)| {
-            let text = snapshot.call_text(file, &types, *node, call).unwrap();
+            let mut cx = snapshot.types_in(SourceSetId::from_index(0), types.arena.clone());
+            let text = snapshot
+                .call_text(file, &mut cx, &types, *node, call)
+                .unwrap();
             CallRow {
                 text: tree
                     .node(*node)
@@ -521,7 +527,10 @@ class O { void g(H h) { h.hpick(1); } }
         .calls
         .iter()
         .map(|(node, call)| {
-            let text = snapshot.call_text(file, &types, *node, call).unwrap();
+            let mut cx = snapshot.types_in(SourceSetId::from_index(0), types.arena.clone());
+            let text = snapshot
+                .call_text(file, &mut cx, &types, *node, call)
+                .unwrap();
             CallRow {
                 text: tree.node(*node).text().to_owned(),
                 method: text.method,
@@ -736,7 +745,10 @@ class R { void f() { over(1); over(\"a\"); over(new Object()); hid(); } }
             .calls
             .iter()
             .map(|(node, call)| {
-                let text = snapshot.call_text(file, &types, *node, call).unwrap();
+                let mut cx = snapshot.types_in(SourceSetId::from_index(0), types.arena.clone());
+                let text = snapshot
+                    .call_text(file, &mut cx, &types, *node, call)
+                    .unwrap();
                 CallRow {
                     text: tree.node(*node).text().to_owned(),
                     method: text.method,
@@ -875,4 +887,168 @@ fn object_methods_and_interfaces() {
         "method Co.toString()Ljava/lang/String;"
     );
     assert_eq!(method(&rows, "ac.hashCode()"), object);
+}
+
+/// Raw types, as javac counts them. Passed for a parameter all of whose arguments are unbounded
+/// wildcards, the method's result stays (`h(raw)`, `h4(rawc)`, `Class[]` for `Class<?>[]`); for any
+/// other, it is erased (`h3(raw)`, `h7(rawl)`). The same for an explicit type argument's bound:
+/// `this.<C>any()` for `C extends Cm` and a bound `Cm<?>` stays, `this.<Cm>self()` for a bound
+/// `Cm<? super T>` is erased.
+#[test]
+fn raw_types_and_unchecked_conversions() {
+    let rows = calls(
+        "import java.util.*;
+         interface Cm<O> { }
+         class Q<C extends Cm> {
+           static List<String> h(List<?> l) { return null; }
+           static List<String> h3(List<? extends Number> l) { return null; }
+           static List<String> h4(Class<?>[] l) { return null; }
+           static List<String> h5(Class<?>... l) { return null; }
+           static List<String> h7(List<String>[] l) { return null; }
+           <D extends Cm<?>> List<D> any() { return null; }
+           <T extends Cm<? super T>> List<T> self() { return null; }
+           void f(List raw, Class[] rawc, List[] rawl) {
+             h(raw); h3(raw); h4(rawc); h5(rawc); h7(rawl);
+             this.<C>any(); this.<Cm>self();
+           }
+         }",
+    );
+    let kept = "java/util/List<java/lang/String>";
+    assert_eq!(
+        invoked(&rows, "h(raw)"),
+        format!("(java/util/List<?>){kept}")
+    );
+    assert_eq!(
+        invoked(&rows, "h3(raw)"),
+        "(java/util/List<? extends java/lang/Number>)java/util/List"
+    );
+    assert_eq!(
+        invoked(&rows, "h4(rawc)"),
+        format!("(java/lang/Class<?>[]){kept}")
+    );
+    assert_eq!(
+        invoked(&rows, "h5(rawc)"),
+        format!("(java/lang/Class<?>[]){kept}")
+    );
+    assert_eq!(
+        invoked(&rows, "h7(rawl)"),
+        "(java/util/List<java/lang/String>[])java/util/List"
+    );
+    assert_eq!(invoked(&rows, "this.<C>any()"), "()java/util/List<C:Q>");
+    assert_eq!(invoked(&rows, "this.<Cm>self()"), "()java/util/List");
+}
+
+/// Capture's bounds can ask about a later capture variable (helidon's `RouterImpl`). javac:
+/// `capture#1 extends B<capture#1,capture#2 extends R>`, one bound, where the wildcard's is above
+/// the declared one once the second variable's bound is known.
+#[test]
+fn capture_bounds_see_each_other() {
+    let e = expressions(
+        "interface R { }
+         interface B<S extends B<S, T>, T> { }
+         class Q { void f(B<? extends B<?, ? extends R>, ? extends R> previous) { Object o = previous; } }",
+    );
+    assert_eq!(
+        ty(&e, "previous"),
+        "B<capture#1 extends B<capture#1,capture#2 extends R>,capture#2>"
+    );
+}
+
+/// Signature polymorphic methods (JLS 15.12.3). javac: the parameters are the arguments' types,
+/// class types erased, `null` `Void`, a type variable and an array of one staying; a result
+/// declared `Object` is `void` as a statement, `Object` anywhere else, and a cast's type around
+/// the call, through parentheses, as written up to `--release 23` and erased from 24 on; one
+/// declared otherwise is as declared.
+#[test]
+fn signature_polymorphic_methods() {
+    let source = "import java.util.*;
+         import java.lang.invoke.*;
+         class Q<E> {
+           void f(MethodHandle mh, VarHandle vh, List<String> ls, E e, E[] ae, int[] ia) throws Throwable {
+             mh.invoke(1); mh.invoke(null, ls); mh.invoke(e, ae, ia); mh.invoke();
+             Object r = mh.invoke(\"a\", 2L);
+             int i = (int) mh.invoke(\'c\');
+             E t = (E) (mh.invoke(1, 1));
+             List<String> l = (List<String>) mh.invoke(ls);
+             for (mh.invoke(5);;mh.invoke(6)) { break; }
+             vh.set(this, 1); boolean b = vh.compareAndSet(this, 1, 2);
+           }
+         }";
+    let rows = calls(source);
+    assert_eq!(invoked(&rows, "mh.invoke(1)"), "(int)void");
+    assert_eq!(
+        method(&rows, "mh.invoke(1)"),
+        "method java/lang/invoke/MethodHandle.invoke([Ljava/lang/Object;)Ljava/lang/Object;"
+    );
+    assert_eq!(
+        invoked(&rows, "mh.invoke(null, ls)"),
+        "(java/lang/Void,java/util/List)void"
+    );
+    assert_eq!(
+        invoked(&rows, "mh.invoke(e, ae, ia)"),
+        "(E:Q,E:Q[],int[])void"
+    );
+    assert_eq!(invoked(&rows, "mh.invoke()"), "()void");
+    assert_eq!(
+        invoked(&rows, "mh.invoke(\"a\", 2L)"),
+        "(java/lang/String,long)java/lang/Object"
+    );
+    assert_eq!(invoked(&rows, "mh.invoke('c')"), "(char)int");
+    assert_eq!(invoked(&rows, "mh.invoke(1, 1)"), "(int,int)E:Q");
+    assert_eq!(
+        invoked(&rows, "mh.invoke(ls)"),
+        "(java/util/List)java/util/List<java/lang/String>"
+    );
+    assert_eq!(invoked(&rows, "mh.invoke(5)"), "(int)void");
+    assert_eq!(invoked(&rows, "mh.invoke(6)"), "(int)void");
+    assert_eq!(invoked(&rows, "vh.set(this, 1)"), "(Q,int)void");
+    assert_eq!(
+        invoked(&rows, "vh.compareAndSet(this, 1, 2)"),
+        "(Q,int,int)boolean"
+    );
+    let e = expressions(source);
+    assert_eq!(ty(&e, "mh.invoke('c')"), "int");
+    // From release 24 on, the cast's type is erased.
+    let engine = crate::Engine::new(crate::testing::relations_input_at(
+        25,
+        &format!("//- file main Q.java\n{source}"),
+    ));
+    let rows = calls_of(&engine);
+    assert_eq!(
+        invoked(&rows, "mh.invoke(1, 1)"),
+        "(int,int)java/lang/Object"
+    );
+    assert_eq!(
+        invoked(&rows, "mh.invoke(ls)"),
+        "(java/util/List)java/util/List"
+    );
+    assert_eq!(
+        invoked(&rows, "mh.invoke(e, ae, ia)"),
+        "(E:Q,E:Q[],int[])void"
+    );
+}
+
+/// A member of a Lombok-annotated type, or a subclass's, waits for B4, for a method chosen too;
+/// a creation's type is the class named.
+#[test]
+fn lombok_types_wait_for_b4() {
+    let e = expressions_in(
+        "//- file main lombok/Data.java
+package lombok;
+public @interface Data { }
+//- file main Q.java
+import lombok.Data;
+@Data class L { int a; int m() { return 0; } }
+class S extends L { }
+class Q { void f(L l, S s) { l.m(); s.m(); l.getA(); new L(); new L().m(); L.builder(); } }
+",
+        "Q.java",
+    );
+    let b4 = "left-to-b4 lombok";
+    assert_eq!(ty(&e, "l.m()"), b4);
+    assert_eq!(ty(&e, "s.m()"), b4);
+    assert_eq!(ty(&e, "l.getA()"), b4);
+    assert_eq!(ty(&e, "new L()"), "L");
+    assert_eq!(ty(&e, "new L().m()"), b4);
+    assert_eq!(ty(&e, "L.builder()"), b4);
 }

@@ -484,7 +484,6 @@ fn run_set(context: &Shared, group: usize, i: usize) -> Result<SetResult> {
                 .or_default() += count;
         }
         tally.comparison.left += compared.left;
-        tally.comparison.waiting += compared.waiting;
         tally.comparison.implicit_parameters += compared.implicit_parameters;
         tally.comparison.dropped_annotations += compared.dropped_annotations;
         for ((aspect, label), count) in &compared.apart {

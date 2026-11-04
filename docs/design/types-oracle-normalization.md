@@ -263,9 +263,8 @@ For each source set, as in `names`:
    parts in another order), `type`, `value` (a constant), `method` (another method chosen),
    `instantiation` (the same method, another type as invoked), `finality`, and `answer` (a
    relation). A Ferrion value starting with `left-to-` (`left-to-b3c inference`) is a later
-   milestone's, and counted apart, per aspect; `waiting-for-calls` is one that waits for overload
-   resolution, counted apart under its own label until W3's calls land. So is a constant javac
-   has at an expression with such a value, which can't have one yet. A mismatch listed in
+   milestone's, and counted apart, per aspect. So is a constant javac has at an expression with
+   such a value, which can't have one yet. A mismatch listed in
    `tools/oracle-check/differences/types-known.txt` (`<category> <file> <aspect> <start>-<end>`,
    and for a relation query `<category> <source set> relation <i>-<i>`) counts under its known
    category. An entry Ferrion has where javac has none is `extra`, and fails the run as a mismatch
@@ -309,15 +308,17 @@ oracle's output on it:
 
 Ferrion's types print as the oracle's, and `local <path>:<byte offset>` in any of them is converted
 as above. Until B3d, a variable's finality is `left-to-b3d finality`. A call with no chosen method
-is `waiting-for-calls` or `left-to-b3c inference`, by what its type says, and javac's implicit calls
-all wait, until W3 sets `IMPLICIT_CALLS_WAIT`.
+says why: `left-to-b3c inference`, or `left-to-b4 lombok` for a type with a Lombok annotation on it
+or a supertype, from its type, or for a creation or constructor call from `BodyTypes::unchosen`.
 
 W3's chosen methods are read from `BodyTypes::calls` by node (`call_position` in the adapter): a
-method invocation, an explicit constructor call, or a creation at its range; a call recorded at a
-class body or an enum constant without a body but with arguments at the [enum creation
-range](#calls); javac's made-up calls by their start alone, recorded at a constructor or its block
-(its `{`), an anonymous class's body (its `{`), a class without a constructor (its keyword), or an
-enum constant (its name).
+method invocation, an explicit constructor call, or a creation at its range; an enum constant with
+arguments or a body at the [enum creation range](#calls); javac's made-up calls by their start
+alone, recorded at a constructor's block (its `{`), a class without a constructor (its keyword),
+or an enum constant with neither (its name). A creation of an anonymous class, and an enum constant
+with a body, are two of javac's calls from one of Ferrion's: the anonymous class's own constructor
+at the creation's range, and the superclass's in its implicit `super(...)` at the body's `{` or the
+constant's name.
 
 ## Generated text that changes
 

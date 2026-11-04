@@ -22,7 +22,7 @@ pub(super) fn engine(files: &str) -> Engine {
 }
 
 /// The expressions of the file named `path` in `files` (a case's `//- file` lines and texts).
-fn expressions_in(files: &str, path: &str) -> Vec<Expr> {
+pub(super) fn expressions_in(files: &str, path: &str) -> Vec<Expr> {
     let engine = engine(files);
     let snapshot = engine.snapshot();
     let set = SourceSetId::from_index(0);

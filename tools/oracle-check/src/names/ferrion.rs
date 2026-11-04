@@ -43,6 +43,7 @@ use corpus::project::Project;
 use ferrion_classfile::ArchiveCache;
 use ferrion_diagnostics::{LineIndex, SourceText, Span};
 use ferrion_project::{Environment, InputError, InputFlags, TypeInputs};
+use ferrion_semantic::attr::BODY_FUEL;
 use ferrion_semantic::decl_names::{self, Symbol};
 use ferrion_semantic::{Cancelled, Engine, FileId, FileInput, ProjectInput, Snapshot, SourceSetId};
 use ferrion_syntax::{SyntaxKind, SyntaxTree};
@@ -471,22 +472,26 @@ fn file_names(
     let offsets = Offsets::from_text(&text, bom);
     let tree = snapshot.tree(file)?;
     let names = snapshot.file_names(file)?;
+    // What attribution settled of what B2 couldn't: a `case` name by its selector's type, a
+    // statically imported method by the method chosen, a field of an expression's type.
+    let types = snapshot.attribute_with_fuel(file, BODY_FUEL)?;
     let path = info.path.display().to_string();
     // Keys repeat within a file, and a source type's key looks up its file.
     let mut keys: HashMap<&Symbol, String> = HashMap::new();
     let mut out = Vec::with_capacity(names.names.len());
     for name in names.names.iter() {
-        let key = match keys.get(&name.symbol) {
+        let symbol = types.resolved_name(name.node).unwrap_or(&name.symbol);
+        let key = match keys.get(symbol) {
             Some(key) => key.clone(),
             None => {
-                let key = match &name.symbol {
+                let key = match symbol {
                     Symbol::Methods { search, .. } => {
                         snapshot.symbol_key(&Symbol::Type(*search))?.0
                     }
                     symbol => snapshot.symbol_key(symbol)?.0,
                 };
                 let key = oracle_key(&local_offsets(&key, &path, &offsets), corpus);
-                keys.insert(&name.symbol, key.clone());
+                keys.insert(symbol, key.clone());
                 key
             }
         };

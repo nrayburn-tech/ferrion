@@ -13,5 +13,13 @@
 #
 #   <category> <file> <aspect> <start>-<end>
 #
-# None: B3a's relation queries and what B3b's walk types without overload resolution have no known
-# differences (docs/design/types-oracle-normalization.md, "Known differences").
+category javac-unresolved: a class that a jar's method names and javac's compilation doesn't resolve, where Ferrion's view has it: javac reports the method's descriptor with the class's dotted name (`Lcom.fasterxml.jackson.databind.Module;`), and types with an `error` type in them; the same classes W1 found among relation queries, which are left out for it
+
+javac-unresolved jedis/src/test/java/redis/clients/jedis/util/JsonObjectMapperTestUtil.java call 704-743
+javac-unresolved helidon/graphql/server/src/main/java/io/helidon/graphql/server/InvocationHandler.java call 6938-7052
+javac-unresolved helidon/common/reactive/src/test/java/io/helidon/common/reactive/jmh/BaselineJMH.java expression 1730-1751
+javac-unresolved helidon/common/reactive/src/test/java/io/helidon/common/reactive/jmh/BaselineJMH.java call 1730-1751
+javac-unresolved helidon/common/reactive/src/test/java/io/helidon/common/reactive/jmh/FlatMapIterableJMH.java expression 1671-1692
+javac-unresolved helidon/common/reactive/src/test/java/io/helidon/common/reactive/jmh/FlatMapIterableJMH.java call 1671-1692
+javac-unresolved helidon/common/reactive/src/test/java/io/helidon/common/reactive/jmh/ShakespearePlaysScrabbleWithHelidonReactiveOpt.java expression 2285-2306
+javac-unresolved helidon/common/reactive/src/test/java/io/helidon/common/reactive/jmh/ShakespearePlaysScrabbleWithHelidonReactiveOpt.java call 2285-2306

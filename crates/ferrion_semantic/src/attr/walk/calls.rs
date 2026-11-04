@@ -231,6 +231,16 @@ impl<'s> Walker<'s, '_> {
             Ok(chosen) => chosen,
             Err(t) => return Ok(self.expr(id, t)),
         };
+        if search.of.is_none() {
+            self.resolved.push((
+                id,
+                Symbol::Methods {
+                    search: chosen.method.owner,
+                    name,
+                    candidates: Arc::from(search.methods.as_slice()),
+                },
+            ));
+        }
         self.method_result(node, chosen, &search, &args)
     }
 
@@ -256,10 +266,10 @@ impl<'s> Walker<'s, '_> {
             return Ok(Err(self.unknown(Why::LeftToB3c)));
         }
         let Some(table) = self.members(search)? else {
-            return Ok(Err(self.unknown(Why::Incomplete(search))));
+            return Ok(Err(self.incomplete(search)));
         };
         if table.incomplete {
-            return Ok(Err(self.unknown(Why::Incomplete(search))));
+            return Ok(Err(self.incomplete(search)));
         }
         let methods: Vec<MethodRef> = table.methods(name).iter().map(|m| m.method).collect();
         let (of, qualifier) = match receiver {
@@ -293,7 +303,7 @@ impl<'s> Walker<'s, '_> {
             if let Some(table) = self.members(m.owner)?
                 && table.incomplete
             {
-                return Ok(Err(self.unknown(Why::Incomplete(m.owner))));
+                return Ok(Err(self.incomplete(m.owner)));
             }
         }
         let methods = self.without_overridden(None, methods)?;
@@ -353,10 +363,10 @@ impl<'s> Walker<'s, '_> {
         let mut methods: Vec<MethodRef> = Vec::new();
         for key in parts {
             let Some(table) = self.members(key)? else {
-                return Ok(Err(self.unknown(Why::Incomplete(key))));
+                return Ok(Err(self.incomplete(key)));
             };
             if table.incomplete {
-                return Ok(Err(self.unknown(Why::Incomplete(key))));
+                return Ok(Err(self.incomplete(key)));
             }
             self.gather(&table, name, &mut methods);
         }
@@ -1301,7 +1311,7 @@ impl<'s> Walker<'s, '_> {
     ) -> Result<Result<Chosen, TypeId>, Cancelled> {
         // Lombok may add constructors (until B4).
         if self.cx.is_lombok(key)? {
-            return Ok(Err(self.unknown(Why::Incomplete(key))));
+            return Ok(Err(self.unknown(Why::LeftToB4)));
         }
         let methods: Vec<MethodRef> = self
             .cx
@@ -1345,6 +1355,7 @@ impl<'s> Walker<'s, '_> {
             && let Some(why) = self.non_answer(o.ty)
         {
             let t = self.non_answer_type(why);
+            self.unchosen.push((id, t));
             return Ok(self.expr(id, t));
         }
         let Some(ty) = new.ty() else {
@@ -1355,11 +1366,13 @@ impl<'s> Walker<'s, '_> {
             if c.type_arguments().is_some_and(|a| a.arguments().next().is_none()));
         if diamond {
             let t = self.unknown(Why::LeftToB3c);
+            self.unchosen.push((id, t));
             return Ok(self.expr(id, t));
         }
         let written = self.created_type(ty, outer.as_ref())?;
         if let Some(why) = self.non_answer(written) {
             let t = self.non_answer_type(why);
+            self.unchosen.push((id, t));
             return Ok(self.expr(id, t));
         }
         let Type::Class { key, .. } = self.cx.get(written) else {
@@ -1391,7 +1404,8 @@ impl<'s> Walker<'s, '_> {
                 self.record_constructor(id, chosen);
             }
             Err(t) => {
-                if let Some(Why::Error(_)) = self.non_answer(t) {
+                self.unchosen.push((id, t));
+                if matches!(self.cx.get(t), Type::Error(_)) {
                     return Ok(self.expr(id, t));
                 }
             }
@@ -1499,11 +1513,14 @@ impl<'s> Walker<'s, '_> {
         let explicit = self.explicit_arguments(call.type_arguments())?;
         if let Some(site) = site
             && let Type::Class { key, .. } = self.cx.get(site)
-            && let Ok(chosen) =
-                self.constructor(site, key, &args, explicit.as_deref(), Qualifier::Own)?
         {
-            self.record_arguments(&args, &chosen)?;
-            self.record_constructor(id, chosen);
+            match self.constructor(site, key, &args, explicit.as_deref(), Qualifier::Own)? {
+                Ok(chosen) => {
+                    self.record_arguments(&args, &chosen)?;
+                    self.record_constructor(id, chosen);
+                }
+                Err(t) => self.unchosen.push((id, t)),
+            }
         }
         Ok(self.expr(id, void))
     }
@@ -1521,9 +1538,12 @@ impl<'s> Walker<'s, '_> {
             return Ok(());
         };
         let of = self.cx.declared_type(key)?;
-        if let Ok(chosen) = self.constructor(of, key, &args, None, Qualifier::Own)? {
-            self.record_arguments(&args, &chosen)?;
-            self.record_constructor(node.id(), chosen);
+        match self.constructor(of, key, &args, None, Qualifier::Own)? {
+            Ok(chosen) => {
+                self.record_arguments(&args, &chosen)?;
+                self.record_constructor(node.id(), chosen);
+            }
+            Err(t) => self.unchosen.push((node.id(), t)),
         }
         self.body_fuel.push((node.id(), self.cx.fuel_used()));
         self.cx.refuel(self.fuel);
@@ -1596,8 +1616,9 @@ impl<'s> Walker<'s, '_> {
             }
             return Ok(());
         }
-        if let Ok(chosen) = self.constructor(site, key, &[], None, Qualifier::Own)? {
-            self.record_constructor(id, chosen);
+        match self.constructor(site, key, &[], None, Qualifier::Own)? {
+            Ok(chosen) => self.record_constructor(id, chosen),
+            Err(t) => self.unchosen.push((id, t)),
         }
         Ok(())
     }

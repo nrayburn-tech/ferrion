@@ -54,6 +54,24 @@ pub struct MemberMethod {
 }
 
 impl Members {
+    /// What the table holds, in bytes.
+    pub fn bytes(&self) -> usize {
+        use std::mem::size_of;
+        let ambiguous = |f: &FieldMember| match f {
+            FieldMember::One(_) => 0,
+            FieldMember::Ambiguous(fields) => fields.len() * size_of::<FieldRef>(),
+        };
+        size_of::<Members>()
+            + self.fields.len() * size_of::<(Name, FieldMember)>()
+            + self.fields.iter().map(|(_, f)| ambiguous(f)).sum::<usize>()
+            + self.methods.len() * size_of::<(Name, Box<[MemberMethod]>)>()
+            + self
+                .methods
+                .iter()
+                .map(|(_, m)| m.len() * size_of::<MemberMethod>())
+                .sum::<usize>()
+    }
+
     pub fn field(&self, name: Name) -> Option<&FieldMember> {
         let i = self.fields.binary_search_by_key(&name, |(n, _)| *n).ok()?;
         Some(&self.fields[i].1)

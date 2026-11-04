@@ -112,7 +112,10 @@ struct Tally {
     largest_arena: u64,
     /// The member tables and constant entries the project's engine held at the end.
     members: u64,
+    member_bytes: u64,
     constants: u64,
+    /// Calls and creations: `chosen`, or why there is no method.
+    calls: BTreeMap<String, u64>,
 }
 
 impl Tally {
@@ -127,7 +130,11 @@ impl Tally {
         self.micros += other.micros;
         self.largest_arena = self.largest_arena.max(other.largest_arena);
         self.members += other.members;
+        self.member_bytes += other.member_bytes;
         self.constants += other.constants;
+        for (k, v) in &other.calls {
+            *self.calls.entry(k.clone()).or_default() += v;
+        }
     }
 }
 
@@ -155,6 +162,7 @@ struct FileRow {
     fuel: Vec<(u64, u32)>,
     arena: u64,
     kinds: Vec<(&'static str, u64)>,
+    calls: Vec<(&'static str, u64)>,
     expressions: u64,
     panic: Option<String>,
 }
@@ -164,6 +172,7 @@ fn kind(t: Type) -> &'static str {
         Type::Error(_) => "error",
         Type::Unknown(Why::LeftToB3c) => "left-to-b3c",
         Type::Unknown(Why::LeftToB3d) => "left-to-b3d",
+        Type::Unknown(Why::LeftToB4) => "left-to-b4",
         Type::Unknown(Why::Limit) => "limit",
         Type::Unknown(Why::Incomplete(_)) => "incomplete",
         Type::Unknown(Why::Later) => "unknown",
@@ -215,17 +224,21 @@ pub fn run(options: Options) -> Result<bool> {
                 .with_set(set, |engine, id, _| {
                     let rows = attribute_set(engine, id, &options, &dirs.corpus)?;
                     let sizes = engine.sizes();
-                    Ok((rows, (sizes.members, sizes.constants)))
+                    Ok((rows, (sizes.members, sizes.constants, sizes.member_bytes)))
                 })
                 .map_err(|e| anyhow::anyhow!("{}: {e}", set.display()))?;
             tally.members = tally.members.max(tables.0 as u64);
             tally.constants = tally.constants.max(tables.1 as u64);
+            tally.member_bytes = tally.member_bytes.max(tables.2 as u64);
             for row in rows {
                 tally.files += 1;
                 tally.bodies += row.fuel.len() as u64;
                 tally.expressions += row.expressions;
                 for (k, n) in &row.kinds {
                     *tally.kinds.entry((*k).to_owned()).or_default() += n;
+                }
+                for (k, n) in &row.calls {
+                    *tally.calls.entry((*k).to_owned()).or_default() += n;
                 }
                 tally.micros += row.micros;
                 tally.largest_arena = tally.largest_arena.max(row.arena);
@@ -379,7 +392,7 @@ fn attribute_set(
                         let mut calls = Vec::with_capacity(types.calls.len());
                         for (node, call) in types.calls.iter() {
                             let syntax = tree.node(*node);
-                            let text = snapshot.call_text(file, &types, *node, call)?;
+                            let text = snapshot.call_text(file, &mut cx, &types, *node, call)?;
                             calls.push(serde_json::json!([
                                 syntax.span().start,
                                 syntax.span().end,
@@ -400,9 +413,38 @@ fn attribute_set(
                             .unwrap_or_else(|e| e.into_inner())
                             .push(line.to_string());
                     }
+                    // Each call and creation, by whether a method is chosen, or why not.
+                    let mut calls: BTreeMap<&'static str, u64> = BTreeMap::new();
+                    for event in tree.root().preorder() {
+                        let ferrion_syntax::WalkEvent::Enter(node) = event else {
+                            continue;
+                        };
+                        use ferrion_syntax::SyntaxKind as K;
+                        if !matches!(
+                            node.kind(),
+                            K::MethodCallExpr | K::NewExpr | K::ConstructorCallExpr
+                        ) {
+                            continue;
+                        }
+                        let unchosen = types
+                            .unchosen
+                            .binary_search_by_key(&node.id(), |(n, _)| *n)
+                            .ok()
+                            .map(|i| types.unchosen[i].1);
+                        let k = if types.call(node.id()).is_some() {
+                            "chosen"
+                        } else {
+                            match unchosen.or(types.type_of(node.id())) {
+                                Some(t) => kind(types.arena.get(t)),
+                                None => "unknown",
+                            }
+                        };
+                        *calls.entry(k).or_default() += 1;
+                    }
                     FileRow {
                         path,
                         micros,
+                        calls: calls.into_iter().collect(),
                         fuel: types
                             .fuel
                             .iter()
@@ -428,6 +470,7 @@ fn attribute_set(
                         arena: 0,
                         expressions: 0,
                         kinds: Vec::new(),
+                        calls: Vec::new(),
                         panic: Some(message),
                     }
                 }
@@ -445,25 +488,26 @@ fn text(report: &Report) -> String {
     let t = &report.total;
     let _ = writeln!(
         out,
-        "\n| Project | Files | Bodies | Panics | Expressions | Typed | Calls (W3) | B3c | B3d | Error | Incomplete | Limit | Other | Time | Largest arena | Member tables | Constants |"
+        "\n| Project | Files | Bodies | Panics | Expressions | Typed | B3c | B3d | B4 | Error | Incomplete | Limit | Other | Time | Largest arena | Member tables | Table MB | Constants | Calls | Chosen | Calls B3c | Calls B4 |"
     );
     let _ = writeln!(
         out,
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"
     );
     let row = |out: &mut String, name: &str, t: &Tally| {
         let k = |name: &str| t.kinds.get(name).copied().unwrap_or(0);
+        let c = |name: &str| t.calls.get(name).copied().unwrap_or(0);
         let _ = writeln!(
             out,
-            "| {name} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {:.1} s | {} | {} | {} |",
+            "| {name} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {:.1} s | {} | {} | {:.1} | {} | {} | {} | {} | {} |",
             t.files,
             t.bodies,
             t.panics,
             t.expressions,
             k("typed"),
-            k("calls (W3)"),
             k("left-to-b3c"),
             k("left-to-b3d"),
+            k("left-to-b4"),
             k("error"),
             k("incomplete"),
             k("limit"),
@@ -471,7 +515,12 @@ fn text(report: &Report) -> String {
             t.micros as f64 / 1e6,
             t.largest_arena,
             t.members,
-            t.constants
+            t.member_bytes as f64 / 1e6,
+            t.constants,
+            t.calls.values().sum::<u64>(),
+            c("chosen"),
+            c("left-to-b3c"),
+            c("left-to-b4"),
         );
     };
     for (name, tally) in &report.projects {
