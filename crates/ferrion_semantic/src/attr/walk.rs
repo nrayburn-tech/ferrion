@@ -9,7 +9,7 @@ use ferrion_syntax::{NodeId, SyntaxKind, SyntaxNode, WalkEvent};
 use super::BodyTypes;
 use crate::body::{BodyNames, Map};
 use crate::constants::{self, BinaryOp, Constant, UnaryOp};
-use crate::decl_names::{ResolvedName, Symbol};
+use crate::decl_names::{FileNames, ResolvedName, Symbol};
 use crate::engine::derived::Reads;
 use crate::members::{self, FieldMember, Members};
 use crate::resolve::FileScope;
@@ -76,9 +76,11 @@ pub(crate) struct Walker<'s, 'r> {
     snapshot: &'s Snapshot,
     view: SourceSetId,
     names: Arc<Interner>,
-    /// The names by node: the body walk's, then the declarations'.
-    body_names: Arc<[ResolvedName]>,
-    decl_names: Arc<[ResolvedName]>,
+    /// The names by node: the body walk's, then the declarations'; for one initializer, its
+    /// own.
+    body_names: Option<Arc<BodyNames>>,
+    decl_names: Option<Arc<FileNames>>,
+    initializer_names: Box<[ResolvedName]>,
     fs: Option<Arc<FileScope>>,
     local_of_node: Map<NodeId, TypeKey>,
     release: u32,
@@ -262,31 +264,17 @@ impl<'s, 'r> Walker<'s, 'r> {
                 )
             })
             .collect();
-        let mut w = Walker::new(
-            reads,
-            view,
-            Arc::from(body.names.clone()),
-            Arc::from(decl_memo.value.names.clone()),
-            Some(fs),
-            local_of_node,
-            tree.release(),
-            fuel,
-        );
+        let mut w = Walker::new(reads, view, tree.release(), fuel);
+        w.body_names = Some(body_memo.value.clone());
+        w.decl_names = Some(decl_memo.value.clone());
+        w.fs = Some(fs);
+        w.local_of_node = local_of_node;
         w.walk(tree.root())?;
         Ok(w.finish())
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new(
-        reads: &'r mut Reads<'s>,
-        view: SourceSetId,
-        body_names: Arc<[ResolvedName]>,
-        decl_names: Arc<[ResolvedName]>,
-        fs: Option<Arc<FileScope>>,
-        local_of_node: Map<NodeId, TypeKey>,
-        release: u32,
-        fuel: u64,
-    ) -> Walker<'s, 'r> {
+    /// A walker with no names yet, for [`Walker::attribute`] or [`Walker::for_initializer`].
+    fn new(reads: &'r mut Reads<'s>, view: SourceSetId, release: u32, fuel: u64) -> Walker<'s, 'r> {
         let snapshot = reads.snapshot;
         let mut cx = snapshot.recording_types(view);
         cx.refuel(fuel);
@@ -295,10 +283,11 @@ impl<'s, 'r> Walker<'s, 'r> {
             snapshot,
             view,
             names: snapshot.names().clone(),
-            body_names,
-            decl_names,
-            fs,
-            local_of_node,
+            body_names: None,
+            decl_names: None,
+            initializer_names: Box::default(),
+            fs: None,
+            local_of_node: Map::default(),
             release,
             fuel,
             out: BodyTypes::default(),
@@ -325,6 +314,18 @@ impl<'s, 'r> Walker<'s, 'r> {
             string: None,
             reads,
         }
+    }
+
+    /// A walker for one field initializer, whose names are `names`.
+    pub(crate) fn for_initializer(
+        reads: &'r mut Reads<'s>,
+        view: SourceSetId,
+        names: Box<[ResolvedName]>,
+        release: u32,
+    ) -> Walker<'s, 'r> {
+        let mut w = Walker::new(reads, view, release, crate::types::DEFAULT_FUEL);
+        w.initializer_names = names;
+        w
     }
 
     /// Attributes one initializer of a field of `owner`, alone, for its constant value: the
@@ -403,7 +404,9 @@ impl<'s, 'r> Walker<'s, 'r> {
     }
 
     fn symbol(&self, node: NodeId) -> Option<&Symbol> {
-        names_at(&self.body_names, node).or_else(|| names_at(&self.decl_names, node))
+        names_at(&self.initializer_names, node)
+            .or_else(|| names_at(&self.body_names.as_ref()?.names, node))
+            .or_else(|| names_at(&self.decl_names.as_ref()?.names, node))
     }
 
     fn unknown(&mut self, why: Why) -> TypeId {

@@ -701,3 +701,36 @@ fn more_forms() {
         assert_eq!(constant(&e, text), Some(value), "{text}");
     }
 }
+
+/// What each context applies, as JLS chapter 5 says (javac doesn't report conversions).
+#[test]
+fn conversions_are_recorded() {
+    let source = "class Q { long r() { return 15; }\n\
+         void m(Boolean b, byte t, char c, Integer boxed, int[] a, String s, Object ob) {\n\
+         if (b) { } int[] n = new int[t]; int e = a[c];\n\
+         long w = 11; Integer bi = 12; Object o = 13; char k = 14; double d = boxed;\n\
+         String ss = \"a\" + t; t += 1; Object up = (Object) s; String back = (String) ob; } }";
+    let e = expressions(source);
+    let conversion = |text: &str, nth: usize| get(&e, text, nth).conversion.as_deref();
+    assert_eq!(conversion("b", 0), Some("[Unboxing]"));
+    assert_eq!(conversion("t", 0), Some("[WideningPrimitive]"));
+    assert_eq!(conversion("c", 0), Some("[WideningPrimitive]"));
+    assert_eq!(conversion("11", 0), Some("[WideningPrimitive]"));
+    assert_eq!(conversion("12", 0), Some("[Boxing]"));
+    assert_eq!(conversion("13", 0), Some("[Boxing, WideningReference]"));
+    assert_eq!(conversion("14", 0), Some("[NarrowingPrimitive]"));
+    assert_eq!(conversion("15", 0), Some("[WideningPrimitive]"));
+    assert_eq!(
+        conversion("boxed", 0),
+        Some("[Unboxing, WideningPrimitive]")
+    );
+    assert_eq!(conversion("t", 1), Some("[String]"));
+    assert_eq!(conversion("s", 0), Some("[WideningReference]"));
+    assert_eq!(conversion("ob", 0), Some("[NarrowingReference]"));
+
+    let engine = engine(&format!("//- file main Q.java\n{source}"));
+    let snapshot = engine.snapshot();
+    let file = snapshot.files(SourceSetId::from_index(0)).unwrap()[0];
+    let dump = snapshot.body_types_dump(file).unwrap();
+    assert!(dump.contains("compound [NarrowingPrimitive]"), "{dump}");
+}
