@@ -58,7 +58,7 @@ fn tokens(node: SyntaxNode<'_>) -> impl Iterator<Item = SyntaxToken<'_>> {
     node.direct_tokens().filter(|token| !token.is_trivia())
 }
 
-fn token(node: SyntaxNode<'_>, kind: K) -> Option<SyntaxToken<'_>> {
+pub(crate) fn token(node: SyntaxNode<'_>, kind: K) -> Option<SyntaxToken<'_>> {
     tokens(node).find(|token| token.kind() == kind)
 }
 
@@ -71,7 +71,7 @@ fn children(node: SyntaxNode<'_>, kind: K) -> impl Iterator<Item = SyntaxNode<'_
 }
 
 /// The name of a declaration: its first identifier (or `_`) token.
-fn name(node: SyntaxNode<'_>) -> Option<SyntaxToken<'_>> {
+pub(crate) fn name(node: SyntaxNode<'_>) -> Option<SyntaxToken<'_>> {
     tokens(node).find(|token| matches!(token.kind(), K::Identifier | K::Underscore))
 }
 
@@ -130,7 +130,7 @@ fn first_type(node: SyntaxNode<'_>) -> Option<SyntaxNode<'_>> {
     node.children().find(|child| is_type(child.kind()))
 }
 
-fn first_expr(node: SyntaxNode<'_>) -> Option<SyntaxNode<'_>> {
+pub(crate) fn first_expr(node: SyntaxNode<'_>) -> Option<SyntaxNode<'_>> {
     node.children().find(|child| is_expr(child.kind()))
 }
 
@@ -144,6 +144,63 @@ fn is_string_literal(node: SyntaxNode<'_>) -> bool {
         && tokens(node)
             .next()
             .is_some_and(|token| matches!(token.kind(), K::StringLiteral | K::TextBlock))
+}
+
+/// The operands of a binary expression's chain of `+`, left to right, if javac's parser folds
+/// adjacent string literals in it: only the chain at the top of a binary expression, reached from
+/// its root through left operands, when the root is a `+`.
+pub(crate) fn folded_operands(e: SyntaxNode<'_>) -> Option<Vec<SyntaxNode<'_>>> {
+    let top = e
+        .parent()
+        .is_none_or(|p| !matches!(p.kind(), K::BinaryExpr | K::InstanceofExpr));
+    if !top || operator(e).0 != [K::Plus] {
+        return None;
+    }
+    let mut operands = Vec::new();
+    let mut node = e;
+    while node.kind() == K::BinaryExpr && operator(node).0 == [K::Plus] {
+        let mut sides = exprs(node);
+        let (Some(lhs), Some(rhs)) = (sides.next(), sides.next()) else {
+            break;
+        };
+        operands.push(rhs);
+        node = lhs;
+    }
+    operands.push(node);
+    operands.reverse();
+    operands
+        .windows(2)
+        .any(|pair| is_string_literal(pair[0]) && is_string_literal(pair[1]))
+        .then_some(operands)
+}
+
+/// A chain's operands in the groups javac's folding makes: each run of adjacent string literals
+/// is one group, each other operand a group alone.
+pub(crate) fn folded_groups<'t>(operands: &[SyntaxNode<'t>]) -> Vec<Vec<SyntaxNode<'t>>> {
+    let mut groups: Vec<Vec<SyntaxNode>> = Vec::new();
+    for &operand in operands {
+        match groups.last_mut() {
+            Some(group)
+                if is_string_literal(operand)
+                    && group.last().is_some_and(|last| is_string_literal(*last)) =>
+            {
+                group.push(operand);
+            }
+            _ => groups.push(vec![operand]),
+        }
+    }
+    groups
+}
+
+/// The literal of a prefix expression that javac reads as one literal: `-` before a decimal
+/// integer literal.
+pub(crate) fn negative_literal(e: SyntaxNode<'_>) -> Option<SyntaxNode<'_>> {
+    let operand = first_expr(e).filter(|o| o.kind() == K::LiteralExpr)?;
+    let literal = tokens(operand).next()?;
+    (tokens(e).next().map(|t| t.kind()) == Some(K::Minus)
+        && matches!(literal.kind(), K::IntLiteral | K::LongLiteral)
+        && literal.text().starts_with(|c: char| matches!(c, '1'..='9')))
+    .then_some(operand)
 }
 
 /// `var` as a type: a `ClassType` that is just the name `var`.
@@ -1153,14 +1210,8 @@ impl<'t> Rows<'t> {
             K::NewExpr => self.new_class(e),
             K::ArrayCreationExpr => self.new_array(e),
             K::PrefixExpr => {
-                let operand = first_expr(e);
                 // javac reads `-` before a decimal integer literal as part of the literal.
-                if let Some(literal) = operand.and_then(|o| tokens(o).next())
-                    && tokens(e).next().map(|t| t.kind()) == Some(K::Minus)
-                    && operand.is_some_and(|o| o.kind() == K::LiteralExpr)
-                    && matches!(literal.kind(), K::IntLiteral | K::LongLiteral)
-                    && literal.text().starts_with(|c: char| matches!(c, '1'..='9'))
-                {
+                if let Some(literal) = negative_literal(e).and_then(|o| tokens(o).next()) {
                     self.spanning(literal_kind(literal.kind()), e);
                     self.close();
                     return;
@@ -1422,31 +1473,11 @@ impl<'t> Rows<'t> {
     /// `STRING_LITERAL`, but only in the chain at the top of a binary expression, and then
     /// prefers each `+` of the chain at its right operand.
     fn binary(&mut self, e: SyntaxNode<'t>) {
-        let (ops, at) = operator(e);
-        let top = e
-            .parent()
-            .is_none_or(|p| !matches!(p.kind(), K::BinaryExpr | K::InstanceofExpr));
-        if top && ops == [K::Plus] {
-            let mut operands = Vec::new();
-            let mut node = e;
-            while node.kind() == K::BinaryExpr && operator(node).0 == [K::Plus] {
-                let mut sides = exprs(node);
-                let (Some(lhs), Some(rhs)) = (sides.next(), sides.next()) else {
-                    break;
-                };
-                operands.push(rhs);
-                node = lhs;
-            }
-            operands.push(node);
-            operands.reverse();
-            if operands
-                .windows(2)
-                .any(|pair| is_string_literal(pair[0]) && is_string_literal(pair[1]))
-            {
-                self.folded(&operands);
-                return;
-            }
+        if let Some(operands) = folded_operands(e) {
+            self.folded(&operands);
+            return;
         }
+        let (ops, at) = operator(e);
         self.node(binary_kind(&ops), start(e), end(e), at);
         for operand in exprs(e) {
             self.expr(operand);
@@ -1455,18 +1486,7 @@ impl<'t> Rows<'t> {
     }
 
     fn folded(&mut self, operands: &[SyntaxNode<'t>]) {
-        let mut groups: Vec<Vec<SyntaxNode>> = Vec::new();
-        for &operand in operands {
-            match groups.last_mut() {
-                Some(group)
-                    if is_string_literal(operand)
-                        && group.last().is_some_and(|last| is_string_literal(*last)) =>
-                {
-                    group.push(operand);
-                }
-                _ => groups.push(vec![operand]),
-            }
-        }
+        let groups = folded_groups(operands);
         let from = start(operands[0]);
         for group in groups[1..].iter().rev() {
             let last = group[group.len() - 1];
