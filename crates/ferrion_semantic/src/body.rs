@@ -115,6 +115,9 @@ pub struct LocalType {
     pub entry: Arc<TypeEntry>,
     pub supertypes: Arc<Supertypes>,
     pub member_types: Arc<MemberTypes>,
+    /// The class whose body declares it: what an unqualified inner class of a generic class is
+    /// a member of, inside it.
+    pub lexical: Option<TypeKey>,
 }
 
 impl Snapshot {
@@ -277,6 +280,8 @@ struct LocalState {
     maps: Option<Arc<ClassMaps>>,
     /// Methods and constructors entered so far, for their type parameters' owners.
     methods: u32,
+    /// The class whose body declares it.
+    lexical: Option<TypeKey>,
 }
 
 /// What a name binds in a scope.
@@ -655,6 +660,7 @@ fn walk_names(
                 })
             }),
             member_types: state.member_types.unwrap_or_default(),
+            lexical: state.lexical,
         })
         .collect();
     Ok(BodyNames {
@@ -2393,6 +2399,7 @@ impl Walker<'_, '_, '_> {
         access: MemberAccess,
     ) -> u32 {
         let index = self.env.local_types.len() as u32;
+        let lexical = self.current_class();
         self.env.local_types.push(LocalState {
             key: TypeKey::Local {
                 file: self.file,
@@ -2409,6 +2416,7 @@ impl Walker<'_, '_, '_> {
             entry: None,
             maps: None,
             methods: 0,
+            lexical,
         });
         self.env.local_of_node.insert(node.id(), index);
         index
@@ -2432,6 +2440,8 @@ impl Walker<'_, '_, '_> {
             let at = declaration_at(decl.syntax());
             let access = access_of(modifiers(header.modifiers, &self.names).0, self.env.package);
             let member = self.new_local_type(decl.syntax(), at, header.kind, access);
+            self.env.local_types[member as usize].lexical =
+                Some(self.env.local_types[outer as usize].key);
             self.env.local_types[outer as usize]
                 .declared
                 .entry(name)

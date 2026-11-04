@@ -60,6 +60,29 @@ fn expressions_of(snapshot: &crate::Snapshot, file: FileId) -> Vec<Expr> {
         .collect()
 }
 
+/// The variables of `source` (one file `Q.java`), each as its name and type.
+fn variables(source: &str) -> Vec<(String, String)> {
+    let engine = engine(&format!("//- file main Q.java\n{source}"));
+    let snapshot = engine.snapshot();
+    let file = snapshot.files(SourceSetId::from_index(0)).unwrap()[0];
+    let types = snapshot.body_types(file).unwrap();
+    let tree = snapshot.tree(file).unwrap();
+    let mut cx = snapshot.types_in(SourceSetId::from_index(0), types.arena.clone());
+    types
+        .variables
+        .iter()
+        .map(|(node, ty)| {
+            let name = tree
+                .node(*node)
+                .direct_tokens()
+                .filter(|t| t.kind() == ferrion_syntax::SyntaxKind::Identifier)
+                .last()
+                .map_or(String::new(), |t| t.text().to_owned());
+            (name, cx.type_string(*ty, Printed::Captures).unwrap())
+        })
+        .collect()
+}
+
 /// The expressions of `source`, one file `Q.java` in the default package.
 fn expressions(source: &str) -> Vec<Expr> {
     expressions_in(&format!("//- file main Q.java\n{source}"), "Q.java")
@@ -471,4 +494,99 @@ fn local_classes() {
     assert_eq!(ty(&e, "l.f"), "int");
     assert_eq!(ty(&e, "L.C"), "int");
     assert_eq!(constant(&e, "L.C"), Some("int 5"));
+}
+
+/// javac: `? super Object` captures to `Object` itself (`List<? super Object>` is
+/// `java/util/List<java/lang/Object>`, and `Map<? super Object, ? extends Object>`
+/// `java/util/Map<java/lang/Object,capture#1 extends java/lang/Object>`); `var` of a cast to
+/// `F<String, ?>`, with `F<T, A extends Annotation>`, is `Q$F<java/lang/String,?>` (JLS 4.10.5:
+/// the declared bound is below the capture's), and of an `H<String, ?>` with `H<T, A extends
+/// List<T>>` `Q$H<java/lang/String,? extends java/util/List<java/lang/String>>`; a `final var`
+/// with a constant initializer is a constant variable (`n` is `int 200000`); `super` in an
+/// anonymous class made with `<>` is inference's (javac: `java/util/ArrayList<java/lang/Object>`).
+#[test]
+fn captures_and_projections() {
+    let source = "import java.util.*;\nimport java.lang.annotation.Annotation;\n\
+         class Q<K> { interface F<T, A extends Annotation> { } interface H<T, A extends List<T>> { }\n\
+         List<? super Object> a; Map<? super Object, ? extends Object> d; F<String, ?> f; H<String, ?> h;\n\
+         void m(Object o) { Object x1 = a; Object x5 = d; var v = (F<String, ?>) o; var w = f; var y = h;\n\
+         final var n = 200_000; int z = n + 1;\n\
+         Object anon = new ArrayList<>() { public int size() { return super.size(); } }; } }";
+    let e = expressions(source);
+    assert_eq!(ty(&e, "a"), "java/util/List<java/lang/Object>");
+    assert_eq!(
+        ty(&e, "d"),
+        "java/util/Map<java/lang/Object,capture#1 extends java/lang/Object>"
+    );
+    assert_eq!(constant(&e, "n"), Some("int 200000"));
+    assert_eq!(constant(&e, "n + 1"), Some("int 200001"));
+    assert_eq!(ty(&e, "super"), "left-to-b3c inference");
+    let vars = variables(source);
+    let var = |name: &str| {
+        vars.iter()
+            .find(|(n, _)| n == name)
+            .map(|(_, t)| t.as_str())
+            .unwrap_or_else(|| panic!("no variable {name} in {vars:?}"))
+    };
+    assert_eq!(var("v"), "Q$F<java/lang/String,?>");
+    assert_eq!(var("w"), "Q$F<java/lang/String,?>");
+    assert_eq!(
+        var("y"),
+        "Q$H<java/lang/String,? extends java/util/List<java/lang/String>>"
+    );
+    assert_eq!(var("n"), "int");
+}
+
+/// javac: a multi-catch parameter's identifier and variable are the union,
+/// `java/lang/InterruptedException|java/lang/IllegalStateException`, parenthesized too, while its
+/// type for relations is the `lub` (`e.x` would look in `Exception`). `Outlet<X>.Shop`, with
+/// `Shop` a member of `Outlet`'s superclass `Mall`, is `Q$Mall<X>$Shop`; read, a wildcard in the
+/// outer type is captured (`Q$Mall<capture#1 extends java/lang/Number>$Shop<java/lang/Integer>`).
+#[test]
+fn multi_catch_and_written_outer_types() {
+    let source = "class Q { static class Mall<T> { class Shop<U> { } } static class Outlet<T> extends Mall<T> { }\n\
+         void m(Outlet<String>.Shop<Integer> a, Outlet<? extends Number>.Shop<Integer> b, Object o) {\n\
+         Object x = a; Object y = b;\n\
+         try { o.hashCode(); o.wait(); } catch (InterruptedException | IllegalStateException e) { Object q = e; Object r = (e); } } }";
+    let e = expressions(source);
+    assert_eq!(
+        ty(&e, "a"),
+        "Q$Mall<java/lang/String>$Shop<java/lang/Integer>"
+    );
+    assert_eq!(
+        ty(&e, "b"),
+        "Q$Mall<capture#1 extends java/lang/Number>$Shop<java/lang/Integer>"
+    );
+    let union = "java/lang/InterruptedException|java/lang/IllegalStateException";
+    assert_eq!(ty(&e, "e"), union);
+    assert_eq!(ty(&e, "(e)"), union);
+    let vars = variables(source);
+    assert!(vars.iter().any(|(n, t)| n == "e" && t == union), "{vars:?}");
+}
+
+/// javac: `case DESC` on a selector whose type B2 couldn't tell, with a `String` field `DESC` in
+/// scope, is the enum's constant, `Op`; on a selector that is a call, it waits for the call.
+#[test]
+fn case_names_follow_the_selector() {
+    let source = "enum Op { ASC, DESC }\n\
+         class Q { static final String DESC = \"d\"; Op[] ops; Op op() { return null; }\n\
+         void m() { switch (ops[0]) { case ASC: break; case DESC: break; }\n\
+         switch (op()) { case DESC: break; default: break; }\n\
+         switch (\"x\") { case DESC: break; default: break; } } }";
+    let e = expressions(source);
+    assert_eq!(get(&e, "DESC", 0).ty, "Op");
+    assert_eq!(get(&e, "DESC", 1).ty, "unknown calls");
+    assert_eq!(get(&e, "DESC", 2).ty, "java/lang/String");
+    assert_eq!(get(&e, "DESC", 2).constant.as_deref(), Some("String \"d\""));
+}
+
+/// javac: inside an anonymous subclass of an inner class of a generic class, the inherited
+/// field `cursor` is `E:D` (the inner class's outer type is `D<E>`, as the class around it sees
+/// it).
+#[test]
+fn inner_classes_inside_local_classes() {
+    let source = "abstract class D<E> { E first; abstract class It { E cursor; It(E e) { } }\n\
+         Object m() { return new It(first) { E f() { return cursor; } }; } }";
+    let e = expressions(source);
+    assert_eq!(ty(&e, "cursor"), "E:D");
 }

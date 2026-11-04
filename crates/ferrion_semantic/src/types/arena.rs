@@ -73,6 +73,10 @@ pub enum Type {
     Capture(u32),
     /// `A & B & ...`, in the order the oracle compares.
     Intersection(TypeList),
+    /// `A | B | ...`, a multi-catch parameter's declared alternatives, as written: only what an
+    /// expression's or variable's type is recorded as. Relations ask about its `lub`, its
+    /// type by JLS 14.20, which attribution keeps beside it.
+    Union(TypeList),
     /// Depends on a name that didn't resolve, or an incomplete hierarchy: the root cause.
     Error(ErrorId),
     /// Ferrion can't type it: left to a later milestone, or a limit hit.
@@ -253,6 +257,11 @@ impl Arena {
         }
         let list = self.type_list(parts);
         self.intern(Type::Intersection(list))
+    }
+
+    pub fn union(&mut self, parts: &[TypeId]) -> TypeId {
+        let list = self.type_list(parts);
+        self.intern(Type::Union(list))
     }
 
     pub fn unknown(&mut self, why: Why) -> TypeId {

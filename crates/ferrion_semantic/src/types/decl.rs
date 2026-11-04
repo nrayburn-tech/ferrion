@@ -28,6 +28,8 @@ pub(crate) struct Decl {
     /// A member class with an enclosing instance (JLS 8.1.3): its type has its enclosing class's
     /// type as its outer type.
     pub inner: bool,
+    /// For a local or anonymous class, the class whose body declares it.
+    pub lexical: Option<TypeKey>,
     /// `<init>`, the name of a class file's constructors.
     pub init: Name,
 }

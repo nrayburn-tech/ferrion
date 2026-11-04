@@ -12,7 +12,8 @@ use std::time::Instant;
 use anyhow::{Context, Result};
 use corpus::Dirs;
 use corpus::project::Project;
-use ferrion_semantic::types::{Type, Why};
+use ferrion_semantic::constants::Constant;
+use ferrion_semantic::types::{Printed, Type, Why};
 use serde::Serialize;
 
 use crate::names::ferrion::Ferrion;
@@ -32,6 +33,7 @@ options:
   --json <file>   also write the report as JSON
   --only <text>   attribute only the files whose path contains this
   --repeat <N>    attribute each file N times, for profiling (default: 1)
+  --dump <file>   write each file's expressions (byte range, kind, type, constant) as JSON lines
 
 The projects must be checked out with their jars (`cargo corpus fetch`).";
 
@@ -45,6 +47,9 @@ pub struct Options {
     json: Option<PathBuf>,
     only: Option<String>,
     repeat: usize,
+    /// The lines `--dump` writes, and where.
+    dump: Option<Mutex<Vec<String>>>,
+    dump_path: Option<PathBuf>,
 }
 
 pub fn parse_args(args: impl Iterator<Item = String>, usage: fn(&str) -> !) -> Options {
@@ -55,6 +60,8 @@ pub fn parse_args(args: impl Iterator<Item = String>, usage: fn(&str) -> !) -> O
         json: None,
         only: None,
         repeat: 1,
+        dump: None,
+        dump_path: None,
     };
     let mut args = args.peekable();
     while let Some(arg) = args.next() {
@@ -77,6 +84,10 @@ pub fn parse_args(args: impl Iterator<Item = String>, usage: fn(&str) -> !) -> O
             }
             "--json" => options.json = Some(PathBuf::from(value("--json"))),
             "--only" => options.only = Some(value("--only")),
+            "--dump" => {
+                options.dump_path = Some(PathBuf::from(value("--dump")));
+                options.dump = Some(Mutex::new(Vec::new()));
+            }
             "--repeat" => {
                 let text = value("--repeat");
                 options.repeat = number("--repeat", text).max(1);
@@ -245,6 +256,11 @@ pub fn run(options: Options) -> Result<bool> {
     report.times.sort_unstable();
     report.wall_seconds = start.elapsed().as_secs_f64();
     print!("{}", text(&report));
+    if let (Some(path), Some(lines)) = (&options.dump_path, &options.dump) {
+        let lines = lines.lock().unwrap_or_else(|e| e.into_inner());
+        std::fs::write(path, lines.join("\n") + "\n")
+            .with_context(|| format!("writing {}", path.display()))?;
+    }
     if let Some(path) = &options.json {
         std::fs::write(path, serde_json::to_string_pretty(&report)? + "\n")
             .with_context(|| format!("writing {}", path.display()))?;
@@ -314,6 +330,52 @@ fn attribute_set(
                                 text.replace('\n', " ")
                             );
                         }
+                    }
+                    // Each expression's byte range, kind, type string, and constant, a JSON
+                    // line per file, for looking at against javac's by hand.
+                    if let Some(dump) = &options.dump {
+                        let view = snapshot.file(file)?.set;
+                        let mut cx = snapshot.types_in(view, types.arena.clone());
+                        let mut exprs = Vec::with_capacity(types.types.len());
+                        for (node, t) in types.types.iter() {
+                            let span = tree.node(*node).span();
+                            let text = cx.type_string(*t, Printed::Captures)?;
+                            // A long string's text is left out: every prefix of a long
+                            // concatenation is a constant of its own.
+                            let constant = types.constant(*node).map(|c| match c {
+                                Constant::String(s) if s.len() > 1000 => {
+                                    format!("String of {} units", s.len())
+                                }
+                                c => c.oracle_text(),
+                            });
+                            exprs.push(serde_json::json!([
+                                span.start,
+                                span.end,
+                                format!("{:?}", tree.node(*node).kind()),
+                                text,
+                                constant
+                            ]));
+                        }
+                        let mut variables = Vec::with_capacity(types.variables.len());
+                        for (node, t) in types.variables.iter() {
+                            // The declaring node's name, as `local` keys say where a variable is.
+                            let at = tree
+                                .node(*node)
+                                .direct_tokens()
+                                .filter(|t| t.kind() == ferrion_syntax::SyntaxKind::Identifier)
+                                .last()
+                                .map_or(0, |t| t.span().start);
+                            let text = cx.type_string(*t, Printed::Captures)?;
+                            variables.push(serde_json::json!([at, text]));
+                        }
+                        let line = serde_json::json!({
+                            "file": path,
+                            "expressions": exprs,
+                            "variables": variables
+                        });
+                        dump.lock()
+                            .unwrap_or_else(|e| e.into_inner())
+                            .push(line.to_string());
                     }
                     FileRow {
                         path,

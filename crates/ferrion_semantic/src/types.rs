@@ -397,6 +397,7 @@ impl<'s> TypeContext<'s> {
                 body: Body::Class(entry),
                 enclosing,
                 inner,
+                lexical: None,
                 init: self.init,
             }));
         }
@@ -424,12 +425,17 @@ impl<'s> TypeContext<'s> {
             inner = outer
                 .is_some_and(|o| !matches!(o.kind, TypeKind::Interface | TypeKind::Annotation));
         }
+        let lexical = match key {
+            TypeKey::Local { .. } => self.snapshot.local_type(key)?.and_then(|t| t.lexical),
+            _ => None,
+        };
         Ok(Some(Decl {
             key,
             kind: entry.kind,
             body: Body::Entry(entry),
             enclosing,
             inner,
+            lexical,
             init: self.init,
         }))
     }
@@ -592,9 +598,53 @@ impl<'s> TypeContext<'s> {
             if let Tri::Yes(Some(t)) = self.super_decl(at, outer)? {
                 return Ok(Some(t));
             }
-            current = self.decl(at)?.and_then(|d| d.enclosing);
+            current = self.decl(at)?.and_then(|d| d.enclosing.or(d.lexical));
         }
         Ok(None)
+    }
+
+    /// The outer type of the member class `key` written with the qualifier `o`: `o`, if its
+    /// class declares `key`, or else its supertype whose class does, with the qualifier's
+    /// arguments, wildcards kept (W2's observation: `Outlet<? extends X>.Shop`, with `Shop` a
+    /// member of `Outlet`'s superclass `Mall`, is `Mall<? extends X>.Shop`).
+    pub(crate) fn member_outer(&mut self, key: TypeKey, o: TypeId) -> R<TypeId> {
+        let enclosing = self.decl(key)?.and_then(|d| d.enclosing);
+        let (Some(enclosing), Type::Class { key: q, .. }) = (enclosing, self.arena.get(o)) else {
+            return Ok(o);
+        };
+        if q == enclosing {
+            return Ok(o);
+        }
+        let Tri::Yes(Some(g)) = self.super_decl(q, enclosing)? else {
+            return Ok(o);
+        };
+        let Type::Class {
+            key: e,
+            outer,
+            args: Some(list),
+        } = self.arena.get(g)
+        else {
+            return Ok(g);
+        };
+        let written = self.arena.class_args(o).to_vec();
+        let subst = self.theta(o);
+        let old = self.arena.args(list).to_vec();
+        let mut new = Vec::with_capacity(old.len());
+        for arg in old {
+            new.push(match arg {
+                TypeArg::Type(t) => match self.arena.get(t) {
+                    Type::Var(TypeVarOwner::Type(owner), i) if owner == q => {
+                        written.get(i as usize).copied().unwrap_or(arg)
+                    }
+                    _ => TypeArg::Type(self.subst(t, &subst)?),
+                },
+                TypeArg::Wildcard(Some((kind, b))) => {
+                    TypeArg::Wildcard(Some((kind, self.subst(b, &subst)?)))
+                }
+                TypeArg::Wildcard(None) => arg,
+            });
+        }
+        Ok(self.arena.class(e, outer, Some(&new)))
     }
 
     /// One of a declaration's types, translated once.
@@ -694,7 +744,11 @@ impl<'s> TypeContext<'s> {
                     } else {
                         self.implicit_outer(key, decl.key)?
                     };
-                    let outer = explicit.filter(|&o| self.has_args(o)).or(implicit);
+                    let explicit = match explicit.filter(|&o| self.has_args(o)) {
+                        Some(o) => Some(self.member_outer(key, o)?),
+                        None => None,
+                    };
+                    let outer = explicit.or(implicit);
                     Node::Type(self.class_of(key, outer, arguments, node_args(children)))
                 }
                 TyPart::Binary {

@@ -59,6 +59,10 @@ pub struct BodyTypes {
     /// For each compound assignment whose result needs one, the implied cast's conversions
     /// (JLS 15.26.2), by the assignment's node.
     pub compound: Box<[(NodeId, Steps)]>,
+    /// Each local variable's and parameter's type, by its declaring node (the node B2's
+    /// `Symbol::Local` names), in node order: the declared type, or for `var` the upward
+    /// projection of its initializer's type or its enhanced `for`'s element type.
+    pub variables: Box<[(NodeId, TypeId)]>,
     /// The names B2 left to B3 that the walk resolved, by node: fields of an expression's type
     /// and of type variables, an array's `length`, `case` constants of an enum selector.
     pub resolved: Box<[(NodeId, Symbol)]>,
@@ -101,6 +105,11 @@ impl BodyTypes {
 
     pub fn conversion(&self, node: NodeId) -> Option<&Steps> {
         find(&self.conversions, node)
+    }
+
+    /// A local variable's or parameter's type, by its declaring node.
+    pub fn variable(&self, node: NodeId) -> Option<TypeId> {
+        find(&self.variables, node).copied()
     }
 
     /// The most fuel a body of the file used.
