@@ -308,25 +308,25 @@ a case of each rule.
   with a `//` line. Snapshot: `markdown/departure-not-doc-comment`.
 - **A comment in a disable region** is copied, and **below Java 23** `///` is a line comment. GJF
   reflows both. Snapshots: `markdown/regions`, `markdown/before-23`.
-- **(proposed) A two-space hard break is written with a backslash:** GJF drops it and joins the lines,
-  losing the break. The design has such a comment re-indented only, but re-indenting removes the
-  trailing spaces, so a second run would reflow it. A backslash means the same, and has no trailing
-  whitespace. Snapshot: `markdown/departure-hard-break`.
-- **(proposed) A heading stays on one line,** however long. GJF wraps it, and on its next run the
+- **A two-space hard break is written with a backslash:** GJF drops it and joins the lines,
+  losing the break. A backslash means the same, and has no trailing whitespace, where re-indenting
+  alone would remove the spaces, and a second run would reflow the comment. Snapshot:
+  `markdown/departure-hard-break`.
+- **A heading stays on one line,** however long. GJF wraps it, and on its next run the
   rest of the heading is a paragraph. Snapshot: `markdown/departure-heading`.
-- **(proposed) One space follows a list marker.** GJF keeps a second one but continues the item at
+- **One space follows a list marker.** GJF keeps a second one but continues the item at
   the column one space gives, and on its next run the item's later paragraphs leave it. Snapshot:
   `markdown/departure-list-marker-spaces`.
-- **(proposed) A list item's first block starts on its marker's line,** as `- # heading` and
+- **A list item's first block starts on its marker's line,** as `- # heading` and
   `- - nested`. GJF puts the marker alone before a blank line, and on its next run the block leaves
   the item. Snapshot: `markdown/departure-item-first-block`.
-- **(proposed) An HTML block is copied as written,** to the blank line that ends it, as CommonMark
+- **An HTML block is copied as written,** to the blank line that ends it, as CommonMark
   reads it. GJF reflows some with Javadoc's rules (`<div>`, `<p>`, `<ul>`), where a line alone holding
   a tag can start an HTML block that a longer one doesn't, and drops a quote's `>` from a copied one.
   Snapshot: `markdown/departure-html-blocks`.
-- **(proposed) No line break after a word ending with a hyphen,** as in Javadoc: GJF breaks there, then
+- **No line break after a word ending with a hyphen,** as in Javadoc: GJF breaks there, then
   joins the two words on its next run. Snapshot: `markdown/departure-hyphen-at-a-break`.
-- **(proposed) Re-indented only, where the reflow can't keep the comment's meaning:** a comment with a
+- **Re-indented only, where the reflow can't keep the comment's meaning:** a comment with a
   `{@snippet}`, whose lines are code; a block tag whose body starts with fenced code or a list, or
   holds an HTML block, where GJF indents the block's first line alone; a Unicode escape for other than
   a letter or digit, as in Javadoc; a paragraph starting with a link label and a colon, which a line

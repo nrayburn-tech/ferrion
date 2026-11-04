@@ -278,12 +278,18 @@ GJF reflows Markdown doc comments with these rules (observed), which Ferrion mat
    quote's `>` lines are joined.
 3. **Blocks** get a blank line around them, inside lists too: ATX headings (inner whitespace
    collapsed, a closing `##` kept), fenced code blocks, GFM tables, and HTML blocks (`<pre>`,
-   `<table>`, `<!-- -->`), which are copied as written. `<ul>` and `<li>` get the Javadoc list
-   rules.
+   `<table>`, `<!-- -->`), which are copied as written.
 
-**Fallback.** GJF leaves a comment with a setext heading, an indented code block, or an unclosed
-inline tag unreflowed, and SCOPE.md names setext headings. Ferrion uses the same test, from the
-parsed blocks and diagnostics.
+**Which comments.** GJF also leaves a run whose first line starts with `////`, and the doc comment
+of a field declaring several variables, as they are (observed, matched).
+
+**Fallback.** GJF leaves a comment with a setext heading, an indented code block, a thematic break,
+a link reference definition, or an unclosed inline tag unreflowed (observed), and SCOPE.md names
+setext headings. Ferrion uses the same test, from the parsed blocks and diagnostics.
+
+**Other shapes (observed, matched).** A quote starting with a list or another quote starts with an
+empty `>` line, and one starting with a heading, fenced code, a table, or an HTML block with two. A
+fenced code block the comment ends before its closing fence gets one.
 
 GJF's Markdown reflow changes meaning or isn't stable in some cases (observed), so Ferrion departs
 from it there:
@@ -295,16 +301,36 @@ from it there:
   count is decided by asking `pulldown-cmark` whether the line would start a block, not by a list.
 - **Code spans are copied as written.** GJF collapses the spaces in `` `code   span` ``, which
   CommonMark keeps. Ferrion keeps a code span whole, as GJF keeps `<code>` in Javadoc.
-- **Hard breaks fall back.** GJF drops a line's two trailing spaces and joins it with the next,
-  losing the hard break. A comment with a two-space hard break is re-indented only, since keeping
-  the trailing spaces would go against trimming trailing whitespace. A `\` hard break is text and
-  already kept (observed).
+- **A two-space hard break is written with `\`.** GJF drops a line's two trailing spaces and joins
+  it with the next, losing the hard break. Keeping the spaces would go against trimming trailing
+  whitespace, and re-indenting alone removes them, so a second run would reflow the comment (the
+  first design had this fallback; it wasn't idempotent). A `\` means the same. A `\` hard break in
+  the input is text and already kept (observed).
 - **Fallback re-indents every line.** GJF moves only a fallback comment's first line and leaves
-  the other `///` lines at their old columns (observed: stable, but misaligned). Ferrion moves every
-  line by the same amount, as A1 does for a block comment's later lines. (Decided in review.)
+  the other `///` lines at their old columns (observed: stable, but misaligned). Ferrion puts each
+  `///` at the comment's column, so misaligned lines become aligned. (Decided in review.)
 - **A tab after `///`** is read by CommonMark as indentation (a tab stops at 4), so a line that
-  starts with one may be an indented code block. GJF reflowed it as text; Ferrion takes the parse's
-  word for it, and falls back if it's code.
+  starts with one may be an indented code block. The parser strips a tab that's common indentation,
+  and where one is left and reads as code, GJF's output and Ferrion's are the same.
+- **A heading stays on one line.** GJF wraps it, and on its next run the rest is a paragraph.
+- **One space follows a list marker.** GJF keeps a second but continues the item at the column one
+  gives, and on its next run the item's later paragraphs leave it.
+- **An item's first block starts on its marker's line.** GJF puts the marker alone before a blank
+  line, and has no fixed point.
+- **HTML blocks are copied whole,** `<ul>` and `<li>` included, to the blank line CommonMark ends
+  them at. GJF reflows `<div>`, `<p>`, and `<ul>`, and drops a quote's `>` from a copied block.
+- **The hyphen rules are Javadoc's:** no break after a hyphen-ended word, and one at a line's end
+  joins the next line's first word.
+- **Re-indented only:** a `{@snippet}`, a tag body starting with a fence or list, HTML in a tag, a
+  Unicode escape for other than a letter or digit, and the mostly fuzz-found cases docs/style.md
+  lists.
+
+**The layout's self-check.** Each layout is rendered at columns 0 and 96 and read back through
+`verify`'s content comparison, and any mismatch makes the comment fall back. Fuzzing found about 20
+crashes before this, and 30-second runs since have found none, though the columns between aren't
+checked, so a failure there is still possible. A bug in `verify`'s comparison can only make a comment fall back.
+Reflow with the check costs about 50 µs a comment on the `///` seed file, and the check alone wasn't
+measured.
 
 ### Checking it
 
@@ -620,7 +646,12 @@ Each goes in `docs/style.md` with its snapshot, once approved:
 | `<pre>` content indented past the stars | a common margin removed | kept | changes the rendered `<pre>` |
 | a `///` paragraph wrapped before `-`, `#`, `>`, `1.`, `` ``` `` | breaks there, making a list, heading, quote, or fence; `#` and `` ``` `` unstable | the word before moves down | changes meaning, unstable |
 | `` `code   span` `` in `///` | spaces collapsed | kept | changes meaning |
-| a two-space hard break in `///` | dropped, lines joined | the comment is re-indented only | changes meaning |
+| a two-space hard break in `///` | dropped, lines joined | written with `\` | changes meaning |
+| a long heading in `///` | wrapped, the rest a paragraph on the next run | one line | changes meaning, unstable |
+| two spaces after a list marker in `///` | kept, later paragraphs leave the item on the next run | one space | changes meaning, unstable |
+| a block first in a list item in `///` | the marker alone before a blank line | on the marker's line | unstable |
+| an HTML block in `///` | `<div>`, `<p>`, `<ul>` reflowed; a quote's `>` dropped | copied whole | changes meaning |
+| a hyphen-ended word at a `///` line's end | breaks after it, joined on the next run | no break after it; joined | unstable |
 | a `///` comment that can't be reflowed | first line moved, others left | every line moved | misaligned output |
 | a `/** */` or `///` comment in a disable region | reformatted | copied | SCOPE.md |
 | a long `///` comment that isn't a doc comment | wrapped with `//` | unchanged | SCOPE.md: `//` comments aren't wrapped |
@@ -700,3 +731,15 @@ From the ranges workstream, also accepted (2026-11-02):
 15. **A comment between two units on one line goes with the code formatting puts it beside,** so
     formatting a range and then the whole file agree; GJF goes by the code beside it in the
     input, a departure (docs/style.md).
+
+From the Markdown workstream, also accepted (2026-11-03):
+
+16. **A two-space hard break in `///` is written with `\`,** replacing the fallback first designed,
+    which wasn't idempotent.
+17. **Four more Markdown departures,** where GJF's output changes on a second run or moves content:
+    a heading stays on one line; one space follows a list marker; an item's first block starts on
+    its marker's line; HTML blocks are copied whole.
+18. **The hyphen rules of decisions 10 and 11 apply to Markdown,** and so does a re-indent-only list
+    of its own (docs/style.md, "Departures in Markdown").
+19. **The layout's self-check stays,** with its cost to be measured again once Java 23 code is
+    common.
