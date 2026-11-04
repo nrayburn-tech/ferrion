@@ -51,17 +51,17 @@ pub fn layout(text: &str, start: u32, end: u32) -> Option<Layout> {
     }
     let javadoc = parse_javadoc(text, Span::new(start, end));
     // An unclosed inline tag falls back (the design's rule). So do a block tag without a name, and
-    // a malformed argument or reference, such as an unclosed `@see "...`: joining its lines could
-    // close it, changing what it holds.
-    if javadoc.diagnostics.iter().any(|d| {
-        matches!(
-            d.kind,
-            DiagnosticKind::UnclosedInlineTag
-                | DiagnosticKind::NestingTooDeep
-                | DiagnosticKind::MissingTagName
-                | DiagnosticKind::MalformedArgument
-                | DiagnosticKind::MalformedReference
-        )
+    // a malformed argument or a reference with whitespace in it, such as an unclosed `@see "...`:
+    // joining its lines could close it, changing what it holds. A malformed reference of one word,
+    // such as `@see https://example.com`, has no lines to join.
+    if javadoc.diagnostics.iter().any(|d| match d.kind {
+        DiagnosticKind::UnclosedInlineTag
+        | DiagnosticKind::NestingTooDeep
+        | DiagnosticKind::MissingTagName
+        | DiagnosticKind::MalformedArgument => true,
+        DiagnosticKind::MalformedReference => text[d.span.start as usize..d.span.end as usize]
+            .contains(|c: char| c.is_whitespace() || c == '"'),
+        _ => false,
     }) {
         return None;
     }

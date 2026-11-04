@@ -18,9 +18,10 @@ use crate::rules::lists::{self, Shape};
 ///   characters), `this`, or `super`, or a type's name, possibly qualified, and the link after
 ///   it: `list.stream()`, `this.field`, `ImmutableList.builder()`, `java.util.Objects.of(x)`.
 ///   Otherwise it is the root alone. A name is a type's if it starts with an uppercase letter
-///   and has a lowercase one, so `FOO_BAR` is not. In a chain with a `.stream()` link, the
-///   prefix is everything up to it, `map.entrySet().stream()`, if that fits on the line, and
-///   otherwise breaks before each of its dots as well.
+///   and has a lowercase one, so `FOO_BAR` is not. In a chain with a `.stream()` or `.toBuilder()`
+///   link, the prefix is everything up to the last of them, `map.entrySet().stream()`, if that
+///   fits on the line, and otherwise breaks before each of its dots as well, after a type's name
+///   and the link after it.
 /// - **With one call, last,** the dots fill: each breaks only if what follows it up to the next
 ///   dot doesn't fit, and the call's arguments break before any dot does.
 pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
@@ -72,9 +73,9 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         filled_dots(f, root, &links, body_root);
         return;
     }
-    // Everything up to a `.stream()` is a group of its own, kept on the first line if it fits
+    // Everything up to the last `.stream()` or `.toBuilder()` is a group of its own, kept on the first line if it fits
     // there, and otherwise broken before each of its dots (observed).
-    let stream = links.iter().position(|&l| is_stream(l));
+    let stream = links.iter().rposition(|&l| is_stream(l));
     if let Some(stream) = stream
         && !dotted_root
     {
@@ -96,7 +97,9 @@ pub fn chain<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
         None
     };
     let prefix = match (stream, single_call) {
-        (Some(_), _) => usize::from(body_root),
+        // When the group up to the `.stream()` breaks, a type's name keeps its first link (observed).
+        (Some(_), _) if body_root => 1,
+        (Some(_), _) => last_type_name(root, &links).map_or(0, |last_type| last_type + 1),
         (None, _) if body_root => 1,
         (None, Some(call)) => call + 1,
         (None, None) => prefix_len(root, &links, calls),
@@ -315,7 +318,14 @@ fn prefix_len(root: SyntaxNode<'_>, links: &[SyntaxNode<'_>], calls: usize) -> u
         return leading_names(root, links);
     }
     if let Some(last_type) = last_type_name(root, links) {
-        return (last_type + 1).min(links.len());
+        // With no call, the last link can go on a line of its own after the type's name, as can a
+        // call: `Outer.Inner` then `.CONSTANT` (observed).
+        let last = if calls == 0 {
+            links.len() - 1
+        } else {
+            links.len()
+        };
+        return (last_type + 1).min(last);
     }
     let short = match root.kind() {
         K::NameExpr => root.first_token().text().chars().count() <= 4,
@@ -325,13 +335,13 @@ fn prefix_len(root: SyntaxNode<'_>, links: &[SyntaxNode<'_>], calls: usize) -> u
     usize::from(short).min(links.len())
 }
 
-/// Whether `link` is a call of `stream()` or `parallelStream()`, which GJF keeps with what comes
-/// before it.
+/// Whether `link` is a call of `stream()`, `parallelStream()`, or `toBuilder()`, which GJF keeps
+/// with what comes before it.
 fn is_stream(link: SyntaxNode<'_>) -> bool {
     link.kind() == K::MethodCallExpr
         && ast::MethodCallExpr::cast(link)
             .and_then(|call| call.name())
-            .is_some_and(|name| matches!(name.text(), "stream" | "parallelStream"))
+            .is_some_and(|name| matches!(name.text(), "stream" | "parallelStream" | "toBuilder"))
 }
 
 fn has_annotations(node: SyntaxNode<'_>) -> bool {

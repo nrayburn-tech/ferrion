@@ -187,6 +187,11 @@ struct Open {
     group: bool,
     /// For a fill, its last separator so far and the flat position after it.
     fill_break: Option<(u32, u64)>,
+    /// For a fill, whether the item after its last separator has a forced break so far.
+    forced_item: bool,
+    /// For a fill, whether an item with a forced break goes on a line of its own, as it doesn't
+    /// fit on the line of the item before it.
+    strict: bool,
 }
 
 /// Builds a [`Document`], computing flat widths as it goes.
@@ -377,6 +382,14 @@ impl DocumentBuilder {
         );
     }
 
+    /// Starts a fill in which an item with a forced break goes on a line of its own.
+    pub fn start_strict_fill(&mut self) {
+        self.start_fill();
+        if let Some(open) = self.open.last_mut() {
+            open.strict = true;
+        }
+    }
+
     /// A separator between two items of the innermost fill, which may be inside indents in the
     /// fill but no other container, so that an item can be indented from its separator on.
     pub fn fill_break(&mut self, soft: bool) {
@@ -398,13 +411,19 @@ impl DocumentBuilder {
             "a fill break inside a container other than a fill or an indent"
         );
         if let Some((index, after)) = open.fill_break {
-            set_fill_next(&mut self.elements, index, self.position - after);
+            let next = if open.forced_item {
+                u64::from(u32::MAX)
+            } else {
+                self.position - after
+            };
+            set_fill_next(&mut self.elements, index, next);
         }
         if !soft {
             self.position += 1;
         }
         let index = self.elements.len() as u32;
         open.fill_break = Some((index, self.position));
+        open.forced_item = false;
         self.elements.push(Element::FillBreak { soft, next: 0 });
     }
 
@@ -429,6 +448,8 @@ impl DocumentBuilder {
             hug,
             group: matches!(element, Element::Group { .. } | Element::Fill { .. }),
             fill_break: None,
+            forced_item: false,
+            strict: false,
         });
         self.elements.push(element);
         index
@@ -461,7 +482,12 @@ impl DocumentBuilder {
             _ => {}
         }
         if let Some((index, after)) = open.fill_break {
-            set_fill_next(&mut self.elements, index, self.position - after);
+            let next = if open.forced_item {
+                u64::from(u32::MAX)
+            } else {
+                self.position - after
+            };
+            set_fill_next(&mut self.elements, index, next);
         }
         self.elements.push(Element::End);
     }
@@ -486,6 +512,7 @@ impl DocumentBuilder {
                 }
                 None => {}
             }
+            open.forced_item = open.strict;
             if open.forced {
                 break;
             }
@@ -579,13 +606,19 @@ impl DocumentBuilder {
         // The head runs from the group's start to the first line element after the mark, and
         // the tail from the mark to where the group's width ends.
         for (&(index, _), &at_mark) in self.alternatives.iter().zip(&at_marks) {
-            let Element::Group { width, .. } = self.elements[index as usize - 1] else {
+            let Element::Group { width, stopped, .. } = self.elements[index as usize - 1] else {
                 continue;
             };
             if let Element::Alternative { head, tail } = &mut self.elements[index as usize] {
                 let offset = *tail;
                 *head = (u64::from(offset) + at_mark).min(u64::from(u32::MAX)) as u32;
-                *tail = width.saturating_sub(offset);
+                // With a forced break in it, the tail doesn't fit on a line of its own (observed:
+                // `x = foo(a ->`, then `b(() -> {` at +4).
+                *tail = if stopped {
+                    u32::MAX
+                } else {
+                    width.saturating_sub(offset)
+                };
             }
         }
         Document {

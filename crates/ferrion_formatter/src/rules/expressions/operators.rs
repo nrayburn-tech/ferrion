@@ -122,7 +122,10 @@ pub fn assign<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     for element in elements(node) {
         match element {
             NodeOrToken::Node(child) if target => {
+                // A chain that breaks is at +4 more than the value (observed).
+                let indentation = Indentation::start(f, IndentKind::Continuation);
                 f.node(child);
+                indentation.end(f);
                 target = false;
             }
             // An operator the lexer splits, such as `>>=`, is several tokens.

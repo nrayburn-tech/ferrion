@@ -8,6 +8,24 @@ use crate::document::IndentKind;
 use crate::format::Formatter;
 use crate::rules::comments::{self, has_comments_before};
 
+/// Whether the `}` of a block stays on the line of the block comment before it: unless the
+/// statement goes on after it, it's an `if`'s without an `else`, or it ends a lambda in a call
+/// (observed).
+fn ends_on_comment_line(close: SyntaxToken<'_>) -> bool {
+    let block = close.parent();
+    let if_body = block.parent().is_some_and(|p| p.kind() == K::IfStmt)
+        && block
+            .first_token()
+            .prev_non_trivia()
+            .is_none_or(|t| t.kind() != K::ElseKw);
+    comments::own_line_block_comment_on_line_of(close)
+        && !continued(close)
+        && !if_body
+        && close
+            .next_non_trivia()
+            .is_none_or(|next| next.kind() != K::RParen)
+}
+
 /// A block: its statements on their own lines at +2, and the `}` on a line of its own.
 ///
 /// Blank lines between statements are kept, at most one, and a blank line before the `}` is
@@ -16,7 +34,8 @@ use crate::rules::comments::{self, has_comments_before};
 /// whether an empty block prints as `{}` or as `{` and `}` on two lines, depend on what the block
 /// belongs to (see [`Style`]); one on two lines keeps a blank line between them where a blank
 /// line after the `{` is kept. Comments in an otherwise empty block go on their own lines inside
-/// it, except a line comment on the `{`'s line, which stays there.
+/// it, except a line comment on the `{`'s line, which stays there, and the `}` stays on the line of
+/// a block comment that starts its line (`/* c */ }`).
 pub fn block<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     let style = Style::of(node);
     let mut first = true;
@@ -33,6 +52,8 @@ pub fn block<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                     f.end();
                     if continued(token) && !has_comments_before(token) {
                         f.line_break_before(token);
+                    } else if ends_on_comment_line(token) {
+                        f.space();
                     } else {
                         if !continued(token) && !comments::own_line_comment_before(token) {
                             f.no_blank_line();
@@ -52,7 +73,11 @@ pub fn block<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
                         }
                         f.comments_before(token.id());
                     });
-                    f.hard_line();
+                    if ends_on_comment_line(token) {
+                        f.space();
+                    } else {
+                        f.hard_line();
+                    }
                 } else if !style.keep_empty {
                     f.hard_line();
                 }

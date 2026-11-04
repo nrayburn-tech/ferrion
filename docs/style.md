@@ -185,13 +185,14 @@ comments are. A doc comment in a disable region is copied. The snapshots in
 - **Re-indented only:** a comment with an unclosed `<pre>`, `<code>`, or `<table>`, an unclosed
   inline tag, or a line in a `<pre>` or an inline tag starting with `@` and a lowercase letter,
   which javadoc reads as a block tag, is re-indented as a block comment is, as GJF does. So is a
-  comment with a tag argument or reference javadoc can't read, such as an unclosed `@see "...`,
-  an `@@`, `@*`, or `@/` escape, or an HTML tag the rules place (`<p>`, a list, a block) written
+  comment with a tag argument javadoc can't read, or a reference it can't read with whitespace or
+  a quote in it, such as an unclosed `@see "...`, an `@@`, `@*`, or `@/` escape, or an HTML tag the rules place (`<p>`, a list, a block) written
   across lines.
 
 ### Departures
 
-- **`<pre>` content keeps its indentation:** each line keeps its text after the star as written.
+- **`<pre>` content keeps its indentation:** each line keeps its text after the star as written,
+  with no space added after a star that has none (`*}`).
   GJF removes a margin: the least indentation after `* ` over the whole comment, and in
   `<pre>{@code`, the code's own common indentation too. javadoc keeps the whitespace after the
   stars, so that changes what the `<pre>` shows. Files GJF has formatted are unchanged, their
@@ -509,7 +510,8 @@ after it is removed: `/** Doc. */ int x;` becomes two lines, and so does `@A /**
 comments before a member keep the input's line breaks.
 
 Between members, a blank line is required before and after every member except a plain field and
-an empty declaration (`;`), but not between a member and a `;` after it. A field is plain unless it
+an empty declaration (`;`), but not between a member and a `;` after it. A `;` after an enum's or
+annotation type's `}` joins its line, unless a comment is between them. A field is plain unless it
 has a doc comment or its annotations are on their own lines, because one has arguments or because
 the field doesn't fit on its line; a line comment that breaks the field doesn't count. Between two
 plain fields, or a plain field and a `;`, the input's choice is kept.
@@ -745,7 +747,9 @@ A block's statements go on their own lines at +2, and the `}` on a line of its o
 between statements are kept, at most one, and a blank line before the `}` is removed, as GJF
 does, except in two places where GJF keeps it: before a `}` the statement goes on after
 (`} catch`, `} finally`, `} else`, and a `do`'s `} while`), and after a comment on a line of its
-own.
+own. A `}` stays on the line of a block comment that starts that line, as in `/* c */ }`, in a block
+and in a class, interface, or record body, unless the block is an `if`'s without an `else`, the
+statement goes on after it, or it ends a lambda in a call.
 
 ```java
 void m() {
@@ -1116,7 +1120,8 @@ x =
 ### Assignment, casts, `instanceof`
 
 An assignment breaks after its operator, a cast after its `)`, and `instanceof` before the
-keyword, each with what follows at +4. A record pattern that doesn't fit after `instanceof` starts
+keyword, each with what follows at +4. A chain assigned to that breaks is at +4 more than the value.
+A record pattern that doesn't fit after `instanceof` starts
 a line of its own there, and its parts go one per line like arguments.
 
 ```java
@@ -1199,8 +1204,11 @@ each `.` after its prefix, all at once, at +4. The prefix is the root and the fi
 root is a name of up to four characters, `this`, or `super`, or a type's name, possibly
 qualified, and the link after it; otherwise it is the root alone. A name is a type's if it starts
 with an uppercase letter and has a lowercase one, so `FOO_BAR` is not. When the chain has a
-`.stream()` or `.parallelStream()` link, the prefix is everything up to it if that fits on the
-line, and otherwise everything up to it breaks before each `.` too. A chain whose only call has
+`.stream()`, `.parallelStream()`, or `.toBuilder()` link, the prefix is everything up to the last
+of them if that fits on the line, and otherwise everything up to it breaks before each `.` too,
+after a type's name and the link after it. A chain with no call breaks after the last type's name
+in it, so a field after a type's name goes on the next line when it doesn't fit,
+`Outer.Inner` then `.CONSTANT`. A chain whose only call has
 fields after it has the call in its prefix, `explorer.lookup(query, 10)` then `.hitsFound`; an
 array access after a chain's last call counts as a field, so `a.b(x).c()[0]` keeps `a.b(x)`. Both
 of these prefixes are measured up to the call's `(`: when the line up to there fits, the call's
@@ -1296,7 +1304,7 @@ A lambda that is a call's only argument is hugged: `foo(x -> {` stays on the cal
 fits, with the block indented from the statement, and otherwise the lambda goes on the next line
 at +4. A lambda with an expression body that doesn't fit on the call's line goes on the next line
 if it fits there, and otherwise stays on the call's line and breaks after its arrow, with the body
-at +4. The calls in a chain's prefix hug only a lambda with an expression body, and the block's
+at +4. A body that holds a forced break, such as a lambda with a block, doesn't fit there. The calls in a chain's prefix hug only a lambda with an expression body, and the block's
 line breaks still break the groups around the call, such as an assignment's.
 
 ```java
@@ -1381,8 +1389,9 @@ new Sorter(x) {
 An array initializer stays on one line, or puts its elements on lines of their own at +2, with
 the `}` on a line of its own: all on one line if they fit there, filled when every element is at
 most 9 wide, and otherwise one per line. A trailing comma keeps the elements off the braces'
-lines. Dimensions follow the type, `new int[3][]`, and an array access that doesn't fit breaks
-after its `[`, with the index at +4.
+lines. Dimensions follow the type, `new int[3][]`; one that doesn't fit on the line goes on the
+next at +4, and its content's own breaks are at +4 from there. An array access that doesn't fit
+breaks after its `[`, with the index at +4.
 
 An initializer whose input has its elements in rows keeps them, one row a line, even when they'd
 fit on one, and each row that doesn't fit breaks at +4 before each element that doesn't fit. The

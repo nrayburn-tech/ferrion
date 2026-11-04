@@ -190,7 +190,7 @@ fn run(document: &Document, source: &Source<'_>, record: bool) -> (Vec<u8>, Opti
             }),
             Element::FillBreak { soft, next } => {
                 let separator = u32::from(!soft);
-                if top.flat || printer.fits(separator + next) {
+                if top.flat || printer.fits(separator.saturating_add(next)) {
                     if !soft {
                         printer.space();
                     }
