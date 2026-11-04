@@ -90,6 +90,10 @@ pub fn class_file(spec: &str) -> (String, Vec<u8>) {
             "protected-method" => {
                 methods.push((0x0004, words.next().unwrap(), words.next().unwrap()));
             }
+            // Public, native, and of variable arity: a signature polymorphic method's flags.
+            "native-method" => {
+                methods.push((0x0181, words.next().unwrap(), words.next().unwrap()));
+            }
             "signature" => signature = words.next(),
             other => panic!("unknown word {other:?} in {spec:?}"),
         }
@@ -636,6 +640,8 @@ pub const RELATIONS_JDK: &[&str] = &[
     "abstract java/lang/Record protected-method <init> ()V",
     "final java/lang/Void",
     "interface java/lang/Runnable method run ()V",
+    "abstract java/lang/invoke/MethodHandle native-method invoke ([Ljava/lang/Object;)Ljava/lang/Object;",
+    "abstract java/lang/invoke/VarHandle native-method set ([Ljava/lang/Object;)V native-method compareAndSet ([Ljava/lang/Object;)Z",
     "interface java/lang/annotation/Annotation",
     "class java/lang/Throwable implements java/io/Serializable",
     "class java/lang/Exception extends java/lang/Throwable",
@@ -666,13 +672,18 @@ pub const RELATIONS_JDK: &[&str] = &[
 /// platform, and the files of `files`, a resolution case's `//- file` lines and texts (see
 /// [`case_input`]).
 pub fn relations_input(files: &str) -> ProjectInput {
+    relations_input_at(21, files)
+}
+
+/// [`relations_input`] with its source set at `release`.
+pub fn relations_input_at(release: u32, files: &str) -> ProjectInput {
     let mut text = String::from("//- jar jdk.jar\n");
     for class in RELATIONS_JDK {
         text.push_str("//- class ");
         text.push_str(class);
         text.push('\n');
     }
-    text.push_str("//- set main 21 jdk.jar no-platform\n");
+    text.push_str(&format!("//- set main {release} jdk.jar no-platform\n"));
     text.push_str(files);
     case_input(&text)
 }

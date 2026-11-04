@@ -22,22 +22,22 @@
 //! - **Annotations on record components:** javac keeps one in its trees only if it applies to a
 //!   field, by its annotation type's `@Target`, so entries inside others are counted apart when
 //!   javac has none.
-//! - **Waiting:** a type that waits for overload resolution is [`WAITING`], and so is a call
-//!   whose method does, until W3's calls land: counted apart, as `left-to-` values are.
+//! - **Calls:** a creation of an anonymous class is two calls in javac's tree: the anonymous class's
+//!   own constructor, and the implicit `super(...)` in it.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use ferrion_diagnostics::{SourceText, Span};
-use ferrion_semantic::attr::{BODY_FUEL, BodyTypes, Call};
+use ferrion_semantic::attr::{BODY_FUEL, BodyTypes};
 use ferrion_semantic::symbols::TypeKey;
 use ferrion_semantic::types::{Printed, TypeContext, TypeId};
 use ferrion_semantic::{Cancelled, FileId, Snapshot, SourceSetId};
 use ferrion_syntax::ast::{self, AstNode};
 use ferrion_syntax::{NodeId, SyntaxKind as K, SyntaxNode, WalkEvent};
 
-use super::compare::{FileTypes, Typed, TypedCall, TypedVariable, WAITING};
+use super::compare::{FileTypes, Typed, TypedCall, TypedVariable};
 use crate::ferrion::tree::{
     first_expr, folded_groups, folded_operands, name, negative_literal, token,
 };
@@ -45,10 +45,6 @@ use crate::names::ferrion::Offsets;
 
 /// What Ferrion gives for a variable's finality until B3d.
 const FINALITY: &str = "left-to-b3d finality";
-
-/// Whether overload resolution has landed: until then, a call javac made up has nothing in
-/// `BodyTypes::calls`, and waits with the others.
-const IMPLICIT_CALLS_WAIT: bool = true;
 
 /// Every file of `view`, attributed and in the oracle's forms, by its path relative to `corpus`.
 pub fn set_files(
@@ -263,10 +259,7 @@ fn file_types(
         locals: Localizer::new(snapshot, view, corpus),
         strings: HashMap::new(),
     };
-    let mut out = FileTypes {
-        implicit_calls_wait: IMPLICIT_CALLS_WAIT,
-        ..FileTypes::default()
-    };
+    let mut out = FileTypes::default();
     out.expressions.reserve(types.types.len());
 
     // Each folded run is a string literal, with its literals' value.
@@ -359,7 +352,7 @@ fn file_types(
     out.implicit_parameters = shape.implicit_parameters;
     out.component_annotations = shape.component_annotations;
 
-    calls(&tree.root(), &types, &mut writer, &mut out)?;
+    calls(snapshot, file, &tree, &types, &mut writer, &mut out)?;
     variables(&tree, &types, &mut writer, &mut out)?;
     Ok((relative, out))
 }
@@ -386,51 +379,76 @@ fn expression_range(node: SyntaxNode<'_>) -> Span {
 
 /// Each call's chosen method, and for those without one what they wait for.
 fn calls(
-    root: &SyntaxNode<'_>,
+    snapshot: &Snapshot,
+    file: FileId,
+    tree: &ferrion_syntax::SyntaxTree,
     types: &BodyTypes,
     writer: &mut Writer<'_>,
     out: &mut FileTypes,
 ) -> Result<(), Cancelled> {
-    let chosen: HashMap<NodeId, &Call> = types.calls.iter().map(|(n, c)| (*n, c)).collect();
-    for event in root.preorder() {
+    for (node, call) in types.calls.iter() {
+        let syntax = tree.node(*node);
+        let text = snapshot.call_text(file, &mut writer.cx, types, *node, call)?;
+        let method = writer.locals.oracle_form(&text.method)?;
+        let invoked = writer.locals.oracle_form(&text.invoked)?;
+        let (span, implicit) = call_position(syntax);
+        match text.anonymous {
+            Some(own) => {
+                out.calls.push(TypedCall {
+                    span,
+                    implicit,
+                    method: writer.locals.oracle_form(&own)?,
+                    ty: None,
+                });
+                out.calls.push(TypedCall {
+                    span: anonymous_super(syntax),
+                    implicit: true,
+                    method,
+                    ty: Some(invoked),
+                });
+            }
+            None => out.calls.push(TypedCall {
+                span,
+                implicit,
+                method,
+                ty: Some(invoked),
+            }),
+        }
+    }
+    for (node, why) in types.unchosen.iter() {
+        let syntax = tree.node(*node);
+        let label = writer.text(*why)?;
+        let (span, implicit) = call_position(syntax);
+        out.calls.push(TypedCall {
+            span,
+            implicit,
+            method: label.clone(),
+            ty: None,
+        });
+        if has_class_body(syntax) {
+            out.calls.push(TypedCall {
+                span: anonymous_super(syntax),
+                implicit: true,
+                method: label,
+                ty: None,
+            });
+        }
+    }
+    // A method invocation with no method: what its type waits for says what it waits for.
+    for event in tree.root().preorder() {
         let WalkEvent::Enter(node) = event else {
             continue;
         };
-        if let Some(call) = chosen.get(&node.id()) {
-            let method = writer.cx.method_key(call.method.owner, call.method.index)?;
-            let invoked = writer.cx.method_string(&call.invoked, Printed::Captures)?;
-            let (span, implicit) = call_position(node);
-            out.calls.push(TypedCall {
-                span,
-                implicit,
-                method: writer.locals.oracle_form(&method)?,
-                ty: Some(writer.locals.oracle_form(&invoked)?),
-            });
+        if !matches!(node.kind(), K::MethodCallExpr | K::MethodRefExpr)
+            || types.call(node.id()).is_some()
+        {
             continue;
         }
-        if IMPLICIT_CALLS_WAIT && node.kind() == K::EnumConstant {
-            if let Some(span) = enum_creation(node) {
-                out.calls.push(TypedCall {
-                    span,
-                    implicit: false,
-                    method: WAITING.to_owned(),
-                    ty: None,
-                });
-            }
-            continue;
-        }
-        if !matches!(
-            node.kind(),
-            K::MethodCallExpr | K::NewExpr | K::ConstructorCallExpr | K::MethodRefExpr
-        ) {
-            continue;
-        }
-        // A call with no method: what its type waits for says what it waits for.
         let Some(t) = types.type_of(node.id()) else {
             continue;
         };
         let text = writer.text(t)?;
-        if text.starts_with("left-to-") || text.starts_with(WAITING) {
+        if text.starts_with("left-to-") {
             out.calls.push(TypedCall {
                 span: node.span(),
                 implicit: false,
@@ -442,12 +460,34 @@ fn calls(
     Ok(())
 }
 
+fn has_class_body(node: SyntaxNode<'_>) -> bool {
+    matches!(node.kind(), K::NewExpr | K::EnumConstant)
+        && node.children().any(|c| c.kind() == K::ClassBody)
+}
+
+/// Where javac has the implicit `super(...)` of an anonymous class: at its body's `{`, or an enum
+/// constant's name.
+fn anonymous_super(node: SyntaxNode<'_>) -> Span {
+    let start = if node.kind() == K::EnumConstant {
+        let name = node
+            .direct_tokens()
+            .find(|t| matches!(t.kind(), K::Identifier | K::Underscore));
+        name.map_or(node.span().start, |t| t.span().start)
+    } else {
+        let body = node.children().find(|c| c.kind() == K::ClassBody);
+        body.map_or(node.span().start, |b| b.span().start)
+    };
+    Span {
+        start,
+        end: start + 1,
+    }
+}
+
 /// Where javac has a call Ferrion records at `node`, and whether javac made it up: a method
 /// invocation, an explicit constructor call, or a creation is at its range, and an enum constant's
-/// creation ([`enum_creation`]) recorded at its body, or at the constant if it has no body but
-/// arguments; javac's implicit `super()` is at a constructor's `{`, an anonymous class's `{`, or a
-/// class's keyword if it has no constructor, and an enum constant's `new` without either, or the
-/// `super()` of its body, at its name.
+/// creation at [`enum_creation`]'s, or if it has neither arguments nor a body, made up at its name;
+/// javac's implicit `super()` is at a constructor's `{`, or a class's keyword if it has no
+/// constructor.
 fn call_position(node: SyntaxNode<'_>) -> (Span, bool) {
     let at = |start: u32| {
         (
@@ -459,29 +499,15 @@ fn call_position(node: SyntaxNode<'_>) -> (Span, bool) {
         )
     };
     match node.kind() {
-        K::ClassBody => match node.parent().filter(|p| p.kind() == K::EnumConstant) {
-            Some(constant) => (enum_creation(constant).unwrap_or(node.span()), false),
-            None => at(node.span().start),
-        },
         K::Block => at(node.span().start),
-        K::ConstructorDecl | K::CompactConstructorDecl => {
-            let block = node.children().find(|c| c.kind() == K::Block);
-            at(block.unwrap_or(node).span().start)
-        }
         K::ClassDecl | K::EnumDecl | K::RecordDecl => {
             let keyword = node.direct_tokens().find(|t| !t.is_trivia());
             at(keyword.map_or(node.span().start, |t| t.span().start))
         }
-        K::EnumConstant => {
-            let has_body = node.children().any(|c| c.kind() == K::ClassBody);
-            if !has_body && let Some(span) = enum_creation(node) {
-                return (span, false);
-            }
-            let name = node
-                .direct_tokens()
-                .find(|t| matches!(t.kind(), K::Identifier | K::Underscore));
-            at(name.map_or(node.span().start, |t| t.span().start))
-        }
+        K::EnumConstant => match enum_creation(node) {
+            Some(span) => (span, false),
+            None => at(anonymous_super(node).start),
+        },
         _ => (node.span(), false),
     }
 }
@@ -549,8 +575,8 @@ impl Writer<'_> {
             "left-to-b3c inference".to_owned()
         } else if text.contains("left-to-b3d") {
             "left-to-b3d".to_owned()
-        } else if text.contains("unknown calls") {
-            WAITING.to_owned()
+        } else if text.contains("left-to-b4") {
+            "left-to-b4 lombok".to_owned()
         } else {
             self.locals.oracle_form(&text)?
         };
@@ -701,6 +727,6 @@ mod tests {
         assert_eq!(compared.extras, []);
         // The two parameters of `Implicit`'s constructor, and the two of the `new Base`'s.
         assert_eq!(compared.implicit_parameters, 5);
-        assert!(compared.matched > 0 && compared.waiting > 0 && compared.left > 0);
+        assert!(compared.matched > 0 && compared.left > 0);
     }
 }

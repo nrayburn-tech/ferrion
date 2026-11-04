@@ -240,6 +240,8 @@ pub struct Sizes {
     pub file_names: usize,
     pub body_names: usize,
     pub members: usize,
+    /// What the member tables' values hold, without their dependencies.
+    pub member_bytes: usize,
     pub constants: usize,
     pub body_types: usize,
     pub class_entries: usize,
@@ -449,6 +451,7 @@ impl Engine {
             file_names: self.shared.file_names.len(),
             body_names: self.shared.body_names.len(),
             members: self.shared.members.len(),
+            member_bytes: self.shared.members.sum(|m| m.bytes()),
             constants: self.shared.constants.len(),
             body_types: self.shared.body_types.len(),
             class_entries: self.shared.classes.entries_read(),

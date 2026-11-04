@@ -210,6 +210,7 @@ impl TypeContext<'_> {
                 Why::Later => "unknown later",
                 Why::LeftToB3c => "left-to-b3c inference",
                 Why::LeftToB3d => "left-to-b3d",
+                Why::LeftToB4 => "left-to-b4 lombok",
                 Why::Incomplete(_) => "unknown incomplete",
                 Why::Error(_) => "unknown error",
             }),

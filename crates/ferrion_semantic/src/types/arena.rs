@@ -40,6 +40,8 @@ pub enum Why {
     LeftToB3c,
     /// Patterns and `switch` expressions (B3d).
     LeftToB3d,
+    /// Depends on what a Lombok annotation may generate (B4).
+    LeftToB4,
     /// The answer needs a part of this type's hierarchy that didn't resolve.
     Incomplete(TypeKey),
     /// It depends on a name that didn't resolve.

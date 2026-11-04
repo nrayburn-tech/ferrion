@@ -98,6 +98,7 @@ pub(crate) struct Walker<'s, 'r> {
     compound: Vec<(NodeId, Steps)>,
     resolved: Vec<(NodeId, Symbol)>,
     calls: Vec<(NodeId, Call)>,
+    unchosen: Vec<(NodeId, TypeId)>,
     body_fuel: Vec<(NodeId, u64)>,
     frames: Vec<Frame>,
     values: Vec<Value>,
@@ -306,6 +307,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             compound: Vec::new(),
             resolved: Vec::new(),
             calls: Vec::new(),
+            unchosen: Vec::new(),
             body_fuel: Vec::new(),
             frames: Vec::new(),
             values: Vec::new(),
@@ -390,6 +392,7 @@ impl<'s, 'r> Walker<'s, 'r> {
         self.resolved.sort_by_key(|(n, _)| *n);
         self.resolved.dedup_by_key(|(n, _)| *n);
         self.calls.sort_by_key(|(n, _)| *n);
+        self.unchosen.sort_by_key(|(n, _)| *n);
         self.body_fuel.sort_by_key(|(n, _)| *n);
         let mut tables: Vec<(TypeKey, Arc<Members>)> = self
             .local_tables
@@ -403,6 +406,7 @@ impl<'s, 'r> Walker<'s, 'r> {
         out.compound = std::mem::take(&mut self.compound).into_boxed_slice();
         out.resolved = std::mem::take(&mut self.resolved).into_boxed_slice();
         out.calls = std::mem::take(&mut self.calls).into_boxed_slice();
+        out.unchosen = std::mem::take(&mut self.unchosen).into_boxed_slice();
         out.fuel = std::mem::take(&mut self.body_fuel).into_boxed_slice();
         let mut variables: Vec<(NodeId, TypeId)> = self
             .locals
@@ -427,8 +431,31 @@ impl<'s, 'r> Walker<'s, 'r> {
     }
 
     fn error_type(&mut self, error: ErrorSymbol) -> TypeId {
+        // A member not found in a type with a Lombok annotation may be one Lombok generates.
+        if let Cause::Incomplete { ty } = error.cause
+            && self.lombok_above(ty)
+        {
+            return self.unknown(Why::LeftToB4);
+        }
         let e = self.cx.arena_mut().error(error);
         self.cx.arena_mut().intern(Type::Error(e))
+    }
+
+    /// A type's members can't be known: for a Lombok annotation on it or a supertype, until B4.
+    fn incomplete(&mut self, key: TypeKey) -> TypeId {
+        let why = if self.lombok_above(key) {
+            Why::LeftToB4
+        } else {
+            Why::Incomplete(key)
+        };
+        self.unknown(why)
+    }
+
+    fn lombok_above(&mut self, key: TypeKey) -> bool {
+        let fuel = self.cx.save_fuel();
+        let found = self.cx.lombok_above(key).unwrap_or(false);
+        self.cx.restore_fuel(fuel);
+        found
     }
 
     fn primitive(&mut self, p: Primitive) -> TypeId {
@@ -1435,7 +1462,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             }
         }
         Ok(Err(match incomplete {
-            Some(key) => self.unknown(Why::Incomplete(key)),
+            Some(key) => self.incomplete(key),
             None => self.error_type(ErrorSymbol {
                 name,
                 cause: Cause::NotFound,

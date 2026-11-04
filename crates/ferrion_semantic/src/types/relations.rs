@@ -542,6 +542,25 @@ impl TypeContext<'_> {
         captures: Vec<NewCapture>,
     ) -> R<()> {
         let subst = self.theta(captured);
+        // Each variable's `glb` can ask about the others, a later one's too (observed: of
+        // `B<? extends B<?, ? extends R>, ? extends R>`, with `B<S extends B<S, T>, T>`, the first
+        // is `capture#1 extends B<capture#1,capture#2 extends R>`, which needs the second's bound):
+        // so they all have bounds before the first `glb`.
+        for &(i, c, wildcard) in &captures {
+            let Some((WildcardBound::Extends, b)) = wildcard else {
+                continue;
+            };
+            let declared = self.var_bounds(TypeVarOwner::Type(key), i)?.to_vec();
+            let mut bounds = vec![b];
+            for d in declared {
+                bounds.push(self.subst(d, &subst)?);
+            }
+            let upper = self.arena.intersection(&bounds);
+            let Type::Capture(n) = self.arena.get(c) else {
+                unreachable!("a capture variable");
+            };
+            self.arena.set_bounds(n, upper, None);
+        }
         for (i, c, wildcard) in captures {
             let declared = self.var_bounds(TypeVarOwner::Type(key), i)?.to_vec();
             let mut bounds = Vec::with_capacity(declared.len() + 1);
@@ -1063,7 +1082,9 @@ impl TypeContext<'_> {
     /// type arguments: its type parameters replaced and gone. `No` if an argument is outside its
     /// parameter's bound (JLS 15.12.2.2). Yes says whether a bound needed an unchecked conversion,
     /// which javac counts as one for the method's result (observed:
-    /// `Comparator.<Comparable>naturalOrder()` is `()java/util/Comparator`).
+    /// `Comparator.<Comparable>naturalOrder()` is `()java/util/Comparator`), unless the bound takes
+    /// a raw type freely ([`TypeContext::takes_raw_freely`]; observed: `Range.<C>rangeLexOrdering()`
+    /// with `C extends Comparable`, bounded by `Comparable<?>`, keeps its result).
     pub fn method_with_arguments(
         &mut self,
         of: Option<TypeId>,
@@ -1106,7 +1127,8 @@ impl TypeContext<'_> {
                         match answer {
                             Tri::Yes(steps) => {
                                 unchecked |=
-                                    steps.as_slice().contains(&super::Conversion::Unchecked);
+                                    steps.as_slice().contains(&super::Conversion::Unchecked)
+                                        && !cx.takes_raw_freely_(bound)?;
                             }
                             Tri::No => return Ok(Tri::No),
                             Tri::Unknown(why) => {

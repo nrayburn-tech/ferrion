@@ -34,7 +34,7 @@ use crate::decl_names::Symbol;
 use crate::engine::derived::{Memo, Reads};
 use crate::members::Members;
 use crate::symbols::{MethodRef, TypeKey};
-use crate::types::{Arena, MethodType, Printed, Steps, TypeId};
+use crate::types::{Arena, MethodType, Printed, Steps, TypeContext, TypeId};
 use crate::{Cancelled, FileId, Snapshot};
 
 pub(crate) use self::walk::Walker;
@@ -57,8 +57,13 @@ pub struct BodyTypes {
     /// makes up are by the node they belong to: a constructor's implicit `super()` by its body's
     /// `Block`, a default constructor's by the type's declaration, an enum constant's creation
     /// by the `EnumConstant`. A creation of an anonymous class has the superclass constructor it
-    /// chooses ([`Snapshot::call_key`] gives javac's key for each).
+    /// chooses ([`Snapshot::call_text`] gives javac's key for each).
     pub calls: Box<[(NodeId, Call)]>,
+    /// The creations, explicit and implicit constructor calls, and enum constants without a chosen
+    /// method, by the same nodes as `calls`, with why: a non-answer. A creation's own type doesn't
+    /// say, since it is the class named whichever constructor is chosen, and a constructor call's
+    /// is `void`.
+    pub unchosen: Box<[(NodeId, TypeId)]>,
     /// Each constant expression's value (JLS 15.29), in node order.
     pub constants: Box<[(NodeId, Constant)]>,
     /// The conversions an expression's context applied to it, where any but identity was, in
@@ -72,7 +77,8 @@ pub struct BodyTypes {
     /// projection of its initializer's type or its enhanced `for`'s element type.
     pub variables: Box<[(NodeId, TypeId)]>,
     /// The names B2 left to B3 that the walk resolved, by node: fields of an expression's type
-    /// and of type variables, an array's `length`, `case` constants of an enum selector.
+    /// and of type variables, an array's `length`, `case` constants of an enum selector, and the
+    /// type declaring a statically imported method, which B2 couldn't tell among the imports'.
     pub resolved: Box<[(NodeId, Symbol)]>,
     /// The member tables of the file's local and anonymous classes that the walk looked up.
     pub local_members: Box<[(TypeKey, Arc<Members>)]>,
@@ -135,6 +141,11 @@ impl BodyTypes {
         find(&self.types, node).copied()
     }
 
+    /// What the walk settled of a name B2 left, or couldn't tell.
+    pub fn resolved_name(&self, node: NodeId) -> Option<&Symbol> {
+        find(&self.resolved, node)
+    }
+
     /// A call's chosen method, by the node [`BodyTypes::calls`] has it under.
     pub fn call(&self, node: NodeId) -> Option<&Call> {
         find(&self.calls, node)
@@ -189,12 +200,11 @@ impl Snapshot {
     pub fn call_text(
         &self,
         file: FileId,
+        cx: &mut TypeContext<'_>,
         types: &BodyTypes,
         node: NodeId,
         call: &Call,
     ) -> Result<CallText, Cancelled> {
-        let view = self.file(file)?.set;
-        let mut cx = self.types_in(view, types.arena.clone());
         let method = match call.special {
             Special::ArrayClone => "method Array.clone()Ljava/lang/Object;".to_owned(),
             _ => self.method_text(call.method.owner, call.method.index)?,

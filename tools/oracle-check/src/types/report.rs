@@ -91,8 +91,6 @@ pub struct Comparison {
     pub extra: u64,
     /// Ferrion's entries a later milestone types.
     pub left: u64,
-    /// Ferrion's entries that wait for overload resolution.
-    pub waiting: u64,
     /// Entries counted apart, by aspect and what they wait for.
     pub apart: BTreeMap<String, u64>,
     /// javac's parameters of implicit constructors, which have no counterpart.
@@ -154,7 +152,6 @@ impl Tally {
         c.not_compared += o.not_compared;
         c.extra += o.extra;
         c.left += o.left;
-        c.waiting += o.waiting;
         merge_counts(&mut c.apart, &o.apart);
         c.implicit_parameters += o.implicit_parameters;
         c.dropped_annotations += o.dropped_annotations;
@@ -401,8 +398,7 @@ impl Report {
             "\ncomparison: {} matched, {} mismatched, {} known, {} not compared (no Ferrion \
              results), {} relation queries about types javac couldn't resolve, {} parameters of \
              implicit constructors; on Ferrion's side, {} extra, {} in annotations on record \
-             components javac dropped, {} left to a later milestone, and {} waiting for overload \
-             resolution",
+             components javac dropped, and {} left to a later milestone",
             c.matched,
             t.mismatches(),
             c.known.values().sum::<u64>(),
@@ -411,8 +407,7 @@ impl Report {
             c.implicit_parameters,
             c.extra,
             c.dropped_annotations,
-            c.left,
-            c.waiting
+            c.left
         )
         .unwrap();
         for (aspect, count) in &c.matched_by {
@@ -514,22 +509,21 @@ impl Report {
     /// A row per project of what was compared, for the design's results.
     fn comparison_rows(&self) -> String {
         let mut out = String::from(
-            "\n| Project | Matched | Expressions | Constants | Calls | Variables | Waiting | Left \
-             | Implicit parameters | Known | Mismatched | Extra |\n| --- | --- | --- | --- | --- \
-             | --- | --- | --- | --- | --- | --- | --- |\n",
+            "\n| Project | Matched | Expressions | Constants | Calls | Variables | Left | Implicit \
+             parameters | Known | Mismatched | Extra |\n| --- | --- | --- | --- | --- | --- | --- \
+             | --- | --- | --- | --- |\n",
         );
         let mut row = |name: &str, t: &Tally| {
             let c = &t.comparison;
             let aspect = |a: &str| c.matched_by.get(a).copied().unwrap_or(0);
             writeln!(
                 out,
-                "| {name} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |",
+                "| {name} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |",
                 c.matched,
                 aspect("expression"),
                 aspect("constant"),
                 aspect("call"),
                 aspect("variable"),
-                c.waiting,
                 c.left,
                 c.implicit_parameters,
                 c.known.values().sum::<u64>(),

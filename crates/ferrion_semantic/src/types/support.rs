@@ -5,7 +5,7 @@
 use std::rc::Rc;
 
 use super::decl::{Body, Flags};
-use super::{Tri, Type, TypeArg, TypeContext, TypeId, Why};
+use super::{R, Tri, Type, TypeArg, TypeContext, TypeId, Why};
 use crate::summary::{Primitive, WildcardBound};
 use crate::symbols::{FieldRef, MemberAccess, MethodRef, TypeKey};
 use crate::{Cancelled, Name};
@@ -317,25 +317,23 @@ impl TypeContext<'_> {
     /// `Collection<? extends Object>`, `Class[]` as `Class<?>[]`, leaves the method's result as it
     /// is, where `List<? extends Number>` erases it).
     pub(crate) fn takes_raw_freely(&mut self, t: TypeId) -> Result<bool, Cancelled> {
-        self.top(
-            |_| false,
-            |cx| {
-                let mut t = t;
-                while let Type::Array(component) = cx.arena.get(t) {
-                    t = component;
-                }
-                let args = cx.arena.class_args(t).to_vec();
-                for arg in args {
-                    match arg {
-                        TypeArg::Wildcard(None) => {}
-                        TypeArg::Wildcard(Some((WildcardBound::Extends, b)))
-                            if cx.is_object(b)? => {}
-                        _ => return Ok(false),
-                    }
-                }
-                Ok(true)
-            },
-        )
+        self.top(|_| false, |cx| cx.takes_raw_freely_(t))
+    }
+
+    pub(crate) fn takes_raw_freely_(&mut self, t: TypeId) -> R<bool> {
+        let mut t = t;
+        while let Type::Array(component) = self.arena.get(t) {
+            t = component;
+        }
+        let args = self.arena.class_args(t).to_vec();
+        for arg in args {
+            match arg {
+                TypeArg::Wildcard(None) => {}
+                TypeArg::Wildcard(Some((WildcardBound::Extends, b))) if self.is_object(b)? => {}
+                _ => return Ok(false),
+            }
+        }
+        Ok(true)
     }
 
     /// The outer type of the member class `key` created through an instance of type `o`: `o`'s
@@ -410,6 +408,35 @@ impl TypeContext<'_> {
                 Ok(cx
                     .decl(key)?
                     .is_some_and(|d| matches!(&d.body, Body::Entry(e) if e.lombok)))
+            },
+        )
+    }
+
+    /// Whether a class or one of its supertypes has a Lombok annotation.
+    pub(crate) fn lombok_above(&mut self, key: TypeKey) -> Result<bool, Cancelled> {
+        self.top(
+            |_| false,
+            |cx| {
+                let mut seen = Vec::new();
+                let mut pending = vec![key];
+                while let Some(k) = pending.pop() {
+                    if seen.contains(&k) {
+                        continue;
+                    }
+                    seen.push(k);
+                    if cx
+                        .decl(k)?
+                        .is_some_and(|d| matches!(&d.body, Body::Entry(e) if e.lombok))
+                    {
+                        return Ok(true);
+                    }
+                    for s in cx.declared_supertypes(k)?.iter() {
+                        if let Type::Class { key, .. } = cx.arena.get(*s) {
+                            pending.push(key);
+                        }
+                    }
+                }
+                Ok(false)
             },
         )
     }
