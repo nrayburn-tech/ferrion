@@ -222,7 +222,8 @@ as GJF does, while the call's arguments stay flat.
 One choice that fitting can't make came up, and instead of a general `BestFit` element it is an
 `Alternative` right after the group's start. A mark after the group's first line break splits the
 group into a head, from its start to the first line element after the mark, and a tail, from the
-mark to the end of the line after the group. When the group doesn't fit, and neither does the
+mark to the end of the line after the group. A tail with a forced break in it doesn't fit on any
+line. When the group doesn't fit, and neither does the
 tail on a line of its own at +4, the group stays flat if its head fits, and the groups in the hug
 inside it break instead: `foo(x ->` then the lambda's body at +4, or `when(a.b(` then `b`'s
 arguments.

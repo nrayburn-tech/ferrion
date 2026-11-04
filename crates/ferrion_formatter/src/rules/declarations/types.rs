@@ -7,7 +7,9 @@ use super::annotations::{self, After, Layout};
 use super::{doc_comment_before, emit, first_token, fits_on_line, parts, take};
 use crate::document::IndentKind;
 use crate::format::Formatter;
-use crate::rules::comments::{block_comment_after, has_comments_before, leads_on_code_line};
+use crate::rules::comments::{
+    block_comment_after, has_comments_before, leads_on_code_line, own_line_block_comment_on_line_of,
+};
 use crate::rules::lists::{Shape, delimited, separated};
 
 /// The rule for a class, interface, enum, record, or annotation type declaration.
@@ -214,7 +216,11 @@ fn close_body<'t>(f: &mut Formatter<'t>, close: SyntaxToken<'t>) {
     f.no_blank_line();
     f.comments_before(close.id());
     f.end();
-    f.hard_line();
+    if own_line_block_comment_on_line_of(close) {
+        f.space();
+    } else {
+        f.hard_line();
+    }
 }
 
 /// The line break before `next`, a member, after a member that [`spaced_member`] says is
@@ -227,6 +233,22 @@ pub(super) fn member_break<'t>(
     next: NodeOrToken<'t>,
     next_spaced: bool,
 ) {
+    // A `;` after an enum's or annotation type's `}` joins its line, unless a comment is between
+    // them (observed).
+    if let NodeOrToken::Token(semi) = next
+        && semi.kind() == K::Semi
+        && !has_comments_before(semi)
+        && semi.prev_non_trivia().is_some_and(|close| {
+            close.kind() == K::RBrace
+                && (close.parent().kind() == K::EnumBody
+                    || close
+                        .parent()
+                        .parent()
+                        .is_some_and(|decl| decl.kind() == K::AnnotationTypeDecl))
+        })
+    {
+        return;
+    }
     if next_spaced || previous_spaced && next.kind() != K::Semi {
         f.blank_line();
     } else {

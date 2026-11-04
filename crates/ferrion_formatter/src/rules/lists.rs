@@ -626,9 +626,10 @@ fn in_rows<'t>(
             })
             .map_or(rest.len(), |last| last + 1);
         let (row, after) = rest.split_at(end);
-        // A comment on a line of its own before the row goes before its fill.
+        // A comment on a line of its own before the row goes before its fill. An item that holds
+        // rows of its own starts a line (observed).
         f.comments_before(first_token(first).id());
-        f.fill(|f| {
+        f.strict_fill(|f| {
             emit(f, first);
             let indentation = if capped {
                 Indentation::start(f, IndentKind::Continuation)

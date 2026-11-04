@@ -31,10 +31,12 @@ pub fn access<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
 }
 
 /// `new int[n][]`, `new int[] {1, 2}`: the dimensions follow the type, and an initializer
-/// follows after a space.
+/// follows after a space. A dimension with an expression that doesn't fit on the line goes on the
+/// next at +4 (observed).
 pub fn creation<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
     let mut previous = None;
-    for element in elements(node) {
+    let mut elements = elements(node).peekable();
+    while let Some(element) = elements.next() {
         match element {
             NodeOrToken::Token(token) if token.kind() == K::NewKw => {
                 f.token(token);
@@ -45,6 +47,22 @@ pub fn creation<'t>(f: &mut Formatter<'t>, node: SyntaxNode<'t>) {
             NodeOrToken::Node(child) if child.kind() == K::ArrayInitializer => {
                 f.space();
                 f.node(child);
+            }
+            NodeOrToken::Node(child) if child.kind() == K::DimExpr => {
+                let indentation = Indentation::start(f, IndentKind::Continuation);
+                // An annotated dimension has a space before it: `new int @A [n]`.
+                let annotated = |n: SyntaxNode<'t>| n.children().any(|c| c.kind() == K::Annotation);
+                f.fill(|f| {
+                    f.fill_break(!annotated(child));
+                    f.node(child);
+                    while let Some(dim) =
+                        elements.next_if(|e| e.as_node().is_some_and(|n| n.kind() == K::DimExpr))
+                    {
+                        f.fill_break(!dim.as_node().is_some_and(annotated));
+                        emit(f, dim);
+                    }
+                });
+                indentation.end(f);
             }
             _ => spaced(f, previous, element),
         }

@@ -502,6 +502,13 @@ impl<'t> Formatter<'t> {
         self.doc.end();
     }
 
+    /// [`Formatter::fill`], where an item with a forced break goes on a line of its own.
+    pub fn strict_fill(&mut self, f: impl FnOnce(&mut Self)) {
+        self.doc().start_strict_fill();
+        f(self);
+        self.doc.end();
+    }
+
     /// A separator between two items of the fill `f` is building.
     pub fn fill_break(&mut self, soft: bool) {
         if self.in_region.is_none() {
