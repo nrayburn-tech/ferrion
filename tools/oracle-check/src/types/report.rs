@@ -72,12 +72,16 @@ pub struct Excluded {
     pub unanalyzed: u64,
     /// Ferrion's results for the source set failed.
     pub ferrion_failures: u64,
+    /// A file a processor generated, whose text isn't what the cached run of javac saw.
+    pub stale_generated: u64,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Comparison {
     pub matched: u64,
+    /// By aspect.
+    pub matched_by: BTreeMap<&'static str, u64>,
     /// By aspect, then category.
     pub mismatched: BTreeMap<&'static str, BTreeMap<&'static str, u64>>,
     /// Mismatches listed in `differences/types-known.txt`, by category.
@@ -87,6 +91,14 @@ pub struct Comparison {
     pub extra: u64,
     /// Ferrion's entries a later milestone types.
     pub left: u64,
+    /// Ferrion's entries that wait for overload resolution.
+    pub waiting: u64,
+    /// Entries counted apart, by aspect and what they wait for.
+    pub apart: BTreeMap<String, u64>,
+    /// javac's parameters of implicit constructors, which have no counterpart.
+    pub implicit_parameters: u64,
+    /// Ferrion's entries in annotations on record components that javac dropped from its trees.
+    pub dropped_annotations: u64,
     /// Relation queries about a type javac couldn't resolve.
     pub unresolved: u64,
 }
@@ -115,6 +127,7 @@ impl Tally {
         e.module_declarations += o.module_declarations;
         e.unanalyzed += o.unanalyzed;
         e.ferrion_failures += o.ferrion_failures;
+        e.stale_generated += o.stale_generated;
         self.compared_files += other.compared_files;
         self.lombok_types += other.lombok_types;
         self.expressions += other.expressions;
@@ -130,6 +143,7 @@ impl Tally {
         self.relation_errors += other.relation_errors;
         let (c, o) = (&mut self.comparison, &other.comparison);
         c.matched += o.matched;
+        merge_counts(&mut c.matched_by, &o.matched_by);
         for (aspect, categories) in &o.mismatched {
             let ours = c.mismatched.entry(aspect).or_default();
             for (category, count) in categories {
@@ -140,6 +154,10 @@ impl Tally {
         c.not_compared += o.not_compared;
         c.extra += o.extra;
         c.left += o.left;
+        c.waiting += o.waiting;
+        merge_counts(&mut c.apart, &o.apart);
+        c.implicit_parameters += o.implicit_parameters;
+        c.dropped_annotations += o.dropped_annotations;
         c.unresolved += o.unresolved;
         merge_counts(&mut self.error_codes, &other.error_codes);
         merge_counts(&mut self.switch_errors, &other.switch_errors);
@@ -164,7 +182,10 @@ impl Tally {
     }
 
     pub fn failures(&self) -> u64 {
-        self.mismatches() + self.jvm_failures + self.excluded.ferrion_failures
+        self.mismatches()
+            + self.comparison.extra
+            + self.jvm_failures
+            + self.excluded.ferrion_failures
     }
 
     pub fn relation_queries(&self) -> u64 {
@@ -205,6 +226,17 @@ pub struct MismatchRow {
     pub ferrion: Option<String>,
 }
 
+/// A Ferrion entry where javac has none, for the report.
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExtraRow {
+    pub file: String,
+    pub aspect: &'static str,
+    pub start: i64,
+    pub end: i64,
+    pub ferrion: String,
+}
+
 /// javac's analysis time of one compared file.
 #[derive(Clone, Debug, Serialize)]
 pub struct FileTime {
@@ -219,6 +251,9 @@ pub struct Report {
     pub total: Tally,
     pub source_sets: Vec<SetRow>,
     pub mismatches: Vec<MismatchRow>,
+    pub extras: Vec<ExtraRow>,
+    /// Files processors generated whose text isn't what the cached run of javac saw.
+    pub stale_generated: Vec<String>,
     pub crashes: Vec<(String, String)>,
     pub errors: Vec<(String, String)>,
     /// Every compared file's analysis time, slowest first.
@@ -285,7 +320,8 @@ impl Report {
             out,
             "\nfiles: {} of the source sets and {} generated; left out: {} with javac errors \
              ({} with switch errors only), {} javac never analyzed, {} javac crashed on, {} \
-             module declarations, {} in source sets Ferrion failed on; {} Lombok types left out",
+             module declarations, {} in source sets Ferrion failed on, {} generated with other \
+             text than javac's cached run saw; {} Lombok types left out",
             t.files - t.generated_files,
             t.generated_files,
             t.excluded.javac_errors,
@@ -294,6 +330,7 @@ impl Report {
             t.excluded.crashes,
             t.excluded.module_declarations,
             t.excluded.ferrion_failures,
+            t.excluded.stale_generated,
             t.lombok_types
         )
         .unwrap();
@@ -362,17 +399,28 @@ impl Report {
         writeln!(
             out,
             "\ncomparison: {} matched, {} mismatched, {} known, {} not compared (no Ferrion \
-             results), {} relation queries about types javac couldn't resolve; on Ferrion's \
-             side, {} extra and {} left to a later milestone",
+             results), {} relation queries about types javac couldn't resolve, {} parameters of \
+             implicit constructors; on Ferrion's side, {} extra, {} in annotations on record \
+             components javac dropped, {} left to a later milestone, and {} waiting for overload \
+             resolution",
             c.matched,
             t.mismatches(),
             c.known.values().sum::<u64>(),
             c.not_compared,
             c.unresolved,
+            c.implicit_parameters,
             c.extra,
-            c.left
+            c.dropped_annotations,
+            c.left,
+            c.waiting
         )
         .unwrap();
+        for (aspect, count) in &c.matched_by {
+            writeln!(out, "  matched, {aspect}: {count}").unwrap();
+        }
+        for (label, count) in &c.apart {
+            writeln!(out, "  apart, {label}: {count}").unwrap();
+        }
         for (aspect, categories) in &c.mismatched {
             for (category, count) in categories {
                 writeln!(out, "  {aspect} {category}: {count}").unwrap();
@@ -431,6 +479,25 @@ impl Report {
             )
             .unwrap();
         }
+        for file in self.stale_generated.iter().take(limit) {
+            writeln!(
+                out,
+                "\nSTALE {file}: not the text javac's cached run saw (docs/design/\
+                 types-oracle-normalization.md#generated-text-that-changes)"
+            )
+            .unwrap();
+        }
+        for extra in self.extras.iter().take(limit) {
+            writeln!(
+                out,
+                "\nEXTRA {} {} {}-{}: Ferrion {}",
+                extra.file, extra.aspect, extra.start, extra.end, extra.ferrion
+            )
+            .unwrap();
+        }
+        if self.projects.len() > 1 && (c.matched_by.len() > 1 || !c.apart.is_empty()) {
+            out.push_str(&self.comparison_rows());
+        }
         writeln!(
             out,
             "\n{} source sets ({} cached) in {:.1}s",
@@ -439,6 +506,42 @@ impl Report {
             self.wall_seconds
         )
         .unwrap();
+        out
+    }
+}
+
+impl Report {
+    /// A row per project of what was compared, for the design's results.
+    fn comparison_rows(&self) -> String {
+        let mut out = String::from(
+            "\n| Project | Matched | Expressions | Constants | Calls | Variables | Waiting | Left \
+             | Implicit parameters | Known | Mismatched | Extra |\n| --- | --- | --- | --- | --- \
+             | --- | --- | --- | --- | --- | --- | --- |\n",
+        );
+        let mut row = |name: &str, t: &Tally| {
+            let c = &t.comparison;
+            let aspect = |a: &str| c.matched_by.get(a).copied().unwrap_or(0);
+            writeln!(
+                out,
+                "| {name} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |",
+                c.matched,
+                aspect("expression"),
+                aspect("constant"),
+                aspect("call"),
+                aspect("variable"),
+                c.waiting,
+                c.left,
+                c.implicit_parameters,
+                c.known.values().sum::<u64>(),
+                t.mismatches(),
+                c.extra,
+            )
+            .unwrap();
+        };
+        for (name, tally) in &self.projects {
+            row(name, tally);
+        }
+        row("total", &self.total);
         out
     }
 }
@@ -470,5 +573,7 @@ mod tests {
         assert_eq!(a.mismatches(), 3);
         assert_eq!(a.failures(), 4);
         assert_eq!(a.comparison.mismatched["expression"]["type"], 2);
+        a.comparison.extra = 2;
+        assert_eq!(a.failures(), 6);
     }
 }
