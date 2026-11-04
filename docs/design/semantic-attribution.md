@@ -336,6 +336,23 @@ What W3 built differs in these ways:
   class alone.
 - **The adapter:** W4's waiting label and `IMPLICIT_CALLS_WAIT` are gone with what they waited for.
 
+What the removed-symbols check changed, in W2's walk, B2's, and W1's `lub` ([the check](#the-removed-symbols-check)):
+
+- **A name in a class with a supertype that didn't resolve** could be a member of that supertype,
+  which would shadow whatever is around the class (JLS 6.4.1). So a simple name not found in the
+  class itself is an `Error` with `Cause::Incomplete`, whatever is around it: a local, a field or
+  method of an enclosing class, a static import. Before, `getClass()` in `new Missing() { ... }` was
+  the enclosing class's, confidently. (The class's own members are still answers.)
+- **`super`** of a class whose superclass didn't resolve is that error, not `Object`, where its
+  hierarchy goes on.
+- **`lub`** through an operand whose hierarchy isn't all known is that non-answer: a common supertype
+  could be among what it can't see. Before, it was the `lub` of what it saw.
+- **Finding a constant's initializer** reads a table of the class's fields and member types, for a
+  class of more than 256 members, rather than walking them per constant
+  ([measurements](#measurements)). It isn't a derived entry: it is made from the tree alone and kept
+  with the tree it was made from, so that a constant's entry still depends on the summary and not
+  the text.
+
 ## Observations
 
 Run with Temurin 27.0.1's `javac` through the types oracle, in a scratch directory, each on a small
@@ -618,13 +635,159 @@ recorded for arguments and `Call::phase` have no counterpart in javac's output, 
 them, and not many; a call in a lambda's body is compared where its type needs no inference, like
 any other.
 
+### The removed-symbols check
+
+`cargo oracle removed`, as the [overview](semantic-types.md#verification) defines it, on every locked
+project, from the cached output of `oracle types`, on 3 November 2026. Each round removes from
+Ferrion's inputs a seeded choice among what javac's answers name: 3 of the jars that have some of
+those classes, or, separately, 20 of those classes, each from the jars, the source files (a file
+goes whole, unless a processor generated it), or the platform API, whichever have it. 28 rounds at
+seeds 1 and 2, the default, CI's, in 122 s; 56 more at seeds 5 to 7 and with `java/lang/Object` and
+`java/lang/String` removed, one each per project, in 238 s.
+
+| Project | Removed | Rounds | The same as javac's | The same, a removed class in a descriptor | Left to later | Non-answers rooted by name | By the file | Nothing at javac's range | Extra non-answers | Confident and different | Unrooted | Panics |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| jedis | jars | 2 | 1,249,209 | 187 | 243,241 | 2,812 | 29,032 | 16 | 256 | 0 | 0 | 0 |
+| jedis | classes | 2 | 1,187,173 | 4,511 | 262,250 | 44,773 | 3,472 | 34 | 69 | 0 | 0 | 0 |
+| guava | jars | 2 | 1,305,685 | 134 | 262,423 | 31,437 | 84,478 | 1,482 | 104 | 0 | 0 | 0 |
+| guava | classes | 2 | 1,354,711 | 246 | 314,745 | 7,258 | 802 | 76 | 50 | 0 | 0 | 0 |
+| caffeine | jars | 2 | 837,756 | 1 | 284,430 | 852 | 1,139 | 0 | 11 | 0 | 0 | 0 |
+| caffeine | classes | 2 | 814,798 | 187 | 275,083 | 6,525 | 2,961 | 7 | 8 | 0 | 0 | 0 |
+| spring-data-jpa | jars | 2 | 642,336 | 0 | 98,832 | 797 | 528 | 16 | 123 | 0 | 0 | 0 |
+| spring-data-jpa | classes | 2 | 636,010 | 53 | 95,815 | 2,435 | 4,088 | 31 | 47 | 0 | 0 | 0 |
+| lucene | jars | 2 | 6,778,302 | 49 | 518,652 | 97,115 | 1,521 | 138 | 1,247 | 0 | 0 | 0 |
+| lucene | classes | 2 | 6,842,744 | 131 | 515,309 | 16,336 | 2,741 | 138 | 5 | 0 | 0 | 0 |
+| hertzbeat | jars | 2 | 151,155 | 0 | 25,996 | 895 | 4,839 | 0 | 93 | 0 | 0 | 0 |
+| hertzbeat | classes | 2 | 150,568 | 9 | 30,570 | 902 | 46 | 1 | 5 | 0 | 0 | 0 |
+| helidon | jars | 2 | 3,291,690 | 213 | 828,359 | 10,010 | 923 | 298 | 857 | 0 | 0 | 0 |
+| helidon | classes | 2 | 3,283,051 | 193 | 825,337 | 4,317 | 751 | 16 | 11 | 0 | 0 | 0 |
+| total, these | | 28 | 28,525,188 | 5,914 | 4,581,042 | 226,464 | 137,321 | 2,253 | 2,886 | 0 | 0 | 0 |
+| total, the 56 more | | 56 | 52,989,868 | 23,902 | 8,592,453 | 2,694,239 | 1,651,873 | 50,879 | 5,351 | 0 | 0 | 0 |
+
+- **No crash, and no confident answer that differs,** in 84 rounds. It took three changes to Ferrion
+  to get there ([departures](#departures)), for 25 entries; the check first found 521, nearly all the
+  next point, which isn't a difference.
+- **The same, but for a descriptor:** a method's key, or a type variable's owner, writes a parameter
+  or result that doesn't resolve as `Object` (`T:p/A.m(Ljava/lang/Object;)V`, where javac has the
+  class). That is the same method or variable, and they are compared with those classes set aside; in
+  a method's key only for a class removed, since a real overload of `Object` would be a guess.
+- **What a root cause is:** an error's name with a segment that is a removed class's simple name;
+  an incomplete class with a supertype that doesn't resolve. "By the file" are non-answers whose
+  error names something else: a member (`error unsubscribe`, inherited from a class gone; `error
+  equalTo`, from a static import of one), in a file that names something removed, or a class in
+  `java/lang`. A sample was read, about 1 in 37, and each was such a member, but their names aren't
+  checked one by one against the removed classes' members. What holds them to account is the full
+  run: with nothing removed, not one non-answer exists where javac has an answer in a compared file,
+  so each of these comes of the removal.
+- **Nothing at javac's range:** a tree javac has that Ferrion doesn't, where it can't tell what a name
+  is any more (`a.b.C.f`, once `a.b.C` is gone, has no `a.b.C` type), or a constant it can't fold. No
+  answer, so nothing to differ; counted, and it fails the run in a file that names nothing removed.
+
+### Measurements
+
+`cargo oracle measure lucene org/apache/lucene/index/IndexWriter.java`, a release build, on the 10-core Mac, shared
+with other work; lucene's 79 source sets, 6,239 files, 54.3 MB, with its jars and its JDK's platform API.
+The fastest of three cold runs:
+
+| Threads | Project-wide | Names of bodies (B2's body phase) | Names and attribution | Attribution |
+| --- | --- | --- | --- | --- |
+| 1 | 1.23 s | 1.61 s | 3.57 s | 1.96 s |
+| 4 | 0.38 s | 0.57 s | 1.13 s | 0.56 s |
+
+So attribution costs about what B2's body phase does (1.2 times on one thread, the same on four), and
+scales as well: 3.5 times on four threads. Every file's result kept is about 104 MB, against 54 MB of text;
+the batch keeps none, and a language server keeps open files'.
+
+An edit inside a body, after a cold run on four threads with every file's attribution kept: each
+followed by everything project-wide on four threads, the file's names, and its attribution, three
+times each way, and then every file's attribution asked for again, as what's kept is verified:
+
+| File | Bytes | Edit | In all | Attribution alone | Every file's attribution then | Other files computed |
+| --- | --- | --- | --- | --- | --- | --- |
+| `UAX29URLEmailTokenizerImpl` (the largest) | 1,834,208 | A statement added | 119 to 126 ms | 35 ms | 82 to 85 ms | 0 |
+| | | A `var`'s type changed | 118 to 127 ms | 34 to 35 ms | 80 to 83 ms | 0 |
+| `IndexWriter` (a large one by hand) | 261,123 | A statement added | 28 to 33 ms | 5 ms | 80 to 83 ms | 0 |
+| | | A `var`'s type changed | 33 to 34 ms | 5 ms | 79 to 82 ms | 0 |
+
+Most of "in all" is verifying what didn't change, and the parse; attribution's part is 5 ms on a 261 KB
+file by hand. **So per-file results stay** (question 1): an edit in a body recomputes its own file and
+no other, in a time the language server won't notice; splitting per body would save at most those 5 ms.
+
+**The benchmarks** on the same machine, `cargo benchmark run semantic/`, with attribution in each:
+`semantic/corpus-cold` on jedis 1.47 s, a heap peak of 82 MB and 1.44 GB allocated; on lucene (its
+checkout's sources alone, 5,968 files) 4.57 s, 409 MB, and 5.34 GB. `semantic/edits`, now with a `var`
+going from `1` to `1L`, on jedis 30.8 ms, on lucene 342 ms.
+
+**The largest result and arena,** `cargo oracle attribute`: 2.22 MB (`UAX29URLEmailTokenizerImpl`), 2.17 MB
+(`HqlParser`), 1.49 MB (`HuffmanTables`); arena 5,223 types (`HqlParser`), 2,379 by hand
+(guava's `TypeTokenTest`). **Time per file:** median 0.20 ms, p90 1.05 ms, p99 4.28 ms, p99.9 15.81 ms, most
+74 ms (`UAX29URLEmailTokenizerImpl`); 8.4 s in all, with what a file is first to read. The fuel per body
+and the share of calls on each side of the line are [W3's](#results-of-calls), unchanged (hertzbeat's
+non-answers move by 125 calls to left to B4, and 16 expressions to errors, by the first departure above, none
+of them compared: `oracle types` matches the same 9,389,408).
+
+**The constant lookup,** in a release build (`many_constants` in `tests/deep.rs`), one class's attribution:
+
+| Constants | Each reading the one before, before | After | Each its own literal, a tenth of them read, before | After |
+| --- | --- | --- | --- | --- |
+| 5,000 | 0.30 s | 0.07 s | 0.03 s | 0.00 s |
+| 12,500 | 1.76 s | 0.25 s | 0.16 s | 0.01 s |
+| 25,000 | 6.81 s | 0.80 s | 0.63 s | 0.04 s |
+| 50,000 | 27.0 s | 2.80 s | 2.51 s | 0.10 s |
+
+At 27 s it was past the 10 s limit, so the walk over the class's fields went. What is left, 2.8 s, is still
+quadratic: sampling it shows `TypeContext::field_named` and the body walk's `maps_of` looking a name up in a
+class's members by scanning. It is well inside the limit, so it stays.
+
+**javac's test inputs,** `cargo oracle attribute jdk-tests`: 5,627 files, each directory's a source set of
+its own at the file's newest release, on JDK 27's platform API (3 left out, compiled only before Java 8, or
+not text), with the fuel attribution really has, in 2.6 s. No panic; the longest file 48.7 ms
+(`DeepStringConcat`), then 11.4 ms; nothing near the provisional 10 s, and the slowest directory, names and
+all, 0.07 s. 506,273 expressions: 446,726 typed, 16,225 and 806 left to B3c and B3d, 38,074 errors, 4,150
+incomplete, 292 `Later`, and none `Limit`, the most fuel being 1,031. Errors are to be expected of these, tests
+of what javac rejects, or naming classes elsewhere; they weren't compared with javac, or read one by one. `T8048838`, javac's 5-second outlier, is left to B3c: it is B3c's review that
+tests the limit. The backstop itself isn't built: `oracle attribute` fails over 10 s, but nothing in the
+engine stops at it.
+
+**What isn't compared as a name.** `cargo oracle names` leaves 641,070 names to B3, and has a further
+58,677 names of B2's that javac doesn't have in B2's part. By running it, with what attribution has for
+each (the report lists them all):
+
+| Kind (B2's why), and attribution's answer | Names | Compared by |
+| --- | --- | --- |
+| `method-of-expression`, `array`, `type-variable`: a method chosen | 510,305 | `oracle types`: the method's key and type as invoked (`call`), the receiver's type (`expression`). The oracle gives no searched type for these (`""`), so that isn't compared on its own; the receiver's type and the method's owner say it |
+| Those inside Lombok types | 2,166 | B4, which brings them into both comparisons |
+| `method-of-expression`, `type-variable`, `expression-type`: left to B3c | 114,738 + 13 + 1,356 | B3c (`call`, `expression`, each `left-to-b3c` in `oracle types`). 4,690 are constructor references, which javac has no name for at all, and 417 are inside Lombok types |
+| `method-of-expression`: left to B4, or an error or incomplete inside a Lombok type | 1,188 + 33 | B4 |
+| `method-of-expression`, `expression-type`: left to B3d | 7 + 1 | B3d |
+| `array`, `expression-type`, `type-variable`: typed, with no symbol, which is an array's `length` | 11,228 | **Now here,** as `field Array.length`, all the same. Before, by its type (`int`) alone |
+| Those inside Lombok types | 35 | B4 |
+
+And of the 58,677: 10,825 are fields of an expression's type that attribution answered, in javac's B3 part:
+**now compared here, all the same**, so with the lengths 22,053 are, a mismatch failing the run. 17,196 are
+what javac gives no element for (16,939 imports' last names, 257 module names); 22,713 are inside Lombok types,
+until B4; and 7,943 are names javac has none of in B2's terms, as [the names
+oracle](semantic-oracle-normalization.md#what-is-compared) counts them.
+
+**The fuzz targets,** on the final code, 180 s each without a failure: `semantic_edits` (13,700 runs),
+`relations` (144,686). **CI:** the PR job runs `cargo oracle types jedis`, with attribution now, and `cargo
+oracle removed jedis`, which runs no javac; the weekly oracle workflow `cargo oracle types` and `cargo oracle
+removed` on every project, and `cargo oracle attribute jdk-tests`.
+
+**`names-known.txt`, by running it:** for each entry the report now gives what attribution has for its
+call or its `case`'s selector. All 4,812 `static-import-overload` entries are calls left to B3c, as W3
+inferred. Of the 42 `case-label` entries, 35 are in switches on selectors left to B3c; **7 are not:** helidon's
+`ProxyProtocolHandler`, `switch (family)` with `family` a `var` from a `switch` expression, whose type is B3d's. So B3d, not
+B3c, settles those 7, and the category's explanation says so. (`lombok-member`'s 5 are B4's.)
+
 ## Questions for review
 
 Of the overview's [questions](semantic-types.md#questions-for-review), 1, 4, and 5 are this
 document's. One more:
 
 1. **Per-file results:** attribution results are per file, as body names are, and split per body
-   only if W4's edit benchmark shows the language server needs it.
+   only if W4's edit benchmark shows the language server needs it. Measured: it doesn't, 5 ms of
+   attribution for an edit of a 261 KB file ([measurements](#measurements)). Recommended: per-file stays.
 
 W2's questions, for B3b's review stop, each with a recommendation:
 
@@ -692,3 +855,21 @@ W3's, for the same stop:
     its share of the 9 s. Recommended: keep it; nothing else reads both.
 18. **The remaining `case-label` and `static-import-overload` entries** stay in `names-known.txt`, under
     explanations that say B3c settles them. Recommended: remove them with B3c's calls.
+
+W4's, from stage 2:
+
+19. **A name around a class with a missing supertype is no answer,** where javac, with the class, could
+    give either: the [departure](#departures) above. It costs answers only when something is already
+    missing, or a Lombok type's members are unknown (125 calls and 16 expressions in hertzbeat, none compared),
+    and is what the scope's "never a guess" asks for. Recommended: as built.
+20. **A method's key with a parameter that doesn't resolve** writes it as `Object`, which is a real class's
+    descriptor: `m(Missing)` and `m(Object)` print alike. Rules shouldn't read a key as a signature; the
+    check tells them apart by what was removed. Recommended: leave it, and have B5's reporting read `Call`, not
+    the key.
+21. **The root-cause rule of the check** is by name for an error naming a removed class, and for one naming a
+    member, only that its file names something removed, with the full run's having no non-answers at all as the
+    argument. Recommended: as built; checking members would mean reading removed classes back, to catch
+    what the full run already rules out.
+22. **The wall-clock backstop** is measured, not built: nothing stops a file at 10 s, and nothing in the corpus
+    or javac's tests comes within 100 times of it (74 ms and 49 ms). Recommended: build it with B3c, which is what can
+    reach it, and set it at B3c's review as planned.
