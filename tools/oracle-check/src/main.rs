@@ -73,6 +73,10 @@ checks:
                 options: `types --help`)
   attribute     attribute every file without javac, and report panics, fuel, time, and arena
                 sizes (its own options: `attribute --help`)
+  measure       what attribution costs a project, cold and for an edit in a body, without javac
+                (`measure --help`)
+  removed       the removed-symbols check: Ferrion's answers without some jars or classes, against
+                javac's cached ones (its own options: `removed --help`)
 
 options:
   --release <N>        compare every file at release N (repeatable); by default, each file is
@@ -144,10 +148,14 @@ fn usage(message: &str) -> ! {
 fn parse_args(args: impl Iterator<Item = String>) -> Options {
     let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let mut args = args.peekable();
-    if args
-        .peek()
-        .is_some_and(|a| a == "classfile" || a == "names" || a == "types" || a == "attribute")
-    {
+    if args.peek().is_some_and(|a| {
+        a == "classfile"
+            || a == "names"
+            || a == "types"
+            || a == "attribute"
+            || a == "removed"
+            || a == "measure"
+    }) {
         let check = args.next().unwrap_or_default();
         return Options {
             check,
@@ -282,6 +290,27 @@ fn run() -> Result<bool> {
                 return Ok(true);
             }
             types::attribute::run(types::attribute::parse_args(
+                options.classfile.into_iter(),
+                usage,
+            ))
+        }
+        "measure" => {
+            if options.classfile.iter().any(|a| a == "-h" || a == "--help") {
+                println!("{}", types::measure::USAGE);
+                return Ok(true);
+            }
+            types::measure::run(options.classfile.into_iter())
+        }
+        "removed" => {
+            let usage = |message: &str| -> ! {
+                eprintln!("oracle removed: {message}\n\n{}", types::removed::USAGE);
+                std::process::exit(2);
+            };
+            if options.classfile.iter().any(|a| a == "-h" || a == "--help") {
+                println!("{}", types::removed::USAGE);
+                return Ok(true);
+            }
+            types::removed::run(types::removed::parse_args(
                 options.classfile.into_iter(),
                 usage,
             ))

@@ -205,14 +205,23 @@ impl TypeContext<'_> {
                 w.out.push_str("error ");
                 w.out.push_str(&name);
             }
+            Type::Unknown(Why::Incomplete(key)) => {
+                let binary = self.binary_text(key);
+                w.out.push_str("unknown incomplete ");
+                w.out.push_str(&binary);
+            }
+            Type::Unknown(Why::Error(e)) => {
+                let name = self.names.text(self.arena.error_symbol(e).name);
+                w.out.push_str("unknown error ");
+                w.out.push_str(&name);
+            }
             Type::Unknown(why) => w.out.push_str(match why {
                 Why::Limit => "unknown limit",
                 Why::Later => "unknown later",
                 Why::LeftToB3c => "left-to-b3c inference",
                 Why::LeftToB3d => "left-to-b3d",
                 Why::LeftToB4 => "left-to-b4 lombok",
-                Why::Incomplete(_) => "unknown incomplete",
-                Why::Error(_) => "unknown error",
+                Why::Incomplete(_) | Why::Error(_) => unreachable!("handled above"),
             }),
         }
         Ok(())

@@ -132,6 +132,25 @@ impl Arena {
         Arena::default()
     }
 
+    /// About how many bytes the arena holds: what it interned, twice over for the tables that
+    /// find it again.
+    pub fn bytes(&self) -> usize {
+        use std::mem::size_of;
+        let lists: usize = self
+            .arg_lists
+            .iter()
+            .map(|l| size_of::<TypeArg>() * l.len())
+            .sum();
+        let types: usize = self
+            .type_lists
+            .iter()
+            .map(|l| size_of::<TypeId>() * l.len())
+            .sum();
+        2 * (size_of::<Type>() * self.types.len() + lists + types)
+            + size_of::<CaptureVar>() * self.captures.len()
+            + size_of::<ErrorSymbol>() * self.errors.len()
+    }
+
     pub fn get(&self, id: TypeId) -> Type {
         self.types[id.index()]
     }

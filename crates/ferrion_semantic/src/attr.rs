@@ -164,6 +164,40 @@ impl BodyTypes {
         find(&self.variables, node).copied()
     }
 
+    /// About how many bytes the result holds: its arena and lists, what a call's type as invoked
+    /// holds, and the longest string (a string's prefixes share their parts).
+    pub fn bytes(&self) -> usize {
+        use std::mem::size_of_val as size;
+        let strings = self
+            .constants
+            .iter()
+            .map(|(_, c)| match c {
+                Constant::String(s) => 2 * s.len(),
+                _ => 0,
+            })
+            .max()
+            .unwrap_or(0);
+        let invoked: usize = self
+            .calls
+            .iter()
+            .map(|(_, c)| {
+                size(&*c.invoked.params) + size(&*c.invoked.type_params) + size(&*c.invoked.throws)
+            })
+            .sum();
+        self.arena.bytes()
+            + size(&*self.types)
+            + size(&*self.calls)
+            + invoked
+            + size(&*self.unchosen)
+            + size(&*self.constants)
+            + strings
+            + size(&*self.conversions)
+            + size(&*self.compound)
+            + size(&*self.variables)
+            + size(&*self.resolved)
+            + size(&*self.fuel)
+    }
+
     /// The most fuel a body of the file used.
     pub fn most_fuel(&self) -> u64 {
         self.fuel.iter().map(|(_, f)| *f).max().unwrap_or(0)
