@@ -35,11 +35,8 @@ pub enum Why {
     Limit,
     /// A later milestone types it.
     Later,
-    /// A method invocation or class instance creation, whose method overload resolution
-    /// (W3, in B3b) chooses: everything that depends on one waits for it too.
-    Calls,
-    /// Needs inference (B3c): a lambda, a method reference, a poly conditional, an implicitly
-    /// typed lambda parameter.
+    /// Needs inference (B3c): a call with a generic candidate and no explicit type arguments, `<>`,
+    /// a lambda, a method reference, a poly conditional, an implicitly typed lambda parameter.
     LeftToB3c,
     /// Patterns and `switch` expressions (B3d).
     LeftToB3d,
