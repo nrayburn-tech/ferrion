@@ -321,7 +321,7 @@ fn ends_spaced(item: &ListItem) -> bool {
 }
 
 /// The span of a block tag's argument.
-fn argument_span(argument: &TagArgument) -> Span {
+pub(super) fn argument_span(argument: &TagArgument) -> Span {
     match argument {
         TagArgument::Param(name) => name.span,
         TagArgument::Reference(reference) => reference.span,

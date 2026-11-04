@@ -228,6 +228,9 @@ comments are. A doc comment in a disable region is copied. The snapshots in
   `\u0040`, is re-indented only. It could stand for something the rules read, such as a block
   tag's `@`, where the reflow sees only text. GJF reflows it. Snapshot:
   `javadoc/departure-escaped-at`.
+- **An argument over a blank line:** a comment with a block tag whose argument has a blank line
+  inside it, such as a `@see` reference split at its parameters, is re-indented only. The blank
+  line would become a `<p>` inside the argument, which reads back as another argument.
 
 ### Markdown
 

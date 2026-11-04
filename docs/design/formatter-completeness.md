@@ -257,7 +257,9 @@ are SCOPE.md's examples, and Ferrion uses the same test: the parser's `UnclosedI
 diagnostic, a scan of the HTML start and end tags for the three elements, and the block-tag rule
 the parser already applies inside `<pre>`. A fallback comment gets A1's re-indenting, which is
 GJF's (observed): stars aligned, trailing whitespace removed, a star added to lines without one,
-the text after each star kept, and the shape kept.
+the text after each star kept, and the shape kept. A block tag's argument over a blank line falls
+back too, a departure: the blank line would become a `<p>` inside the argument, which reads back as
+another argument.
 
 **Departure: `<pre>` indentation is kept.** GJF removes a margin from `<pre>` content: the least
 indentation after `* ` over every line of the comment, and inside `<pre>{@code`, also the code's
