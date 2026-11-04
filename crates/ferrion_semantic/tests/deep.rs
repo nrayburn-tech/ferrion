@@ -252,6 +252,24 @@ fn long_chains_of_supertypes() {
         resolve_everything(&engine);
     });
 
+    // The member table of a class at the bottom of a long chain, through every table above it.
+    const TABLES: usize = 20_000;
+    let mut tables = String::from("package p;\n");
+    for i in (1..TABLES).rev() {
+        tables.push_str(&format!("class C{i} extends C{} {{}}\n", i - 1));
+    }
+    tables.push_str("class C0 { int f; void m() {} }\n");
+    on_small_stack("the member table of a long chain", move || {
+        let engine = engine(vec![("p/C.java".to_owned(), tables)]);
+        let snapshot = engine.snapshot();
+        let view = snapshot.source_sets().unwrap()[0];
+        let mut cx = snapshot.types(view);
+        let key = cx.lang(&format!("p/C{}", TABLES - 1)).unwrap().unwrap();
+        let members = snapshot.members(view, key).unwrap();
+        let f = snapshot.names().intern("f");
+        assert!(members.field(f).is_some());
+    });
+
     // One file per class, root first: each entry reads the one above it, already made.
     let files: Vec<(String, String)> = (0..N / 10)
         .map(|i| {

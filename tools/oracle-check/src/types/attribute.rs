@@ -110,6 +110,9 @@ struct Tally {
     kinds: BTreeMap<String, u64>,
     micros: u64,
     largest_arena: u64,
+    /// The member tables and constant entries the project's engine held at the end.
+    members: u64,
+    constants: u64,
 }
 
 impl Tally {
@@ -123,6 +126,8 @@ impl Tally {
         }
         self.micros += other.micros;
         self.largest_arena = self.largest_arena.max(other.largest_arena);
+        self.members += other.members;
+        self.constants += other.constants;
     }
 }
 
@@ -207,11 +212,15 @@ pub fn run(options: Options) -> Result<bool> {
         let mut tally = Tally::default();
         for &i in &order {
             let set = &sets[i];
-            let rows = ferrion
+            let (rows, tables) = ferrion
                 .with_set(set, |engine, id, _| {
-                    attribute_set(engine, id, &options, &dirs.corpus)
+                    let rows = attribute_set(engine, id, &options, &dirs.corpus)?;
+                    let sizes = engine.sizes();
+                    Ok((rows, (sizes.members, sizes.constants)))
                 })
                 .map_err(|e| anyhow::anyhow!("{}: {e}", set.display()))?;
+            tally.members = tally.members.max(tables.0 as u64);
+            tally.constants = tally.constants.max(tables.1 as u64);
             for row in rows {
                 tally.files += 1;
                 tally.bodies += row.fuel.len() as u64;
@@ -422,17 +431,17 @@ fn text(report: &Report) -> String {
     let t = &report.total;
     let _ = writeln!(
         out,
-        "\n| Project | Files | Bodies | Panics | Expressions | Typed | Calls (W3) | B3c | B3d | Error | Incomplete | Limit | Other | Time | Largest arena |"
+        "\n| Project | Files | Bodies | Panics | Expressions | Typed | Calls (W3) | B3c | B3d | Error | Incomplete | Limit | Other | Time | Largest arena | Member tables | Constants |"
     );
     let _ = writeln!(
         out,
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"
     );
     let row = |out: &mut String, name: &str, t: &Tally| {
         let k = |name: &str| t.kinds.get(name).copied().unwrap_or(0);
         let _ = writeln!(
             out,
-            "| {name} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {:.1} s | {} |",
+            "| {name} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {:.1} s | {} | {} | {} |",
             t.files,
             t.bodies,
             t.panics,
@@ -446,7 +455,9 @@ fn text(report: &Report) -> String {
             k("limit"),
             k("unknown"),
             t.micros as f64 / 1e6,
-            t.largest_arena
+            t.largest_arena,
+            t.members,
+            t.constants
         );
     };
     for (name, tally) in &report.projects {

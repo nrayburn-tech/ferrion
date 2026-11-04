@@ -16,7 +16,9 @@
 //!    ([`crate::packages`]) and module ([`crate::view`]), and each type's supertypes, member
 //!    types, and entry ([`crate::symbols`]);
 //! 4. each file's names in declarations ([`crate::decl_names`]) and in bodies
-//!    ([`crate::body`]).
+//!    ([`crate::body`]);
+//! 5. each type's member table ([`crate::members`]) and each constant field's value
+//!    ([`crate::constants`]), and each file's attribution ([`crate::attr`]).
 //!
 //! Class sources (platforms and classpath entries) are fixed when the engine is made, and what is
 //! read from them is cached without dependencies ([`crate::classes`]).

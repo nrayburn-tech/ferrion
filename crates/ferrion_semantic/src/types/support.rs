@@ -138,6 +138,26 @@ impl TypeContext<'_> {
         )
     }
 
+    /// Whether a field could be a constant variable, as far as its declaration says: `final`
+    /// (an interface's are), and not of an array type.
+    pub(crate) fn may_be_constant(&mut self, field: FieldRef) -> Result<bool, Cancelled> {
+        self.top(
+            |_| false,
+            |cx| {
+                let Some(decl) = cx.decl(field.owner)? else {
+                    return Ok(false);
+                };
+                Ok(decl.field(field.index as usize).is_some_and(|(_, ty, f)| {
+                    (f.has(Flags::FINAL) || decl.is_interface())
+                        && !matches!(
+                            ty.parts().first(),
+                            Some(crate::symbols::TyPart::Array { .. })
+                        )
+                }))
+            },
+        )
+    }
+
     /// Whether a field is inherited by a subclass in `package`: not private, and not of package
     /// access in another package.
     pub(crate) fn inheritable_field(

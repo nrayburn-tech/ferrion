@@ -46,6 +46,7 @@ impl Flags {
     pub const ABSTRACT: Flags = Flags(16);
     pub const VARARGS: Flags = Flags(32);
     pub const CONSTRUCTOR: Flags = Flags(64);
+    pub const FINAL: Flags = Flags(128);
 
     pub fn has(self, flag: Flags) -> bool {
         self.0 & flag.0 != 0
@@ -104,6 +105,7 @@ fn modifier_flags(m: Modifiers) -> Flags {
         .with(Flags::PUBLIC, m.contains(Modifiers::PUBLIC))
         .with(Flags::PROTECTED, m.contains(Modifiers::PROTECTED))
         .with(Flags::ABSTRACT, m.contains(Modifiers::ABSTRACT))
+        .with(Flags::FINAL, m.contains(Modifiers::FINAL))
 }
 
 fn access_flags(access: u16) -> Flags {
@@ -115,6 +117,7 @@ fn access_flags(access: u16) -> Flags {
         .with(Flags::PROTECTED, f.contains(F::PROTECTED))
         .with(Flags::ABSTRACT, f.contains(F::ABSTRACT))
         .with(Flags::VARARGS, f.contains(F::VARARGS))
+        .with(Flags::FINAL, f.contains(F::FINAL))
 }
 
 impl Decl {

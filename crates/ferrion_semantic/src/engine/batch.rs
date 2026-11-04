@@ -33,7 +33,8 @@ impl Snapshot {
     }
 
     /// The batch's last phase for `files` alone, in their order: each file's names in
-    /// declarations and in bodies, then `each`, after which they are dropped. What the javac
+    /// declarations and in bodies, then `each`, after which they, and any attribution `each`
+    /// asked for, are dropped. What the javac
     /// comparison runs per source set, once [`Snapshot::run_symbols`] has run.
     pub fn run_names(
         &self,
@@ -53,6 +54,7 @@ impl Snapshot {
             // (semantic-incremental.md#body-results); asking again computes them.
             self.shared().file_names.remove(&file);
             self.shared().body_names.remove(&file);
+            self.shared().body_types.remove(&file);
             Ok(())
         })
     }
