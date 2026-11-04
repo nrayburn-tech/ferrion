@@ -29,11 +29,11 @@ pub use self::value::{
 };
 
 use crate::attr::Walker;
-use crate::body::{Map, initializer_names};
+use crate::body::initializer_names;
 use crate::engine::derived::{Dep, Memo, Reads};
 use crate::summary::{Header, Modifiers, Summary, TypeKind, UnitKind, name_text};
 use crate::symbols::{FieldKind, FieldRef, TypeKey};
-use crate::types::{Context, DEFAULT_FUEL, Tri, Type};
+use crate::types::{Context, Tri, Type};
 use crate::{Cancelled, Fingerprint, Interner, Name, Snapshot};
 
 impl Snapshot {
@@ -121,16 +121,7 @@ fn compute(reads: &mut Reads<'_>, field: FieldRef) -> Result<Option<Constant>, C
     }
     let names = initializer_names(reads, located.file, &tree, initializer.id(), located.index)?;
     let view = reads.snapshot.file(located.file)?.set;
-    let mut walker = Walker::new(
-        reads,
-        view,
-        Arc::from(names),
-        Arc::from([]),
-        None,
-        Map::default(),
-        tree.release(),
-        DEFAULT_FUEL,
-    );
+    let mut walker = Walker::for_initializer(reads, view, names, tree.release());
     let Some((ty, Some(value))) = walker.initializer(field.owner, initializer)? else {
         return Ok(None);
     };

@@ -270,6 +270,26 @@ fn long_chains_of_supertypes() {
         assert!(members.field(f).is_some());
     });
 
+    // A constant that reads the one before it, the last asked for first.
+    const CONSTANTS: usize = 5_000;
+    let mut constants = String::from("package p;\nclass K {\n  static final int C0 = 1;\n");
+    for i in 1..CONSTANTS {
+        constants.push_str(&format!("  static final int C{i} = C{} + 1;\n", i - 1));
+    }
+    constants.push_str(&format!("  int last = C{};\n}}\n", CONSTANTS - 1));
+    on_small_stack("a long chain of constants", move || {
+        let engine = engine(vec![("p/K.java".to_owned(), constants)]);
+        let snapshot = engine.snapshot();
+        let view = snapshot.source_sets().unwrap()[0];
+        let file = snapshot.files(view).unwrap()[0];
+        let types = snapshot.body_types(file).unwrap();
+        let value = types.constants.last().map(|(_, c)| c.clone());
+        assert_eq!(
+            value,
+            Some(ferrion_semantic::constants::Constant::Int(CONSTANTS as i32))
+        );
+    });
+
     // One file per class, root first: each entry reads the one above it, already made.
     let files: Vec<(String, String)> = (0..N / 10)
         .map(|i| {
