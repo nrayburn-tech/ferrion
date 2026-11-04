@@ -4,9 +4,10 @@
 //! A dependency the engine fails to record would make it reuse a stale entry. So [`check_edits`]
 //! applies a sequence of edits to a small project with two source sets on the stand-in platform,
 //! and after each one asks the engine some of its questions (summaries, package tables, each
-//! file's type entries with their supertypes and member types, and its names in declarations
-//! and bodies, with the local classes its bodies declare) and compares every answer with a
-//! fresh engine's, built from the same inputs. Which edits, and which questions, come from the input bytes: asking only some
+//! file's type entries with their supertypes and member types, its names in declarations and
+//! bodies, with the local classes its bodies declare, and its attribution) and compares every
+//! answer with a fresh engine's, built from the same inputs. Which edits, and which questions,
+//! come from the input bytes: asking only some
 //! questions leaves the other entries unverified across several revisions, which is where a
 //! stale entry would hide. Every entry the engine returns is also checked to carry its value's
 //! fingerprint.
@@ -245,6 +246,12 @@ const FRAGMENTS: &[&str] = &[
     "B.M.K",
     "switch (x) { case 1 -> {} default -> {} }",
     "var v = 1;",
+    "static final int K2 = LIMIT + 1;",
+    "static final String S = \"a\" + LIMIT + 'c';",
+    "long w = count + 1L;",
+    "int[] a = {1, (short) 2};",
+    "Object o2 = x > 0 ? \"a\" : 1;",
+    "f = B.M.K << 2;",
 ];
 
 const NAMES: &[&str] = &[
@@ -530,6 +537,24 @@ fn compare(
                 if actual != expected {
                     return Err(format!(
                         "{}'s names and types differ from a fresh engine's:\n{actual}\nexpected:\n{expected}",
+                        file.path,
+                    ));
+                }
+            }
+            // Its attribution: expressions' types, constants, and conversions (B3b).
+            if every || choices.flip() {
+                let memo = old.body_types_memo(file.id).map_err(cancelled)?;
+                if memo.fingerprint != Fingerprint::of(&*memo.value) {
+                    return Err(format!(
+                        "{}'s attribution has a stale fingerprint",
+                        file.path
+                    ));
+                }
+                let actual = old.dump_types(file.id, &memo.value).map_err(cancelled)?;
+                let expected = new.body_types_dump(new_id).map_err(cancelled)?;
+                if actual != expected {
+                    return Err(format!(
+                        "{}'s attribution differs from a fresh engine's:\n{actual}\nexpected:\n{expected}",
                         file.path,
                     ));
                 }
