@@ -45,12 +45,12 @@ pub(super) fn normalize_markdown(text: &str, lines: &[Span]) -> Compared {
 pub(super) struct Compared {
     /// Its text, as any block comment's is compared (`super::normalize_comment`).
     pub(super) text: String,
-    /// For a traditional doc comment, its content's tokens, joined.
+    /// For a doc comment, its content's tokens, joined.
     content: Option<String>,
 }
 
 impl Compared {
-    /// A comment that isn't a traditional doc comment, compared by `text` alone.
+    /// A comment that isn't a doc comment, compared by `text` alone.
     pub(super) fn text(text: String) -> Compared {
         Compared {
             text,
@@ -59,7 +59,7 @@ impl Compared {
     }
 
     /// The comment as one string, as the import section's comments and a range's comments are
-    /// compared: its content for a traditional doc comment, so a reflowed one matches, or its
+    /// compared: its content for a doc comment, so a reflowed one matches, or its
     /// text.
     pub(super) fn key(self) -> String {
         self.content.unwrap_or(self.text)

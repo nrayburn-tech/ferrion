@@ -9,7 +9,7 @@ use std::sync::Arc;
 use ferrion_diagnostics::SourceText;
 use ferrion_parser::{ParseOptions, parse};
 use ferrion_syntax::comments::{CommentMap, is_comment};
-use ferrion_syntax::{SyntaxKind, SyntaxToken, SyntaxTree};
+use ferrion_syntax::{SyntaxKind, SyntaxToken, SyntaxTree, TokenId};
 
 use super::imports::SectionComment;
 use super::{
@@ -196,9 +196,9 @@ fn only_gap(tree: &SyntaxTree, range: Range<u32>) -> bool {
     true
 }
 
-/// Compares the two trees' comments in order: by kind, and by text as written, apart from a line
-/// comment's trailing whitespace, except those in the range's units outside disable regions,
-/// which compare as [`super::verify`] compares them. When the range holds the whole import
+/// Compares the two trees' comments, as [`listed`] lists them, in order: by kind, and by text as
+/// written, apart from a line comment's trailing whitespace, except those in the range's units
+/// outside disable regions, which compare as [`super::verify`] compares them. When the range holds the whole import
 /// section, the comments around the imports, which a rewrite moves, are compared as `verify`
 /// compares them.
 fn compare_comments(
@@ -224,46 +224,51 @@ fn compare_comments(
         }
     };
     let (section_a, section_b) = (section(before), section(after));
-    let in_section = |t: SyntaxToken<'_>, input: bool| -> SectionComment {
-        let text = if t.kind() == SyntaxKind::DocComment {
-            doc_comments::normalize(t.text()).key()
+    let in_section = |c: Listed<'_>, input: bool| -> SectionComment {
+        let text = if let Some(content) = c.content {
+            content
+        } else if c.token.kind() == SyntaxKind::DocComment {
+            doc_comments::normalize(&c.text).key()
         } else {
             // Only a comment the range formats gets the space after its `//`.
             let formatted = input
-                && expanded.is_some_and(|e| e.units.contains(&t.span().start))
-                && !in_region(t.id());
-            normalize_comment(t.text(), formatted && t.kind() == SyntaxKind::LineComment)
+                && expanded.is_some_and(|e| e.units.contains(&c.token.span().start))
+                && !in_region(c.token.id());
+            normalize_comment(
+                &c.text,
+                formatted && c.token.kind() == SyntaxKind::LineComment,
+            )
         };
         SectionComment {
-            token: t.id(),
-            kind: t.kind(),
+            token: c.token.id(),
+            kind: c.token.kind(),
             text,
-            start: t.span().start as usize,
+            start: c.token.span().start as usize,
         }
     };
     let mut a_section = Vec::new();
     let mut b_section = Vec::new();
     let mut a = Vec::new();
-    let mut ids = Vec::new();
-    for t in before.tokens().filter(|t| is_comment(t.kind())) {
-        if section_a.contains(&t.id().index()) {
-            a_section.push(in_section(t, true));
+    for c in listed(before) {
+        if section_a.contains(&c.token.id().index()) {
+            a_section.push(in_section(c, true));
         } else {
-            a.push((t.kind(), t.text(), t.span().start));
-            ids.push(t.id());
+            a.push(c);
         }
     }
     let mut b = Vec::new();
-    for t in after.tokens().filter(|t| is_comment(t.kind())) {
-        if section_b.contains(&t.id().index()) {
-            b_section.push(in_section(t, false));
+    for c in listed(after) {
+        if section_b.contains(&c.token.id().index()) {
+            b_section.push(in_section(c, false));
         } else {
-            b.push((t.kind(), t.text(), t.span().start));
+            b.push(c);
         }
     }
-    let normalized = |i: usize, (kind, text, start): (SyntaxKind, &str, u32), input: bool| {
+    let normalized = |i: usize, c: &Listed<'_>, start: u32, input: bool| {
+        let kind = c.token.kind();
+        let text = c.text.as_str();
         let in_units = expanded.is_some_and(|e| e.units.contains(&start));
-        if in_region(ids[i]) {
+        if in_region(a[i].token.id()) {
             return (kind, text.to_owned());
         }
         if !in_units {
@@ -275,7 +280,9 @@ fn compare_comments(
             };
             return (kind, text.to_owned());
         }
-        let text = if kind == SyntaxKind::DocComment {
+        let text = if let Some(content) = &c.content {
+            content.clone()
+        } else if kind == SyntaxKind::DocComment {
             doc_comments::normalize(text).key()
         } else {
             normalize_comment(text, input && kind == SyntaxKind::LineComment)
@@ -285,19 +292,16 @@ fn compare_comments(
     let a_norm: Vec<_> = a
         .iter()
         .enumerate()
-        .map(|(i, &c)| normalized(i, c, true))
+        .map(|(i, c)| normalized(i, c, c.token.span().start, true))
         .collect();
     // The output's comments are matched with the input's by position in the list, so the one in
     // the units is normalized when the input's is.
     let b_norm: Vec<_> = b
         .iter()
         .enumerate()
-        .map(|(i, &(kind, text, _))| match a.get(i) {
-            Some(&(_, _, start)) => {
-                let (_, normalized) = normalized(i, (kind, text, start), false);
-                (kind, normalized)
-            }
-            None => (kind, text.to_owned()),
+        .map(|(i, c)| match a.get(i) {
+            Some(input) => normalized(i, c, input.token.span().start, false),
+            None => (c.token.kind(), c.text.clone()),
         })
         .collect();
     if let Some(i) = first_difference(&a_norm, &b_norm) {
@@ -307,7 +311,7 @@ fn compare_comments(
         };
         return Err(violation(
             Property::Comments,
-            b.get(i).map(|&(_, _, start)| bom + start as usize),
+            b.get(i).map(|c| bom + c.token.span().start as usize),
             format!(
                 "comment {i} is {} in the input and {} in the result",
                 describe(&a_norm),
@@ -316,6 +320,57 @@ fn compare_comments(
         ));
     }
     imports::compare_comments(before, after, &a_section, &b_section, bom)
+}
+
+/// A comment as [`compare_comments`] lists it.
+struct Listed<'t> {
+    /// The comment's token, the first line's for a `///` doc comment.
+    token: SyntaxToken<'t>,
+    /// Its text as written.
+    text: String,
+    /// A `///` doc comment's parsed content.
+    content: Option<String>,
+}
+
+/// `tree`'s comments in order, a `///` doc comment outside disable regions as one comment, since
+/// reflow changes its lines.
+fn listed(tree: &SyntaxTree) -> Vec<Listed<'_>> {
+    let regions = regions::find(tree, &CommentMap::new(tree));
+    let mut runs = doc_comments::markdown::runs(tree).into_iter().peekable();
+    let mut run_end = None;
+    let mut list = Vec::new();
+    for token in tree.tokens().filter(|t| is_comment(t.kind())) {
+        if run_end.is_some_and(|end| token.id() <= end) {
+            continue;
+        }
+        while runs.next_if(|&(_, last)| last < token.id()).is_some() {}
+        if let Some(&(first, last)) = runs.peek()
+            && first == token.id()
+            && !regions
+                .iter()
+                .any(|r| r.start <= last && r.end.is_none_or(|end| first <= end))
+        {
+            let spans: Vec<_> = (first.index()..=last.index())
+                .map(|i| tree.token(TokenId::from_index(i)))
+                .filter(|t| t.kind() == SyntaxKind::DocLineComment)
+                .map(|t| t.span())
+                .collect();
+            let compared = doc_comments::normalize_markdown(tree.text(), &spans);
+            run_end = Some(last);
+            list.push(Listed {
+                token,
+                text: compared.text.clone(),
+                content: Some(compared.key()),
+            });
+        } else {
+            list.push(Listed {
+                token,
+                text: token.text().to_owned(),
+                content: None,
+            });
+        }
+    }
+    list
 }
 
 /// Whether `expanded` holds all of `tree`'s imports, so that the range rewrote the section if
