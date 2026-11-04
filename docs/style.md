@@ -82,7 +82,8 @@ body, in an expression, or dangling at the end of a class. It starts and ends it
 `int y = /** x */ 2;` puts the comment on a line of its own. `/***/`, `/*****/`, `/***  text */`,
 and `/*** ... ***/` banners aren't doc comments to the rules, and are re-indented as other block
 comments are. A doc comment in a disable region is copied. The snapshots in
-`crates/ferrion_formatter/tests/snapshots/javadoc/` have a case of each rule.
+`crates/ferrion_formatter/tests/snapshots/javadoc/` have a case of each rule. Markdown doc comments,
+`///`, have rules of their own ([below](#markdown)).
 
 ### Javadoc
 
@@ -226,6 +227,119 @@ comments are. A doc comment in a disable region is copied. The snapshots in
   `\u0040`, is re-indented only. It could stand for something the rules read, such as a block
   tag's `@`, where the reflow sees only text. GJF reflows it. Snapshot:
   `javadoc/departure-escaped-at`.
+
+### Markdown
+
+From Java 23, a run of `///` lines is reflowed as Markdown when it is a declaration's doc comment,
+`package` included: it comes before the declaration, its annotations and modifiers, with no blank
+line between them, though other comments may be. Other `///` lines are line comments, and are never
+wrapped: below Java 23, in a method body, dangling at the end of a class, before an import, or cut
+off from the declaration by a blank line. So are a run whose first line starts with `////`, and the
+doc comment of a field that declares several variables, which GJF leaves as they are. A run in a
+disable region is copied. The snapshots in `crates/ferrion_formatter/tests/snapshots/markdown/` have
+a case of each rule.
+
+- **Fill:** as in Javadoc: lines are joined and filled to 100 columns, no line starts with a word
+  starting with `@`, and a hyphen-ended word at the end of a line is joined to the next line's first
+  word. `///` is followed by one space, so `///x` is `/// x`, and the comment's common indentation
+  goes. Leading, trailing, and doubled empty `///` lines go. No `<p>` is added. An empty comment is
+  `///`. A backslash hard break keeps its line break.
+
+  ```java
+  /// aaaa bbbb cccc dddd eeee ffff gggg hhhh iiii jjjj kkkk llll mmmm nnnn oooo pppp qqqq rrrr ssss
+  /// tttt uuuu.
+  ///
+  /// Second paragraph.
+  ```
+- **Lists:** markers and numbers are kept, and an item's later lines line up with its text: 2 past
+  `- `, 3 past `1. `, 4 past `10. `. Lazy continuation lines are joined into their item. A blank line
+  stays between two items, or two blocks in an item, where it is written, and none is added before a
+  list after a paragraph.
+
+  ```java
+  /// Intro
+  /// - item two is long word word word word word word word word word word word word word word word
+  ///   word word
+  ///   - nested
+  /// 10. ten
+  ```
+- **Block quotes:** each line starts with `> `, and blank lines in a quote with `>`. A quote's lines
+  are joined and filled, lazy ones too. A quote starting with a list or another quote starts with
+  an empty `>` line, and one starting with a heading, fenced code, a table, or an HTML block with
+  two, as GJF writes them.
+- **Blocks:** ATX headings, fenced code, GFM tables, and HTML blocks have a blank line before and
+  after them, inside lists too, so a list holding one has blank lines between its items around it. A
+  heading's whitespace is collapsed, its closing `##` kept. Fenced code, tables, and HTML blocks are
+  copied as written, past the markers and indentation of the list items and quotes they are in,
+  apart from trailing whitespace. A fenced code block the comment ends before its closing fence gets
+  one, in place of its trailing blank lines.
+- **Block tags** keep their order, with a blank `///` before the first, and between two only where
+  one is written or the first ends with a block. Their later lines and blocks are at +2. Empty tags
+  are kept.
+
+  ```java
+  /// Summary.
+  ///
+  /// @param x the x word word word word word word word word word word word word word word word word
+  ///   word word
+  ///
+  ///   second paragraph
+  /// @return r
+  ```
+- **Re-indented only:** a comment with a setext heading, an indented code block, a thematic break, a
+  link reference definition, or an unclosed inline tag is left as it is, each `///` moved to the
+  comment's column, as GJF leaves it, apart from the departure below. So are the comments the
+  departures below name.
+
+### Departures in Markdown
+
+- **No line starts with a word that would start a block:** `-`, `+`, `*`, `1.`, `1)`, `#`, `>`, a
+  fence, or anything else `pulldown-cmark` reads as a block start after a paragraph's line, as well
+  as words made only of the characters of thematic breaks, setext underlines, and table delimiter
+  rows. The word before it moves down with it. GJF breaks there, making a list, heading, quote, or
+  fence, and for `#` and fences a second run changes its output again. It overflows before `<pre>`,
+  where Ferrion moves the word before it down too. Snapshot: `markdown/departure-block-start`.
+- **Code spans are copied as written,** and never broken: GJF collapses their spaces, which
+  CommonMark keeps. A code span written across lines is joined, its line break the space CommonMark
+  reads. Snapshot: `markdown/departure-code-span`.
+- **A comment that isn't reflowed has every line moved:** each `///` goes to the comment's column.
+  GJF moves only the first. Snapshot: `markdown/departure-fallback-every-line`.
+- **A `///` run that isn't a doc comment** is a line comment, which isn't wrapped. GJF wraps a long one
+  with a `//` line. Snapshot: `markdown/departure-not-doc-comment`.
+- **A comment in a disable region** is copied, and **below Java 23** `///` is a line comment. GJF
+  reflows both. Snapshots: `markdown/regions`, `markdown/before-23`.
+- **(proposed) A two-space hard break is written with a backslash:** GJF drops it and joins the lines,
+  losing the break. The design has such a comment re-indented only, but re-indenting removes the
+  trailing spaces, so a second run would reflow it. A backslash means the same, and has no trailing
+  whitespace. Snapshot: `markdown/departure-hard-break`.
+- **(proposed) A heading stays on one line,** however long. GJF wraps it, and on its next run the
+  rest of the heading is a paragraph. Snapshot: `markdown/departure-heading`.
+- **(proposed) One space follows a list marker.** GJF keeps a second one but continues the item at
+  the column one space gives, and on its next run the item's later paragraphs leave it. Snapshot:
+  `markdown/departure-list-marker-spaces`.
+- **(proposed) A list item's first block starts on its marker's line,** as `- # heading` and
+  `- - nested`. GJF puts the marker alone before a blank line, and on its next run the block leaves
+  the item. Snapshot: `markdown/departure-item-first-block`.
+- **(proposed) An HTML block is copied as written,** to the blank line that ends it, as CommonMark
+  reads it. GJF reflows some with Javadoc's rules (`<div>`, `<p>`, `<ul>`), where a line alone holding
+  a tag can start an HTML block that a longer one doesn't, and drops a quote's `>` from a copied one.
+  Snapshot: `markdown/departure-html-blocks`.
+- **(proposed) No line break after a word ending with a hyphen,** as in Javadoc: GJF breaks there, then
+  joins the two words on its next run. Snapshot: `markdown/departure-hyphen-at-a-break`.
+- **(proposed) Re-indented only, where the reflow can't keep the comment's meaning:** a comment with a
+  `{@snippet}`, whose lines are code; a block tag whose body starts with fenced code or a list, or
+  holds an HTML block, where GJF indents the block's first line alone; a Unicode escape for other than
+  a letter or digit, as in Javadoc; a paragraph starting with a link label and a colon, which a line
+  break could make a link reference definition; a link destination in `<>`; a tab in the indentation
+  of a list item's or quote's lines; a vertical tab or form feed; an inline tag or inline HTML written
+  across lines in a quote, where the next line's `>` is part of it; an inline tag written across
+  lines that holds a blank line, a backtick, or a fence; an inline tag in a fence's info string; a
+  hard break in a link; a code span with whitespace at a line's end or start; a word that could start
+  a block on the line after a hard break; and any comment that, written at the widest and at about
+  the narrowest column and read back, doesn't keep its content or settle. These are mostly what
+  fuzzing found, not what people write. In a quote, and in a tag holding a backtick or a fence, a
+  line doesn't break inside an inline tag, inline HTML, or a link. Snapshots:
+  `markdown/departure-snippet`, `markdown/departure-tags`, `markdown/departure-escapes`.
 
 ## Declarations
 
