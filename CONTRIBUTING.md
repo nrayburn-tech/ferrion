@@ -478,10 +478,10 @@ rustup toolchain install && cargo install cargo-fuzz --version 0.13.2 --locked
 - `lex` reads arbitrary bytes as a source file and lexes its text.
 - `lex_fragments` lexes text built from fragments of Java, such as keywords, comment and text block
   delimiters, and Unicode escapes, to reach states that random bytes rarely do.
-- `javadoc` reads arbitrary bytes as the content of a `/** */` comment and parses it with the doc
-  comment parser.
-- `markdown` reads arbitrary bytes as lines of `///` comments (each line gets the `///`) and parses
-  the Markdown doc comments they form.
+- `javadoc` reads arbitrary bytes as the content of a `/** */` comment, parses it with the doc
+  comment parser, and checks that reflowing it keeps its content and settles.
+- `markdown` reads arbitrary bytes as lines of `///` comments (each line gets the `///`), parses the
+  Markdown doc comments they form, and checks that reflowing them keeps their content and settles.
 - `parse` reads arbitrary bytes as a source file and parses its text at each primary release.
 - `format` reads arbitrary bytes as a source file, and at each primary release where it parses
   without errors, formats it and checks the four safety properties with `verify`. Its seeds are
@@ -543,8 +543,9 @@ To turn a failure into a regression test:
    for a lexer target, `crates/ferrion_parser/tests/fuzz-regressions/` for `parse`,
    `crates/ferrion_formatter/tests/fuzz-regressions/` for `format`,
    `crates/ferrion_doc_comments/tests/fuzz-regressions/javadoc/` or `.../markdown/` for a doc
-   comment target, or `crates/ferrion_classfile/tests/fuzz-regressions/<target>/` for a class file
-   target. A `lex_fragments` input is a list of fragment numbers,
+   comment target's parser failure, `crates/ferrion_formatter/tests/javadoc-regressions/` or
+   `.../markdown-regressions/` for its reflow failure, or
+   `crates/ferrion_classfile/tests/fuzz-regressions/<target>/` for a class file target. A `lex_fragments` input is a list of fragment numbers,
    not source text, so write its text there instead:
 
    ```bash
