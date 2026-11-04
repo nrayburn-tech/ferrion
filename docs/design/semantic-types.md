@@ -251,7 +251,10 @@ On `b3/integration`, cut from main at 3273dd6:
    recommended; [decisions](semantic-type-relations.md#decisions-made-in-review).)
 3. **W2, attribution core (B3b):** `members` (member tables), `attr`'s walk and result,
    literals, names, field access, operators and promotions, casts, `instanceof` without
-   patterns, array creation and access, `this` and class literals; `constants`.
+   patterns, array creation and access, `this` and class literals; `constants`. (Done: every
+   corpus file attributed without a panic, calls waiting for W3, and by a rough comparison with
+   javac's cached output no typed expression or constant differs;
+   [results](semantic-attribution.md#results).)
 4. **W3, calls (B3b),** after W2's walk lands: method invocation and instance creation (15.9,
    15.12): potentially applicable candidates, the three phases, most specific, the result type,
    explicit type arguments; the `static-import-overload` and `case-label` differences.
