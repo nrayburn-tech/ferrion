@@ -230,7 +230,9 @@ comments are. A doc comment in a disable region is copied. The snapshots in
   `javadoc/departure-escaped-at`.
 - **An argument over a blank line:** a comment with a block tag whose argument has a blank line
   inside it, such as a `@see` reference split at its parameters, is re-indented only. The blank
-  line would become a `<p>` inside the argument, which reads back as another argument.
+  line would become a `<p>` inside the argument, which reads back as another argument. So is one
+  whose argument's word ends its line with a hyphen, as in `@see a-`, since the next line's first
+  word would join the argument.
 
 ### Markdown
 
