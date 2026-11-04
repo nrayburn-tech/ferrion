@@ -263,10 +263,13 @@ For each source set, as in `names`:
    parts in another order), `type`, `value` (a constant), `method` (another method chosen),
    `instantiation` (the same method, another type as invoked), `finality`, and `answer` (a
    relation). A Ferrion value starting with `left-to-` (`left-to-b3c inference`) is a later
-   milestone's, and counted apart. A mismatch listed in
+   milestone's, and counted apart, per aspect; `waiting-for-calls` is one that waits for overload
+   resolution, counted apart under its own label until W3's calls land. So is a constant javac
+   has at an expression with such a value, which can't have one yet. A mismatch listed in
    `tools/oracle-check/differences/types-known.txt` (`<category> <file> <aspect> <start>-<end>`,
    and for a relation query `<category> <source set> relation <i>-<i>`) counts under its known
-   category.
+   category. An entry Ferrion has where javac has none is `extra`, and fails the run as a mismatch
+   does.
 4. **Relation queries left out:** a query about a type javac couldn't resolve, where javac's
    answer or one of the query's types has an `error` type in it, or a method key whose
    descriptor names a class with dots (`builder()Lcom.google.Foo.Builder;`, javac's erasure of a
@@ -278,10 +281,85 @@ For each source set, as in `names`:
 
 Ferrion's side is the `Typer` trait in `tools/oracle-check/src/types/compare.rs`. For the relation
 queries it is `tools/oracle-check/src/types/ferrion.rs`, over B3a's relations
-([type relations](semantic-type-relations.md#checking)); until B3b's attribution exists, it gives
-nothing for the files' entries, which are counted as not compared. `--relations` compares the
-relation queries only, for B3a. Ferrion's type strings name local classes as javac's keys do,
-with the file relative to the corpus and UTF-16 offsets, as `names`' `oracle_key` converts keys.
+([type relations](semantic-type-relations.md#checking)), and for the files' entries
+`tools/oracle-check/src/types/attribution.rs`, over B3b's attribution
+([below](#ferrions-side-of-the-files-entries)). `--relations` compares the relation queries only,
+for B3a. Ferrion's type strings name local classes as javac's keys do, with the file relative to
+the corpus and UTF-16 offsets, as `names`' `oracle_key` converts keys.
+
+## Ferrion's side of the files' entries
+
+The adapter gives, for each file of a source set, its attribution at the body fuel B3b runs with,
+each node's type and constant in the oracle's forms, at javac's range. Most nodes are a tree of
+javac's at the same range. What isn't, each observed (the [observations](#observations) from 21 on)
+and checked together by `tools/oracle-check/types-cases/shapes.java`, whose `shapes.jsonl` is the
+oracle's output on it:
+
+| javac has | Ferrion has | The adapter |
+| --- | --- | --- |
+| `PARENTHESIZED` around the condition of `if`, `while`, `do`, `switch`, and `synchronized`, a `switch` expression's selector too, with the expression's type and constant | Two tokens of the statement | Adds an entry at the parentheses' range, from the expression inside |
+| One `STRING_LITERAL` over a run of adjacent string literals in a chain of `+` ([which chains](parser-oracle-normalization.md#folded-strings)), with the joined value | A literal per string, and a `+` per operand | Adds the run, and leaves out its literals and the `+`s before its last one, and the `+` of a first run. Only constants of what remains are printed |
+| `INT_LITERAL` or `LONG_LITERAL` over `-` and a decimal literal | `PrefixExpr` and a literal | Leaves out the literal |
+| `NEW_CLASS` for an enum constant with arguments or a body: from its arguments, or body if it has none, through its body, or its arguments if it has none; of the anonymous class's type with a body, else the enum's | No expression | Adds it, and its call (W3's) at that range |
+| `NEW_ARRAY` for `new int[] {1}` as one tree | The creation and its initializer | Leaves out the initializer. A nested `{1}`, or a variable's `int[] a = {1}`, is a tree of javac's |
+| A resource that is a variable through its `;`, if one follows | The variable | Extends the range, as `names` does |
+| A compact constructor's parameter, at the [preferred position of the component's type](semantic-oracle-normalization.md#keys) | The record component | A component is a variable only for a record with a compact constructor |
+| A `PARAMETER` for each of an implicit constructor's, a record's at its keyword and an anonymous class's at its `local` key's offset, several at one offset | Nothing | Lists those offsets; javac's parameters there are counted apart, never compared |
+| No tree for an annotation on a record component that doesn't apply to fields, by `@Target` ([observation 24](#observations)) | The annotation's values | Lists the ranges of annotations on components; an entry in one that javac lacks is counted apart |
+
+Ferrion's types print as the oracle's, and `local <path>:<byte offset>` in any of them is converted
+as above. Until B3d, a variable's finality is `left-to-b3d finality`. A call with no chosen method
+is `waiting-for-calls` or `left-to-b3c inference`, by what its type says, and javac's implicit calls
+all wait, until W3 sets `IMPLICIT_CALLS_WAIT`.
+
+W3's chosen methods are read from `BodyTypes::calls` by node (`call_position` in the adapter): a
+method invocation, an explicit constructor call, or a creation at its range; a call recorded at a
+class body or an enum constant without a body but with arguments at the [enum creation
+range](#calls); javac's made-up calls by their start alone, recorded at a constructor or its block
+(its `{`), an anonymous class's body (its `{`), a class without a constructor (its keyword), or an
+enum constant (its name).
+
+## Generated text that changes
+
+An annotation processor can write different text from the same inputs. Helidon's
+`__ServiceDescriptor`s do: run after run of `javac-oracle types` on `common/mapper/main`, with one
+scratch `--generated` and nothing else changed, `MappersFactory__ServiceDescriptor.java` came out one
+of two ways, 4 runs of 8 each, its `RTYPE_2` and `RTYPE_3` swapped and sets reordered accordingly.
+Across the cached runs, the same input hash has more than one shape of trees for 8 of helidon's
+generated files, all `__ServiceDescriptor`s, and none outside helidon.
+
+A cached output stays in use while the files it lists exist, so a later run of either command that
+writes the same directory can leave another text under a cached run: the input hash covers a source
+set's own files and its dependencies' generated files, not those it generates itself. So does a
+miss in one source set: it rewrites its own directory, and if the text comes out otherwise, its
+dependents' hashes change, and they miss too, the next time either command runs. The cache's own
+times show it happening: `types` ran on 2 November; `names` ran under a new cache key on 3 November
+(18:47 to 19:05), and every generated file's time is from then or later; `types` ran again for 262 of
+helidon's source sets (19:21 to 19:28). What W2's rough comparison counted as 174 expressions with no
+Ferrion expression was the `__ServiceDescriptor`s between those runs. W4's own `cargo oracle names`
+then missed for 81 of helidon's source sets, and `cargo oracle types --relations` for 4.
+A run of the oracle that writes the text on disk gives exactly the trees that line up with it, and
+one that writes the other text gives exactly the cached output, byte for byte.
+
+Both commands therefore check a generated file's entries against its text before comparing
+(`fits_text`): for `types` a `STRING_LITERAL`, `METHOD_INVOCATION`, `PARENTHESIZED`, or `IDENTIFIER`
+that couldn't be at its range, for `names` a field's or method's name that doesn't end at its range,
+means this isn't the text javac saw. The file is left out, counted as generated with other text, and
+named `STALE`. Nothing is counted as a mismatch, since nothing was compared. A text with trees at the
+same ranges passes for `types`, and then every entry is still compared; none differs. On 3 November
+that leaves out, of 1,614 generated files, one for `types`
+(`common/mapper/main`'s `MappersFactory__ServiceDescriptor.java`), and five for `names` (those of
+`messaging/messaging/main`, `data/jdbc/jdbc/main` twice, `webserver/observe/observe/main`, and
+`webclient/api/main`).
+
+To bring one such file back in line without disturbing anything else, replace the cached output and
+keep the text on disk: `FERRION_ORACLE_SHOW` gives the source set's command; run it with
+`--generated` set to a scratch directory until the processors write what is on disk, replace the
+scratch path in its output with the generated directory's path relative to the corpus, and put that
+in place of `target/oracle/types/<key>/<hash>.jsonl`. Removing the cached entry and letting the run
+make it isn't the same: it rewrites the directory, half the time with the other text, which
+invalidates what `names` has cached for the file, and, by the input hash, every source set that
+depends on it.
 
 ## Observations
 
@@ -379,10 +457,38 @@ On Temurin 27.0.1 unless a JDK is named, each on an input written for it.
     `unconditional.pattern.and.default`, `flows.through.to.pattern`, and
     `flows.through.from.pattern`, each under `compiler.err.`.
 
+21. **An enum constant's creation** (correcting observation 15, which had a body alone): `ARGUMENT(1)`
+    has a `NEW_CLASS` over `(1)`, of the enum's type, choosing `Q$E.<init>(I)V`; `BOTH(2) { ... }`
+    one over `(2) { ... }`, of the anonymous class's type, choosing its constructor, and an implicit
+    `super(...)` at `BOTH`; `BODY { ... }` one over `{ ... }`; `PLAIN` an implicit one alone, and no
+    expression. (`types-cases/shapes.java`.)
+22. **Implicit constructors' parameters are variables:** `record Implicit(int a, List<String> b) {}`
+    has two `PARAMETER`s at the offset of `record`, of the components' types; `new Base(1, "a") {}`
+    two at its body's `{`, of the superclass constructor's; `BOTH(2) { ... }` one at `BOTH`.
+    An explicit canonical constructor's are its own, and a compact one's are at the component's type.
+    An implicit canonical constructor's are in no other tree.
+23. **An array creation's initializer** isn't a tree of its own: `new int[][] {{1}, {2, 3}}` is one
+    `NEW_ARRAY` over all of it, with a `NEW_ARRAY` for `{1}` and for `{2, 3}`; `int[] a = {1, 2}`'s
+    `{1, 2}` is a `NEW_ARRAY`, as observed for annotations
+    ([attribution's observation 15](semantic-attribution.md#observations)).
+24. **An annotation on a record component** is in javac's trees only if it applies to a field: with
+    `record R(@P("p") int a, @Q("q") int b, @C("c") int c, @F("f") int d, @M("m") int e, @U("u") int
+    f, @N("n") int g) {}` and `@Target`s of `PARAMETER` and `RECORD_COMPONENT` (`P`), `PARAMETER`
+    (`Q`), `RECORD_COMPONENT` (`C`), `FIELD` (`F`), `METHOD` (`M`), `TYPE_USE` (`U`), and none (`N`),
+    only `"f"`, `"u"`, and `"n"` are expressions. A compact constructor doesn't bring them back
+    (`record S(@P("ps") int a, @F("fs") int d)`: `"fs"` alone), and an explicit constructor's own
+    parameters have their own (`T(@P("ptc") int a, ...)`: `"ptc"`). The same on JDKs 21, 25, 26, and
+    27 for no `@Target`. (hertzbeat's `@DefaultValue` on its `Properties` records: 66 entries.)
+25. **Processors can write different text from the same inputs:** see
+    [Generated text that changes](#generated-text-that-changes).
+
 ## Known differences
 
 None for the relation queries (B3a): every one javac answered is matched, left to B4, or about a
-type javac couldn't resolve ([the corpus](#the-relations-comparison)). B3b's attribution brings the first.
+type javac couldn't resolve ([the corpus](#the-relations-comparison)). None for what W2's walk types
+either ([the comparison](#the-attribution-comparison)): every difference found was a difference of
+trees, which [the adapter](#ferrions-side-of-the-files-entries) normalizes. W3's calls bring the
+first, if any.
 
 ## The corpus
 
@@ -445,6 +551,43 @@ B3a's relations as Ferrion's side (W1, on 2 November 2026: 13.8 s, Ferrion's sid
 
 Every query but those left out matches; there are no known differences. Sampled sites whose owner
 is a local class match too, their keys and type strings converted as above.
+
+### The attribution comparison
+
+`cargo oracle types` on every locked project, from the cached javac side above, on 3 November 2026,
+with what W2's walk types; each call and whatever depends on one waits for W3, and is counted apart.
+The run took 34 s, Ferrion's side 32 s, on four threads, on a shared machine.
+
+| Project | Matched | Expressions | Constants | Variables | Waiting for calls | Left to B3c, B3d | Parameters of implicit constructors | In annotations javac dropped | Stale generated | Mismatched | Extra |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| caffeine | 355,931 | 157,503 | 34,433 | 25,193 | 239,295 | 48,510 | 106 | 0 | 0 | 0 | 0 |
+| guava | 443,989 | 271,045 | 98,287 | 43,732 | 305,446 | 50,403 | 496 | 0 | 0 | 0 | 0 |
+| helidon | 2,278,384 | 611,765 | 188,471 | 95,346 | 784,299 | 158,856 | 1,491 | 0 | 1 | 0 | 0 |
+| hertzbeat | 193,247 | 28,381 | 11,110 | 4,851 | 31,777 | 28,612 | 150 | 66 | 0 | 0 | 0 |
+| jedis | 358,446 | 226,594 | 70,792 | 45,857 | 280,748 | 50,039 | 146 | 0 | 0 | 0 | 0 |
+| lucene | 2,548,761 | 1,535,782 | 409,986 | 193,203 | 995,171 | 207,462 | 1,949 | 0 | 0 | 0 | 0 |
+| spring-data-jpa | 210,126 | 124,912 | 34,283 | 20,372 | 125,980 | 23,645 | 117 | 0 | 0 | 0 | 0 |
+| total | 6,388,884 | 2,955,982 | 847,362 | 428,554 | 2,762,716 | 567,527 | 4,455 | 66 | 1 | 0 | 0 |
+
+"Matched" includes the relation queries' 2,156,986, which are unchanged; the three columns after it
+are the files' entries. By aspect, what is counted apart:
+
+| Aspect | Waiting for calls | Left to B3c | Left to B3d |
+| --- | --- | --- | --- |
+| Expression | 1,431,634 | 59,489 | 402 |
+| Constant | 2,534 | 3 | 0 |
+| Call | 1,317,345 | 12,518 | 0 |
+| Variable's type | 11,203 | 16,309 | 14 |
+| Variable's finality | 0 | 0 | 456,080 |
+
+With [one cached output replaced](#generated-text-that-changes), in a private copy of the cache,
+helidon has 2,278,527 matched and no stale file, and everything else is the same.
+
+Of javac's expressions, every one has a Ferrion expression at its range. A type or constant that
+differs would be a `type` or `value` mismatch: none. What W2 counted as 174 expressions without one
+was the text of `__ServiceDescriptor`s, as above; before the check, this run had 12 expressions and
+a constant without a Ferrion entry, and 6 entries extra, all in the one file. The 3 constants left to B3c are fields inherited through an anonymous class made with `<>`
+(helidon's `JdbcConnectionPool`), which Ferrion doesn't type until inference gives its supertype.
 
 ### Analysis time per file
 

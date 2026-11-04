@@ -420,7 +420,7 @@ files:
 | Differing, all only by byte and UTF-16 offsets in a `local` name in a non-ASCII file, which W4's adapter converts | 59 |
 | Waiting for W3 | 1,393,390 |
 | Left to B3c, B3d | 59,342, 395 |
-| No Ferrion expression at the range: `PARENTHESIZED` 97,883, folded `STRING_LITERAL` 2,767, implicit `NEW_CLASS` 1,968; the 174 others are in a few of helidon's generated files, whose text changed when processors ran again after the cached run | 102,792 |
+| No Ferrion expression at the range: `PARENTHESIZED` 97,883, folded `STRING_LITERAL` 2,767, implicit `NEW_CLASS` 1,968; the 174 others are in a few of helidon's generated files, whose text changed when processors ran again after the cached run ([W4 saw the cause](types-oracle-normalization.md#generated-text-that-changes)) | 102,792 |
 
 So no type Ferrion gave differs from javac's. Of 849,929 constants, 843,483 are compared and
 all match, none extra; the rest are at ranges with no Ferrion expression or waiting for W3. Every
@@ -431,6 +431,13 @@ lists, have no Ferrion variable.)
 What the run doesn't say: it doesn't check `conversions` (javac doesn't report them; tests do),
 or anything W3 or W4 will: chosen methods, or the comparison's normalization and known differences.
 javac's stress tests (`jdk-tests`) weren't attributed; `oracle attribute` takes corpus projects only.
+
+**W4's comparison,** with the [adapter](types-oracle-normalization.md#ferrions-side-of-the-files-entries)
+this rough one asked for, normalizes those shapes and the others W4 observed ([results per
+project](types-oracle-normalization.md#the-attribution-comparison)): of the files' entries, 2,955,982
+expressions, 847,362 constants, and 428,554 variables' types match, 0 differ, and Ferrion gives none
+javac lacks; 2,762,716 entries wait for W3, and 567,527 are left to B3c and B3d (456,080 of them
+variables' finality). What W2's walk types needed no fix.
 
 ## Questions for review
 
@@ -465,3 +472,19 @@ W2's questions, for B3b's review stop, each with a recommendation:
    and 13.
 8. **Inside an anonymous class made with `<>`,** its supertype is `LeftToB3c`, so `super` and
    inherited members are non-answers until B3c. Recommended: as built.
+
+W4's, for the same stop, on what the comparison needed:
+
+9. **Text a processor writes differently from the same inputs:** helidon's `__ServiceDescriptor`s
+   do, so a cached run can stand beside text it didn't see ([the
+   cause](types-oracle-normalization.md#generated-text-that-changes)), and a miss in one source set
+   can rewrite its text and make its dependents miss. Both comparisons now name such a file and
+   leave it out, when javac's entries can't be trees of the text. Recommended: keep that check, and
+   make the cache robust when oracle work next invalidates it anyway: a run after the first would
+   compile the text already generated for those inputs, with processors off, rather than running
+   them again, so that `names` and `types` always see one text and nothing cascades. It needs an
+   oracle change and a new cache, so it isn't worth doing for this alone.
+10. **Entries Ferrion gives where javac has none fail the run,** as mismatches do; the design counted
+    them. Recommended: as built; each is a form the adapter doesn't know, or a tree Ferrion made up,
+    and there are none now. Those in annotations on record components are counted apart, since
+    javac's dropping them depends on `@Target`, which attribution doesn't read.
