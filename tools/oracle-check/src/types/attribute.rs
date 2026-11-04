@@ -2,20 +2,28 @@
 //! nothing panics, and what it costs (docs/design/semantic-attribution.md#results). Each project's
 //! engine is the names comparison's ([`Ferrion`]); each file is attributed with a fuel budget
 //! far above any body's, so that the fuel each body uses is measured, not cut off.
+//!
+//! `jdk-tests` (or `jdk-deep-nesting`) instead attributes javac's own test inputs, with the fuel
+//! attribution really has: a source set per directory and release, at the file's newest release,
+//! on the platform API of the JDK at `JAVA_HOME`. Tests name each other, and classes they compile
+//! beside themselves, so a good many names don't resolve: that is part of what is tested.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use anyhow::{Context, Result};
 use corpus::Dirs;
 use corpus::project::Project;
+use ferrion_classfile::{ArchiveCache, Jdk};
+use ferrion_semantic::attr::BODY_FUEL;
 use ferrion_semantic::constants::Constant;
 use ferrion_semantic::types::{Printed, Type, Why};
 use serde::Serialize;
 
+use crate::inventory::{JDK_DEEP_NESTING, JDK_TESTS};
 use crate::names::ferrion::Ferrion;
 use crate::names::plan;
 
@@ -35,7 +43,13 @@ options:
   --repeat <N>    attribute each file N times, for profiling (default: 1)
   --dump <file>   write each file's expressions (byte range, kind, type, constant) as JSON lines
 
-The projects must be checked out with their jars (`cargo corpus fetch`).";
+The projects must be checked out with their jars (`cargo corpus fetch`). `jdk-tests` names javac's
+own test inputs, and `jdk-deep-nesting` its deep-nesting stress tests: each directory's files as a
+source set of their own, with the fuel attribution really has, on the JDK at `JAVA_HOME`. A file
+over the provisional time limit of 10 s fails the run, as a panic does.";
+
+/// The provisional wall-clock backstop per file (docs/design/semantic-types.md#measurements).
+const BACKSTOP_MICROS: u64 = 10_000_000;
 
 /// Fuel no body is expected to reach: what each body uses is then its own.
 const MEASURING_FUEL: u64 = 1 << 40;
@@ -110,6 +124,8 @@ struct Tally {
     kinds: BTreeMap<String, u64>,
     micros: u64,
     largest_arena: u64,
+    /// The most bytes one file's result holds.
+    largest_result: u64,
     /// The member tables and constant entries the project's engine held at the end.
     members: u64,
     member_bytes: u64,
@@ -129,6 +145,7 @@ impl Tally {
         }
         self.micros += other.micros;
         self.largest_arena = self.largest_arena.max(other.largest_arena);
+        self.largest_result = self.largest_result.max(other.largest_result);
         self.members += other.members;
         self.member_bytes += other.member_bytes;
         self.constants += other.constants;
@@ -151,6 +168,7 @@ struct Report {
     most_fuel: Vec<(u64, String)>,
     slowest: Vec<(u64, String)>,
     largest_arenas: Vec<(u64, String)>,
+    largest_results: Vec<(u64, String)>,
     panics: Vec<(String, String)>,
     wall_seconds: f64,
 }
@@ -161,6 +179,7 @@ struct FileRow {
     micros: u64,
     fuel: Vec<(u64, u32)>,
     arena: u64,
+    result_bytes: u64,
     kinds: Vec<(&'static str, u64)>,
     calls: Vec<(&'static str, u64)>,
     expressions: u64,
@@ -193,13 +212,32 @@ pub fn run(options: Options) -> Result<bool> {
     let start = Instant::now();
     let dirs = Dirs::new()?;
     let projects = Project::load_all(&dirs.projects_file())?;
-    let selected = corpus::select(&projects, &options.projects)?;
+    let test_inputs = options
+        .projects
+        .iter()
+        .filter(|p| [JDK_TESTS, JDK_DEEP_NESTING].contains(&p.as_str()))
+        .cloned()
+        .collect::<Vec<_>>();
+    let wanted: Vec<String> = options
+        .projects
+        .iter()
+        .filter(|p| !test_inputs.contains(p))
+        .cloned()
+        .collect();
+    let selected = if wanted.is_empty() && !test_inputs.is_empty() {
+        Vec::new()
+    } else {
+        corpus::select(&projects, &wanted)?
+    };
     let cache_root = match std::env::var_os("FERRION_ORACLE_CACHE") {
         Some(dir) => PathBuf::from(dir),
         None => PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/oracle"),
     };
     let scratch = cache_root.join("scratch");
     let mut report = Report::default();
+    for name in &test_inputs {
+        attribute_jdk_tests(name, &dirs, &options, &mut report)?;
+    }
     for project in &selected {
         let sets = plan::source_sets(&dirs, project)?;
         let jdk = corpus::model::lock_jdk(&dirs, project)?;
@@ -222,7 +260,7 @@ pub fn run(options: Options) -> Result<bool> {
             let set = &sets[i];
             let (rows, tables) = ferrion
                 .with_set(set, |engine, id, _| {
-                    let rows = attribute_set(engine, id, &options, &dirs.corpus)?;
+                    let rows = attribute_set(engine, id, &options, &dirs.corpus, MEASURING_FUEL)?;
                     let sizes = engine.sizes();
                     Ok((rows, (sizes.members, sizes.constants, sizes.member_bytes)))
                 })
@@ -230,37 +268,7 @@ pub fn run(options: Options) -> Result<bool> {
             tally.members = tally.members.max(tables.0 as u64);
             tally.constants = tally.constants.max(tables.1 as u64);
             tally.member_bytes = tally.member_bytes.max(tables.2 as u64);
-            for row in rows {
-                tally.files += 1;
-                tally.bodies += row.fuel.len() as u64;
-                tally.expressions += row.expressions;
-                for (k, n) in &row.kinds {
-                    *tally.kinds.entry((*k).to_owned()).or_default() += n;
-                }
-                for (k, n) in &row.calls {
-                    *tally.calls.entry((*k).to_owned()).or_default() += n;
-                }
-                tally.micros += row.micros;
-                tally.largest_arena = tally.largest_arena.max(row.arena);
-                if let Some(message) = &row.panic {
-                    tally.panics += 1;
-                    report.panics.push((row.path.clone(), message.clone()));
-                }
-                report.times.push(row.micros);
-                report.slowest.push((row.micros, row.path.clone()));
-                report.largest_arenas.push((row.arena, row.path.clone()));
-                for &(fuel, at) in &row.fuel {
-                    report.fuel.push(fuel);
-                    report.most_fuel.push((fuel, format!("{}:{at}", row.path)));
-                }
-            }
-            let keep = |v: &mut Vec<(u64, String)>| {
-                v.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
-                v.truncate(options.slowest);
-            };
-            keep(&mut report.slowest);
-            keep(&mut report.most_fuel);
-            keep(&mut report.largest_arenas);
+            add_rows(&mut tally, &mut report, rows, &options);
         }
         eprintln!(
             "{}: {} files, {} bodies, {} panics, {:.1}s",
@@ -286,7 +294,164 @@ pub fn run(options: Options) -> Result<bool> {
         std::fs::write(path, serde_json::to_string_pretty(&report)? + "\n")
             .with_context(|| format!("writing {}", path.display()))?;
     }
-    Ok(report.total.panics == 0)
+    let over = report
+        .times
+        .iter()
+        .filter(|&&t| t > BACKSTOP_MICROS)
+        .count();
+    Ok(report.total.panics == 0 && over == 0)
+}
+
+fn add_rows(tally: &mut Tally, report: &mut Report, rows: Vec<FileRow>, options: &Options) {
+    for row in rows {
+        tally.files += 1;
+        tally.bodies += row.fuel.len() as u64;
+        tally.expressions += row.expressions;
+        for (k, n) in &row.kinds {
+            *tally.kinds.entry((*k).to_owned()).or_default() += n;
+        }
+        for (k, n) in &row.calls {
+            *tally.calls.entry((*k).to_owned()).or_default() += n;
+        }
+        tally.micros += row.micros;
+        tally.largest_arena = tally.largest_arena.max(row.arena);
+        tally.largest_result = tally.largest_result.max(row.result_bytes);
+        if let Some(message) = &row.panic {
+            tally.panics += 1;
+            report.panics.push((row.path.clone(), message.clone()));
+        }
+        report.times.push(row.micros);
+        report.slowest.push((row.micros, row.path.clone()));
+        report.largest_arenas.push((row.arena, row.path.clone()));
+        report
+            .largest_results
+            .push((row.result_bytes, row.path.clone()));
+        for &(fuel, at) in &row.fuel {
+            report.fuel.push(fuel);
+            report.most_fuel.push((fuel, format!("{}:{at}", row.path)));
+        }
+    }
+    let keep = |v: &mut Vec<(u64, String)>| {
+        v.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
+        v.truncate(options.slowest);
+    };
+    keep(&mut report.slowest);
+    keep(&mut report.most_fuel);
+    keep(&mut report.largest_arenas);
+    keep(&mut report.largest_results);
+}
+
+/// Attributes javac's test inputs, a source set per directory and release. A panic in what comes
+/// before a file's attribution (its names, the project-wide phases) is the directory's.
+fn attribute_jdk_tests(
+    name: &str,
+    dirs: &Dirs,
+    options: &Options,
+    report: &mut Report,
+) -> Result<()> {
+    let tests = corpus::jdk_tests::JdkTests::load(dirs)?;
+    let home = std::env::var_os("JAVA_HOME").context("JAVA_HOME must point to a JDK")?;
+    let cache = ArchiveCache::new();
+    let jdk = Jdk::open(std::path::Path::new(&home), &cache)
+        .with_context(|| format!("opening {}", std::path::Path::new(&home).display()))?;
+    let mut groups: BTreeMap<(PathBuf, u32), Vec<PathBuf>> = BTreeMap::new();
+    let mut left_out = 0u64;
+    for input in corpus::jdk_tests::inputs(&tests, dirs)? {
+        if name == JDK_DEEP_NESTING && !input.deep_nesting {
+            continue;
+        }
+        let Some(&release) = input.releases.last() else {
+            left_out += 1;
+            continue;
+        };
+        if let Some(only) = &options.only
+            && !input.path.contains(only.as_str())
+        {
+            continue;
+        }
+        let dir = input.file.parent().map(PathBuf::from).unwrap_or_default();
+        groups.entry((dir, release)).or_default().push(input.file);
+    }
+    let releases: BTreeSet<u32> = groups.keys().map(|(_, release)| *release).collect();
+    let platforms: BTreeMap<u32, Arc<dyn ferrion_semantic::Platform>> = releases
+        .into_iter()
+        .filter_map(|release| {
+            let platform = jdk.platform(release).ok()?;
+            Some((release, platform as Arc<dyn ferrion_semantic::Platform>))
+        })
+        .collect();
+    let mut tally = Tally::default();
+    let root = corpus::jdk_tests::checkout_dir(dirs).canonicalize()?;
+    let mut slowest_group = (0.0f64, String::new());
+    for ((dir, release), files) in groups {
+        let mut set = ferrion_semantic::SourceSetInput::new(dir.display().to_string(), release);
+        set.platform = platforms.get(&release).cloned();
+        for file in files {
+            // A test of bad encodings isn't Java to this engine, as it isn't to Ferrion.
+            let Ok(source) = std::fs::read(&file)
+                .map_err(|_| ())
+                .and_then(|b| ferrion_diagnostics::SourceText::decode(b).map_err(|_| ()))
+            else {
+                left_out += 1;
+                continue;
+            };
+            set.files
+                .push(ferrion_semantic::FileInput::new(file, source.text()));
+        }
+        let group_start = Instant::now();
+        let display = dir
+            .strip_prefix(&root)
+            .unwrap_or(&dir)
+            .display()
+            .to_string();
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            let engine = ferrion_semantic::Engine::new(ferrion_semantic::ProjectInput {
+                source_sets: vec![set],
+            });
+            let id = ferrion_semantic::SourceSetId::from_index(0);
+            let rows = attribute_set(&engine, id, options, &root, BODY_FUEL);
+            let sizes = engine.sizes();
+            (rows, sizes.members, sizes.constants, sizes.member_bytes)
+        }));
+        let seconds = group_start.elapsed().as_secs_f64();
+        if seconds > slowest_group.0 {
+            slowest_group = (seconds, display.clone());
+        }
+        match result {
+            Ok((rows, members, constants, bytes)) => {
+                tally.members += members as u64;
+                tally.constants += constants as u64;
+                tally.member_bytes += bytes as u64;
+                let rows = rows.map_err(|e| anyhow::anyhow!("{display}: {e}"))?;
+                add_rows(&mut tally, report, rows, options);
+            }
+            Err(panic) => {
+                tally.panics += 1;
+                report.panics.push((display, panic_text(&panic)));
+            }
+        }
+    }
+    eprintln!(
+        "{name}: {} files ({left_out} left out), {} bodies, {} panics, {:.1}s; the slowest directory, \
+         names and all: {} {:.2} s",
+        tally.files,
+        tally.bodies,
+        tally.panics,
+        tally.micros as f64 / 1e6,
+        slowest_group.1,
+        slowest_group.0
+    );
+    report.total.merge(&tally);
+    report.projects.insert(name.to_owned(), tally);
+    Ok(())
+}
+
+fn panic_text(panic: &(dyn std::any::Any + Send)) -> String {
+    panic
+        .downcast_ref::<String>()
+        .cloned()
+        .or_else(|| panic.downcast_ref::<&str>().map(|s| (*s).to_owned()))
+        .unwrap_or_else(|| "a panic".to_owned())
 }
 
 /// Attributes each file of a source set, after the batch's project-wide phases.
@@ -295,6 +460,7 @@ fn attribute_set(
     set: ferrion_semantic::SourceSetId,
     options: &Options,
     corpus: &std::path::Path,
+    fuel: u64,
 ) -> Result<Vec<FileRow>, String> {
     let cancelled = |_| "cancelled with no edit running".to_owned();
     let threads = options.threads;
@@ -323,7 +489,7 @@ fn attribute_set(
             loop {
                 start = Instant::now();
                 result = catch_unwind(AssertUnwindSafe(|| {
-                    snapshot.attribute_with_fuel(file, MEASURING_FUEL)
+                    snapshot.attribute_with_fuel(file, fuel)
                 }));
                 repeat -= 1;
                 if repeat == 0 {
@@ -451,6 +617,7 @@ fn attribute_set(
                             .map(|&(node, f)| (f, tree.node(node).span().start))
                             .collect(),
                         arena: types.arena.len() as u64,
+                        result_bytes: types.bytes() as u64,
                         expressions: types.types.len() as u64,
                         kinds: counts.into_iter().collect(),
                         panic: None,
@@ -458,16 +625,13 @@ fn attribute_set(
                 }
                 Ok(Err(cancelled)) => return Err(cancelled),
                 Err(panic) => {
-                    let message = panic
-                        .downcast_ref::<String>()
-                        .cloned()
-                        .or_else(|| panic.downcast_ref::<&str>().map(|s| (*s).to_owned()))
-                        .unwrap_or_else(|| "a panic".to_owned());
+                    let message = panic_text(&*panic);
                     FileRow {
                         path,
                         micros,
                         fuel: Vec::new(),
                         arena: 0,
+                        result_bytes: 0,
                         expressions: 0,
                         kinds: Vec::new(),
                         calls: Vec::new(),
@@ -558,6 +722,10 @@ fn text(report: &Report) -> String {
     let _ = writeln!(out, "Slowest:");
     for (micros, path) in &report.slowest {
         let _ = writeln!(out, "  {:.1} ms {path}", ms(*micros));
+    }
+    let _ = writeln!(out, "Largest results:");
+    for (n, path) in &report.largest_results {
+        let _ = writeln!(out, "  {:.2} MB {path}", *n as f64 / 1e6);
     }
     let _ = writeln!(out, "Largest arenas:");
     for (n, path) in &report.largest_arenas {

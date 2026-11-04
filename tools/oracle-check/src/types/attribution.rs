@@ -434,7 +434,7 @@ fn calls(
             });
         }
     }
-    // A method invocation with no method: what its type waits for says what it waits for.
+    // A method invocation with no method: what its type waits for, or the error it has, says why.
     for event in tree.root().preorder() {
         let WalkEvent::Enter(node) = event else {
             continue;
@@ -448,7 +448,10 @@ fn calls(
             continue;
         };
         let text = writer.text(t)?;
-        if text.starts_with("left-to-") {
+        if text.starts_with("left-to-")
+            || text.starts_with("error ")
+            || text.starts_with("unknown ")
+        {
             out.calls.push(TypedCall {
                 span: node.span(),
                 implicit: false,

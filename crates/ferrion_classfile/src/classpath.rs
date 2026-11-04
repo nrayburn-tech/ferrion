@@ -1,5 +1,6 @@
 //! Class path entries and lookup (docs/design/classfile.md, "Class path entries and lookup").
 
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -56,6 +57,8 @@ impl PackageListing {
 enum Kind {
     Directory(Arc<Path>),
     Jar(Arc<Jar>),
+    /// An entry without some of its classes, by binary name.
+    Hiding(Box<ClassPathEntry>, Arc<HashSet<String>>),
 }
 
 /// One class path entry: a directory, or a jar resolved for a release. Immutable once made, and
@@ -74,16 +77,24 @@ impl ClassPathEntry {
         ClassPathEntry(Kind::Jar(jar))
     }
 
+    /// This entry without the classes `hidden` names: for checking what a missing class does.
+    pub fn hiding(self, hidden: Arc<HashSet<String>>) -> ClassPathEntry {
+        ClassPathEntry(Kind::Hiding(Box::new(self), hidden))
+    }
+
     /// The jar, for a jar entry.
     pub fn as_jar(&self) -> Option<&Arc<Jar>> {
         match &self.0 {
             Kind::Jar(jar) => Some(jar),
             Kind::Directory(_) => None,
+            Kind::Hiding(entry, _) => entry.as_jar(),
         }
     }
 
     pub fn find(&self, name: &ClassName) -> Result<Option<ClassBytes>> {
         match &self.0 {
+            Kind::Hiding(_, hidden) if hidden.contains(name.as_str()) => Ok(None),
+            Kind::Hiding(entry, _) => entry.find(name),
             Kind::Directory(dir) => find_in_directory(dir, name),
             Kind::Jar(jar) => {
                 let entry_name = format!("{}.class", name.as_str());
@@ -102,6 +113,17 @@ impl ClassPathEntry {
 
     pub fn package(&self, name: &PackageName) -> Result<Option<PackageListing>> {
         match &self.0 {
+            Kind::Hiding(entry, hidden) => {
+                let listing = entry.package(name)?;
+                Ok(listing.map(|listing| {
+                    let names = listing
+                        .names()
+                        .filter(|simple| !hidden.contains(&format!("{}/{simple}", name.as_str())))
+                        .map(Into::into)
+                        .collect();
+                    PackageListing::new(names)
+                }))
+            }
             Kind::Directory(dir) => list_directory(dir, name),
             Kind::Jar(jar) => Ok(jar
                 .package(name.as_str())

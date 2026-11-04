@@ -14,7 +14,9 @@ pub mod attribute;
 mod attribution;
 pub(crate) mod compare;
 mod ferrion;
+pub mod measure;
 pub(crate) mod oracle;
+pub mod removed;
 mod report;
 
 use std::collections::{BTreeMap, BTreeSet};
