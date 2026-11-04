@@ -1,5 +1,6 @@
-//! Deep inputs through resolution: the parser's deep-nesting stress patterns in declarations
-//! and in bodies, and long chains of supertypes, resolved on a 256 KiB stack, so that recursion
+//! Deep inputs through resolution and attribution: the parser's deep-nesting stress patterns in
+//! declarations and in bodies, and long chains of supertypes, resolved and attributed on a
+//! 256 KiB stack, so that recursion
 //! on the input's depth anywhere but under `ferrion_stack::ensure_stack` overflows here, and
 //! work that grows faster than the input shows as a slow test.
 
@@ -34,7 +35,8 @@ fn on_small_stack(name: &str, work: impl FnOnce() + Send + 'static) {
     eprintln!("{name}: {:?}", start.elapsed());
 }
 
-/// Every name in every file, and every type's entry, at the current revision.
+/// Every name in every file, every type's entry, and every file's attribution, at the current
+/// revision.
 fn resolve_everything(engine: &Engine) -> usize {
     let snapshot = engine.snapshot();
     snapshot.run_batch(1, |_| Ok(())).unwrap();
@@ -42,6 +44,7 @@ fn resolve_everything(engine: &Engine) -> usize {
     for set in snapshot.source_sets().unwrap() {
         for &file in snapshot.files(set).unwrap().iter() {
             names += snapshot.file_names(file).unwrap().names.len();
+            names += snapshot.body_types(file).unwrap().types.len();
         }
     }
     names
@@ -134,6 +137,18 @@ fn bodies_of_stress_patterns() {
         (
             "statements",
             Box::new(move |n| method("a = 1; ".repeat(n * 4))),
+        ),
+        (
+            "generic locals",
+            Box::new(move |n| method(nest("java.util.List<", "String", ">", n) + " l = null;")),
+        ),
+        (
+            "string concatenations",
+            Box::new(move |n| field("String", "\"ab\" + ".repeat(n * 4) + "a")),
+        ),
+        (
+            "casts",
+            Box::new(move |n| field("int", "(int) ".repeat(n) + "a")),
         ),
         (
             "pattern conjunctions",
