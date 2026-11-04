@@ -43,10 +43,12 @@ use corpus::project::Project;
 use ferrion_classfile::ArchiveCache;
 use ferrion_diagnostics::{LineIndex, SourceText, Span};
 use ferrion_project::{Environment, InputError, InputFlags, TypeInputs};
-use ferrion_semantic::attr::BODY_FUEL;
+use ferrion_semantic::attr::{BODY_FUEL, BodyTypes};
 use ferrion_semantic::decl_names::{self, Symbol};
+use ferrion_semantic::types::Why;
 use ferrion_semantic::{Cancelled, Engine, FileId, FileInput, ProjectInput, Snapshot, SourceSetId};
-use ferrion_syntax::{SyntaxKind, SyntaxTree};
+use ferrion_syntax::ast::{self, AstNode};
+use ferrion_syntax::{NodeId, SyntaxKind, SyntaxTree};
 
 use super::plan::SourceSet;
 
@@ -56,6 +58,9 @@ pub struct ResolvedName {
     /// Bytes in the file's decoded text.
     pub span: Span,
     pub key: String,
+    /// For a name left to B3, what attribution has for it (`a method chosen`, `left to B3c`, ...);
+    /// else empty.
+    pub attribution: &'static str,
 }
 
 /// A source set's names, by file: the path relative to the corpus directory, with `/`, as the
@@ -113,7 +118,12 @@ pub struct Ferrion {
     replay: bool,
     /// Each project's engine, while some of its source sets are still to run.
     states: HashMap<String, Mutex<ProjectState>>,
+    /// What to change of a project's inputs before its engine is made.
+    edit: Option<InputEdit>,
 }
+
+/// A change to a project's inputs: the removed-symbols check's.
+pub type InputEdit = Arc<dyn Fn(&mut ProjectInput) + Send + Sync>;
 
 struct ProjectState {
     /// The project's source sets in the run still to resolve.
@@ -160,11 +170,42 @@ impl Ferrion {
             threads: threads.max(1),
             replay,
             states,
+            edit: None,
         })
+    }
+
+    /// With `edit` applied to each project's inputs.
+    pub fn with_edit(mut self, edit: InputEdit) -> Ferrion {
+        self.edit = Some(edit);
+        self
     }
 
     /// The project's engine, over its model with its type inputs opened.
     fn load(&self, name: &str) -> Result<Loaded, String> {
+        let mut input = self.input(name)?;
+        if let Some(edit) = &self.edit {
+            edit(&mut input);
+        }
+        let sets = input
+            .source_sets
+            .iter()
+            .enumerate()
+            .map(|(i, set)| (set.name.clone(), SourceSetId::from_index(i)))
+            .collect();
+        let replayed = if self.replay {
+            Some(replayed(&input, self.threads).map_err(cancelled)?)
+        } else {
+            None
+        };
+        Ok(Loaded {
+            engine: Engine::new(input),
+            sets,
+            replayed,
+        })
+    }
+
+    /// The project's inputs: its model with its type inputs opened.
+    pub fn input(&self, name: &str) -> Result<ProjectInput, String> {
         let project = self
             .projects
             .iter()
@@ -194,22 +235,7 @@ impl Ferrion {
         let loaded = loaded.map_err(errors)?;
         let (types, _warnings) = TypeInputs::open(&loaded, &ArchiveCache::new()).map_err(errors)?;
         let (input, _skipped) = ProjectInput::from_project(&loaded, Some(&types));
-        let sets = input
-            .source_sets
-            .iter()
-            .enumerate()
-            .map(|(i, set)| (set.name.clone(), SourceSetId::from_index(i)))
-            .collect();
-        let replayed = if self.replay {
-            Some(replayed(&input, self.threads).map_err(cancelled)?)
-        } else {
-            None
-        };
-        Ok(Loaded {
-            engine: Engine::new(input),
-            sets,
-            replayed,
-        })
+        Ok(input)
     }
 }
 
@@ -495,12 +521,66 @@ fn file_names(
                 key
             }
         };
+        // What attribution has for what the name is in, where B2's answer waits on it.
+        let in_label = || {
+            tree.node(name.node)
+                .parent()
+                .is_some_and(|p| p.kind() == SyntaxKind::SwitchLabel)
+        };
+        let attribution = match symbol {
+            Symbol::LeftToB3(_) | Symbol::Methods { .. } => {
+                attribution_of(&tree, &types, name.node)
+            }
+            _ if in_label() => attribution_of(&tree, &types, name.node),
+            _ => "",
+        };
         out.push(ResolvedName {
             span: javac_range(&tree, name),
             key,
+            attribution,
         });
     }
     Ok((relative, out))
+}
+
+/// What attribution has for a name B2's answer waits on: the method chosen for the call it names,
+/// or for a `case` label its switch's selector, or what the expression's type is left to, or that it
+/// has a type.
+fn attribution_of(tree: &SyntaxTree, types: &BodyTypes, node: NodeId) -> &'static str {
+    let syntax = tree.node(node);
+    let parent = syntax.parent();
+    let expression = if parent.is_some_and(|p| p.kind() == SyntaxKind::SwitchLabel) {
+        let selector = syntax
+            .ancestors()
+            .find(|a| matches!(a.kind(), SyntaxKind::SwitchStmt | SyntaxKind::SwitchExpr))
+            .and_then(|switch| switch.children().find(|c| ast::Expr::can_cast(c.kind())));
+        match selector {
+            Some(selector) => selector,
+            None => return "no selector",
+        }
+    } else if syntax.kind() == SyntaxKind::MethodCallExpr {
+        syntax
+    } else {
+        match parent.filter(|p| p.kind() == SyntaxKind::MethodCallExpr) {
+            Some(call) => call,
+            None => syntax,
+        }
+    };
+    if types.call(expression.id()).is_some() {
+        return "a method chosen";
+    }
+    let Some(ty) = types.type_of(expression.id()) else {
+        return "no type";
+    };
+    match types.arena.non_answer(ty) {
+        None => "a type, no method",
+        Some(Why::LeftToB3c) => "left to B3c",
+        Some(Why::LeftToB3d) => "left to B3d",
+        Some(Why::LeftToB4) => "left to B4",
+        Some(Why::Error(_)) => "an error",
+        Some(Why::Incomplete(_)) => "incomplete",
+        Some(Why::Limit | Why::Later) => "unknown",
+    }
 }
 
 /// The range of javac's tree for a name: a class type's ends at its last identifier, before its
@@ -715,6 +795,7 @@ mod tests {
                 end: start + 1,
             },
             key: key.to_owned(),
+            attribution: "",
         };
         let names: SetNames = [
             ("a/A.java".to_owned(), vec![name(0, "package a")]),

@@ -11,7 +11,7 @@
 #
 #   <category> <file> <start>-<end>
 
-category case-label: a `case` label's enum constant in a switch whose selector's type needs inference (`switch (of(x).kind()) { case OPEN: ... }` with a generic `of`), which B3c types: until then the name has no answer but B2's, which leaves it to B3, or takes a constant of the name in scope
+category case-label: a `case` label's enum constant in a switch whose selector's type needs inference (`switch (of(x).kind()) { case OPEN: ... }` with a generic `of`), which B3c types, or a `switch` expression (a `var` selector, helidon's `ProxyProtocolHandler`, 7 of them), which B3d types: until then the name has no answer but B2's, which leaves it to B3, or takes a constant of the name in scope
 category static-import-overload: a method named alone that only static imports have, declared by several imported types, when choosing among them needs inference (`assertThat` from `Truth.*`, whose candidates are generic, and a subject of the project's): javac's searched type is the declaring type of the overload it chooses, and B3c chooses; B2 gives the first import's type
 category lombok-member: a method Lombok generates for a type, named qualified by the type (`QueryResult.builder()` in hertzbeat, for a `@Builder` class): javac sees it, since Lombok runs on hertzbeat's JDK 25, while Ferrion sees no Lombok member until B4, and the type's members are incomplete without it
 category dependency-view: a dependency's type resolved in the dependency's own view (decision 1 of the project symbols review): javac compiles the dependent source set as one namespace, so a type the dependent redeclares replaces the dependency's in the dependency's code too

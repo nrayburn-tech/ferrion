@@ -343,6 +343,39 @@ impl NamesOracle {
             .with_context(|| format!("the oracle wasn't given JDK {version}"))
     }
 
+    /// The cached output for `set`, if there is one for its inputs as they are now. Never runs
+    /// javac, so never rewrites generated sources.
+    pub fn cached<O: CommandOutput>(
+        &self,
+        sets: &[SourceSet],
+        set: &SourceSet,
+        corpus: &Path,
+        cache_root: &Path,
+    ) -> Result<Option<O>> {
+        let jvm = self.jvm(set.jdk)?;
+        let cache = cache_root.join(self.command.name).join(&jvm.key);
+        let sourcepath = plan::source_path(sets, set);
+        let classpath = plan::class_path(sets, set);
+        let processor_path = if self.processor_path.is_empty() {
+            set.processor_path.clone()
+        } else {
+            Some(self.processor_path.clone())
+        };
+        let hash = input_hash(
+            sets,
+            set,
+            &classpath,
+            processor_path.as_deref(),
+            &sourcepath,
+            corpus,
+        )?;
+        let path = cache.join(format!("{hash}.jsonl"));
+        let Ok(text) = std::fs::read_to_string(&path) else {
+            return Ok(None);
+        };
+        Ok(Some(O::parse(&text)?))
+    }
+
     /// The oracle's output for `set`, run on its project's JDK, from the cache under
     /// `cache_root` when its inputs haven't changed. `corpus` is the corpus directory, which
     /// paths in the output are relative to.
