@@ -102,6 +102,12 @@ pub struct Comparison {
     pub extra: u64,
     /// Ferrion's names left to B3 where javac has none in B2's part.
     pub left_to_b3: u64,
+    /// What isn't compared as B2's: by what Ferrion has and javac's part.
+    pub uncompared: BTreeMap<String, u64>,
+    /// Names of javac's B3 part that attribution answered, the same as javac's.
+    pub attributed_matched: u64,
+    /// Known differences by category and what attribution has for the call or `case` they are in.
+    pub known_attribution: BTreeMap<String, u64>,
 }
 
 impl Tally {
@@ -178,6 +184,13 @@ impl Tally {
         c.not_compared += o.not_compared;
         c.extra += o.extra;
         c.left_to_b3 += o.left_to_b3;
+        c.attributed_matched += o.attributed_matched;
+        for (label, count) in &o.known_attribution {
+            *c.known_attribution.entry(label.clone()).or_default() += count;
+        }
+        for (label, count) in &o.uncompared {
+            *c.uncompared.entry(label.clone()).or_default() += count;
+        }
         for (code, count) in &other.error_codes {
             *self.error_codes.entry(code.clone()).or_default() += count;
         }
@@ -370,6 +383,33 @@ impl Report {
         .unwrap();
         for (category, count) in &c.mismatched {
             writeln!(out, "  {category}: {count}").unwrap();
+        }
+        if c.attributed_matched > 0 {
+            writeln!(
+                out,
+                "names of javac's B3 part that attribution answered, the same as javac's: {}",
+                c.attributed_matched
+            )
+            .unwrap();
+        }
+        if !c.uncompared.is_empty() {
+            for (label, count) in &c.known_attribution {
+                writeln!(
+                    out,
+                    "  known, with what attribution has: {count:>7} {label}"
+                )
+                .unwrap();
+            }
+            writeln!(
+                out,
+                "what Ferrion has beyond B2's part, and javac's name there:"
+            )
+            .unwrap();
+            let mut rows: Vec<(&String, &u64)> = c.uncompared.iter().collect();
+            rows.sort_by(|a, b| b.1.cmp(a.1).then(a.0.cmp(b.0)));
+            for (label, count) in rows {
+                writeln!(out, "  {count:>7} {label}").unwrap();
+            }
         }
         for (category, count) in &c.known {
             writeln!(out, "  known, {category}: {count}").unwrap();

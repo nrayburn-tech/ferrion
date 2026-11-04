@@ -2,7 +2,7 @@
 //!
 //! The rules are in docs/design/semantic-oracle-normalization.md, "What is compared".
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use anyhow::{Context, Result, bail};
 
@@ -180,6 +180,8 @@ pub struct Mismatch {
     pub javac: String,
     pub ferrion: Option<String>,
     pub category: Category,
+    /// What attribution has for the call or `case` the name is in, where it was asked.
+    pub attribution: &'static str,
 }
 
 /// The comparison of one file.
@@ -192,6 +194,13 @@ pub struct Compared {
     pub extra: u64,
     /// Ferrion's names left to B3 at a range where javac has no name in B2's part.
     pub left_to_b3: u64,
+    /// What isn't compared, by what Ferrion has and javac's part: left to B3 by its kind and what
+    /// attribution has for it, or an answer where javac's name isn't in B2's part.
+    pub uncompared: BTreeMap<String, u64>,
+    /// Ferrion's answer where attribution settled a name of javac's B3 part, compared with
+    /// javac's key: the same, and each that isn't.
+    pub attributed_matched: u64,
+    pub attributed_mismatches: Vec<Mismatch>,
 }
 
 /// Compares the names in B2's part with Ferrion's.
@@ -202,8 +211,15 @@ pub fn compare(
     offsets: &Offsets,
 ) -> Compared {
     let mut by_range: HashMap<(i64, i64), &str> = HashMap::new();
+    let mut attribution: HashMap<(i64, i64), &str> = HashMap::new();
     for name in ferrion {
-        by_range.insert(offsets.range(name.span), &name.key);
+        let range = offsets.range(name.span);
+        by_range.insert(range, &name.key);
+        attribution.insert(range, name.attribution);
+    }
+    let mut javac: HashMap<(i64, i64), (Part, &Name)> = HashMap::new();
+    for (name, &part) in file.names.iter().zip(parts) {
+        javac.entry((name.start, name.end)).or_insert((part, name));
     }
     let mut compared = Compared::default();
     let mut used = HashSet::new();
@@ -226,6 +242,10 @@ pub fn compare(
                 javac: theirs.to_owned(),
                 ferrion: ours.map(str::to_owned),
                 category: categorize(theirs, ours),
+                attribution: attribution
+                    .get(&(name.start, name.end))
+                    .copied()
+                    .unwrap_or(""),
             });
         }
     }
@@ -233,14 +253,74 @@ pub fn compare(
         if used.contains(range) {
             continue;
         }
-        if key.starts_with("b3 ") {
+        let theirs = javac.get(range);
+        let part = theirs.map_or("no name of javac's".to_owned(), |(part, name)| {
+            format!("javac {} {} {}", part.name(), name.context, name.qualifier)
+        });
+        if let Some(why) = key.strip_prefix("b3 ") {
             compared.left_to_b3 += 1;
-        } else {
-            compared.extra += 1;
+            let label = format!("{why}: {}; {part}", attribution[range]);
+            // Attribution typed it, and an array's `length`, the one member that has no symbol,
+            // is all it can be.
+            if attribution[range] == "a type, no method"
+                && let Some(&(Part::B3, name)) = theirs
+            {
+                if name.key == ARRAY_LENGTH {
+                    compared.attributed_matched += 1;
+                } else {
+                    compared.attributed_mismatches.push(Mismatch {
+                        start: name.start,
+                        end: name.end,
+                        context: name.context.clone(),
+                        javac: name.key.clone(),
+                        ferrion: Some(ARRAY_LENGTH.to_owned()),
+                        category: categorize(&name.key, Some(ARRAY_LENGTH)),
+                        attribution: "",
+                    });
+                }
+                let label = format!("{why}: an array's length, compared; {part}");
+                *compared.uncompared.entry(label).or_default() += 1;
+                continue;
+            }
+            *compared.uncompared.entry(label).or_default() += 1;
+            continue;
         }
+        compared.extra += 1;
+        let kind = key.split(' ').next().unwrap_or("");
+        // A name javac has in B3's part, which attribution answered: the same question.
+        if let Some(&(Part::B3, name)) = theirs
+            && name.context != "method"
+            && !key.starts_with("methods ")
+        {
+            if *key == name.key {
+                compared.attributed_matched += 1;
+            } else {
+                compared.attributed_mismatches.push(Mismatch {
+                    start: name.start,
+                    end: name.end,
+                    context: name.context.clone(),
+                    javac: name.key.clone(),
+                    ferrion: Some((*key).to_owned()),
+                    category: categorize(&name.key, Some(key)),
+                    attribution: "",
+                });
+            }
+            *compared
+                .uncompared
+                .entry(format!("answered ({kind}), compared; {part}"))
+                .or_default() += 1;
+            continue;
+        }
+        *compared
+            .uncompared
+            .entry(format!("answered ({kind}); {part}"))
+            .or_default() += 1;
     }
     compared
 }
+
+/// javac's key for an array's `length`.
+const ARRAY_LENGTH: &str = "field Array.length";
 
 /// The known differences: names whose mismatch is explained, each under a category.
 ///
@@ -422,10 +502,12 @@ mod tests {
             ResolvedName {
                 span: Span { start: 10, end: 11 },
                 key: "type B source s".into(),
+                attribution: "",
             },
             ResolvedName {
                 span: Span { start: 13, end: 14 },
                 key: "local f:13".into(),
+                attribution: "",
             },
         ];
         let compared = compare(&file, &parts, &ferrion, &offsets);
@@ -449,6 +531,7 @@ mod tests {
             javac: "type A platform".into(),
             ferrion: None,
             category: Category::Missing,
+            attribution: "",
         };
         assert_eq!(
             known.category("jedis/src/A.java", &mismatch),
@@ -456,6 +539,43 @@ mod tests {
         );
         assert!(Known::parse("other a/B.java 1-2\n").is_err());
         assert!(Known::load().is_ok());
+    }
+
+    #[test]
+    fn what_attribution_answered_is_compared() {
+        let offsets = Offsets::from_text("a.b; c.length;", false);
+        let names = |start: i64, end: i64, key: &str| name(start, end, "expression", "e", key);
+        let file = FileOutput {
+            names: vec![
+                names(0, 3, "field p/A.b"),
+                names(5, 13, "field Array.length"),
+            ],
+            ..FileOutput::default()
+        };
+        let parts = vec![Part::B3, Part::B3];
+        let ours = |key: &str, attribution, start, end| ResolvedName {
+            span: Span { start, end },
+            key: key.to_owned(),
+            attribution,
+        };
+        let same = compare(
+            &file,
+            &parts,
+            &[
+                ours("field p/A.b", "", 0, 3),
+                ours("b3 array", "a type, no method", 5, 13),
+            ],
+            &offsets,
+        );
+        assert_eq!(same.attributed_matched, 2);
+        assert!(same.attributed_mismatches.is_empty());
+        let different = compare(
+            &file,
+            &parts,
+            &[ours("field p/A.other", "", 0, 3)],
+            &offsets,
+        );
+        assert_eq!(different.attributed_mismatches.len(), 1);
     }
 
     #[test]

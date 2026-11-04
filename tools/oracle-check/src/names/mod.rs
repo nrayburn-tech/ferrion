@@ -545,12 +545,33 @@ fn run_set(context: &Shared, group: usize, i: usize) -> Result<SetResult> {
         tally.comparison.matched += compared.matched;
         tally.comparison.extra += compared.extra;
         tally.comparison.left_to_b3 += compared.left_to_b3;
+        tally.comparison.attributed_matched += compared.attributed_matched;
+        for (label, count) in compared.uncompared {
+            *tally.comparison.uncompared.entry(label).or_default() += count;
+        }
+        for mismatch in compared.attributed_mismatches {
+            tally.add_mismatch(mismatch.category);
+            mismatches.push(MismatchRow {
+                file: display.clone(),
+                start: mismatch.start,
+                end: mismatch.end,
+                context: mismatch.context,
+                category: mismatch.category.name(),
+                javac: mismatch.javac,
+                ferrion: mismatch.ferrion,
+            });
+        }
         for mismatch in compared.mismatches {
             if let Some(category) = context.known.category(&display, &mismatch) {
                 *tally
                     .comparison
                     .known
                     .entry(category.to_owned())
+                    .or_default() += 1;
+                *tally
+                    .comparison
+                    .known_attribution
+                    .entry(format!("{category}: {}", mismatch.attribution))
                     .or_default() += 1;
                 continue;
             }
