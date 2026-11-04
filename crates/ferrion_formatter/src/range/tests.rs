@@ -165,4 +165,8 @@ fn an_error_unit_overlapping_the_range_affects_it() {
 fn an_error_unit_holding_a_region_marker_affects_every_range() {
     let text = "class A {\n  void f() {\n    a( // @formatter:off\n    ;\n  }\n  int  x;\n}\n";
     assert!(formatted(text, "x").is_err());
+    // A comment before the range doesn't need the file's edits to find its units.
+    let text =
+        "class A {\n  void f() {\n    a( // @formatter:off\n    ;\n  }\n  // c\n  int  x;\n}\n";
+    assert!(formatted(text, "x").is_err());
 }
