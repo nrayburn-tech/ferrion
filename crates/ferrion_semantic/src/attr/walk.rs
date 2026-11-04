@@ -759,7 +759,13 @@ impl<'s, 'r> Walker<'s, 'r> {
         debug_assert_eq!(frame.node, node.id());
         let mark = frame.mark.min(self.values.len());
         let children = self.values.split_off(mark);
-        let value = self.value(node, &children, frame.expected)?;
+        // A call's arguments stay on the stack for the call to read.
+        let value = if node.kind() == SyntaxKind::Arguments {
+            self.values.extend(children);
+            None
+        } else {
+            self.value(node, &children, frame.expected)?
+        };
         if let Some(value) = value {
             if value.what == What::Expr {
                 self.types
@@ -787,6 +793,9 @@ impl<'s, 'r> Walker<'s, 'r> {
         if self.body == Some(id) {
             self.body = None;
             self.body_fuel.push((id, self.cx.fuel_used()));
+            // What is between bodies, a method's parameters' types, doesn't pay for a body's
+            // running out.
+            self.cx.refuel(self.fuel);
         }
         Ok(())
     }
@@ -861,7 +870,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             SyntaxKind::MethodCallExpr | SyntaxKind::NewExpr | SyntaxKind::ConstructorCallExpr => {
                 self.call(node, children)?
             }
-            SyntaxKind::ArrayCreationExpr => self.array_creation(node, children)?,
+            SyntaxKind::ArrayCreationExpr => self.array_creation(node)?,
             SyntaxKind::ArrayInitializer => self.array_initializer(node, children, expected)?,
             SyntaxKind::PrefixExpr => self.prefix(node, children)?,
             SyntaxKind::PostfixExpr => {
@@ -996,8 +1005,13 @@ impl<'s, 'r> Walker<'s, 'r> {
 
     /// Whether a variable named here is read for its value, and so captured (JLS 6.5.6.1):
     /// not as an assignment's or increment's target, nor as a qualifier, where javac keeps the
-    /// declared type (observed: `xs` in `xs.size()` and `xs = null`).
+    /// declared type, through parentheses too (observed: `xs` in `xs.size()`, `(xs).size()`, and
+    /// `xs = null`).
     fn captured_here(node: SyntaxNode<'_>) -> bool {
+        let mut node = node;
+        while let Some(parent) = node.parent().filter(|p| p.kind() == SyntaxKind::ParenExpr) {
+            node = parent;
+        }
         let Some(parent) = node.parent() else {
             return true;
         };
@@ -1011,8 +1025,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             SyntaxKind::MethodCallExpr => {
                 id_of(ast::MethodCallExpr::cast(parent).unwrap().receiver()) != Some(node.id())
             }
-            SyntaxKind::MethodRefExpr => false,
-            SyntaxKind::PostfixExpr => false,
+            SyntaxKind::MethodRefExpr | SyntaxKind::PostfixExpr => false,
             SyntaxKind::PrefixExpr => !ast::PrefixExpr::cast(parent)
                 .unwrap()
                 .op()
@@ -1154,6 +1167,10 @@ impl<'s, 'r> Walker<'s, 'r> {
     fn field_constant(&mut self, field: FieldRef) -> Result<Option<Constant>, Cancelled> {
         if let TypeKey::Local { .. } = field.owner {
             return Ok(self.local_constants.get(&field).cloned());
+        }
+        // Most fields aren't candidates, and need no entry to say so.
+        if !self.cx.may_be_constant(field)? {
+            return Ok(None);
         }
         self.reads.constant(field)
     }
@@ -1564,27 +1581,19 @@ impl<'s, 'r> Walker<'s, 'r> {
 
     /// A method invocation, an explicit constructor invocation, or a class instance creation:
     /// overload resolution chooses its method and types it (W3), so for now it has no type.
-    /// Its arguments, already typed, are the values among `children` after its receiver or
-    /// qualifier.
+    /// `children` are its receiver or qualifier, if any, and its arguments, each typed already
+    /// as a standalone expression, in order: `ast::MethodCallExpr::arguments` and
+    /// `ast::NewExpr::arguments` say which node is which. The names say what B2 knows of the
+    /// method (`Symbol::Methods`, or `LeftToB3` for a call on an expression, whose receiver's
+    /// type is here), and [`Walker::members`] gives the searched type's member methods.
     fn call(&mut self, node: SyntaxNode<'_>, children: &[Value]) -> Result<Value, Cancelled> {
         let _ = children;
         let t = self.unknown(Why::Calls);
         Ok(self.expr(node.id(), t))
     }
 
-    fn array_creation(
-        &mut self,
-        node: SyntaxNode<'_>,
-        children: &[Value],
-    ) -> Result<Value, Cancelled> {
+    fn array_creation(&mut self, node: SyntaxNode<'_>) -> Result<Value, Cancelled> {
         let creation = ast::ArrayCreationExpr::cast(node).unwrap();
-        let int = self.primitive(Primitive::Int);
-        for dim in creation.dim_exprs() {
-            if let Some(size) = child(children, id_of(dim.size())).cloned() {
-                self.record_conversion(&size, Context::Numeric, int)?;
-            }
-        }
-        // A `DimExpr`'s size is its child's child: its value is the `DimExpr`'s own.
         let mut t = match creation.element_type() {
             Some(e) => self.syntax_type(e)?,
             None => self.unknown(Why::Later),
@@ -2205,6 +2214,14 @@ impl<'s, 'r> Walker<'s, 'r> {
                     t = self.cx.arena_mut().array(t);
                 }
                 self.declare(node.id(), t, None);
+            }
+            // A dimension's size is promoted to `int` (JLS 15.10.1).
+            SyntaxKind::DimExpr => {
+                let size = id_of(ast::DimExpr::cast(node).unwrap().size());
+                if let Some(v) = child(children, size).cloned() {
+                    let int = self.primitive(Primitive::Int);
+                    self.record_conversion(&v, Context::Numeric, int)?;
+                }
             }
             // A condition converts to `boolean`: an unboxing, for a `Boolean`.
             SyntaxKind::IfStmt

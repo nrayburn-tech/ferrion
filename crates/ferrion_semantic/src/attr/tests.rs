@@ -590,3 +590,114 @@ fn inner_classes_inside_local_classes() {
     let e = expressions(source);
     assert_eq!(ty(&e, "cursor"), "E:D");
 }
+
+/// javac on more forms: `(xs).size()`'s receiver isn't captured, through the parentheses; a
+/// reference conditional under a cast is standalone (`java/lang/String`), and with `var`
+/// `java/lang/Integer` for `flag ? null : 1`; `flag ? c : 1` is `char`; `-129` and `-1` narrow as
+/// Java's casts do; `1 + 2 + "a" + 1 + 2` folds left to right.
+#[test]
+fn more_forms() {
+    let e = expressions(
+        "class Q<T extends Number> { java.util.List<? extends Number> xs; T t; int[] arr; char c; boolean flag; Integer boxed;\n\
+         void m(byte b, short s) {\n\
+         int q = (xs).size(); Object f = (this).xs; (arr)[0] = 1; arr[0] += 2; c += 1; b++; s = (short) (b + 1); t = null;\n\
+         String ss = null + \"a\"; String st = \"a\" + null;\n\
+         String so = (String) (flag ? null : \"a\"); var vn = flag ? null : 1; var vd = (flag ? xs : null);\n\
+         boolean bb = boxed == 1; boolean bc = boxed == boxed; int sh = boxed << 2; int neg = -boxed;\n\
+         int tern = flag ? c : 1; long tern2 = flag ? boxed : 1L; int[][] aa = {{1}, {2, 3}}; String[] sa = {\"a\", null};\n\
+         Object oa = new Object[] {1, \"x\"}; for (int i = 0, j = 1; i < j; i++, j--) { }\n\
+         long big = 2147483648L; int oct = 017; int bin = 0b101; long hexl = 0xFFL; float hf = 0x1p3f; double dd = 1e3;\n\
+         double d2 = 1.5d; float f2 = .5f; char uc = '\\u0041'; char esc = '\\n'; char oc2 = '\\101'; String sb = \"\\0\\377\\s\";\n\
+         int cast = (int) 3.9; byte bneg = (byte) -129; char neg1 = (char) -1; long ll = (long) 1e30; boolean lt = 'a' < 98;\n\
+         boolean nb = !true; boolean xor = true ^ false; boolean and = true && false; int band = 6 & 3; int bor = 6 | 3; int bxor = 6 ^ 3;\n\
+         long ls = 1L >>> 1; int rem = 7 % 3; double drem = 7.5 % 2; float fm = 2f * 3;\n\
+         String cs = \"\" + 1L + 1.0f + 1.0 + 'c' + (byte) 1 + (short) 2 + true; String mix = 1 + 2 + \"a\" + 1 + 2;\n\
+         int intc = 'a' + 'b'; int ic = Integer.MAX_VALUE + 1; double inf = -1.0 / 0; double nan = 0.0 / 0; boolean nane = 0.0 / 0 == 0.0 / 0;\n\
+         float big2 = 1e38f * 10; String fs = \"\" + 1.0E10f + 1.0E-5 + 100.0 + 1234567.0 + 12345678.0 + 0.001 + 0.0001; } }",
+    );
+    assert_eq!(
+        get(&e, "(xs)", 0).ty,
+        "java/util/List<? extends java/lang/Number>"
+    );
+    assert_eq!(
+        get(&e, "xs", 0).ty,
+        "java/util/List<? extends java/lang/Number>"
+    );
+    assert_eq!(
+        ty(&e, "(this).xs"),
+        "java/util/List<capture#1 extends java/lang/Number>"
+    );
+    assert_eq!(ty(&e, "(this)"), "Q<T:Q>");
+    assert_eq!(ty(&e, "(arr)[0] = 1"), "int");
+    assert_eq!(ty(&e, "arr[0] += 2"), "int");
+    assert_eq!(ty(&e, "c += 1"), "char");
+    assert_eq!(ty(&e, "b++"), "byte");
+    assert_eq!(ty(&e, "s = (short) (b + 1)"), "short");
+    assert_eq!(ty(&e, "t = null"), "T:Q");
+    assert_eq!(ty(&e, "null + \"a\""), "java/lang/String");
+    assert_eq!(constant(&e, "null + \"a\""), None);
+    assert_eq!(ty(&e, "(flag ? null : \"a\")"), "java/lang/String");
+    assert_eq!(ty(&e, "flag ? null : 1"), "java/lang/Integer");
+    assert_eq!(
+        ty(&e, "flag ? xs : null"),
+        "java/util/List<capture#1 extends java/lang/Number>"
+    );
+    assert_eq!(ty(&e, "boxed == 1"), "boolean");
+    assert_eq!(ty(&e, "boxed == boxed"), "boolean");
+    assert_eq!(ty(&e, "boxed << 2"), "int");
+    assert_eq!(ty(&e, "-boxed"), "int");
+    assert_eq!(ty(&e, "flag ? c : 1"), "char");
+    assert_eq!(ty(&e, "flag ? boxed : 1L"), "long");
+    assert_eq!(ty(&e, "{{1}, {2, 3}}"), "int[][]");
+    assert_eq!(ty(&e, "{1}"), "int[]");
+    assert_eq!(ty(&e, "{\"a\", null}"), "java/lang/String[]");
+    assert_eq!(ty(&e, "new Object[] {1, \"x\"}"), "java/lang/Object[]");
+    assert_eq!(ty(&e, "j--"), "int");
+    for (text, value) in [
+        ("2147483648L", "long 2147483648"),
+        ("017", "int 15"),
+        ("0b101", "int 5"),
+        ("0xFFL", "long 255"),
+        ("0x1p3f", "float 0x1.0p3"),
+        ("1e3", "double 0x1.f4p9"),
+        ("1.5d", "double 0x1.8p0"),
+        (".5f", "float 0x1.0p-1"),
+        ("'\\u0041'", "char \"A\""),
+        ("'\\n'", "char \"\\u000a\""),
+        ("'\\101'", "char \"A\""),
+        ("\"\\0\\377\\s\"", "String \"\\u0000\\u00ff \""),
+        ("(int) 3.9", "int 3"),
+        ("(byte) -129", "byte 127"),
+        ("(char) -1", "char \"\\uffff\""),
+        ("(long) 1e30", "long 9223372036854775807"),
+        ("'a' < 98", "boolean true"),
+        ("!true", "boolean false"),
+        ("true ^ false", "boolean true"),
+        ("true && false", "boolean false"),
+        ("6 & 3", "int 2"),
+        ("6 | 3", "int 7"),
+        ("6 ^ 3", "int 5"),
+        ("1L >>> 1", "long 0"),
+        ("7 % 3", "int 1"),
+        ("7.5 % 2", "double 0x1.8p0"),
+        ("2f * 3", "float 0x1.8p2"),
+        ("1 + 2 + \"a\" + 1 + 2", "String \"3a12\""),
+        ("1 + 2 + \"a\"", "String \"3a\""),
+        ("'a' + 'b'", "int 195"),
+        ("Integer.MAX_VALUE + 1", "int -2147483648"),
+        ("-1.0 / 0", "double -Infinity"),
+        ("0.0 / 0", "double NaN"),
+        ("0.0 / 0 == 0.0 / 0", "boolean false"),
+        ("1e38f * 10", "float Infinity"),
+        (
+            "\"\" + 1L + 1.0f + 1.0 + 'c' + (byte) 1 + (short) 2 + true",
+            "String \"11.01.0c12true\"",
+        ),
+        (
+            "\"\" + 1.0E10f + 1.0E-5 + 100.0 + 1234567.0 + 12345678.0 + 0.001 + 0.0001",
+            "String \"1.0E101.0E-5100.01234567.01.2345678E70.0011.0E-4\"",
+        ),
+    ] {
+        assert_eq!(constant(&e, text), Some(value), "{text}");
+    }
+}
