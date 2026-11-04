@@ -263,7 +263,11 @@ On `b3/integration`, cut from main at 3273dd6:
    [results](semantic-attribution.md#results-of-calls).)
 5. **W4, the B3b comparison:** the Ferrion adapter for `cargo oracle types`, the corpus run,
    fixes, known differences, the removed-symbols check, benchmarks. It can start beside W3 on what
-   W2 types, and finishes after W3.
+   W2 types, and finishes after W3. (Done: `cargo oracle types` at zero unexplained, 8 known; the
+   removed-symbols check, `cargo oracle removed`, without a crash or a confident answer that differs in 84
+   rounds; javac's 5,627 test inputs attributed without a panic, none over 49 ms; lucene cold in 1.96 s of
+   attribution, 0.56 s on four threads, an edit in a body of its largest hand-written file 33 ms end to end, so
+   results stay per file; [the results](semantic-attribution.md#the-removed-symbols-check).)
 6. **B3b review stop.** Then B3c's design, its review, its work, its stop; then B3d's.
 
 At most two B3 agents run at once while A2's agents run, all through the shared heavy-job lock,

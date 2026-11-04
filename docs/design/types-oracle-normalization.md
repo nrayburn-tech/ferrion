@@ -629,6 +629,14 @@ So of javac's 1,329,863 calls, 1,005,368 have the same method, 2 differ (known),
 invoked for, all have the same but the known ones. `left-to-b4` is hertzbeat's calls on types with
 Lombok annotations ([attribution](semantic-attribution.md#departures)). One generated file is stale.
 
+### The removed-symbols check
+
+`cargo oracle removed` compares Ferrion's answers without some of its inputs with the same cached javac
+output (never running javac): rounds, results, and what a root cause is are in
+[attribution](semantic-attribution.md#the-removed-symbols-check). Across 84 rounds there is no crash and
+no confident answer that differs. A value counts as a non-answer if it has `error <name>`, `unknown
+error <name>`, or `unknown incomplete <class>` in it, which is how a type string writes each.
+
 ### Analysis time per file
 
 `analyzeMicros` of the 16,709 compared files (javac 21 to 27, each project's own):
