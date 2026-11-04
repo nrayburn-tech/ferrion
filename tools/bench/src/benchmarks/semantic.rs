@@ -23,17 +23,18 @@ pub fn benchmarks() -> Vec<Benchmark> {
             name: "semantic/corpus-cold",
             description: "a new engine over the corpus projects' source sets, with their jars and \
                           the JDK's platform API: parse and summarize every file, build every \
-                          package table, every type's entry, and every file's names in \
-                          declarations and bodies, on one thread",
+                          package table, every type's entry, every file's names in declarations \
+                          and bodies, and every file's attribution, on one thread",
             setup: corpus_cold,
         },
         Benchmark {
             name: "semantic/edits",
             description: "after a cold run, a statement added to a method body, a local variable \
                           renamed, a method renamed, a top-level class added, and a supertype \
-                          added to a class, in a file of the largest package, each followed by \
-                          every project-wide entry asked for again and the file's names in \
-                          declarations and bodies, and undone the same way",
+                          added to a class, in a file of the largest package, and a `var`'s \
+                          initializer changed so that its type does, each followed by every \
+                          project-wide entry asked for again and the file's names in declarations \
+                          and bodies and its attribution, and undone the same way",
             setup: edits,
         },
     ]
@@ -71,30 +72,46 @@ fn edits(inputs: &Inputs) -> Result<Prepared> {
     .into_iter()
     .filter_map(|edit| apply(&original, edit).map(Arc::from))
     .collect();
+    // An expression whose type an edit inside a body changes: an `int`, then a `long`.
+    let typed = [
+        insert_in_body(&original, " var ferrionBenchT = 1; "),
+        insert_in_body(&original, " var ferrionBenchT = 1L; "),
+    ];
     drop(snapshot);
     Ok(Prepared {
         input: format!("{description}; edits to {}", path.display()),
         bytes: None,
         run: Box::new(move || {
+            let ask = |text: &Arc<str>| {
+                engine.set_text(target, text.clone());
+                let snapshot = engine.snapshot();
+                snapshot
+                    .run_symbols(1)
+                    .expect("nothing changes the inputs during a benchmark");
+                snapshot.file_names(target).unwrap();
+                black_box(snapshot.body_types(target).unwrap());
+            };
             for text in &edited {
-                for text in [text, &original] {
-                    engine.set_text(target, text.clone());
-                    let snapshot = engine.snapshot();
-                    snapshot
-                        .run_symbols(1)
-                        .expect("nothing changes the inputs during a benchmark");
-                    snapshot.file_names(target).unwrap();
-                }
+                ask(text);
+                ask(&original);
+            }
+            if let [Some(int), Some(long)] = &typed {
+                ask(int);
+                ask(long);
+                ask(&original);
             }
         }),
     })
 }
 
-/// Every summary, package table, type entry, and file's names in declarations and bodies: the
-/// batch.
+/// Every summary, package table, type entry, and file's names in declarations and bodies, and
+/// attribution: the batch, with what a rule that needs types asks for.
 fn ask_everything(snapshot: &Snapshot) {
     snapshot
-        .run_batch(1, |_| Ok(()))
+        .run_batch(1, |file| {
+            black_box(snapshot.body_types(file)?);
+            Ok(())
+        })
         .expect("nothing changes the inputs during a benchmark");
 }
 
@@ -262,6 +279,18 @@ fn edit_target(snapshot: &Snapshot) -> Result<(FileId, Arc<str>)> {
         }
     }
     bail!("no file has a method with a body")
+}
+
+/// `text` with a statement at the start of its first method's body.
+fn insert_in_body(text: &str, statement: &str) -> Option<Arc<str>> {
+    let tree = parse(Arc::from(text), ParseOptions { release: 27 }).tree;
+    let method = tree.nodes().find(|n| {
+        n.kind() == SyntaxKind::MethodDecl && n.children().any(|c| c.kind() == SyntaxKind::Block)
+    })?;
+    let block = method.children().find(|c| c.kind() == SyntaxKind::Block)?;
+    let mut out = text.to_owned();
+    out.insert_str(block.first_token().span().end as usize, statement);
+    Some(Arc::from(out))
 }
 
 #[derive(Clone, Copy)]
