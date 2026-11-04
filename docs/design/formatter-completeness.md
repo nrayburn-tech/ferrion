@@ -259,7 +259,8 @@ the parser already applies inside `<pre>`. A fallback comment gets A1's re-inden
 GJF's (observed): stars aligned, trailing whitespace removed, a star added to lines without one,
 the text after each star kept, and the shape kept. A block tag's argument over a blank line falls
 back too, a departure: the blank line would become a `<p>` inside the argument, which reads back as
-another argument.
+another argument. So does an argument whose word ends its line with a hyphen, which the next line's
+first word would join (decision 11).
 
 **Departure: `<pre>` indentation is kept.** GJF removes a margin from `<pre>` content: the least
 indentation after `* ` over every line of the comment, and inside `<pre>{@code`, also the code's

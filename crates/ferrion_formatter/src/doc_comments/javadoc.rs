@@ -43,9 +43,9 @@ pub fn reflows(text: &str) -> bool {
 /// The layout of the traditional doc comment at `start..end` of `text`, or `None` if it isn't
 /// reflowed: see [`reflows`], and the fallback rules in the design, plus what the layout can't
 /// keep safely (Unicode escapes for anything but letters and digits, `@` escapes, malformed
-/// arguments and references, an argument over a blank line, an element the rules place written
-/// across lines, and a word starting with `@` that a rule would put at the start of a line, where
-/// it would become a block tag).
+/// arguments and references, an argument over a blank line or ending its line with a hyphen, an
+/// element the rules place written across lines, and a word starting with `@` that a rule would
+/// put at the start of a line, where it would become a block tag).
 pub fn layout(text: &str, start: u32, end: u32) -> Option<Layout> {
     let comment = text.get(start as usize..end as usize)?;
     if !reflows(comment) || has_escape(comment) {
@@ -69,17 +69,33 @@ pub fn layout(text: &str, start: u32, end: u32) -> Option<Layout> {
     }
     let lines = content_lines(text, start, end);
     // An argument over a blank line: the blank line would become a `<p>` inside it, which reads
-    // back as another argument.
+    // back as another argument. And one whose word ends its line with a hyphen: the next line's
+    // first word would join it, and be read back as part of the argument.
     let is_blank = |&(from, to): &(u32, u32)| text[from as usize..to as usize].trim().is_empty();
+    let hyphen_at_line_end = |span: Span| {
+        lines
+            .iter()
+            .find(|line| line.0 <= span.end && span.end <= line.1)
+            .is_some_and(|line| {
+                let on_line = &text[line.0 as usize..line.1 as usize];
+                let at = (span.end - line.0) as usize;
+                let (before, after) = on_line.split_at(at);
+                let word_start = before.rfind(char::is_whitespace).map_or(0, |k| k + 1);
+                let rest = after.trim_end();
+                !rest.contains(char::is_whitespace)
+                    && ends_with_hyphen(&on_line[word_start..at + rest.len()])
+            })
+    };
     if javadoc.tags.iter().any(|tag| {
         tag.argument
             .as_ref()
             .map(argument_span)
             .is_some_and(|span| {
-                lines
-                    .iter()
-                    .filter(|line| span.start <= line.0 && line.1 <= span.end)
-                    .any(is_blank)
+                hyphen_at_line_end(span)
+                    || lines
+                        .iter()
+                        .filter(|line| span.start <= line.0 && line.1 <= span.end)
+                        .any(is_blank)
             })
     }) {
         return None;
