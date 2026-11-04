@@ -197,7 +197,7 @@ const STUB_MODULES: &[StubModule] = &[
             "abstract java/lang/Number implements java/io/Serializable",
             "final java/lang/Integer extends java/lang/Number implements java/lang/Comparable field MAX_VALUE I method valueOf (Ljava/lang/String;)Ljava/lang/Integer;",
             "abstract java/lang/Enum implements java/lang/Comparable,java/io/Serializable method ordinal ()I",
-            "abstract java/lang/Record",
+            "abstract java/lang/Record protected-method <init> ()V",
             "class java/lang/Throwable implements java/io/Serializable",
             "class java/lang/Exception extends java/lang/Throwable",
             "class java/lang/RuntimeException extends java/lang/Exception",
@@ -612,7 +612,7 @@ pub fn describe_type(snapshot: &Snapshot, view: SourceSetId, key: TypeKey) -> St
 /// class lines (see [`class_file`]): their supertypes and type parameters are the JDK's, written
 /// here, so that a relation's answer can be checked by running javac on the same source.
 pub const RELATIONS_JDK: &[&str] = &[
-    "class java/lang/Object method equals (Ljava/lang/Object;)Z protected-method clone ()Ljava/lang/Object;",
+    "class java/lang/Object method <init> ()V method equals (Ljava/lang/Object;)Z method hashCode ()I method toString ()Ljava/lang/String; method getClass ()Ljava/lang/Class; protected-method clone ()Ljava/lang/Object;",
     "interface java/io/Serializable",
     "interface java/lang/Cloneable",
     "interface java/lang/Comparable signature <T:Ljava/lang/Object;>Ljava/lang/Object;",
@@ -632,8 +632,8 @@ pub const RELATIONS_JDK: &[&str] = &[
     "final java/lang/String signature Ljava/lang/Object;Ljava/io/Serializable;Ljava/lang/Comparable<Ljava/lang/String;>;Ljava/lang/CharSequence;Ljava/lang/constant/Constable;Ljava/lang/constant/ConstantDesc;",
     "abstract java/lang/AbstractStringBuilder signature Ljava/lang/Object;Ljava/lang/Appendable;Ljava/lang/CharSequence;",
     "final java/lang/StringBuilder extends java/lang/AbstractStringBuilder signature Ljava/lang/AbstractStringBuilder;Ljava/lang/Appendable;Ljava/io/Serializable;Ljava/lang/Comparable<Ljava/lang/StringBuilder;>;Ljava/lang/CharSequence;",
-    "abstract java/lang/Enum signature <E:Ljava/lang/Enum<TE;>;>Ljava/lang/Object;Ljava/lang/constant/Constable;Ljava/lang/Comparable<TE;>;Ljava/io/Serializable;",
-    "abstract java/lang/Record",
+    "abstract java/lang/Enum protected-method <init> (Ljava/lang/String;I)V signature <E:Ljava/lang/Enum<TE;>;>Ljava/lang/Object;Ljava/lang/constant/Constable;Ljava/lang/Comparable<TE;>;Ljava/io/Serializable;",
+    "abstract java/lang/Record protected-method <init> ()V",
     "final java/lang/Void",
     "interface java/lang/Runnable method run ()V",
     "interface java/lang/annotation/Annotation",

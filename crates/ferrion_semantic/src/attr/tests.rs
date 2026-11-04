@@ -10,14 +10,14 @@ use crate::{Engine, FileId, SourceSetId};
 /// One attributed expression: its source text (white space collapsed), type, constant, and
 /// conversions.
 #[derive(Debug)]
-struct Expr {
-    text: String,
-    ty: String,
+pub(super) struct Expr {
+    pub(super) text: String,
+    pub(super) ty: String,
     constant: Option<String>,
     conversion: Option<String>,
 }
 
-fn engine(files: &str) -> Engine {
+pub(super) fn engine(files: &str) -> Engine {
     Engine::new(relations_input(files))
 }
 
@@ -84,7 +84,7 @@ fn variables(source: &str) -> Vec<(String, String)> {
 }
 
 /// The expressions of `source`, one file `Q.java` in the default package.
-fn expressions(source: &str) -> Vec<Expr> {
+pub(super) fn expressions(source: &str) -> Vec<Expr> {
     expressions_in(&format!("//- file main Q.java\n{source}"), "Q.java")
 }
 
@@ -97,7 +97,7 @@ fn get<'e>(exprs: &'e [Expr], text: &str, nth: usize) -> &'e Expr {
         .unwrap_or_else(|| panic!("no expression `{text}` #{nth} in {exprs:#?}"))
 }
 
-fn ty<'e>(exprs: &'e [Expr], text: &str) -> &'e str {
+pub(super) fn ty<'e>(exprs: &'e [Expr], text: &str) -> &'e str {
     &get(exprs, text, 0).ty
 }
 
@@ -428,17 +428,16 @@ fn lambdas_and_patterns() {
     assert_eq!(ty(&e, "str"), "java/lang/String");
 }
 
-/// Calls and creations wait for overload resolution (W3), and what depends on them with them;
-/// their arguments are typed.
+/// Calls and creations are typed, and what depends on them with them; their arguments too.
 #[test]
-fn calls_wait_for_overloads() {
+fn what_depends_on_calls() {
     let e = expressions(
         "class Q { int f; int g(int x) { return x; } void m(int i) { int a = g(i + 1); int b = new Q().f; } }",
     );
-    assert_eq!(ty(&e, "g(i + 1)"), "unknown calls");
+    assert_eq!(ty(&e, "g(i + 1)"), "int");
     assert_eq!(ty(&e, "i + 1"), "int");
-    assert_eq!(ty(&e, "new Q()"), "unknown calls");
-    assert_eq!(ty(&e, "new Q().f"), "unknown calls");
+    assert_eq!(ty(&e, "new Q()"), "Q");
+    assert_eq!(ty(&e, "new Q().f"), "int");
 }
 
 /// javac: an annotation's `K + 1` is `int` with its constant, `names = {"a", "b"}`'s array
@@ -565,7 +564,7 @@ fn multi_catch_and_written_outer_types() {
 }
 
 /// javac: `case DESC` on a selector whose type B2 couldn't tell, with a `String` field `DESC` in
-/// scope, is the enum's constant, `Op`; on a selector that is a call, it waits for the call.
+/// scope, is the enum's constant, `Op`; on a selector that is a call too.
 #[test]
 fn case_names_follow_the_selector() {
     let source = "enum Op { ASC, DESC }\n\
@@ -575,7 +574,7 @@ fn case_names_follow_the_selector() {
          switch (\"x\") { case DESC: break; default: break; } } }";
     let e = expressions(source);
     assert_eq!(get(&e, "DESC", 0).ty, "Op");
-    assert_eq!(get(&e, "DESC", 1).ty, "unknown calls");
+    assert_eq!(get(&e, "DESC", 1).ty, "Op");
     assert_eq!(get(&e, "DESC", 2).ty, "java/lang/String");
     assert_eq!(get(&e, "DESC", 2).constant.as_deref(), Some("String \"d\""));
 }

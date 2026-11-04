@@ -162,7 +162,6 @@ struct FileRow {
 fn kind(t: Type) -> &'static str {
     match t {
         Type::Error(_) => "error",
-        Type::Unknown(Why::Calls) => "calls (W3)",
         Type::Unknown(Why::LeftToB3c) => "left-to-b3c",
         Type::Unknown(Why::LeftToB3d) => "left-to-b3d",
         Type::Unknown(Why::Limit) => "limit",
@@ -377,10 +376,25 @@ fn attribute_set(
                             let text = cx.type_string(*t, Printed::Captures)?;
                             variables.push(serde_json::json!([at, text]));
                         }
+                        let mut calls = Vec::with_capacity(types.calls.len());
+                        for (node, call) in types.calls.iter() {
+                            let syntax = tree.node(*node);
+                            let text = snapshot.call_text(file, &types, *node, call)?;
+                            calls.push(serde_json::json!([
+                                syntax.span().start,
+                                syntax.span().end,
+                                format!("{:?}", syntax.kind()),
+                                format!("{:?}", tree.node(*node).parent().map(|p| p.kind())),
+                                text.method,
+                                text.invoked,
+                                text.anonymous,
+                            ]));
+                        }
                         let line = serde_json::json!({
                             "file": path,
                             "expressions": exprs,
-                            "variables": variables
+                            "variables": variables,
+                            "calls": calls
                         });
                         dump.lock()
                             .unwrap_or_else(|e| e.into_inner())

@@ -1,12 +1,15 @@
 //! The attribution walk: the tree's pre-order, a frame per node entered, and a stack of values
 //! that each expression pushes as it is left and its parent consumes.
 
+mod calls;
+
+use std::rc::Rc;
 use std::sync::Arc;
 
 use ferrion_syntax::ast::{self, AstNode};
 use ferrion_syntax::{NodeId, SyntaxKind, SyntaxNode, WalkEvent};
 
-use super::BodyTypes;
+use super::{BodyTypes, Call};
 use crate::body::{BodyNames, Map};
 use crate::constants::{self, BinaryOp, Constant, UnaryOp};
 use crate::decl_names::{FileNames, ResolvedName, Symbol};
@@ -42,6 +45,9 @@ struct Value {
     /// What the expression's type is recorded as, where that isn't `ty`: a multi-catch
     /// parameter's union, whose `lub` `ty` is.
     shown: Option<TypeId>,
+    /// For a reference conditional in an assignment or invocation context, whose own type is B3c's
+    /// (`ty` says so): its operands, which a call's applicability tests (JLS 15.12.2.2).
+    operands: Option<Rc<[Value]>>,
 }
 
 /// A node entered and not yet left.
@@ -91,6 +97,7 @@ pub(crate) struct Walker<'s, 'r> {
     conversions: Vec<(NodeId, Steps)>,
     compound: Vec<(NodeId, Steps)>,
     resolved: Vec<(NodeId, Symbol)>,
+    calls: Vec<(NodeId, Call)>,
     body_fuel: Vec<(NodeId, u64)>,
     frames: Vec<Frame>,
     values: Vec<Value>,
@@ -110,6 +117,8 @@ pub(crate) struct Walker<'s, 'r> {
     local_tables: Map<TypeKey, Option<Arc<Members>>>,
     /// Anonymous classes created with `<>`, whose supertype inference gives (B3c).
     inferred_supertypes: crate::body::Set<TypeKey>,
+    /// Anonymous classes made through an outer instance, with their superclasses.
+    outer_superclasses: Map<TypeKey, TypeKey>,
     /// Constant fields of local classes, as their initializers are left.
     local_constants: Map<FieldRef, Constant>,
     nodes: usize,
@@ -296,6 +305,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             conversions: Vec::new(),
             compound: Vec::new(),
             resolved: Vec::new(),
+            calls: Vec::new(),
             body_fuel: Vec::new(),
             frames: Vec::new(),
             values: Vec::new(),
@@ -309,6 +319,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             for_each: Map::default(),
             local_tables: Map::default(),
             inferred_supertypes: Default::default(),
+            outer_superclasses: Map::default(),
             local_constants: Map::default(),
             nodes: 0,
             string: None,
@@ -378,6 +389,7 @@ impl<'s, 'r> Walker<'s, 'r> {
         self.compound.sort_by_key(|(n, _)| *n);
         self.resolved.sort_by_key(|(n, _)| *n);
         self.resolved.dedup_by_key(|(n, _)| *n);
+        self.calls.sort_by_key(|(n, _)| *n);
         self.body_fuel.sort_by_key(|(n, _)| *n);
         let mut tables: Vec<(TypeKey, Arc<Members>)> = self
             .local_tables
@@ -390,6 +402,7 @@ impl<'s, 'r> Walker<'s, 'r> {
         out.conversions = std::mem::take(&mut self.conversions).into_boxed_slice();
         out.compound = std::mem::take(&mut self.compound).into_boxed_slice();
         out.resolved = std::mem::take(&mut self.resolved).into_boxed_slice();
+        out.calls = std::mem::take(&mut self.calls).into_boxed_slice();
         out.fuel = std::mem::take(&mut self.body_fuel).into_boxed_slice();
         let mut variables: Vec<(NodeId, TypeId)> = self
             .locals
@@ -487,6 +500,8 @@ impl<'s, 'r> Walker<'s, 'r> {
                 });
             if diamond {
                 self.inferred_supertypes.insert(key);
+            } else if let Some(new) = node.parent().and_then(ast::NewExpr::cast) {
+                self.enter_anonymous_of_outer(key, new)?;
             }
             self.classes.push(Class {
                 node: node.id(),
@@ -699,12 +714,33 @@ impl<'s, 'r> Walker<'s, 'r> {
                 return Ok(self.cx.arena_mut().var(owner, index));
             }
             Some(Symbol::Error(e)) => return Ok(self.error_type(e)),
-            Some(Symbol::LeftToB3(_)) => return Ok(self.unknown(Why::Calls)),
             _ => return Ok(self.unknown(Why::Later)),
         };
+        let args = self.written_arguments(c)?;
+        // The type it is a member of: written with arguments, or implied where an inner class of
+        // a generic class is used without a qualifier inside it; a qualifier written without
+        // arguments makes it raw, as javac has it (W1's observation 11).
+        let outer = match c.qualifier() {
+            Some(q) => {
+                let q = ferrion_stack::ensure_stack(|| self.class_type(q))?;
+                if self.cx.has_type_args(q) {
+                    Some(self.cx.outer_of_member(key, q)?)
+                } else {
+                    None
+                }
+            }
+            None => self.implicit_outer(key)?,
+        };
+        Ok(self.cx.class_type(key, outer, args.as_deref()))
+    }
+
+    /// A class type's type arguments as written; `None` if it has none.
+    fn written_arguments(
+        &mut self,
+        c: ast::ClassType<'_>,
+    ) -> Result<Option<Vec<TypeArg>>, Cancelled> {
         let mut args = Vec::new();
-        let written = c.type_arguments();
-        if let Some(arguments) = written {
+        if let Some(arguments) = c.type_arguments() {
             for a in arguments.arguments() {
                 args.push(match a {
                     ast::TypeArgument::Type(t) => TypeArg::Type(self.syntax_type(t)?),
@@ -725,22 +761,7 @@ impl<'s, 'r> Walker<'s, 'r> {
                 });
             }
         }
-        // The type it is a member of: written with arguments, or implied where an inner class of
-        // a generic class is used without a qualifier inside it; a qualifier written without
-        // arguments makes it raw, as javac has it (W1's observation 11).
-        let outer = match c.qualifier() {
-            Some(q) => {
-                let q = ferrion_stack::ensure_stack(|| self.class_type(q))?;
-                if self.cx.has_type_args(q) {
-                    Some(self.cx.outer_of_member(key, q)?)
-                } else {
-                    None
-                }
-            }
-            None => self.implicit_outer(key)?,
-        };
-        let args = (written.is_some() && !args.is_empty()).then_some(&args[..]);
-        Ok(self.cx.class_type(key, outer, args))
+        Ok((!args.is_empty()).then_some(args))
     }
 
     /// The outer type an inner class of a generic class has where it is used unqualified: as
@@ -811,6 +832,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             what: What::Expr,
             variable: None,
             shown: None,
+            operands: None,
         }
     }
 
@@ -1045,7 +1067,8 @@ impl<'s, 'r> Walker<'s, 'r> {
         constant: Option<Constant>,
     ) -> Result<Value, Cancelled> {
         let t = if Self::captured_here(node) {
-            self.cx.fresh_capture(ty)?
+            let captured = self.cx.fresh_capture(ty)?;
+            self.variable_as_argument(node, captured)?
         } else {
             ty
         };
@@ -1056,6 +1079,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             what: What::Expr,
             variable: Some(ty),
             shown: None,
+            operands: None,
         })
     }
 
@@ -1113,6 +1137,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             what: What::Type(key),
             variable: None,
             shown: None,
+            operands: None,
         }
     }
 
@@ -1427,6 +1452,7 @@ impl<'s, 'r> Walker<'s, 'r> {
                 self.view,
                 self.reads,
                 &mut self.local_tables,
+                &self.outer_superclasses,
                 key,
             )?;
             self.cx.restore_fuel(saved);
@@ -1576,23 +1602,11 @@ impl<'s, 'r> Walker<'s, 'r> {
             },
             None => self.unknown(Why::Later),
         };
+        let shown = self.variable_as_argument(node, t)?;
         Ok(Value {
             variable: Some(t),
-            ..self.expr(node.id(), t)
+            ..self.expr(node.id(), shown)
         })
-    }
-
-    /// A method invocation, an explicit constructor invocation, or a class instance creation:
-    /// overload resolution chooses its method and types it (W3), so for now it has no type.
-    /// `children` are its receiver or qualifier, if any, and its arguments, each typed already
-    /// as a standalone expression, in order: `ast::MethodCallExpr::arguments` and
-    /// `ast::NewExpr::arguments` say which node is which. The names say what B2 knows of the
-    /// method (`Symbol::Methods`, or `LeftToB3` for a call on an expression, whose receiver's
-    /// type is here), and [`Walker::members`] gives the searched type's member methods.
-    fn call(&mut self, node: SyntaxNode<'_>, children: &[Value]) -> Result<Value, Cancelled> {
-        let _ = children;
-        let t = self.unknown(Why::Calls);
-        Ok(self.expr(node.id(), t))
     }
 
     fn array_creation(&mut self, node: SyntaxNode<'_>) -> Result<Value, Cancelled> {
@@ -1946,6 +1960,7 @@ impl<'s, 'r> Walker<'s, 'r> {
         }
         let pa = self.primitive_or_unboxed(a.ty)?;
         let pb = self.primitive_or_unboxed(b.ty)?;
+        let mut operands = None;
         let t = match (pa, pb) {
             (Some(Primitive::Boolean), Some(Primitive::Boolean)) => {
                 let both_boxed = !matches!(self.cx.get(a.ty), Type::Primitive(_))
@@ -1961,6 +1976,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             }
             _ => {
                 if Self::poly_context(node) {
+                    operands = Some(Rc::from([a.clone(), b.clone()]));
                     self.unknown(Why::LeftToB3c)
                 } else {
                     self.reference_conditional(&a, &b)?
@@ -1985,6 +2001,7 @@ impl<'s, 'r> Walker<'s, 'r> {
         };
         Ok(Value {
             constant,
+            operands,
             ..self.expr(id, t)
         })
     }
@@ -2141,6 +2158,9 @@ impl<'s, 'r> Walker<'s, 'r> {
 
     fn statement(&mut self, node: SyntaxNode<'_>, children: &[Value]) -> Result<(), Cancelled> {
         match node.kind() {
+            SyntaxKind::EnumConstant => self.enum_constant(node, children)?,
+            SyntaxKind::Block => self.implicit_super_in_body(node)?,
+            kind if is_type_decl(kind) => self.default_constructor(node)?,
             SyntaxKind::VariableDeclarator => self.declarator(node, children)?,
             SyntaxKind::FormalParameter => {
                 let p = ast::FormalParameter::cast(node).unwrap();
@@ -2404,6 +2424,7 @@ fn local_table<'s>(
     view: SourceSetId,
     reads: &mut Reads<'s>,
     tables: &mut Map<TypeKey, Option<Arc<Members>>>,
+    outer_superclasses: &Map<TypeKey, TypeKey>,
     key: TypeKey,
 ) -> Result<Option<Arc<Members>>, Cancelled> {
     if let Some(table) = tables.get(&key) {
@@ -2411,12 +2432,17 @@ fn local_table<'s>(
     }
     tables.insert(key, None);
     let mut cx = snapshot.recording_types(view);
+    // Only the class matters here: the walk sees the methods through the superclass's arguments.
+    if let Some(&superclass) = outer_superclasses.get(&key) {
+        let t = cx.class_type(superclass, None, None);
+        cx.set_supertypes(key, &[t]);
+    }
     let mut supers =
         |reads: &mut Reads<'s>, k: TypeKey| -> Result<Option<Arc<Members>>, Cancelled> {
             match k {
-                TypeKey::Local { .. } => {
-                    ferrion_stack::ensure_stack(|| local_table(snapshot, view, reads, tables, k))
-                }
+                TypeKey::Local { .. } => ferrion_stack::ensure_stack(|| {
+                    local_table(snapshot, view, reads, tables, outer_superclasses, k)
+                }),
                 _ => reads.members(view, k),
             }
         };
