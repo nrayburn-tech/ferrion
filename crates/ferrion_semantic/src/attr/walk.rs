@@ -48,7 +48,12 @@ struct Value {
     /// For a reference conditional in an assignment or invocation context, whose own type is B3c's
     /// (`ty` says so): its operands, which a call's applicability tests (JLS 15.12.2.2).
     operands: Option<Rc<[Value]>>,
+    /// How many conditionals deep `operands` go.
+    operand_depth: u8,
 }
+
+/// How deep a call looks into conditionals among its arguments; a deeper one is B3c's.
+const MAX_OPERAND_DEPTH: u8 = 64;
 
 /// A node entered and not yet left.
 struct Frame {
@@ -860,6 +865,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             variable: None,
             shown: None,
             operands: None,
+            operand_depth: 0,
         }
     }
 
@@ -1107,6 +1113,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             variable: Some(ty),
             shown: None,
             operands: None,
+            operand_depth: 0,
         })
     }
 
@@ -1165,6 +1172,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             variable: None,
             shown: None,
             operands: None,
+            operand_depth: 0,
         }
     }
 
@@ -1983,11 +1991,17 @@ impl<'s, 'r> Walker<'s, 'r> {
         self.record_conversion(&condition, Context::Numeric, boolean)?;
         if let Some(why) = self.non_answer(a.ty).or(self.non_answer(b.ty)) {
             let t = self.unknown(why);
-            return Ok(self.expr(id, t));
+            let (operands, operand_depth) = Self::operands_of(node, &a, &b);
+            return Ok(Value {
+                operands,
+                operand_depth,
+                ..self.expr(id, t)
+            });
         }
         let pa = self.primitive_or_unboxed(a.ty)?;
         let pb = self.primitive_or_unboxed(b.ty)?;
         let mut operands = None;
+        let mut operand_depth = 0;
         let t = match (pa, pb) {
             (Some(Primitive::Boolean), Some(Primitive::Boolean)) => {
                 let both_boxed = !matches!(self.cx.get(a.ty), Type::Primitive(_))
@@ -2003,7 +2017,7 @@ impl<'s, 'r> Walker<'s, 'r> {
             }
             _ => {
                 if Self::poly_context(node) {
-                    operands = Some(Rc::from([a.clone(), b.clone()]));
+                    (operands, operand_depth) = Self::operands_of(node, &a, &b);
                     self.unknown(Why::LeftToB3c)
                 } else {
                     self.reference_conditional(&a, &b)?
@@ -2029,8 +2043,19 @@ impl<'s, 'r> Walker<'s, 'r> {
         Ok(Value {
             constant,
             operands,
+            operand_depth,
             ..self.expr(id, t)
         })
+    }
+
+    /// What a conditional in an assignment or invocation context keeps of its operands, for a
+    /// call's applicability; not without bound, since dropping them recurses.
+    fn operands_of(node: SyntaxNode<'_>, a: &Value, b: &Value) -> (Option<Rc<[Value]>>, u8) {
+        let depth = a.operand_depth.max(b.operand_depth).saturating_add(1);
+        if depth > MAX_OPERAND_DEPTH || !Self::poly_context(node) {
+            return (None, depth);
+        }
+        (Some(Rc::from([a.clone(), b.clone()])), depth)
     }
 
     fn primitive_or_unboxed(&mut self, t: TypeId) -> Result<Option<Primitive>, Cancelled> {

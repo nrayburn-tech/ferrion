@@ -377,6 +377,28 @@ fn conditional_arguments() {
     assert_eq!(ty(&e, "b ? \"a\" : \"b\""), "left-to-b3c inference");
 }
 
+/// Conditionals nested deeper than a call looks into are B3c's, and dropping them is safe.
+#[test]
+fn deep_conditional_arguments() {
+    let mut deep = String::from("s");
+    for _ in 0..5_000 {
+        deep = format!("b ? s : ({deep})");
+    }
+    let source = format!(
+        "class Q {{ void pr(String s) {{}} void f(boolean b, String s) {{ pr({deep}); pr(b ? s : (b ? s : s)); }} }}"
+    );
+    let rows = calls(&source);
+    assert_eq!(
+        method(&rows, "pr(b ? s : (b ? s : s))"),
+        "method Q.pr(Ljava/lang/String;)V"
+    );
+    assert_eq!(
+        rows.len(),
+        2,
+        "the shallow call, and the default constructor's"
+    );
+}
+
 /// `getClass()` (JLS 4.3.2) and an array's `clone()` (JLS 10.7). javac: `getClass()`'s type as
 /// invoked stays `()java/lang/Class<?>` (the stand-in has no signature), its type is `Class<capture#1 extends |T|>`: `Q` for a
 /// generic class's `this`, `java/util/List` for `xs`, `java/lang/Object[]` for `T[]`; an array's

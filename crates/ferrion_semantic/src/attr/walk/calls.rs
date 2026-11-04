@@ -11,7 +11,6 @@ use super::{Value, Walker, What, child, id_of};
 use crate::Cancelled;
 use crate::attr::{Call, Phase, Special};
 use crate::decl_names::Symbol;
-use crate::members::Members;
 use crate::resolve::package_of;
 use crate::summary::{TypeKind, WildcardBound, name_text};
 use crate::symbols::{Cause, ErrorSymbol, MemberType, MethodRef, TypeKey};
@@ -272,18 +271,18 @@ impl<'s> Walker<'s, '_> {
             return Ok(Err(self.incomplete(search)));
         }
         let methods: Vec<MethodRef> = table.methods(name).iter().map(|m| m.method).collect();
-        let (of, qualifier) = match receiver {
+        let of = match receiver {
             Some(Value {
                 what: What::Expr,
                 ty,
                 ..
-            }) => (*ty, Qualifier::Own),
-            _ => (self.cx.declared_type(search)?, Qualifier::Own),
+            }) => *ty,
+            _ => self.cx.declared_type(search)?,
         };
         Ok(Ok(Search {
             methods,
             of: Some(of),
-            qualifier,
+            qualifier: Qualifier::Own,
             searched: of,
             array: false,
         }))
@@ -338,7 +337,9 @@ impl<'s> Walker<'s, '_> {
                 Type::Class { key, .. } => parts.push(key),
                 Type::Array(_) => {
                     array = true;
-                    let object = self.lang_key("java/lang/Object")?;
+                    let Some(object) = self.cx.lang("java/lang/Object")? else {
+                        return Ok(Err(self.lang("java/lang/Object")?));
+                    };
                     parts.push(object);
                 }
                 Type::Var(..) | Type::Capture(_) => {
@@ -368,7 +369,11 @@ impl<'s> Walker<'s, '_> {
             if table.incomplete {
                 return Ok(Err(self.incomplete(key)));
             }
-            self.gather(&table, name, &mut methods);
+            for m in table.methods(name) {
+                if !methods.contains(&m.method) {
+                    methods.push(m.method);
+                }
+            }
         }
         // An array's members are seen from `Object`.
         let site = if array {
@@ -385,22 +390,6 @@ impl<'s> Walker<'s, '_> {
             qualifier: Qualifier::Expression(of),
             searched: of,
             array,
-        }))
-    }
-
-    fn gather(&self, table: &Members, name: Name, methods: &mut Vec<MethodRef>) {
-        for m in table.methods(name) {
-            if !methods.contains(&m.method) {
-                methods.push(m.method);
-            }
-        }
-    }
-
-    fn lang_key(&mut self, binary: &str) -> Result<TypeKey, Cancelled> {
-        let key = self.cx.lang(binary)?;
-        Ok(key.unwrap_or(TypeKey::Local {
-            file: crate::FileId::from_index(0),
-            index: u32::MAX,
         }))
     }
 
@@ -1132,15 +1121,8 @@ impl<'s> Walker<'s, '_> {
     /// `Array.clone()Ljava/lang/Object;`, typed as invoked `()java/lang/Object`.
     fn array_clone(&mut self, id: NodeId, search: &Search) -> Result<Value, Cancelled> {
         let object = self.lang("java/lang/Object")?;
-        let clone = self.names.intern("clone");
-        let method = search
-            .methods
-            .iter()
-            .copied()
-            .find(|m| self.cx.method_name(*m).ok().flatten() == Some(clone))
-            .or_else(|| self.object_method(clone));
         let t = self.array_of(search.searched)?;
-        if let Some(method) = method {
+        if let Some(method) = self.object_clone()? {
             self.calls.push((
                 id,
                 Call {
@@ -1159,16 +1141,19 @@ impl<'s> Walker<'s, '_> {
         Ok(self.expr(id, t))
     }
 
-    /// `Object`'s method of a name with no parameters.
-    fn object_method(&mut self, name: Name) -> Option<MethodRef> {
-        let object = self.cx.lang("java/lang/Object").ok()??;
-        let count = self.cx.method_count(object).ok()?;
-        (0..count as u32)
-            .map(|index| MethodRef {
-                owner: object,
-                index,
-            })
-            .find(|m| self.cx.method_name(*m).ok().flatten() == Some(name))
+    /// `Object`'s `clone()`.
+    fn object_clone(&mut self) -> Result<Option<MethodRef>, Cancelled> {
+        let Some(owner) = self.cx.lang("java/lang/Object")? else {
+            return Ok(None);
+        };
+        let clone = self.names.intern("clone");
+        for index in 0..self.cx.method_count(owner)? as u32 {
+            let method = MethodRef { owner, index };
+            if self.cx.method_name(method)? == Some(clone) {
+                return Ok(Some(method));
+            }
+        }
+        Ok(None)
     }
 
     /// The array type a searched type is: itself, or a capture's bound.
@@ -1391,10 +1376,10 @@ impl<'s> Walker<'s, '_> {
             Qualifier::Creation
         };
         // An anonymous class of an interface extends `Object`, with no arguments (JLS 15.9.5).
-        let chosen = if self.cx.is_interface(key)? {
-            let object = self.lang("java/lang/Object")?;
-            let object_key = self.lang_key("java/lang/Object")?;
-            self.constructor(object, object_key, &args, None, Qualifier::Own)?
+        let object = self.cx.lang("java/lang/Object")?;
+        let chosen = if let (true, Some(object)) = (self.cx.is_interface(key)?, object) {
+            let site = self.cx.class_type(object, None, None);
+            self.constructor(site, object, &args, None, Qualifier::Own)?
         } else {
             self.constructor(written, key, &args, explicit.as_deref(), qualifier)?
         };

@@ -331,6 +331,16 @@ impl Snapshot {
                 call.phase
             );
         }
+        for (node, why) in types.unchosen.iter() {
+            let span = tree.node(*node).span();
+            let _ = writeln!(
+                out,
+                "{}-{} no method: {}",
+                span.start,
+                span.end,
+                cx.type_string(*why, Printed::Captures)?
+            );
+        }
         for (node, symbol) in types.resolved.iter() {
             let span = tree.node(*node).span();
             let _ = writeln!(
