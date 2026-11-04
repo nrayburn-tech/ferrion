@@ -79,6 +79,7 @@ dependencies = [
  "ferrion_parser",
  "ferrion_stack",
  "ferrion_syntax",
+ "pulldown-cmark",
 ]
 
 [[package]]

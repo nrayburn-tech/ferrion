@@ -30,6 +30,7 @@ use super::javadoc::{ends_with_hyphen, has_escape};
 use super::{Columns, Glue, Layout, Paragraph, Prefix, Word, WordText, fill};
 use crate::document::{LINE_WIDTH, width};
 use crate::regions::Region;
+use crate::verify::doc_comments::markdown::content;
 
 /// A run of `///` lines the rules reflow: from its `first` token to its `last`, printed as one
 /// piece of copied text from `layout`.
@@ -109,17 +110,54 @@ pub fn runs(tree: &SyntaxTree, regions: &[Region]) -> Vec<Run> {
 /// The layout of the Markdown doc comment whose `///` lines are at `lines` in `text`, in order,
 /// or `None` if it isn't reflowed. GJF leaves a comment with a setext heading, an indented code
 /// block, a thematic break, a link reference definition, or an unclosed inline tag as it is
-/// (observed), and so does Ferrion. So it does a comment that the layout can't keep safely: one
-/// with a Unicode escape for other than a letter or digit, a `{@snippet}`,
-/// a tab in a list item's or block quote's indentation, a tag argument or reference javadoc can't
-/// read, a code span with whitespace at the end of a line, an inline tag written across lines in
-/// a block quote, a link destination in `<>`, a block tag whose body starts with fenced code, or an
-/// HTML block in a block tag. A run whose first line starts with `////` isn't
-/// a doc comment to GJF, and isn't reflowed either.
+/// (observed), and so does Ferrion. A run whose first line starts with `////` isn't a doc comment
+/// to GJF, and isn't reflowed either. Nor is a comment the layout can't keep safely, each case
+/// where the code finds it, and listed in docs/style.md, "Departures in Markdown".
+///
+/// The parser reads a comment twice, once to find its tags and once for each section, and some
+/// comments mean something else once their lines change, in ways no word-by-word rule foresees. So
+/// the layout is checked last: written at the widest and at about the narrowest column and read
+/// back, it must keep the comment's content and settle. If not, the comment is left as it is too.
 pub fn layout(text: &str, lines: &[Span]) -> Option<Layout> {
+    let layout = build(text, lines)?;
+    holds(text, lines, &layout).then_some(layout)
+}
+
+/// The columns [`holds`] writes a comment at: where its lines are longest, and where they hold
+/// about one word each.
+const CHECKED_COLUMNS: [u32; 2] = [0, 96];
+
+/// Whether `layout`, of the comment at `lines` in `text`, keeps the comment's content and gives
+/// the same text when reflowed again, at each of [`CHECKED_COLUMNS`].
+fn holds(text: &str, lines: &[Span], layout: &Layout) -> bool {
+    let before = content(text, lines);
+    CHECKED_COLUMNS.iter().all(|&column| {
+        let rendered = render(layout, text, column);
+        let once = rendered.join("\n");
+        let mut spans = Vec::with_capacity(rendered.len());
+        let mut at = 0;
+        for line in &rendered {
+            let start = at + line.find("///").unwrap_or(0);
+            spans.push(Span::new(start as u32, (at + line.len()) as u32));
+            at += line.len() + 1;
+        }
+        content(&once, &spans) == before
+            && build(&once, &spans).is_some_and(|again| render(&again, &once, column) == rendered)
+    })
+}
+
+/// The layout of the comment at `lines` in `text`, by the rules alone: see [`layout`].
+fn build(text: &str, lines: &[Span]) -> Option<Layout> {
     let (first, last) = (lines.first()?, lines.last()?);
     let comment = text.get(first.start as usize..last.end as usize)?;
-    if comment.starts_with("////") || has_escape(comment) {
+    // What's in its lines only: what's in the whitespace between them goes when they're
+    // re-indented. A Unicode escape could stand for anything, and a vertical tab or form feed is
+    // whitespace to the parser in some places and not in others.
+    let unsafe_line = lines.iter().any(|line| {
+        text.get(line.start as usize..line.end as usize)
+            .is_none_or(|line| has_escape(line) || line.contains(['\x0b', '\x0c']))
+    });
+    if comment.starts_with("////") || unsafe_line {
         return None;
     }
     let source = source_lines(text, lines)?;
@@ -147,6 +185,8 @@ pub fn layout(text: &str, lines: &[Span]) -> Option<Layout> {
         lead: None,
         containers: Vec::new(),
         in_tag: false,
+        floor: 0,
+        after_list: false,
     };
     writer.blocks(&parsed.description);
     for (i, tag) in parsed.tags.iter().enumerate() {
@@ -258,6 +298,10 @@ fn is_blank(b: u8) -> bool {
     matches!(b, b' ' | b'\t' | b'\x0c')
 }
 
+fn is_blank_char(c: char) -> bool {
+    u8::try_from(c).is_ok_and(is_blank)
+}
+
 /// Whether a block gets a blank line before and after it, as GJF writes it (observed): headings,
 /// fenced code, tables, and HTML blocks.
 fn spaced(block: &Block) -> bool {
@@ -331,6 +375,25 @@ fn one_paragraph(text: &str) -> bool {
     paragraphs == 1
 }
 
+/// The spans of the inline tags, inline HTML, links, and images in `content`, inside its other
+/// elements too. Inline HTML written across lines is a span per line.
+fn tag_spans(content: &[Inline], out: &mut Vec<(u32, u32)>) {
+    for inline in content {
+        match inline {
+            Inline::Tag(tag) => out.push((tag.span.start, tag.span.end)),
+            Inline::Html(html) => out.push((html.span.start, html.span.end)),
+            Inline::Emphasis { content, .. } | Inline::Strong { content, .. } => {
+                tag_spans(content, out);
+            }
+            Inline::Image { span, content, .. } | Inline::Link { span, content, .. } => {
+                out.push((span.start, span.end));
+                tag_spans(content, out);
+            }
+            _ => {}
+        }
+    }
+}
+
 /// The words that start the next paragraph's first line, before its own.
 struct Lead {
     /// The prefix before them.
@@ -374,6 +437,10 @@ struct Writer<'a> {
     containers: Vec<Container>,
     /// Whether the next block is in a block tag's body, which is indented past the tag.
     in_tag: bool,
+    /// Where the next paragraph's text may start at the earliest: past a block tag's argument.
+    floor: u32,
+    /// Whether the next block comes right after a list in its container.
+    after_list: bool,
 }
 
 impl Writer<'_> {
@@ -409,9 +476,29 @@ impl Writer<'_> {
         line
     }
 
-    /// Whether a blank line comes between the blocks at `before` and `after` in the source.
-    fn blank_between(&self, before: Span, after: Span) -> bool {
-        self.line_at(after.start) > self.last_line(before) + 1
+    /// The last source line `block` has text on. A container's is its last block's, or its first
+    /// line's if it holds none, so that its lines with only `>` count as blank lines after it.
+    fn end_line(&self, block: &Block) -> usize {
+        match block {
+            Block::BlockQuote { span, blocks } => blocks
+                .last()
+                .map_or_else(|| self.line_at(span.start), |b| self.end_line(b)),
+            Block::List { span, items, .. } => items
+                .last()
+                .map_or_else(|| self.line_at(span.start), |i| self.item_end_line(i)),
+            _ => self.last_line(block.span()),
+        }
+    }
+
+    fn item_end_line(&self, item: &ListItem) -> usize {
+        item.blocks
+            .last()
+            .map_or_else(|| self.line_at(item.span.start), |b| self.end_line(b))
+    }
+
+    /// Whether a blank line comes between source line `end` and what starts at `start`.
+    fn blank_between(&self, end: usize, start: u32) -> bool {
+        self.line_at(start) > end + 1
     }
 
     /// Asks for `breaks` line breaks before the next paragraph: 2 for a blank line, whose prefix
@@ -468,9 +555,10 @@ impl Writer<'_> {
             if let Some(before) = i.checked_sub(1).map(|i| &blocks[i]) {
                 let blank = spaced(before)
                     || spaced(block)
-                    || self.blank_between(before.span(), block.span());
+                    || self.blank_between(self.end_line(before), block.span().start);
                 self.gap(if blank { 2 } else { 1 });
             }
+            self.after_list = i > 0 && matches!(blocks[i - 1], Block::List { .. });
             self.block(block);
             if self.failed {
                 return;
@@ -633,7 +721,7 @@ impl Writer<'_> {
             if let Some(before) = i.checked_sub(1).map(|i| &items[i]) {
                 let blank = ends_spaced(before)
                     || item.blocks.first().is_some_and(spaced)
-                    || self.blank_between(before.span, item.span);
+                    || self.blank_between(self.item_end_line(before), item.span.start);
                 self.gap(if blank { 2 } else { 1 });
             }
             self.item(item);
@@ -720,7 +808,19 @@ impl Writer<'_> {
     /// blank lines before it.
     fn copied(&mut self, span: Span, fence: bool) {
         let first = self.line_at(span.start);
-        let last = self.last_line(span);
+        // A line of `>` here may be code, so only a line with nothing on it ends the block early.
+        let mut last = self.line_at(span.end.saturating_sub(1).max(span.start));
+        while last > first {
+            let l = self.lines[last];
+            let end = span.end.min(l.end).max(l.content);
+            if !self.text[l.content as usize..end as usize]
+                .trim_matches([' ', '\t', '\x0c'])
+                .is_empty()
+            {
+                break;
+            }
+            last -= 1;
+        }
         let mut rows = Vec::new();
         for line in first..=last {
             let end = self.lines[line].end;
@@ -737,9 +837,42 @@ impl Writer<'_> {
             };
             rows.push(row);
         }
+        // A block tag's body is written 2 past the tag, so up to 2 spaces of the indentation its
+        // lines share are the body's, not the block's: a second run reads them back.
+        if self.in_tag && self.containers.is_empty() {
+            let bytes = self.text.as_bytes();
+            let spaces = |&(start, end): &(u32, u32)| {
+                (start..end.min(start + 2))
+                    .take_while(|&at| bytes[at as usize] == b' ')
+                    .count() as u32
+            };
+            let shared = rows
+                .iter()
+                .filter(|&&(start, end)| start < end)
+                .map(spaces)
+                .min()
+                .unwrap_or(0);
+            for row in rows.iter_mut().filter(|(start, end)| start < end) {
+                row.0 += shared;
+            }
+            // Its first line at 4 past the tag would start an indented code block instead.
+            if rows.first().is_some_and(|row| spaces(row) >= 2) {
+                self.failed = true;
+                return;
+            }
+        }
+        while rows.len() > 1 && rows.last().is_some_and(|&(start, end)| start == end) {
+            rows.pop();
+        }
         let mut closing = None;
         if fence && let Some(&(start, end)) = rows.first() {
             let opening = &self.text[start as usize..end as usize];
+            // An inline tag in the info string hides what's in it from one of the parser's readings
+            // of the comment and not the other, so the two may disagree on what is code.
+            if opening.contains("{@") {
+                self.failed = true;
+                return;
+            }
             let indent = opening.len() - opening.trim_start_matches(' ').len();
             let marks = &opening[indent..];
             let mark = marks.as_bytes().first().copied().unwrap_or(b'`');
@@ -750,12 +883,41 @@ impl Writer<'_> {
                 line.len() >= count && line.bytes().all(|b| b == mark)
             };
             if !closed {
-                while rows.len() > 1 && rows.last().is_some_and(|&(start, end)| start == end) {
-                    rows.pop();
-                }
                 let at = start + indent as u32;
                 closing = Some((at, at + count as u32));
             }
+        }
+        // Indented, right after a list, it would move into the list's last item if that item's
+        // marker moves left.
+        let indented = rows.first().is_some_and(|&(start, end)| {
+            self.text[start as usize..end as usize].starts_with([' ', '\t'])
+        });
+        if self.after_list && indented {
+            self.failed = true;
+            return;
+        }
+        // A tab in the indentation of a line in a container counts to the next tab stop, which
+        // moves when the container's indentation does.
+        if !self.rest.is_empty()
+            && rows.iter().any(|&(start, end)| {
+                let row = &self.text[start as usize..end as usize];
+                row[..row.len() - row.trim_start_matches([' ', '\t']).len()].contains('\t')
+            })
+        {
+            self.failed = true;
+            return;
+        }
+        // A line of a table or an HTML block starting with `@` starts a block tag, which only code
+        // hides, should the block's indentation change.
+        if !fence
+            && rows.iter().any(|&(start, end)| {
+                self.text[start as usize..end as usize]
+                    .trim_start_matches(' ')
+                    .starts_with('@')
+            })
+        {
+            self.failed = true;
+            return;
         }
         for (start, end) in rows.into_iter().chain(closing) {
             let words = if start < end {
@@ -778,14 +940,24 @@ impl Writer<'_> {
     ) {
         for inline in content {
             match inline {
-                Inline::Code(text) => code.push((text.span.start, text.span.end)),
+                Inline::Code(text) => {
+                    code.push((text.span.start, text.span.end));
+                    // CommonMark reads a line break in one as a space, so one that is still there
+                    // is in an inline tag the code span holds, read as written.
+                    self.failed |= text.text.contains('\n');
+                }
                 Inline::HardBreak(span) => {
                     let spaces = self.text.as_bytes().get(span.start as usize) != Some(&b'\\');
                     breaks.push((self.line_at(span.start), spaces));
                 }
-                Inline::Emphasis { content, .. }
-                | Inline::Strong { content, .. }
-                | Inline::Image { content, .. } => self.inlines(content, code, breaks),
+                Inline::Emphasis { content, .. } | Inline::Strong { content, .. } => {
+                    self.inlines(content, code, breaks);
+                }
+                Inline::Image { content, .. } => {
+                    let before = breaks.len();
+                    self.inlines(content, code, breaks);
+                    self.failed |= breaks.len() > before;
+                }
                 Inline::Link {
                     span,
                     kind,
@@ -794,7 +966,11 @@ impl Writer<'_> {
                 } => {
                     let link = &self.text[span.start as usize..span.end as usize];
                     self.failed |= *kind == LinkKind::Inline && link.contains("](<");
+                    // A hard break in a link's text is in its label, where a backslash would
+                    // change the label.
+                    let before = breaks.len();
                     self.inlines(content, code, breaks);
+                    self.failed |= breaks.len() > before;
                 }
                 Inline::Tag(tag) => {
                     let written = &self.text[tag.span.start as usize..tag.span.end as usize];
@@ -802,8 +978,20 @@ impl Writer<'_> {
                         .containers
                         .iter()
                         .any(|c| matches!(c, Container::Quote));
+                    let across_lines = written.contains(['\n', '\r']);
+                    // The parser looks for tags outside code spans and code blocks, so joining
+                    // the lines of a tag holding a fence or a backtick, or with a blank line that
+                    // could start an indented code block, could change where its tags are.
+                    let blank = written
+                        .split(['\n', '\r'])
+                        .skip(1)
+                        .any(|line| line.trim_start().trim_start_matches('/').trim().is_empty());
                     self.failed |= matches!(tag.content, InlineTagContent::Snippet(_))
-                        || quoted && written.contains(['\n', '\r']);
+                        || across_lines
+                            && (quoted
+                                || blank
+                                || written.contains('`')
+                                || written.contains("~~~"));
                     let description = match &tag.content {
                         InlineTagContent::Link { label, .. }
                         | InlineTagContent::LinkPlain { label, .. } => Some(label),
@@ -840,6 +1028,10 @@ impl Writer<'_> {
         let mut code = Vec::new();
         let mut breaks = Vec::new();
         self.inlines(content, &mut code, &mut breaks);
+        // A paragraph starting with a link label and a colon could become a link reference
+        // definition where its first line breaks differently.
+        let written = &self.text[span.start as usize..span.end as usize];
+        self.failed |= !heading && written.starts_with('[') && written.contains("]:");
         if self.failed {
             return;
         }
@@ -848,17 +1040,65 @@ impl Writer<'_> {
             let i = code.partition_point(|&(start, _)| start <= at);
             i > 0 && at < code[i - 1].1
         };
+        // In a block quote, an inline tag, inline HTML, or a link stays on one line, since a line
+        // break in one would put the next line's `>` in it. HTML or a tag written across lines
+        // falls back.
+        let mut tags = Vec::new();
+        if self
+            .containers
+            .iter()
+            .any(|c| matches!(c, Container::Quote))
+        {
+            tag_spans(content, &mut tags);
+            // A line of inline HTML that doesn't end the element: the next is the same element's.
+            let across_lines = tags.iter().any(|&(start, end)| {
+                let html = &self.text[start as usize..end as usize];
+                html.starts_with('<')
+                    && !if html.starts_with("<!--") {
+                        html.ends_with("-->")
+                    } else if html.starts_with("<?") {
+                        html.ends_with("?>")
+                    } else if html.starts_with("<![CDATA[") {
+                        html.ends_with("]]>")
+                    } else {
+                        html.ends_with('>')
+                    }
+            });
+            self.failed |= across_lines;
+            if self.failed {
+                return;
+            }
+        } else {
+            // Nor does a line break go in a tag holding a backtick or a fence, as `inlines` says.
+            tag_spans(content, &mut tags);
+            tags.retain(|&(start, end)| {
+                let written = &self.text[start as usize..end as usize];
+                written.starts_with("{@") && (written.contains('`') || written.contains("~~~"))
+            });
+        }
+        let in_tag = |at: u32| tags.iter().any(|&(start, end)| start < at && at < end);
         let bytes = self.text.as_bytes();
         let first = self.line_at(span.start);
         let last = self.last_line(span);
         let mut words: Vec<Word> = Vec::new();
-        // The last word's text, and whether a line ended after it.
+        // The words written so far, and the last.
+        let mut count = 0;
         let mut previous: Option<(u32, u32)> = None;
         for line in first..=last {
             let mut new_line = line > first;
             if let Some(&(_, spaces)) = breaks.iter().find(|&&(at, _)| new_line && at == line - 1) {
                 // Trailing spaces go, so a hard break written with them is written with a
-                // backslash, which means the same.
+                // backslash, which means the same, unless the backslash would join one before it,
+                // or other whitespace the parser drops with the spaces.
+                if spaces
+                    && previous.is_some_and(|(start, end)| {
+                        self.text[start as usize..end as usize]
+                            .ends_with(|c: char| c == '\\' || c.is_whitespace())
+                    })
+                {
+                    self.failed = true;
+                    return;
+                }
                 if spaces {
                     words.push(Word {
                         text: WordText::Static("\\"),
@@ -866,12 +1106,22 @@ impl Writer<'_> {
                         glue: Glue::Tight,
                     });
                 }
+                if !heading && count + usize::from(spaces) == words.len() {
+                    self.guard_first_line(&mut words);
+                }
                 self.paragraph(std::mem::take(&mut words));
                 previous = None;
                 new_line = false;
             }
             let start = if line == first {
-                span.start
+                // The parse starts a paragraph that starts with a backslash escape after the
+                // backslash, so its text starts back at the whitespace before it.
+                let floor = self.strip(line).map_or(span.start, |at| at.max(self.floor));
+                let mut start = span.start;
+                while start > floor && !is_blank(bytes[start as usize - 1]) {
+                    start -= 1;
+                }
+                start
             } else {
                 self.continuation(line)
             };
@@ -908,10 +1158,21 @@ impl Writer<'_> {
                     at += 1;
                 }
                 let word = &self.text[word_start as usize..at as usize];
+                // Whether it could start a block is asked of its text up to its first space, which
+                // only a code span holds, so that the answer doesn't depend on where the lines
+                // of one written across them break, and without the backslash a hard break adds.
+                let head = word.split(is_blank_char).next().unwrap_or(word);
+                let head = head.trim_end_matches('\\');
                 let glue = match previous {
                     _ if heading => Glue::Bound,
                     None => {
-                        if starts_block(word) {
+                        if starts_block(head) {
+                            // After a hard break, the words after it would join it on its line,
+                            // where with them it could start a block.
+                            self.failed |= count > 0;
+                            Glue::Bound
+                        } else if word.starts_with('@') {
+                            // Right after a block tag's name, on the tag's line.
                             Glue::Bound
                         } else {
                             Glue::Space
@@ -919,16 +1180,20 @@ impl Writer<'_> {
                     }
                     Some((p_start, p_end)) => {
                         let before = &self.text[p_start as usize..p_end as usize];
-                        if new_line && in_code(p_end.saturating_sub(1)) && in_code(word_start) {
+                        if new_line && code.iter().any(|&(s, e)| s < p_end && word_start < e) {
                             // A code span written across lines: its line break is a space.
                             Glue::Bound
                         } else if new_line && ends_with_hyphen(before) {
                             // GJF joins `well-` and `known` (observed; the design's decision 11).
                             Glue::Tight
                         } else if ends_with_hyphen(before)
+                            || in_tag(word_start)
                             || before.ends_with('\\')
                             || word.starts_with('@')
-                            || starts_block(word)
+                            || starts_block(head)
+                            // The first word alone on the first line could start a block, as
+                            // `<b>` would an HTML block.
+                            || count == 1 && !one_paragraph(&format!("{before}\n"))
                         {
                             Glue::Bound
                         } else {
@@ -937,11 +1202,62 @@ impl Writer<'_> {
                     }
                 };
                 words.push(self.word(word_start, at, glue));
+                count += 1;
                 previous = Some((word_start, at));
                 new_line = false;
             }
         }
+        if !heading && count == words.len() {
+            self.guard_first_line(&mut words);
+        }
         self.paragraph(words);
+    }
+
+    /// Keeps a paragraph's first line, `words` up to a line break, from starting a block. On a
+    /// later line only its first word could, and it is bound to the word before it, but on the
+    /// first line the whole line counts: `<a href="x">` alone starts an HTML block, and
+    /// ```` ``` x ```` a fence where ```` ``` x` ```` doesn't. So a line may not break after the
+    /// words that would, alone on the first line, the markers before them included: `* **` is a
+    /// thematic break. Only a paragraph starting with `<`, a backtick, or the characters of a
+    /// thematic break can.
+    fn guard_first_line(&mut self, words: &mut [Word]) {
+        let text = |word: &Word| match word.text {
+            WordText::Source(start, end) => &self.text[start as usize..end as usize],
+            WordText::Static(text) => text,
+            WordText::Lines(..) => "",
+        };
+        let can_start = |word: &Word| {
+            let word = text(word);
+            word.starts_with(['<', '`']) || word.bytes().all(|b| b"-_*".contains(&b))
+        };
+        if !words.first().is_some_and(can_start) {
+            return;
+        }
+        let mut line = String::new();
+        // List and quote markers count. A block tag's head doesn't: the parser reads its body from
+        // the first text after it, as a document of its own.
+        if let Some(lead) = self.lead.as_ref().filter(|lead| lead.glue == Glue::Bound) {
+            for word in &lead.words {
+                line.push_str(text(word));
+                line.push(' ');
+            }
+        }
+        for (i, word) in words.iter_mut().enumerate() {
+            if i > 0 {
+                if width(&line) <= LINE_WIDTH
+                    && word.glue.breaks()
+                    && !one_paragraph(&format!("{line}\nx\n"))
+                {
+                    word.glue = Glue::Bound;
+                }
+                if word.glue.width() == 1 {
+                    line.push(' ');
+                }
+            }
+            line.push_str(text(word));
+        }
+        // All of it on one line would start a block, as `<a` then `b>` would.
+        self.failed |= !one_paragraph(&format!("{line}\n"));
     }
 
     /// The words of `span`, written across lines, each line's past its whitespace.
@@ -983,7 +1299,11 @@ impl Writer<'_> {
         }
         if !self.layout.paragraphs.is_empty() {
             let blank = before.is_none_or(|before| {
-                before.body.last().is_some_and(spaced) || self.blank_between(before.span, tag.span)
+                let end = before
+                    .body
+                    .last()
+                    .map_or_else(|| self.line_at(before.span.start), |b| self.end_line(b));
+                before.body.last().is_some_and(spaced) || self.blank_between(end, tag.span.start)
             });
             self.gap(if blank { 2 } else { 1 });
         }
@@ -1003,21 +1323,30 @@ impl Writer<'_> {
         self.in_tag = true;
         match tag.body.first() {
             Some(Block::Paragraph { span, content }) => {
+                self.floor = head_end;
                 self.text(*span, content, false);
+                self.floor = 0;
                 if tag.body.len() > 1 && !self.failed {
-                    let blank =
-                        spaced(&tag.body[1]) || self.blank_between(*span, tag.body[1].span());
+                    let blank = spaced(&tag.body[1])
+                        || self.blank_between(self.last_line(*span), tag.body[1].span().start);
                     self.gap(if blank { 2 } else { 1 });
                     self.blocks(&tag.body[1..]);
                 }
             }
-            // The parser reads a body from its first text, so the indentation of a fence there
-            // wouldn't count, and its code would move.
-            Some(Block::CodeBlock { .. }) => self.failed = true,
+            // The parser reads a body from its first text, so the indentation of a fence or a list
+            // there wouldn't count: the code would move, and the items after the first would be
+            // nested in it.
+            Some(Block::CodeBlock { .. } | Block::List { .. }) => self.failed = true,
             Some(first) => {
-                self.paragraph(Vec::new());
                 let head = Span::new(tag.span.start, head_end);
-                let blank = spaced(first) || self.blank_between(head, first.span());
+                // A block on the tag's line, such as a table, would take the tag's words with it.
+                if self.line_at(first.span().start) == self.line_at(head.start) {
+                    self.failed = true;
+                    return;
+                }
+                self.paragraph(Vec::new());
+                let blank =
+                    spaced(first) || self.blank_between(self.last_line(head), first.span().start);
                 self.gap(if blank { 2 } else { 1 });
                 self.blocks(&tag.body);
             }

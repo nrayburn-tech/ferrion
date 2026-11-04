@@ -1,8 +1,9 @@
 //! Runs every reduced failure of the `format` fuzz target in `tests/fuzz-regressions/`, and every
 //! source file the parser's tests use, through the fuzz target's checks: at each release where the
 //! input parses without errors, the four safety properties hold, and at every release, errors or
-//! not, a range picked from the input formats as `verify_range` checks. The `javadoc` target's
-//! reflow failures in `tests/javadoc-regressions/` go through its reflow check.
+//! not, a range picked from the input formats as `verify_range` checks. The `javadoc` and
+//! `markdown` targets' reflow failures, in `tests/javadoc-regressions/` and
+//! `tests/markdown-regressions/`, go through their reflow checks.
 
 use std::fs;
 use std::panic;
@@ -27,7 +28,23 @@ fn fuzz_regressions() {
 
 #[test]
 fn javadoc_regressions() {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/javadoc-regressions");
+    check_reflows(
+        "tests/javadoc-regressions",
+        invariants::check_javadoc_reflow,
+    );
+}
+
+#[test]
+fn markdown_regressions() {
+    check_reflows(
+        "tests/markdown-regressions",
+        invariants::check_markdown_reflow,
+    );
+}
+
+/// Runs each input in `dir` but its README through `check`, a doc comment target's reflow check.
+fn check_reflows(dir: &str, check: fn(&[u8]) -> Result<(), String>) {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join(dir);
     let mut failures = Vec::new();
     let mut count = 0;
     for entry in fs::read_dir(&dir).unwrap() {
@@ -37,7 +54,7 @@ fn javadoc_regressions() {
         }
         count += 1;
         let bytes = fs::read(&path).unwrap();
-        if let Err(message) = invariants::check_javadoc_reflow(&bytes) {
+        if let Err(message) = check(&bytes) {
             failures.push(format!("{}: {message}", path.display()));
         }
     }
