@@ -265,6 +265,8 @@ pub enum Cause {
     Incomplete { ty: TypeKey },
     /// A class file the view lists couldn't be read or is malformed: B1's error.
     BadClass { binary: Name, message: Arc<str> },
+    /// No method or constructor of the name is applicable to a call's arguments (JLS 15.12.2).
+    NotApplicable,
     /// The parser found the name missing.
     Syntax,
     /// A qualified name of more segments than are resolved (`resolve::MAX_SEGMENTS`, 1,024).
@@ -518,6 +520,7 @@ impl Cause {
             Cause::Cycle => "cycle".to_owned(),
             Cause::Incomplete { .. } => "incomplete".to_owned(),
             Cause::BadClass { binary, .. } => format!("bad-class {}", names.text(*binary)),
+            Cause::NotApplicable => "not-applicable".to_owned(),
             Cause::Syntax => "syntax".to_owned(),
             Cause::TooLong => "too-long".to_owned(),
         }
