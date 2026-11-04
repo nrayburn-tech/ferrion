@@ -118,7 +118,7 @@ side, and W4 records it.
 
 The oracle reports a call's chosen method and its type as invoked, but not which phase chose it
 (W0's question 12): which phase chose a call is recorded in Ferrion's result for rules, and isn't
-compared.
+compared. W3's [results](#results-of-calls) have the share on each side.
 
 ## Member tables
 
@@ -295,6 +295,47 @@ What W2 built differs from the design above in these ways, each for a reason giv
 - **`oracle attribute`** is the corpus harness, not a test: `cargo oracle attribute`, with
   `--dump` for each file's expressions and variables as JSON lines.
 
+What W3 built differs in these ways:
+
+- **A creation's type is the class named,** whichever constructor is chosen, and whether or not one
+  can be (JLS 15.9.1): `new Thread(() -> { })` is `java/lang/Thread`, with no method until B3c, rather
+  than `Unknown(LeftToB3c)` as the line's words have it for a call. Its type doesn't depend on the
+  choice. An error in it still makes it an error, as the scope's rule asks, and `<>` is B3c's.
+- **`BodyTypes::unchosen`** has the creations, constructor calls, and enum constants with no method,
+  with why: their own types can't say. `Call` has `special`, for an array's `clone()` and signature
+  polymorphic methods. `Snapshot::call_text` gives javac's keys for a call.
+- **Where a call is recorded:** by its node for one in the source; a constructor's implicit
+  `super()` by its body's `Block`, a default constructor's by the type's declaration, an enum
+  constant's creation by the `EnumConstant`. An anonymous class's creation has the superclass
+  constructor it chooses, from which `call_text` gives javac's two calls
+  ([observation 24](#observations)).
+- **A poly conditional as an argument doesn't take the call out of the line,** as the line's words
+  allow: `pr(b ? "a" : null)` is chosen by its operands, each tested in the phase's context. The
+  conditional's own type is still B3c's. `Value::operands` keeps them, to a depth of 64, past which
+  the call is B3c's too, so that dropping them can't recurse deeply.
+- **`Why::LeftToB4`,** printed `left-to-b4 lombok`, where a type with a Lombok annotation on it or a
+  supertype has an incomplete table, or a member isn't found in one: calls on such a type have no
+  answer, as the design says of an incomplete table, and the comparison counts them apart. `Why::Calls`
+  is gone. `Cause::NotApplicable` is new, for a call no method applies to.
+- **`resolved`** also has a statically imported method's declaring type, as `Symbol::Methods`, which
+  is what settles `static-import-overload`.
+- **Changes to member tables,** each found by a corpus mismatch: a table's comparisons get their fuel
+  per name (`Jedis`, with thousands of methods, ran out, and kept overridden ones), and a table out of
+  fuel is incomplete; a local class's package is its top level class's (it had none, and inherited no
+  package-private method); a table reads its supertypes' methods in its own view, since a supertype's
+  table is of its own source set's (`Object` from another platform's view isn't this view's);
+  in a class `Object`'s concrete method stays over an interface's abstract one, and in an interface
+  one interface's replaces `Object`'s ([observation 23](#observations)). A default or canonical
+  constructor has its class's access (JLS 8.8.9, 8.10.4), which the entry doesn't write.
+- **Changes to W1:** unchecked conversion of arrays (`Class[]` to `Class<?>[]`, JLS 5.1.9), which
+  `cargo oracle types --relations` hadn't met; a capture variable has a provisional bound before any
+  `glb` of its siblings' ([observation 28](#observations)).
+- **An anonymous class made through an outer instance** has no generic superclass in its entry, since
+  its outer type is the instance's, which only the walk knows: the walk gives its context the
+  superclass when the body is entered (`TypeContext::set_supertypes`), and its table is made from the
+  class alone.
+- **The adapter:** W4's waiting label and `IMPLICIT_CALLS_WAIT` are gone with what they waited for.
+
 ## Observations
 
 Run with Temurin 27.0.1's `javac` through the types oracle, in a scratch directory, each on a small
@@ -368,6 +409,90 @@ answer beside it.
     `java/lang/String[]`, as is a default `{}`; a single value for an array element is itself
     (`@SuppressWarnings("x")`'s literal is `java/lang/String`).
 
+From W3, on Temurin 27.0.1 unless a release is named; the inputs of
+`crates/ferrion_semantic/src/attr/call_tests.rs` are these, with javac's answers, but for what needs
+the JDK's signatures (`getClass()` of a raw type), which the corpus comparison checks:
+
+16. **The phases and most specific follow the JLS:** with `s1(int)`, `s1(long)`, `s1(Object)`,
+    `s1(int...)`: `s1(1)` `(I)V`, `s1(boxed)` the `Object` one (strict beats unboxing), `s1()` and
+    `s1(1, 2)` `([I)V`; `s2(1)` with `s2(Integer)`, `s2(long)` the `long` one; `obj(null)` of `obj(Object)`,
+    `obj(Object...)` the array one; `ns()` of `ns(long...)`, `ns(int...)` the `int` one. `s3(boxed, 1)` of
+    `s3(long, Object)`, `s3(Object, Object)` is `compiler.err.ref.ambiguous`, as are `bx(1, 2)` of
+    `bx(Integer...)`, `bx(int, long...)` and `vs(1)` of `vs(int, int...)`, `vs(int...)`: no rule beyond
+    15.12.2.5 for primitive and boxed parameters.
+17. **The type as invoked** has formal parameters (`s1(1, 2)` `(int[])void`) and isn't captured itself:
+    `w()` returning `List<?>` is `()java/util/List<?>`, of type `java/util/List<capture#1 extends
+    java/lang/Object>`. `xs.get(0)` for `List<? extends Number>` is `(int)capture#1 extends
+    java/lang/Number`, since the receiver is captured. An explicit type argument is substituted
+    (`this.<String>id("a")` `(java/lang/String)java/lang/String`); on a non-generic method it is
+    ignored (`"a".<String>length()` `()int`).
+18. **Unchecked conversion** erases the result (`g(rawl)` for `List<String> g(List<String>)` is
+    `(java/util/List<java/lang/String>)java/util/List`), but not to a type whose arguments are all
+    unbounded wildcards, `? extends Object` among them, where JLS 15.12.2.6 would: `h(raw)` for
+    `List<String> h(List<?>)`, `h2(raw)` for `Collection<? extends Object>`, `h4(rawc)` for `Class<?>[]`
+    keep `java/util/List<java/lang/String>`; `h3(raw)` for `List<? extends Number>` and `h7(rawl)` for
+    `List<String>[]` don't. The same for an explicit type argument's bound:
+    `Comparator.<Comparable>naturalOrder()` is `()java/util/Comparator`, `Range.<C>rangeLexOrdering()`,
+    `C extends Comparable` for a bound `Comparable<?>`, keeps its type (guava).
+19. **A call that is an argument,** with a capture variable for its type, is recorded with its upper
+    bound, captured: `g(xs.get(0))` is `java/lang/Number`, where `xs.get(0);` and `Number n = xs.get(0);`
+    are `capture#1 extends java/lang/Number`; `Enum<capture#1 extends ...>` for a bound `Enum<?>`
+    (guava's `Platform`), through parentheses, in `new`, `this(...)`, `super(...)`, and a generic
+    method's arguments too. `gl(w())`'s `List<capture#1 ...>` keeps its capture. A field or array
+    element as the argument keeps its capture (`g(bq.f)`), but as a conditional's operand in an argument
+    doesn't (`g(b ? bq.f : null)`'s `bq.f` is `java/lang/Object`), and a call there is the same.
+20. **`getClass()` and an array's `clone()`:** `getClass()` is `()java/lang/Class<?>` as invoked, of type
+    `Class<capture#1 extends |T|>`: `Q` for `this` of a generic `Q`, `java/util/List` for `xs`,
+    `java/lang/Object[]` for `T[]`, `int[]` for `int[]`. Of a raw interface type it is `()java/lang/Class`
+    as invoked, of a raw class still `()java/lang/Class<?>`. `arr.clone()` is `method
+    Array.clone()Ljava/lang/Object;`, `()java/lang/Object`, with no exceptions, of the array's type;
+    an array's other methods are `Object`'s.
+21. **Signature polymorphic methods** (JLS 15.12.3): `mh.invoke(null, ls)` is `(java/lang/Void,
+    java/util/List)void` as a statement, with a type variable and its array staying, unlike class types
+    (`(E:Q,E:Q[],int[])void`); `Object r = mh.invoke("a", 2)` `(java/lang/String,int)java/lang/Object`.
+    A cast's type around it, through parentheses, is its result: as written up to `--release 23`
+    (`(List<String>) mh.invoke()` `()java/util/List<java/lang/String>`, captured as its expression's
+    type, `(E) ...` `()E:L`), and erased from 24 on (`()java/util/List`, `()java/lang/Object`), on JDK
+    27 at every release, 25 and 26 too, a difference between source levels. A `for`'s init and update
+    are statements. `invokeWithArguments`, which isn't native, is an ordinary method.
+22. **Abstract methods inherited together** with one signature (JLS 15.12.2.5 leaves which to the
+    compiler): in the order of an intersection's parts (a class, then interfaces deepest first, then
+    by qualified name), with the first two swapped, the first whose return type is a subtype of the
+    others'. `Ab`, `Zed` gives `Zed`, whichever is declared first; `Ab`, `Mid`, `Zed` gives `Mid`; `A1` to
+    `E1` gives `B1`; `AA` (a class), `Ab`, `Zed` gives `Ab`; returns `Object`, `Object`, `String`, `String`
+    give the first `String`; `Ret1.g()` returning `List<String>` over `Ret2.g()` returning `List`. Inferred
+    from about 30 inputs. Two exceptions: a class's abstract method that overrides a concrete one above
+    it wins outright (`B1.has` of `C1 extends B1 implements Lo`, with `B1`'s overriding `A1`'s; guava's
+    `ImmutableCollection.contains`, where `Set.contains` would be next); and declarations whose
+    erasures differ are ambiguous (`Gen2.put(String)` and `Gen1<String>.put(T)`, `compiler.err.ref.ambiguous`).
+23. **`Object`'s methods and interfaces:** of `interface D extends Em, A`, with `A` declaring
+    `hashCode()`, `d.hashCode()` is `A`'s (lucene's `CharTermAttribute.toString()`); of `interface C
+    extends A, B`, both declaring it, `Object`'s (caffeine's `MutableMap`). In `abstract class I implements
+    A`, `Object`'s, as JLS 8.4.8.4 has it. Of an interface with no such method, `Object`'s, by 9.2.
+24. **Calls javac makes up,** with W0's observations 14 and 15: a compact constructor's `super()` at its
+    `{`; a record's implicit canonical constructor's at `record`, `java/lang/Record.<init>()V`; an enum's
+    `java/lang/Enum.<init>(Ljava/lang/String;I)V`, `(java/lang/String,int)void`. An anonymous class's
+    constructor has the superclass constructor's parameters as invoked, erased: `new Base<String>("x") { }`
+    is `local ...<init>(Ljava/lang/String;)V`, over `Base.<init>(Ljava/lang/Object;)V`,
+    `(java/lang/String)void`; through an outer instance first its type, `b.new In<String>() { }`
+    `<init>(LBase;)V`; of an interface `<init>()V` over `Object`'s. An enum constant with a body is the
+    same, `PINK(1, 2) { }` `<init>([I)V` over `Color.<init>([I)V`.
+25. **Accessibility:** `new Base(1) { }` reaches a protected constructor another package's `new Base(1)`
+    doesn't, which chooses the public `long` one; `b.pick(1)` in a subclass in another package, through a
+    `Base`, takes the public `long` one over the protected `int` one, where `s.pick(1)`, `this.pick(1)`,
+    `super.pick(1)`, and `pick(1)` take the protected one.
+26. **A reference conditional as an argument** is chosen by its operands, and its own type is the
+    target's: `println(b ? "a" : "b")` the `String` one, `println(b ? 1 : "b")` the `Object` one, by
+    boxing, in the second phase; `println(b ? 'a' : 1)`, a numeric conditional, the `char` one.
+27. **Through an outer instance:** `new From<Integer>() { }.new To<String>()` is
+    `From<java/lang/Integer>$To<java/lang/String>`, its outer type found through the anonymous class;
+    `new From<Integer>().new To<String>() { }.a()` sees `F` as `java/lang/Integer` (guava's
+    `TypeTokenTest`).
+28. **Capture variables' bounds can read each other:** a variable `B<? extends B<?, ? extends R>, ?
+    extends R>`, with `B<S extends B<S, T>, T>`, is `B<capture#1 extends B<capture#1,capture#2 extends
+    R>,capture#2>`: its `glb` drops the wildcard's bound, once it can see that the second variable is
+    below `R` (helidon's `RouterImpl`).
+
 ## Results
 
 `cargo oracle attribute` on every locked project, on 3 November 2026, on a 10-core Mac shared with
@@ -439,6 +564,60 @@ expressions, 847,362 constants, and 428,554 variables' types match, 0 differ, an
 javac lacks; 2,762,716 entries wait for W3, and 567,527 are left to B3c and B3d (456,080 of them
 variables' finality). What W2's walk types needed no fix.
 
+### Results of calls
+
+W3's, with the calls, on 3 November 2026, on the same machine, shared; `cargo oracle attribute` on
+every locked project. *Calls* are the method invocations, creations, and explicit constructor calls
+in the source; *chosen* of them have a method.
+
+| Project | Files | Bodies | Panics | Expressions | Typed | B3c | B3d | B4 | Error | Incomplete | Limit | Calls | Chosen | Calls left to B3c | Calls left to B4 | Member tables | Their bytes | Time | Largest arena |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| caffeine | 1,309 | 20,679 | 0 | 291,607 | 233,968 | 57,630 | 9 | 0 | 0 | 0 | 0 | 104,589 | 61,324 | 43,265 | 0 | 3,935 | 15.5 MB | 0.9 s | 1,347 |
+| guava | 1,597 | 35,481 | 0 | 428,135 | 366,963 | 61,163 | 0 | 0 | 9 | 0 | 0 | 145,531 | 89,309 | 56,216 | 0 | 2,989 | 7.4 MB | 0.8 s | 2,379 |
+| helidon | 4,901 | 72,140 | 0 | 1,041,112 | 880,283 | 160,522 | 307 | 0 | 0 | 0 | 0 | 365,544 | 239,217 | 126,309 | 0 | 19,654 | 35.4 MB | 1.9 s | 830 |
+| hertzbeat | 1,384 | 13,076 | 0 | 196,917 | 151,096 | 18,393 | 13 | 26,021 | 1,391 | 3 | 0 | 73,968 | 33,011 | 14,412 | 25,231 | 6,074 | 13.8 MB | 1.2 s | 716 |
+| jedis | 1,080 | 20,118 | 0 | 370,686 | 325,505 | 45,181 | 0 | 0 | 0 | 0 | 0 | 137,673 | 94,817 | 42,856 | 0 | 1,283 | 3.5 MB | 1.0 s | 651 |
+| lucene | 6,239 | 69,112 | 0 | 2,117,479 | 2,082,625 | 34,773 | 81 | 0 | 0 | 0 | 0 | 458,985 | 433,357 | 25,626 | 0 | 12,239 | 45.1 MB | 2.6 s | 627 |
+| spring-data-jpa | 901 | 19,795 | 0 | 199,849 | 185,065 | 14,774 | 10 | 0 | 0 | 0 | 0 | 57,760 | 44,976 | 12,784 | 0 | 2,732 | 7.5 MB | 0.8 s | 5,223 |
+| total | 17,411 | 250,401 | 0 | 4,645,785 | 4,225,505 | 392,436 | 420 | 26,021 | 1,400 | 3 | 0 | 1,344,050 | 996,011 | 321,468 | 25,231 | 48,906 | 128.1 MB | 9.2 s | 5,223 |
+
+- **The inference line:** of 1,344,050 calls, 74.1% are chosen, 23.9% left to B3c, and 1.9% left to B4;
+  91.0% of expressions are typed, 8.4% left to B3c. Most of what is left is a project's use of generic
+  APIs: lucene's calls are 94.4% chosen, jedis's 68.9%, caffeine's 58.6%.
+- **Fuel per body,** with calls: median 6, p90 55, p99 235, p99.9 527, p99.99 1,069, most 2,300
+  (`ClimberInvariants` in caffeine); no body of 250,401 is above 10,000, about 4.3 times the most, and
+  nothing in the corpus is `Unknown(Limit)`. Without calls the most was 709.
+- **Member tables and memory:** 48,906 tables, against 765 before, each project's counted in its own
+  engine; what they hold is 128 MB in all, 35 MB for helidon's 19,654 over its 376 views, about 52 per
+  view and 1.8 KB per table, and 45 MB for lucene's 12,239. The whole run, one project's engine at a
+  time, peaked at 767 MB. Dependencies aren't counted. Sharing tables between views with identical
+  classpaths isn't needed for memory, and wasn't built.
+- **Time:** 9.2 s of attribution in all, with the member tables and constants a file is the first to
+  read, against 2.0 s without calls and javac's 147 s of `ANALYZE`; per file median 0.22 ms, p90 1.16
+  ms, p99 4.76 ms, p99.9 18.12 ms, most 77 ms (`UAX29URLEmailTokenizerImpl`).
+- **Errors:** the 1,400 are all in files javac reports errors in, and aren't compared: 1,391 and 3
+  incomplete in hertzbeat's tests, 9 in guava's `AbstractFutureTest`.
+
+**Against javac,** `cargo oracle types` at zero unexplained: of javac's 1,329,863 calls, 1,005,368 have
+the same method, 324,493 are counted apart (323,015 left to B3c, 20 to B3d, 1,458 to B4), and 2 differ, known
+([types oracle](types-oracle-normalization.md#the-comparison-with-calls)). Of those with a type as
+invoked, all that have the same method have the same type but 3, known. Ferrion gives no call javac
+lacks. `cargo oracle names` matches 4,192,580 names with 4,859 known, and `cargo oracle types
+--relations` still matches every query.
+
+**B2's two differences:** `case-label` is 42 of 1,012, each in a switch on a call that needs inference;
+`static-import-overload` is 4,812 of 4,830, each a call with a generic candidate, 4,743 of them caffeine's
+`assertThat`, which Truth's generic overloads keep from being chosen. The names comparison reads
+attribution's answers (`BodyTypes::resolved`), and the list now has just those. B3c settles them.
+
+**What else ran:** the edit fuzzer (`semantic_edits`, whose fragments now make calls and overloads) and
+`relations` 180 s each on the final code without a failure; the deep inputs (`tests/deep.rs`), with a
+new test of conditionals nested 5,000 deep as an argument. **What the run doesn't say:** the
+removed-symbols check and javac's stress tests are W4's, and neither ran here; the conversions
+recorded for arguments and `Call::phase` have no counterpart in javac's output, so only tests check
+them, and not many; a call in a lambda's body is compared where its type needs no inference, like
+any other.
+
 ## Questions for review
 
 Of the overview's [questions](semantic-types.md#questions-for-review), 1, 4, and 5 are this
@@ -488,3 +667,28 @@ W4's, for the same stop, on what the comparison needed:
     them. Recommended: as built; each is a form the adapter doesn't know, or a tree Ferrion made up,
     and there are none now. Those in annotations on record components are counted apart, since
     javac's dropping them depends on `@Target`, which attribution doesn't read.
+
+W3's, for the same stop:
+
+11. **A creation's type without a method:** the class named, unless an error is in it, rather than the
+    non-answer the spreading rule says of a call with a non-answer argument. Its type doesn't depend on
+    the choice, and 3,730 creations keep their type. Recommended: as built.
+12. **`BODY_FUEL`:** the most a body uses is 2,300 with calls, so 10,000 is 4.3 times that, not the ten
+    the overview wants, and inference will use more. Recommended: leave it, since nothing reaches it,
+    and set it at B3c's review as planned; if a number is wanted now, 25,000.
+13. **Member tables per view:** 128 MB in all, 35 MB for helidon's 376 views. Recommended: no sharing,
+    and measure again when B3c's calls read more of them.
+14. **Calls on a Lombok-annotated type,** or one that inherits from it, have no answer until B4, even for
+    a method the source declares: `Why::LeftToB4`, 25,231 calls, all hertzbeat's, 1,458 of them
+    compared. Recommended: as built; choosing among the declared methods could be wrong by a generated
+    overload, and B4 is close.
+15. **The choice among abstract methods** follows [observation 22](#observations), a rule inferred from
+    inputs, with no corpus mismatch; JLS 15.12.2.5 calls it arbitrary, and rules shouldn't care which
+    was chosen. Recommended: keep it, since the comparison is by key.
+16. **The signature polymorphic cast by release** ([observation 21](#observations)): Ferrion follows the
+    source set's release. Only caffeine, at release 21 on JDK 26, shows the difference in the corpus,
+    and helidon's at 27 the other way. Recommended: as built.
+17. **The names comparison now attributes each file:** it is what settles the two categories, and costs
+    its share of the 9 s. Recommended: keep it; nothing else reads both.
+18. **The remaining `case-label` and `static-import-overload` entries** stay in `names-known.txt`, under
+    explanations that say B3c settles them. Recommended: remove them with B3c's calls.

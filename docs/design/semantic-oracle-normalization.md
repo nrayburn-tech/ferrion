@@ -441,21 +441,22 @@ Each mismatch that isn't fixed is listed in `tools/oracle-check/differences/name
 file and javac's range, under one of these categories (the counts are of the run in
 [The comparison](#the-comparison)):
 
-- **`case-label`** (1,012): a `case` label's simple name in a switch whose selector's type needs
-  attribution (`switch (range.getLowerBoundType()) { case OPEN: ... }`, a call's result). Whether
-  it is an enum constant of the selector's type or a constant in scope depends on that type,
-  which is B3's. Ferrion takes a variable in scope that could be a `case` constant (of a
+- **`case-label`** (1,012 for B2, 42 since B3b's attribution): a `case` label's simple name in a
+  switch whose selector's type needs attribution (`switch (range.getLowerBoundType()) { case OPEN:
+  ... }`, a call's result). Whether it is an enum constant of the selector's type or a constant in
+  scope depends on that type. B2 takes a variable in scope that could be a `case` constant (of a
   primitive type, `String`, or an enum type), which is right for `switch (count()) { case LOW:
-  }`, and leaves the rest to B3 (observation 24 in [names](semantic-names.md#observations)). So
-  the listed names are B3's in Ferrion (1,010) or, in 2, a `String` constant of the name in scope
-  where the selector is an enum (helidon's `case ENTITY ->`, with a `String ENTITY` inherited).
-  B3 resolves them from the selector's type.
-- **`static-import-overload`** (4,830, 4,743 of them in caffeine's generated code): a method named
-  alone that only static imports have, where several imported types declare methods of the name
-  (`filter` from both `Sets.*` and `Collections2.*`). JLS 15.12.1 gives no type to search; the
-  oracle's searched type is the declaring type of the overload javac chooses, and choosing is
-  B3's, so Ferrion gives the first import's type. Every listed name's file imports both types
-  statically.
+  }`, and leaves the rest to B3 (observation 24 in [names](semantic-names.md#observations)). The
+  comparison reads attribution's answers (`BodyTypes::resolved`), which settle them from the
+  selector's type; the 42 listed, 38 of them helidon's and 4 guava's, are switches on a call that
+  needs inference, which B3c types.
+- **`static-import-overload`** (4,830 for B2, 4,812 since B3b's attribution, 4,743 of them caffeine's,
+  and 69 guava's): a method named alone that only static imports have, where several imported types
+  declare methods of the name (`filter` from both `Sets.*` and `Collections2.*`). JLS 15.12.1 gives
+  no type to search; the oracle's searched type is the declaring type of the overload javac chooses,
+  so B2 gives the first import's type, and the comparison reads the method attribution chose. Every
+  one listed is a call with a generic candidate, which B3c chooses: caffeine's `assertThat`, from
+  Truth's generic overloads and its own subjects.
 - **`lombok-member`** (5, hertzbeat): a method Lombok generates, named qualified by its type
   (`QueryResult.builder()` for a `@Builder` class). On JDK 25, its lock's, Lombok runs, so javac
   has the method and searches `QueryResult`, while Ferrion sees no member Lombok generates and
@@ -570,7 +571,9 @@ work on the machine.
 | helidon | 1,092,038 | 1,091,381 | 657 | 0 | 11,198 | 188,574 | 3.4 s |
 | total | 4,199,479 | 4,193,632 | 5,847 | 0 | 51,780 | 648,173 | 11.1 s |
 
-Known differences by project: guava 21 `case-label` and 83 `static-import-overload`; caffeine
+(The table is B2's. With B3b's attribution read, on 3 November 2026: 4,192,580 matched, 4,859 known,
+0 mismatched, as [above](#known-differences) lists them.) B2's known differences by project: guava 21
+`case-label` and 83 `static-import-overload`; caffeine
 33 and 4,743; spring-data-jpa 22 `case-label`; lucene 279 `case-label` and 4
 `static-import-overload`; hertzbeat 5 `lombok-member`; helidon 657 `case-label`. 99.86% of the
 B2 names match; without caffeine's generated static-import calls, 99.97%. W6b's run, before the
