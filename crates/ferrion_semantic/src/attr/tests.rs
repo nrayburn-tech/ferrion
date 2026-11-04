@@ -447,6 +447,21 @@ fn fields_left_by_names() {
     assert_eq!(ty(&e, "ps[0].g"), "java/lang/Integer");
 }
 
+/// javac: `I.super` is the interface as a supertype of the class around it,
+/// `I<java/lang/String>` in `D implements I<String>` and `I<java/lang/Integer>` in an anonymous
+/// `new I<Integer>() { ... }`.
+#[test]
+fn qualified_super() {
+    let e = expressions(
+        "interface I<T> { default String p() { return \"i\"; } }\n\
+         class Q implements I<String> {\n\
+         public String p() { return I.super.p(); }\n\
+         Object m() { var x = new I<Integer>() { public String p() { return I.super.p(); } }; return x; } }",
+    );
+    assert_eq!(get(&e, "I.super", 0).ty, "I<java/lang/String>");
+    assert_eq!(get(&e, "I.super", 1).ty, "I<java/lang/Integer>");
+}
+
 /// A local class's members, and a local class's constant field.
 #[test]
 fn local_classes() {

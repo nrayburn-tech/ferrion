@@ -11,6 +11,7 @@
 //! field's `ConstantValue` attribute.
 
 mod literal;
+mod string;
 #[cfg(test)]
 mod tests;
 mod value;
@@ -18,9 +19,10 @@ mod value;
 use std::sync::Arc;
 
 use ferrion_syntax::ast::{self, AstNode};
-use ferrion_syntax::{SyntaxKind, SyntaxNode, SyntaxTree, WalkEvent};
+use ferrion_syntax::{SyntaxKind, SyntaxNode, SyntaxTree};
 
 pub use self::literal::literal_value;
+pub use self::string::JavaString;
 pub use self::value::{
     BinaryOp, Constant, UnaryOp, binary, double_hex, double_to_string, float_hex, float_to_string,
     unary,
@@ -117,7 +119,7 @@ fn compute(reads: &mut Reads<'_>, field: FieldRef) -> Result<Option<Constant>, C
     if !constant_shaped(initializer) {
         return Ok(None);
     }
-    let names = initializer_names(reads, located.file, &tree, initializer.id())?;
+    let names = initializer_names(reads, located.file, &tree, initializer.id(), located.index)?;
     let view = reads.snapshot.file(located.file)?.set;
     let mut walker = Walker::new(
         reads,
@@ -187,7 +189,8 @@ fn is_type_decl(kind: SyntaxKind) -> bool {
 }
 
 /// The initializer of the `field`th field of the summary's type at `index`: the type's node
-/// found as the summary was made (member types in pre-order), then its declarators in order.
+/// found by its path of member types from the top level, each the how-manieth member type of
+/// its outer type the summary says, then its declarators in order.
 fn initializer_node<'t>(
     tree: &'t SyntaxTree,
     summary: &Summary,
@@ -197,15 +200,49 @@ fn initializer_node<'t>(
 ) -> Option<SyntaxNode<'t>> {
     let root = tree.root();
     let compact = summary.kind == UnitKind::Compact;
-    let ty = if compact && index == 0 {
+    let mut path = Vec::new();
+    let mut next = Some(index);
+    while let Some(i) = next {
+        path.push(i);
+        next = summary.types[i].outer.map(|o| o as usize);
+    }
+    path.reverse();
+    let mut node = root;
+    let mut outer: Option<usize> = None;
+    for &i in &path {
+        if compact && i == 0 {
+            outer = Some(0);
+            continue;
+        }
+        // The member types declared before it beside it, and so the position among them.
+        let position = (0..i)
+            .filter(|&j| {
+                summary.types[j].outer.map(|o| o as usize) == outer
+                    && summary.types[j].kind != TypeKind::Implicit
+            })
+            .count();
+        let body = if node == root {
+            root
+        } else {
+            node.children()
+                .find(|c| matches!(c.kind(), SyntaxKind::ClassBody | SyntaxKind::EnumBody))?
+        };
+        let found = body
+            .children()
+            .filter(|c| is_type_decl(c.kind()))
+            .nth(position)?;
+        let header = Header::of(ast::TypeDecl::cast(found).unwrap());
+        let name = header.name.map_or(Name::EMPTY, |n| name_text(n, names));
+        if name != summary.types[i].name {
+            return None;
+        }
+        node = found;
+        outer = Some(i);
+    }
+    let body = if node == root {
         root
     } else {
-        type_node(root, summary, index, compact, names)?
-    };
-    let body = if ty == root {
-        root
-    } else {
-        ty.children()
+        node.children()
             .find(|c| matches!(c.kind(), SyntaxKind::ClassBody | SyntaxKind::EnumBody))?
     };
     let declarator = body
@@ -217,69 +254,4 @@ fn initializer_node<'t>(
         ast::VariableInitializer::Expr(e) => Some(e.syntax()),
         ast::VariableInitializer::ArrayInitializer(_) => None,
     }
-}
-
-fn type_node<'t>(
-    root: SyntaxNode<'t>,
-    summary: &Summary,
-    target: usize,
-    compact: bool,
-    names: &Interner,
-) -> Option<SyntaxNode<'t>> {
-    let mut stack: Vec<(ferrion_syntax::NodeId, usize)> = Vec::new();
-    let mut next = 0;
-    if compact {
-        stack.push((root.id(), 0));
-        next = 1;
-    }
-    let mut events = root.preorder();
-    while let Some(event) = events.next() {
-        match event {
-            WalkEvent::Enter(node) => {
-                let kind = node.kind();
-                if is_type_decl(kind) {
-                    let parent = node.parent()?;
-                    let top = stack.last().map(|t| t.0);
-                    let member = match parent.kind() {
-                        SyntaxKind::CompilationUnit => true,
-                        SyntaxKind::ClassBody | SyntaxKind::EnumBody => {
-                            parent.parent().is_some_and(|p| Some(p.id()) == top)
-                        }
-                        _ => false,
-                    };
-                    let outer = stack.last().map(|t| t.1);
-                    let header = Header::of(ast::TypeDecl::cast(node).unwrap());
-                    let name = header.name.map_or(Name::EMPTY, |n| name_text(n, names));
-                    let matches = member
-                        && summary.types.get(next).is_some_and(|t| {
-                            t.name == name && t.outer.map(|o| o as usize) == outer
-                        });
-                    if !matches {
-                        events.skip_subtree();
-                        continue;
-                    }
-                    if next == target {
-                        return Some(node);
-                    }
-                    stack.push((node.id(), next));
-                    next += 1;
-                } else if matches!(
-                    kind,
-                    SyntaxKind::Block
-                        | SyntaxKind::VariableDeclarator
-                        | SyntaxKind::AnnotationArguments
-                        | SyntaxKind::Arguments
-                ) {
-                    // Bodies declare no member types.
-                    events.skip_subtree();
-                }
-            }
-            WalkEvent::Leave(node) => {
-                if stack.last().is_some_and(|t| t.0 == node.id()) {
-                    stack.pop();
-                }
-            }
-        }
-    }
-    None
 }

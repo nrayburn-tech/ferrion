@@ -1077,7 +1077,11 @@ impl<'s, 'r> Walker<'s, 'r> {
             let t = self.cx.field_type(key, index)?;
             return Ok(self.expr(node.id(), t));
         }
-        let t = self.unknown(Why::Later);
+        // A selector without a type yet (a call's, W3's) leaves its labels waiting with it.
+        let why = selector
+            .and_then(|s| self.non_answer(s))
+            .unwrap_or(Why::Later);
+        let t = self.unknown(why);
         Ok(self.expr(node.id(), t))
     }
 
