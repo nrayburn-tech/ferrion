@@ -292,6 +292,11 @@ impl<'t> Ranges<'t> {
     /// so it goes with `int x;`, and `a(); /* c */ b();` keeps it after `a();`, so it goes with
     /// that. GJF counts a comment with the code on its line in the input.
     fn with_code_before(&self, comment: SyntaxToken<'t>) -> bool {
+        // Every range is affected, so its units don't matter, and the whole-file edits read below
+        // aren't defined: they would copy an error unit holding a region's start or end.
+        if self.pins_region.is_some() {
+            return false;
+        }
         let Some(previous) = comment.prev_token().and_then(piece_before) else {
             return false;
         };
