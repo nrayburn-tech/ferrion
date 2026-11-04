@@ -161,7 +161,8 @@ tools run.
   - unused single-type and single static imports removed, with usage detected from syntax and Javadoc references
     counting as usage;
   - imports of the file's own package removed;
-  - module, wildcard, and `java.lang` imports left alone;
+  - an import repeated after the first removed, whatever its kind;
+  - otherwise, module, wildcard, and `java.lang` imports left alone;
   - comments attached to an import move with it, and keep it from being removed;
   - comments attached to no import move to the top of the import section.
 - **Javadoc reformatting,** with re-indent-only fallback for comments that can't be reflowed safely.

@@ -18,8 +18,9 @@
 //!
 //! **Matching units.** Outside the change, the broken text is the clean text, shifted by the
 //! change after it, so a broken run is matched with the clean run that has the same tokens at
-//! the shifted offsets, the same kind of unit, and the same kinds of nodes around it, and whose
-//! range expands to the same span, comments included. A run without such a match is one whose
+//! the shifted offsets, the same kind of unit, and the same kinds of nodes around it, after the
+//! same kind of declaration if it starts with a `;`, and whose range expands to the same span,
+//! comments included. A run without such a match is one whose
 //! structure recovery shifted (a lost `}` puts what follows in another block, for example): it
 //! can't be compared, and the share of those is reported per category of the token broken.
 //!
@@ -42,7 +43,7 @@ use corpus::sources::Source;
 use ferrion_diagnostics::SourceText;
 use ferrion_formatter::invariants::{Expanded, Ranges, Run};
 use ferrion_formatter::{Edit, FormatOptions, apply_edits, verify_range};
-use ferrion_parser::syntax::SyntaxTree;
+use ferrion_parser::syntax::{SyntaxTree, TokenId};
 use ferrion_parser::{Parse, ParseOptions, Severity, SyntaxKind, parse};
 
 use crate::{Options, on_small_stack, percent};
@@ -583,6 +584,15 @@ fn check_mutation(
                     .ancestors()
                     .map(|n| n.kind())
                     .eq(tree.node(run.owner).ancestors().map(|n| n.kind()))
+                // Inside the unit too: a `for` deleted from `for (...) for (...) {` takes a level
+                // of indentation from the `}`, in the same unit.
+                || !clean_tree
+                    .token(clean_run.first)
+                    .parent()
+                    .ancestors()
+                    .map(|n| n.kind())
+                    .eq(tree.token(run.first).parent().ancestors().map(|n| n.kind()))
+                || closed_before(clean_tree, clean_run.first) != closed_before(tree, run.first)
             {
                 return None;
             }
@@ -650,6 +660,23 @@ fn check_mutation(
             failures.push(format!("verify_range for {range:?}: {violation}"));
         }
     }
+}
+
+/// The kind of the declaration whose `}` comes right before a `;`, `first`, which decides whether
+/// the `;` joins that line: an error can change the kind without touching either token, as `@`
+/// broken in `@interface`.
+fn closed_before(tree: &SyntaxTree, first: TokenId) -> Option<SyntaxKind> {
+    let first = tree.token(first);
+    if first.kind() != SyntaxKind::Semi {
+        return None;
+    }
+    let close = first
+        .prev_non_trivia()
+        .filter(|t| t.kind() == SyntaxKind::RBrace)?;
+    close
+        .parent()
+        .parent()
+        .map(|declaration| declaration.kind())
 }
 
 /// Compares the broken file's units, `expanded`, formatted with `edits` as `format_range` gave
