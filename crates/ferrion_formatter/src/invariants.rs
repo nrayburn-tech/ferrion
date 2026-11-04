@@ -1,6 +1,6 @@
 //! The safety properties on arbitrary input, for the `format` fuzz target in `fuzz/` and the
-//! tests of its reduced failures, and the doc comment reflow's, for the `javadoc` target. Not part
-//! of the public API.
+//! tests of its reduced failures, and the doc comment reflow's, for the `javadoc` and `markdown`
+//! targets. Not part of the public API.
 
 use std::ops::Range;
 use std::sync::Arc;
@@ -49,6 +49,63 @@ pub fn check_javadoc_reflow(bytes: &[u8]) -> Result<(), String> {
     let (before, after) = (
         verify::doc_comments::content(&comment),
         verify::doc_comments::content(&once),
+    );
+    if before != after {
+        return Err(format!(
+            "reflowing {comment:?} at column {column} changes its content: {before:?} to {after:?}"
+        ));
+    }
+    Ok(())
+}
+
+/// Reads `bytes` as the lines of a Markdown doc comment, each given a `///`, as the `markdown`
+/// fuzz target does, and, if the rules reflow it, checks the reflow at a column the first byte
+/// picks, as [`check_javadoc_reflow`] does: reflowing the result at the same column gives it
+/// again, and both have the input's content, as the comments check compares it.
+pub fn check_markdown_reflow(bytes: &[u8]) -> Result<(), String> {
+    let column = bytes.first().map_or(0, |&b| u32::from(b) % REFLOW_COLUMNS);
+    let content = match SourceText::decode(bytes) {
+        Ok(source) => source.text().to_owned(),
+        Err(_) => String::from_utf8_lossy(bytes).into_owned(),
+    };
+    if content.contains('\r') {
+        return Ok(());
+    }
+    let lines: Vec<String> = content
+        .split('\n')
+        .map(|line| format!("///{line}"))
+        .collect();
+    let comment = lines.join("\n");
+    // The spans of the comment's lines, each from its `///`.
+    let spans = |text: &str| -> Vec<ferrion_doc_comments::Span> {
+        let mut spans = Vec::new();
+        let mut at = 0;
+        for line in text.split('\n') {
+            let start = at + line.find("///").unwrap_or(0);
+            spans.push(ferrion_doc_comments::Span::new(
+                start as u32,
+                (at + line.len()) as u32,
+            ));
+            at += line.len() + 1;
+        }
+        spans
+    };
+    let reflow = |text: &str| -> Option<String> {
+        let layout = doc_comments::markdown::layout(text, &spans(text))?;
+        Some(doc_comments::markdown::render(&layout, text, column).join("\n"))
+    };
+    let Some(once) = reflow(&comment) else {
+        return Ok(());
+    };
+    let twice = reflow(&once).ok_or_else(|| format!("{once:?}, reflowed, isn't reflowed again"))?;
+    if twice != once {
+        return Err(format!(
+            "reflowing again at column {column} changes {once:?} to {twice:?}"
+        ));
+    }
+    let (before, after) = (
+        verify::doc_comments::markdown::content(&comment, &spans(&comment)),
+        verify::doc_comments::markdown::content(&once, &spans(&once)),
     );
     if before != after {
         return Err(format!(

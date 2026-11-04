@@ -1,0 +1,5 @@
+ Before   t
+@exception  Y  a  | b |
+ |--|--|
+
+ ae   fter   t
