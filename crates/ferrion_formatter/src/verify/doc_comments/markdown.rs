@@ -11,8 +11,8 @@
 //! may change is left out:
 //!
 //! - whitespace in text, line breaks included, is collapsed, outside code spans, fenced code,
-//!   tables, HTML blocks, and snippets, which are compared as written (as CommonMark reads a code
-//!   span, a line break in one is a space);
+//!   tables, HTML blocks, and snippets, which are compared as written apart from their lines'
+//!   trailing whitespace (as CommonMark reads a code span, a line break in one is a space);
 //! - an unclosed fence's trailing blank lines, since reflow closes the fence;
 //! - the line break after a word ending with a hyphen after a letter or digit, as GJF joins the
 //!   two words;
@@ -92,21 +92,29 @@ impl Markdown<'_> {
     }
 
     /// The source at `span`, on each line after the first without its whitespace and `///`, with
-    /// its whitespace collapsed.
+    /// its whitespace collapsed, and a line break after a word ending with a hyphen after a letter
+    /// or digit left out.
     fn source(&self, span: Span) -> String {
         let source = &self.text[span.start as usize..span.end as usize];
-        let lines: Vec<&str> = source
-            .split(['\n', '\r'])
-            .enumerate()
-            .map(|(i, line)| {
-                let trimmed = line.trim_start_matches(is_space);
-                match trimmed.strip_prefix("///") {
-                    Some(rest) if i > 0 => rest,
-                    _ => line,
-                }
-            })
-            .collect();
-        collapse(&lines.join(" "))
+        let mut joined = String::new();
+        for (i, line) in source.split(['\n', '\r']).enumerate() {
+            let trimmed = line.trim_start_matches(is_space);
+            let line = match trimmed.strip_prefix("///") {
+                Some(rest) if i > 0 => rest.trim_start_matches(is_space),
+                _ => line,
+            };
+            let end = joined.trim_end_matches(is_space).len();
+            joined.truncate(end);
+            let hyphen = joined
+                .strip_suffix('-')
+                .and_then(|before| before.chars().next_back())
+                .is_some_and(char::is_alphanumeric);
+            if i > 0 && !hyphen {
+                joined.push(' ');
+            }
+            joined.push_str(line);
+        }
+        collapse(&joined)
     }
 
     fn blocks(&mut self, blocks: &[Block]) {
@@ -146,7 +154,10 @@ impl Markdown<'_> {
             }
             Block::CodeBlock { info, text, .. } => {
                 self.token(&format!("code {info:?}"));
-                let mut lines: Vec<&str> = text.split('\n').collect();
+                let mut lines: Vec<&str> = text
+                    .split('\n')
+                    .map(|l| l.trim_end_matches(is_space))
+                    .collect();
                 while lines
                     .last()
                     .is_some_and(|l| l.trim_matches(is_space).is_empty())
@@ -160,9 +171,14 @@ impl Markdown<'_> {
                 let mut run = String::new();
                 for inline in content {
                     match inline {
+                        // The parse has no node for an empty line, and a line of whitespace
+                        // is one, once its trailing whitespace goes.
                         Inline::Html(line) => {
-                            run.push_str(line.text.trim_end_matches(is_blank));
-                            run.push('\n');
+                            let line = line.text.trim_end_matches(is_blank);
+                            if !line.is_empty() {
+                                run.push_str(line);
+                                run.push('\n');
+                            }
                         }
                         other => run.push_str(&self.source(other.span())),
                     }
@@ -198,63 +214,88 @@ impl Markdown<'_> {
         }
     }
 
-    /// Inline content: its text with whitespace collapsed outside copied runs, and its elements
-    /// as tokens.
+    /// Inline content: its text with whitespace collapsed, and its elements and copied runs.
     fn inlines(&mut self, content: &[Inline]) {
-        let mut text = String::new();
-        self.inline_text(content, &mut text);
-        let mut copied = false;
+        let mut pieces = Vec::new();
+        self.pieces(content, &mut pieces);
+        // Whether a space is owed before what comes next, and whether anything came yet.
         let mut space = false;
-        for c in text.trim_matches(is_blank).chars() {
-            match c {
-                '\u{2}' => copied = true,
-                '\u{3}' => copied = false,
-                _ => {}
-            }
-            if !copied && is_blank(c) {
-                space = true;
-                continue;
-            }
-            if space {
+        let mut started = false;
+        for piece in pieces {
+            let (open, text, close) = match &piece {
+                Piece::Text(text) => {
+                    for c in text.chars() {
+                        if is_blank(c) {
+                            space = started;
+                            continue;
+                        }
+                        if std::mem::take(&mut space) {
+                            self.out.push(' ');
+                        }
+                        self.out.push(c);
+                        started = true;
+                    }
+                    continue;
+                }
+                Piece::Copied(text) => ('\u{2}', text, '\u{3}'),
+                Piece::Token(text) => ('\u{1}', text, '\u{1}'),
+            };
+            if std::mem::take(&mut space) {
                 self.out.push(' ');
             }
-            space = false;
-            self.out.push(c);
+            self.out.push(open);
+            self.out.push_str(text);
+            self.out.push(close);
+            started = true;
         }
         self.out.push('\u{1}');
     }
 
-    fn inline_text(&self, content: &[Inline], out: &mut String) {
+    fn pieces(&self, content: &[Inline], out: &mut Vec<Piece>) {
+        let mut previous: Option<&Inline> = None;
         for inline in content {
+            // Inline HTML written across lines is a node per line, with no line break between.
+            if let (Some(Inline::Html(before)), Inline::Html(text)) = (previous, inline)
+                && self
+                    .text
+                    .get(before.span.end as usize..text.span.start as usize)
+                    .is_some_and(|gap| gap.contains(['\n', '\r']))
+            {
+                out.push(Piece::Text("\n".to_owned()));
+            }
+            previous = Some(inline);
             match inline {
-                Inline::Text(text) | Inline::Html(text) => out.push_str(&text.text),
-                Inline::Code(text) => {
-                    out.push('\u{2}');
-                    out.push_str(&text.text);
-                    out.push('\u{3}');
-                }
+                Inline::Text(text) | Inline::Html(text) => out.push(Piece::Text(text.text.clone())),
+                Inline::Code(text) => out.push(Piece::Copied(text.text.clone())),
                 Inline::SoftBreak(_) => {
-                    let trimmed = out.trim_end_matches(is_space);
-                    let hyphen = trimmed
-                        .strip_suffix('-')
-                        .and_then(|before| before.chars().next_back())
-                        .is_some_and(char::is_alphanumeric);
-                    if hyphen {
-                        out.truncate(trimmed.len());
-                    } else {
-                        out.push('\n');
+                    let joined = match out.last_mut() {
+                        Some(Piece::Text(text)) => {
+                            let trimmed = text.trim_end_matches(is_space).len();
+                            let hyphen = text[..trimmed]
+                                .strip_suffix('-')
+                                .and_then(|before| before.chars().next_back())
+                                .is_some_and(char::is_alphanumeric);
+                            if hyphen {
+                                text.truncate(trimmed);
+                            }
+                            hyphen
+                        }
+                        _ => false,
+                    };
+                    if !joined {
+                        out.push(Piece::Text("\n".to_owned()));
                     }
                 }
-                Inline::HardBreak(_) => out.push_str("\u{1}br\u{1}"),
+                Inline::HardBreak(_) => out.push(Piece::Token("br".to_owned())),
                 Inline::Emphasis { content, .. } => {
-                    out.push_str("\u{1}em\u{1}");
-                    self.inline_text(content, out);
-                    out.push_str("\u{1}/em\u{1}");
+                    out.push(Piece::Token("em".to_owned()));
+                    self.pieces(content, out);
+                    out.push(Piece::Token("/em".to_owned()));
                 }
                 Inline::Strong { content, .. } => {
-                    out.push_str("\u{1}strong\u{1}");
-                    self.inline_text(content, out);
-                    out.push_str("\u{1}/strong\u{1}");
+                    out.push(Piece::Token("strong".to_owned()));
+                    self.pieces(content, out);
+                    out.push(Piece::Token("/strong".to_owned()));
                 }
                 Inline::Link {
                     kind,
@@ -265,14 +306,12 @@ impl Markdown<'_> {
                 } => {
                     let target = match target {
                         LinkTarget::Url(url) => url.clone(),
-                        LinkTarget::Element(reference) => reference.text.clone(),
+                        LinkTarget::Element(reference) => collapse(&reference.text),
                     };
-                    out.push_str(&format!(
-                        "\u{1}a {kind:?} {target} {}\u{1}",
-                        collapse(title)
-                    ));
-                    self.inline_text(content, out);
-                    out.push_str("\u{1}/a\u{1}");
+                    let title = collapse(title);
+                    out.push(Piece::Token(format!("a {kind:?} {target} {title}")));
+                    self.pieces(content, out);
+                    out.push(Piece::Token("/a".to_owned()));
                 }
                 Inline::Image {
                     kind,
@@ -281,26 +320,30 @@ impl Markdown<'_> {
                     content,
                     ..
                 } => {
-                    out.push_str(&format!(
-                        "\u{1}img {kind:?} {destination} {}\u{1}",
-                        collapse(title)
-                    ));
-                    self.inline_text(content, out);
-                    out.push_str("\u{1}/img\u{1}");
+                    let title = collapse(title);
+                    out.push(Piece::Token(format!("img {kind:?} {destination} {title}")));
+                    self.pieces(content, out);
+                    out.push(Piece::Token("/img".to_owned()));
                 }
                 Inline::Tag(tag) => {
                     if matches!(tag.content, InlineTagContent::Snippet(_)) {
                         // Copied as written: its lines matter.
-                        out.push('\u{2}');
-                        out.push_str(&self.text[tag.span.start as usize..tag.span.end as usize]);
-                        out.push('\u{3}');
+                        let snippet = &self.text[tag.span.start as usize..tag.span.end as usize];
+                        out.push(Piece::Copied(snippet.to_owned()));
                     } else {
-                        out.push_str(&format!("\u{1}{}\u{1}", self.source(tag.span)));
+                        out.push(Piece::Token(self.source(tag.span)));
                     }
                 }
             }
         }
     }
+}
+
+/// A part of inline content: text, whose whitespace is collapsed, a copied run, or an element.
+enum Piece {
+    Text(String),
+    Copied(String),
+    Token(String),
 }
 
 #[cfg(test)]
