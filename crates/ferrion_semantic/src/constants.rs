@@ -200,7 +200,10 @@ struct BodyTable {
 /// tree alone, and read as the entry reads the tree, so it isn't a dependency of anything; a tree
 /// parsed again makes a new one.
 #[derive(Debug, Default)]
-pub(crate) struct BodyTables(Mutex<Map<(FileId, NodeId), (Weak<SyntaxTree>, Arc<BodyTable>)>>);
+pub(crate) struct BodyTables(Mutex<Map<(FileId, NodeId), MadeTable>>);
+
+/// A table, with the tree it was made from.
+type MadeTable = (Weak<SyntaxTree>, Arc<BodyTable>);
 
 /// How many members a body has before it gets a table: a walk over fewer costs less than a lookup
 /// is worth.
@@ -221,9 +224,7 @@ impl BodyTables {
         {
             return Some(table.clone());
         }
-        if body.children().nth(TABLE_ABOVE).is_none() {
-            return None;
-        }
+        body.children().nth(TABLE_ABOVE)?;
         let table = Arc::new(BodyTable {
             types: body
                 .children()

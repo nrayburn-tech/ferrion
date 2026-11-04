@@ -128,7 +128,11 @@ impl TypeContext<'_> {
         // Each operand's supertypes, by candidate: every parameterization of each class.
         let mut closures: Vec<Map<Candidate, Vec<TypeId>>> = Vec::with_capacity(operands.len());
         for &t in operands {
-            closures.push(self.closure(t)?);
+            match self.closure(t)? {
+                Ok(closure) => closures.push(closure),
+                // What it can't see could be a common supertype: no answer, rather than a guess.
+                Err(why) => return Ok(self.arena.unknown(why)),
+            }
         }
         let mut common: Vec<Candidate> = closures[0]
             .keys()
@@ -199,7 +203,7 @@ impl TypeContext<'_> {
 
     /// A type's supertypes, itself included, by candidate, each with the parameterizations
     /// found; `Object` is among every reference type's.
-    fn closure(&mut self, t: TypeId) -> R<Map<Candidate, Vec<TypeId>>> {
+    fn closure(&mut self, t: TypeId) -> R<Result<Map<Candidate, Vec<TypeId>>, Why>> {
         let mut out: Map<Candidate, Vec<TypeId>> = Map::default();
         let mut pending = vec![t];
         let mut seen = Vec::new();
@@ -217,10 +221,17 @@ impl TypeContext<'_> {
                     out.entry(Candidate::Var(t)).or_default().push(t);
                 }
                 Type::Intersection(_) | Type::Array(_) => {}
-                _ => continue,
+                _ => {
+                    if let Some(why) = self.arena.non_answer(t) {
+                        return Ok(Err(why));
+                    }
+                    continue;
+                }
             }
-            if let Tri::Yes(supers) = self.direct_supertypes_(t)? {
-                pending.extend(supers);
+            match self.direct_supertypes_(t)? {
+                Tri::Yes(supers) => pending.extend(supers),
+                Tri::Unknown(why) => return Ok(Err(why)),
+                Tri::No => {}
             }
         }
         if let Some(object) = self.object()?
@@ -231,7 +242,7 @@ impl TypeContext<'_> {
                 entry.push(object);
             }
         }
-        Ok(out)
+        Ok(Ok(out))
     }
 
     /// The least containing invocation of two parameterizations of one class (JLS 4.10.4).
