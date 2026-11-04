@@ -293,6 +293,20 @@ impl TypeContext<'_> {
             Tri::Unknown(why) => return Ok(Tri::Unknown(why)),
             Tri::No => {}
         }
+        // Unchecked conversion of an array of a raw type to one of a parameterized type (JLS
+        // 5.1.9; observed: `Class[]` passed as `Class<?>...`).
+        if let (Type::Array(a), Type::Array(b)) = (tf, tt)
+            && self.arena.is_reference(a)
+            && self.arena.is_reference(b)
+        {
+            match self.convert_(Context::StrictInvocation, a, b, None)? {
+                Tri::Yes(steps) if steps.as_slice().contains(&Unchecked) => {
+                    return Ok(yes(&[Unchecked]));
+                }
+                Tri::Unknown(why) => return Ok(Tri::Unknown(why)),
+                _ => {}
+            }
+        }
         // Unchecked conversion (JLS 5.1.9): a raw type's class a subclass of a parameterized
         // type's, after a widening reference conversion.
         if let Type::Class { key, .. } = tt

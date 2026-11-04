@@ -36,7 +36,7 @@ pub(crate) struct Decl {
 
 /// A method's or field's modifiers, as far as the relations need them.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
-pub(crate) struct Flags(u8);
+pub(crate) struct Flags(u16);
 
 impl Flags {
     pub const STATIC: Flags = Flags(1);
@@ -47,6 +47,7 @@ impl Flags {
     pub const VARARGS: Flags = Flags(32);
     pub const CONSTRUCTOR: Flags = Flags(64);
     pub const FINAL: Flags = Flags(128);
+    pub const NATIVE: Flags = Flags(256);
 
     pub fn has(self, flag: Flags) -> bool {
         self.0 & flag.0 != 0
@@ -118,6 +119,7 @@ fn access_flags(access: u16) -> Flags {
         .with(Flags::ABSTRACT, f.contains(F::ABSTRACT))
         .with(Flags::VARARGS, f.contains(F::VARARGS))
         .with(Flags::FINAL, f.contains(F::FINAL))
+        .with(Flags::NATIVE, f.contains(F::NATIVE))
 }
 
 impl Decl {
@@ -217,6 +219,14 @@ impl Decl {
                 let mut flags = modifier_flags(m.modifiers)
                     .with(Flags::VARARGS, m.varargs)
                     .with(Flags::CONSTRUCTOR, constructor);
+                if constructor && m.implicit {
+                    // A default or canonical constructor has its class's access (JLS 8.8.9,
+                    // 8.10.4).
+                    let class = modifier_flags(e.modifiers);
+                    for access in [Flags::PUBLIC, Flags::PROTECTED, Flags::PRIVATE] {
+                        flags = flags.with(access, class.has(access));
+                    }
+                }
                 if interface {
                     // An interface's methods are public, and abstract unless they have a body:
                     // static, default, and private ones do (JLS 9.4).

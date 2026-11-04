@@ -158,7 +158,8 @@ pub(crate) fn compute<'s>(
         return Ok(cyclic());
     };
     let names = reads.snapshot.names().clone();
-    let package = package_of(key, &names);
+    // A local class's package is the one its top level class is in.
+    let package = package_of(cx.outermost(key)?, &names);
     let mut incomplete = decl.incomplete;
     let this = cx.declared_type(key)?;
 
@@ -290,15 +291,25 @@ pub(crate) fn compute<'s>(
     for (parent, table, superclass) in &parents {
         for (name, methods) in table.methods.iter() {
             for m in methods.iter() {
+                // A supertype's table is of its own source set's view.
+                let Some(method) = cx.method_in_view(m.method)? else {
+                    continue;
+                };
+                let m = MemberMethod {
+                    method,
+                    through: m.through,
+                };
                 let Some(info) = cx.method_info(m.method)? else {
                     continue;
                 };
                 // Private methods and an interface's static methods aren't inherited, nor a
                 // package-access method of another package; through an interface, only
                 // `Object`'s public instance methods are (JLS 8.4.8, 9.2, 9.4.1).
+                let other_package = info.package_access
+                    && package_of(cx.outermost(m.method.owner)?, &names) != package;
                 if info.is_private
                     || (info.is_static && info.interface)
-                    || (info.package_access && package_of(m.method.owner, &names) != package)
+                    || other_package
                     || (object_methods && (!info.is_public || info.is_static))
                 {
                     continue;
@@ -325,7 +336,12 @@ pub(crate) fn compute<'s>(
             .iter()
             .find(|(n, _)| *n == name)
             .map_or(0, |(_, c)| *c);
-        let kept = prune(cx, this, &candidates, declared)?;
+        // Each name's comparisons on their own budget: a type like jedis's `Jedis` has thousands
+        // of methods, whose names have nothing to do with one another. Running out keeps methods
+        // an overrider could have removed, so the table can't be trusted (it has no answers).
+        cx.refuel(crate::types::DEFAULT_FUEL);
+        let kept = prune(cx, this, decl.interface, &candidates, declared)?;
+        incomplete |= cx.out_of_fuel();
         methods.push((name, kept.into_boxed_slice()));
     }
     methods.sort_by_key(|(n, _)| *n);
@@ -344,6 +360,7 @@ pub(crate) fn compute<'s>(
 fn prune(
     cx: &mut TypeContext<'_>,
     this: TypeId,
+    interface: bool,
     candidates: &[Candidate],
     declared: usize,
 ) -> Result<Vec<MemberMethod>, Cancelled> {
@@ -358,6 +375,7 @@ fn prune(
             _ => None,
         });
     }
+    let object = cx.lang("java/lang/Object")?;
     let mut kept = vec![true; candidates.len()];
     let sub = |cx: &mut TypeContext<'_>, a: usize, b: usize| -> Result<bool, Cancelled> {
         match (&types[a], &types[b]) {
@@ -385,8 +403,16 @@ fn prune(
             }
             let other = candidates[j];
             let other_owner = other.member.method.owner;
-            // Overridden from a subtype of its owner.
-            if other_owner != owner && cx.is_subclass(other_owner, owner)? && sub(cx, j, i)? {
+            // Overridden from a subtype of its owner. Only in an interface does an interface's
+            // method override `Object`'s (observed: `toString()` of an interface extending
+            // `CharSequence` and another is `CharSequence`'s); in a class, `Object`'s stays over
+            // an abstract one (JLS 8.4.8.4).
+            let overrides = if other.interface && Some(owner) == object {
+                interface
+            } else {
+                cx.is_subclass(other_owner, owner)?
+            };
+            if other_owner != owner && overrides && sub(cx, j, i)? {
                 kept[i] = false;
                 break;
             }

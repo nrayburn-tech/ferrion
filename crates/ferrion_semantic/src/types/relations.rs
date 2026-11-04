@@ -1059,6 +1059,72 @@ impl TypeContext<'_> {
         })
     }
 
+    /// A generic method's type as seen from `of` (`None` for its declared type) with `args` as its
+    /// type arguments: its type parameters replaced and gone. `No` if an argument is outside its
+    /// parameter's bound (JLS 15.12.2.2). Yes says whether a bound needed an unchecked conversion,
+    /// which javac counts as one for the method's result (observed:
+    /// `Comparator.<Comparable>naturalOrder()` is `()java/util/Comparator`).
+    pub fn method_with_arguments(
+        &mut self,
+        of: Option<TypeId>,
+        m: &MethodType,
+        args: &[TypeId],
+    ) -> Result<Tri<(MethodType, bool)>, Cancelled> {
+        self.top(
+            |_| Tri::Unknown(Why::Limit),
+            |cx| {
+                let mut subst = Subst::default();
+                let mut vars = Vec::with_capacity(args.len());
+                for (&var, &arg) in m.type_params.iter().zip(args) {
+                    if let Type::Var(owner, index) = cx.arena.get(var) {
+                        subst.push(owner, index, arg);
+                        vars.push((owner, index, arg));
+                    }
+                }
+                // The bounds, which can name the class's type variables too.
+                let view = match (of, vars.first()) {
+                    (Some(of), Some(&(TypeVarOwner::Method(owner, _), ..))) => {
+                        match cx.seen_from(of, owner, false)? {
+                            Tri::Yes(view) => Some(view),
+                            _ => None,
+                        }
+                    }
+                    _ => None,
+                };
+                let mut unknown = None;
+                let mut unchecked = false;
+                for (owner, index, arg) in vars {
+                    for bound in cx.var_bounds(owner, index)?.to_vec() {
+                        let bound = match &view {
+                            Some(View::Substituted(s)) => cx.subst(bound, s)?,
+                            Some(View::Erased) => cx.erasure_(bound)?,
+                            _ => bound,
+                        };
+                        let bound = cx.subst(bound, &subst)?;
+                        let answer =
+                            cx.convert_(super::Context::StrictInvocation, arg, bound, None)?;
+                        match answer {
+                            Tri::Yes(steps) => {
+                                unchecked |=
+                                    steps.as_slice().contains(&super::Conversion::Unchecked);
+                            }
+                            Tri::No => return Ok(Tri::No),
+                            Tri::Unknown(why) => {
+                                unknown.get_or_insert(why);
+                            }
+                        }
+                    }
+                }
+                if let Some(why) = unknown {
+                    return Ok(Tri::Unknown(why));
+                }
+                let mut out = cx.subst_method(m, &subst)?;
+                out.type_params.clear();
+                Ok(Tri::Yes((out, unchecked)))
+            },
+        )
+    }
+
     pub(crate) fn subst_method(&mut self, m: &MethodType, subst: &Subst) -> R<MethodType> {
         let mut out = MethodType {
             type_params: m.type_params.clone(),
