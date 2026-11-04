@@ -85,6 +85,8 @@ pub struct Excluded {
     pub unanalyzed: u64,
     /// Ferrion's results for the source set failed.
     pub ferrion_failures: u64,
+    /// A file a processor generated, whose text isn't what the cached run of javac saw.
+    pub stale_generated: u64,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
@@ -153,6 +155,7 @@ impl Tally {
         e.module_declarations += o.module_declarations;
         e.unanalyzed += o.unanalyzed;
         e.ferrion_failures += o.ferrion_failures;
+        e.stale_generated += o.stale_generated;
         self.compared_files += other.compared_files;
         self.lombok_types += other.lombok_types;
         for (part, count) in &other.names {
@@ -245,6 +248,8 @@ pub struct Report {
     pub mismatches: Vec<MismatchRow>,
     /// Files javac threw on, with the exception.
     pub crashes: Vec<(String, String)>,
+    /// Files processors generated whose text isn't what the cached run of javac saw.
+    pub stale_generated: Vec<String>,
     /// Files left out for javac's errors, with the first.
     pub errors: Vec<(String, String)>,
     pub wall_seconds: f64,
@@ -312,7 +317,8 @@ impl Report {
              left out: {} with javac errors ({} of them generated, {} module declarations, {} in \
              source sets that read Lombok-annotated types from source, where Lombok doesn't run, \
              until B4), {} javac never analyzed, {} javac crashed on, {} module declarations not \
-             compiled, {} in source sets Ferrion failed on; {} Lombok types left out",
+             compiled, {} in source sets Ferrion failed on, {} generated with other text than \
+             javac's cached run saw; {} Lombok types left out",
             t.files - t.generated_files,
             t.generated_files,
             t.module_declarations,
@@ -324,6 +330,7 @@ impl Report {
             t.excluded.crashes,
             t.excluded.module_declarations,
             t.excluded.ferrion_failures,
+            t.excluded.stale_generated,
             t.lombok_types
         )
         .unwrap();
@@ -417,6 +424,14 @@ impl Report {
                 )
                 .unwrap();
             }
+        }
+        for file in self.stale_generated.iter().take(limit) {
+            writeln!(
+                out,
+                "\nSTALE {file}: not the text javac's cached run saw (docs/design/\
+                 types-oracle-normalization.md#generated-text-that-changes)"
+            )
+            .unwrap();
         }
         for (file, crash) in self.crashes.iter().take(limit) {
             writeln!(out, "\ncrash {file}: {crash}").unwrap();

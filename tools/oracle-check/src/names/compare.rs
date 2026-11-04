@@ -303,6 +303,30 @@ impl Known {
     }
 }
 
+/// Whether javac's names for a file could be trees of `text`: a field's or method's name ends at
+/// its range's end. Annotation processors can write a different text from the same inputs, and a
+/// cached run says nothing of the text it saw
+/// (docs/design/types-oracle-normalization.md#generated-text-that-changes).
+pub fn fits_text(file: &FileOutput, text: &str) -> bool {
+    let units: Vec<u16> = text.encode_utf16().collect();
+    file.names.iter().all(|name| {
+        let member = name
+            .key
+            .strip_prefix("field ")
+            .or_else(|| name.key.strip_prefix("method "))
+            .map(|rest| rest.split('(').next().unwrap_or(rest))
+            .and_then(|owner_and_name| owner_and_name.rsplit('.').next())
+            .filter(|member| *member != "<init>");
+        let (Some(member), Ok(end)) = (member, usize::try_from(name.end)) else {
+            return true;
+        };
+        let member: Vec<u16> = member.encode_utf16().collect();
+        end.checked_sub(member.len())
+            .and_then(|start| units.get(start..end))
+            .is_some_and(|tree| tree == member)
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use ferrion_diagnostics::{SourceText, Span};
@@ -432,5 +456,27 @@ mod tests {
         );
         assert!(Known::parse("other a/B.java 1-2\n").is_err());
         assert!(Known::load().is_ok());
+    }
+
+    #[test]
+    fn names_that_cannot_be_trees_of_the_text() {
+        let file = |names| FileOutput {
+            names,
+            ..FileOutput::default()
+        };
+        let text = "RTYPE_2 = a.RTYPE_3.m();";
+        let fits = |key: &str, start, end| {
+            fits_text(&file(vec![name(start, end, "expression", "-", key)]), text)
+        };
+        assert!(fits("field p/A.RTYPE_2", 0, 7));
+        assert!(fits("field p/A.RTYPE_3", 10, 19));
+        assert!(fits("method p/B.m()V", 10, 21));
+        assert!(fits("type p/A source x", 0, 7));
+        assert!(fits("method p/B.<init>()V", 10, 21));
+        // Without an end, it was made up.
+        assert!(fits("field p/A.other", 0, -1));
+        assert!(!fits("field p/A.RTYPE_3", 0, 7));
+        assert!(!fits("method p/B.n()V", 10, 21));
+        assert!(!fits("field p/A.RTYPE_2", 0, 700));
     }
 }
