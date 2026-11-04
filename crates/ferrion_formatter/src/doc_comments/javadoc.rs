@@ -23,6 +23,7 @@ use ferrion_doc_comments::{
     parse_javadoc,
 };
 
+use super::markdown::argument_span;
 use super::{Columns, Glue, Layout, Paragraph, Segment, Word, WordText, fill};
 use crate::document::{LINE_WIDTH, width};
 use crate::printer::trim_end;
@@ -42,8 +43,9 @@ pub fn reflows(text: &str) -> bool {
 /// The layout of the traditional doc comment at `start..end` of `text`, or `None` if it isn't
 /// reflowed: see [`reflows`], and the fallback rules in the design, plus what the layout can't
 /// keep safely (Unicode escapes for anything but letters and digits, `@` escapes, malformed
-/// arguments and references, an element the rules place written across lines, and a word starting
-/// with `@` that a rule would put at the start of a line, where it would become a block tag).
+/// arguments and references, an argument over a blank line, an element the rules place written
+/// across lines, and a word starting with `@` that a rule would put at the start of a line, where
+/// it would become a block tag).
 pub fn layout(text: &str, start: u32, end: u32) -> Option<Layout> {
     let comment = text.get(start as usize..end as usize)?;
     if !reflows(comment) || has_escape(comment) {
@@ -66,6 +68,22 @@ pub fn layout(text: &str, start: u32, end: u32) -> Option<Layout> {
         return None;
     }
     let lines = content_lines(text, start, end);
+    // An argument over a blank line: the blank line would become a `<p>` inside it, which reads
+    // back as another argument.
+    let is_blank = |&(from, to): &(u32, u32)| text[from as usize..to as usize].trim().is_empty();
+    if javadoc.tags.iter().any(|tag| {
+        tag.argument
+            .as_ref()
+            .map(argument_span)
+            .is_some_and(|span| {
+                lines
+                    .iter()
+                    .filter(|line| span.start <= line.0 && line.1 <= span.end)
+                    .any(is_blank)
+            })
+    }) {
+        return None;
+    }
     let mut marks = Vec::new();
     // Quoted strings, which end at the end of their line, so the fill never breaks in one.
     let mut quoted = Vec::new();
