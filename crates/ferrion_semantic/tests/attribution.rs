@@ -93,6 +93,32 @@ fn a_body_edit_recomputes_its_own_file_only() {
     assert_eq!(dumps, attribute(&fresh).1);
 }
 
+/// A class of enough fields that finding an initializer reads a table of them: the table is of the
+/// tree it was made from, so an edit that moves a field, or adds a member type before a nested
+/// class with constants of its own, reads the new tree's.
+#[test]
+fn many_fields_are_found_through_edits() {
+    let class = |first: &str| {
+        let mut text = format!("package p;\nclass Many {{\n{first}");
+        for i in 0..400 {
+            text.push_str(&format!("    static final int F{i} = {i};\n"));
+        }
+        text.push_str("    static class In { static final int K = F7 * 2; }\n");
+        text.push_str("    int a = F399 + In.K;\n}\n");
+        text
+    };
+    let engine = Engine::new(project(&[("p/Many.java", &class(""))]));
+    let (_, dumps) = attribute(&engine);
+    assert!(dumps[0].contains("`F399 + In.K`: int = int 413"));
+    let many = file(&engine, 0);
+    let moved = class("    static class Before { }\n    static final int F7B = 3, F8B = 4;\n");
+    engine.set_text(many, Arc::from(moved.as_str()));
+    let (_, dumps) = attribute(&engine);
+    assert!(dumps[0].contains("`F399 + In.K`: int = int 413"));
+    let fresh = Engine::new(project(&[("p/Many.java", &moved)]));
+    assert_eq!(attribute(&fresh).1, dumps);
+}
+
 #[test]
 fn a_constant_edit_reaches_the_files_that_use_it() {
     let engine = Engine::new(project(FILES));

@@ -328,3 +328,56 @@ fn long_chains_of_supertypes() {
         );
     });
 }
+
+/// A class of very many constants, each reading the one before it and each read by an initializer
+/// of its own: how long a release build takes (`cargo test --release -p ferrion_semantic --test
+/// deep many_constants -- --ignored --nocapture`).
+#[test]
+#[ignore = "a measurement, for a release build"]
+fn many_constants() {
+    for constants in [5_000, 12_500, 25_000, 50_000] {
+        let mut text = String::from("package p;\nclass K {\n  static final int C0 = 1;\n");
+        for i in 1..constants {
+            text.push_str(&format!("  static final int C{i} = C{} + 1;\n", i - 1));
+        }
+        text.push_str(&format!("  int last = C{};\n}}\n", constants - 1));
+        let mut chained = 0.0;
+        for reverse in [false, true] {
+            let text = if reverse {
+                // Each constant on its own, from a literal, none reading another.
+                let mut own = String::from("package p;\nclass K {\n");
+                for i in 0..constants {
+                    own.push_str(&format!("  static final int C{i} = {i};\n"));
+                }
+                own.push_str("  int f() { return 0");
+                for i in (0..constants).step_by(10) {
+                    own.push_str(&format!(" + C{i}"));
+                }
+                own.push_str("; }\n}\n");
+                own
+            } else {
+                text.clone()
+            };
+            let run = std::thread::Builder::new()
+                .stack_size(256 * 1024)
+                .spawn(move || {
+                    let engine = engine(vec![("p/K.java".to_owned(), text)]);
+                    let snapshot = engine.snapshot();
+                    let view = snapshot.source_sets().unwrap()[0];
+                    let file = snapshot.files(view).unwrap()[0];
+                    snapshot.body_names(file).unwrap();
+                    let start = Instant::now();
+                    let types = snapshot.body_types(file).unwrap();
+                    assert!(!types.constants.is_empty());
+                    start.elapsed().as_secs_f64()
+                })
+                .unwrap();
+            let seconds = run.join().unwrap();
+            if reverse {
+                println!("{constants}: chained {chained:.2} s, each alone {seconds:.2} s");
+            } else {
+                chained = seconds;
+            }
+        }
+    }
+}

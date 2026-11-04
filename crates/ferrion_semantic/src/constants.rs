@@ -16,10 +16,10 @@ mod string;
 mod tests;
 mod value;
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, Weak};
 
 use ferrion_syntax::ast::{self, AstNode};
-use ferrion_syntax::{SyntaxKind, SyntaxNode, SyntaxTree};
+use ferrion_syntax::{NodeId, SyntaxKind, SyntaxNode, SyntaxTree};
 
 pub use self::literal::literal_value;
 pub use self::string::JavaString;
@@ -29,12 +29,12 @@ pub use self::value::{
 };
 
 use crate::attr::Walker;
-use crate::body::initializer_names;
+use crate::body::{Map, initializer_names};
 use crate::engine::derived::{Dep, Memo, Reads};
 use crate::summary::{Header, Modifiers, Summary, TypeKind, UnitKind, name_text};
 use crate::symbols::{FieldKind, FieldRef, TypeKey};
 use crate::types::{Context, Tri, Type};
-use crate::{Cancelled, Fingerprint, Interner, Name, Snapshot};
+use crate::{Cancelled, FileId, Fingerprint, Interner, Name, Snapshot};
 
 impl Snapshot {
     /// A field's constant value, or `None` if it isn't a constant variable (JLS 4.12.4). A local
@@ -112,7 +112,16 @@ fn compute(reads: &mut Reads<'_>, field: FieldRef) -> Result<Option<Constant>, C
     // The text isn't recorded: the summary is, and it has the initializer's fingerprint.
     let tree = reads.snapshot.tree(located.file)?;
     let names = reads.snapshot.names().clone();
-    let found = initializer_node(&tree, &located.summary, located.index, field.index, &names);
+    let tables = &reads.snapshot.shared().body_tables;
+    let found = initializer_node(
+        tables,
+        located.file,
+        &tree,
+        &located.summary,
+        located.index,
+        field.index,
+        &names,
+    );
     let Some(initializer) = found else {
         return Ok(None);
     };
@@ -179,11 +188,69 @@ fn is_type_decl(kind: SyntaxKind) -> bool {
     )
 }
 
+/// A class body's member types and field declarators, in order.
+#[derive(Debug)]
+struct BodyTable {
+    types: Box<[NodeId]>,
+    declarators: Box<[NodeId]>,
+}
+
+/// The tables of the bodies with many members, each with the tree it was made from: finding a
+/// constant's initializer is otherwise a walk over its class's members, per constant. Made from the
+/// tree alone, and read as the entry reads the tree, so it isn't a dependency of anything; a tree
+/// parsed again makes a new one.
+#[derive(Debug, Default)]
+pub(crate) struct BodyTables(Mutex<Map<(FileId, NodeId), (Weak<SyntaxTree>, Arc<BodyTable>)>>);
+
+/// How many members a body has before it gets a table: a walk over fewer costs less than a lookup
+/// is worth.
+const TABLE_ABOVE: usize = 256;
+
+impl BodyTables {
+    /// `body`'s table, if it has one or has many members.
+    fn of(
+        &self,
+        file: FileId,
+        tree: &Arc<SyntaxTree>,
+        body: SyntaxNode<'_>,
+    ) -> Option<Arc<BodyTable>> {
+        let key = (file, body.id());
+        let mut tables = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some((made_from, table)) = tables.get(&key)
+            && std::ptr::eq(made_from.as_ptr(), Arc::as_ptr(tree))
+        {
+            return Some(table.clone());
+        }
+        if body.children().nth(TABLE_ABOVE).is_none() {
+            return None;
+        }
+        let table = Arc::new(BodyTable {
+            types: body
+                .children()
+                .filter(|c| is_type_decl(c.kind()))
+                .map(|c| c.id())
+                .collect(),
+            declarators: declarators(body).map(|d| d.syntax().id()).collect(),
+        });
+        tables.insert(key, (Arc::downgrade(tree), table.clone()));
+        Some(table)
+    }
+}
+
+/// A class body's field declarators, in order.
+fn declarators<'t>(body: SyntaxNode<'t>) -> impl Iterator<Item = ast::VariableDeclarator<'t>> {
+    body.children()
+        .filter(|c| c.kind() == SyntaxKind::FieldDecl)
+        .flat_map(|d| ast::FieldDecl::cast(d).unwrap().declarators())
+}
+
 /// The initializer of the `field`th field of the summary's type at `index`: the type's node
 /// found by its path of member types from the top level, each the how-manieth member type of
 /// its outer type the summary says, then its declarators in order.
 fn initializer_node<'t>(
-    tree: &'t SyntaxTree,
+    tables: &BodyTables,
+    file: FileId,
+    tree: &'t Arc<SyntaxTree>,
     summary: &Summary,
     index: usize,
     field: u32,
@@ -218,10 +285,13 @@ fn initializer_node<'t>(
             node.children()
                 .find(|c| matches!(c.kind(), SyntaxKind::ClassBody | SyntaxKind::EnumBody))?
         };
-        let found = body
-            .children()
-            .filter(|c| is_type_decl(c.kind()))
-            .nth(position)?;
+        let found = match tables.of(file, tree, body) {
+            Some(table) => tree.node(*table.types.get(position)?),
+            None => body
+                .children()
+                .filter(|c| is_type_decl(c.kind()))
+                .nth(position)?,
+        };
         let header = Header::of(ast::TypeDecl::cast(found).unwrap());
         let name = header.name.map_or(Name::EMPTY, |n| name_text(n, names));
         if name != summary.types[i].name {
@@ -236,11 +306,13 @@ fn initializer_node<'t>(
         node.children()
             .find(|c| matches!(c.kind(), SyntaxKind::ClassBody | SyntaxKind::EnumBody))?
     };
-    let declarator = body
-        .children()
-        .filter(|c| c.kind() == SyntaxKind::FieldDecl)
-        .flat_map(|d| ast::FieldDecl::cast(d).unwrap().declarators())
-        .nth(field as usize)?;
+    let declarator = match tables.of(file, tree, body) {
+        Some(table) => {
+            let node = tree.node(*table.declarators.get(field as usize)?);
+            ast::VariableDeclarator::cast(node)?
+        }
+        None => declarators(body).nth(field as usize)?,
+    };
     match declarator.initializer()? {
         ast::VariableInitializer::Expr(e) => Some(e.syntax()),
         ast::VariableInitializer::ArrayInitializer(_) => None,
