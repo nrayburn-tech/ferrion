@@ -489,7 +489,15 @@ None for the relation queries (B3a): every one javac answered is matched, left t
 type javac couldn't resolve ([the corpus](#the-relations-comparison)). None for what W2's walk types
 either ([the comparison](#the-attribution-comparison)): every difference found was a difference of
 trees, which [the adapter](#ferrions-side-of-the-files-entries) normalizes. W3's calls bring the
-first, if any.
+first, in `tools/oracle-check/differences/types-known.txt`:
+
+- **`javac-unresolved`** (8): a class a jar's method names, which javac's compilation doesn't resolve
+  and Ferrion's view does, the classes W1 found among relation queries. javac reports the method's
+  descriptor with the class's dotted name (`Lcom.fasterxml.jackson.databind.Module;` in jedis's
+  `ObjectMapper.registerModule`, `Lgraphql.execution.ExecutionStrategy;` in helidon's GraphQL server, 2
+  methods), and a type with an `error` type in it (`java/util/Collection<error
+  org.openjdk.jmh.results.RunResult>` in three of helidon's benchmarks, 3 expressions and 3 types as
+  invoked). javac reports no error, since nothing needs the class.
 
 ## The corpus
 
@@ -590,6 +598,37 @@ was the text of `__ServiceDescriptor`s, as above; before the check, this run had
 a constant without a Ferrion entry, and 6 entries extra, all in the one file. The 3 constants left to B3c are fields inherited through an anonymous class made with `<>`
 (helidon's `JdbcConnectionPool`), which Ferrion doesn't type until inference gives its supertype.
 
+### The comparison with calls
+
+`cargo oracle types` on every locked project, from the cached javac side above, on 3 November 2026,
+with W3's calls: 18 s, Ferrion's side 17 s, on four threads, on a shared machine. No entry waits: each
+call is compared, or left to a later milestone. *Calls* counts a method and a type as invoked each,
+where javac gives one.
+
+| Project | Matched | Expressions | Constants | Calls | Variables | Left to B3c, B3d, B4 | Parameters of implicit constructors | Known | Mismatched | Extra |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| caffeine | 558,821 | 236,014 | 34,437 | 120,497 | 29,071 | 142,388 | 106 | 0 | 0 | 0 |
+| guava | 722,463 | 366,740 | 98,287 | 182,779 | 43,732 | 162,904 | 496 | 0 | 0 | 0 |
+| helidon | 3,034,733 | 889,262 | 188,476 | 475,337 | 98,856 | 415,089 | 1,491 | 7 | 0 | 0 |
+| hertzbeat | 225,080 | 39,533 | 11,174 | 20,602 | 4,866 | 38,156 | 150 | 0 | 0 | 0 |
+| jedis | 642,641 | 324,631 | 70,792 | 186,158 | 45,857 | 135,603 | 146 | 1 | 0 | 0 |
+| lucene | 3,853,177 | 2,034,281 | 410,240 | 805,154 | 193,712 | 259,676 | 1,949 | 0 | 0 | 0 |
+| spring-data-jpa | 352,493 | 176,592 | 36,490 | 88,441 | 20,411 | 49,498 | 117 | 0 | 0 | 0 |
+| total | 9,389,408 | 4,067,053 | 849,896 | 1,878,968 | 436,505 | 1,203,314 | 4,455 | 8 | 0 | 0 |
+
+"Matched" includes the relation queries' 2,156,986. By aspect, what is counted apart:
+
+| Aspect | Left to B3c | Left to B3d | Left to B4 |
+| --- | --- | --- | --- |
+| Expression | 378,580 | 420 | 1,451 |
+| Constant | 3 | 0 | 0 |
+| Call | 323,015 | 20 | 1,458 |
+| Variable, its type or finality | 19,560 | 456,095 | 0 |
+
+So of javac's 1,329,863 calls, 1,005,368 have the same method, 2 differ (known), and of those javac gives a type as
+invoked for, all have the same but the known ones. `left-to-b4` is hertzbeat's calls on types with
+Lombok annotations ([attribution](semantic-attribution.md#departures)). One generated file is stale.
+
 ### Analysis time per file
 
 `analyzeMicros` of the 16,709 compared files (javac 21 to 27, each project's own):
@@ -663,7 +702,8 @@ the slowest of them. The whole set took 371 s.
 ## Still to observe
 
 - Whether a variable arity call javac chose in phase 3 can be told from the oracle's output where
-  the instantiated type alone doesn't say (a single array argument).
+  the instantiated type alone doesn't say (a single array argument). W3 didn't need it: the method
+  and the type as invoked are the same either way, and `Call::phase` isn't compared.
 
 W1 observed the order of a `lub`'s parts on more inputs (it holds:
 [W1's observation 2](semantic-type-relations.md#observations)), and wrote local classes in type

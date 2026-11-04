@@ -257,7 +257,10 @@ On `b3/integration`, cut from main at 3273dd6:
    [results](semantic-attribution.md#results).)
 4. **W3, calls (B3b),** after W2's walk lands: method invocation and instance creation (15.9,
    15.12): potentially applicable candidates, the three phases, most specific, the result type,
-   explicit type arguments; the `static-import-overload` and `case-label` differences.
+   explicit type arguments; the `static-import-overload` and `case-label` differences. (Done: 74.1%
+   of the corpus's calls are chosen, and each method javac also has chosen matches, with 2 known
+   differences on classes javac doesn't resolve; what is left is B3c's and B4's;
+   [results](semantic-attribution.md#results-of-calls).)
 5. **W4, the B3b comparison:** the Ferrion adapter for `cargo oracle types`, the corpus run,
    fixes, known differences, the removed-symbols check, benchmarks. It can start beside W3 on what
    W2 types, and finishes after W3.
