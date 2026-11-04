@@ -4,8 +4,8 @@
 //! floating-point value is `Double.toString`'s (JDK 19 and later, docs/design/semantic-attribution.md#constants).
 
 use std::fmt::Write as _;
-use std::sync::Arc;
 
+use super::string::JavaString;
 use crate::summary::Primitive;
 
 /// A constant expression's value, typed as the expression is.
@@ -21,7 +21,7 @@ pub enum Constant {
     Float(u32),
     Double(u64),
     /// UTF-16 code units, as a Java string holds them: lone surrogates are kept.
-    String(Arc<[u16]>),
+    String(JavaString),
 }
 
 /// A binary operator a constant expression can have (JLS 15.29).
@@ -66,12 +66,20 @@ impl Constant {
         Constant::Double(canonical_f64(value).to_bits())
     }
 
-    pub fn string(units: impl Into<Arc<[u16]>>) -> Constant {
-        Constant::String(units.into())
+    pub fn string(units: Vec<u16>) -> Constant {
+        Constant::String(JavaString::from_units(units))
     }
 
     pub fn str(text: &str) -> Constant {
-        Constant::String(text.encode_utf16().collect::<Vec<_>>().into())
+        Constant::string(text.encode_utf16().collect())
+    }
+
+    /// The string conversion of the value (JLS 5.1.11).
+    fn java_string(&self) -> JavaString {
+        match self {
+            Constant::String(s) => s.clone(),
+            other => JavaString::from_units(other.to_java_string()),
+        }
     }
 
     /// The primitive type of the value, `None` for a string.
@@ -191,7 +199,7 @@ impl Constant {
             Constant::Long(v) => format!("long {v}"),
             Constant::Float(bits) => format!("float {}", float_hex(f32::from_bits(bits))),
             Constant::Double(bits) => format!("double {}", double_hex(f64::from_bits(bits))),
-            Constant::String(ref s) => format!("String {}", quoted(s)),
+            Constant::String(ref s) => format!("String {}", quoted(&s.to_vec())),
         }
     }
 }
@@ -281,11 +289,7 @@ pub fn binary(op: BinaryOp, a: &Constant, b: &Constant) -> Option<Constant> {
     let string = matches!(a, Constant::String(_)) || matches!(b, Constant::String(_));
     if string {
         return match op {
-            Add => {
-                let mut units = a.to_java_string();
-                units.extend(b.to_java_string());
-                Some(Constant::string(units))
-            }
+            Add => Some(Constant::String(a.java_string().concat(&b.java_string()))),
             // Constant strings are interned, so `==` compares their values (observation 11).
             Eq | Ne => match (a, b) {
                 (Constant::String(x), Constant::String(y)) => {

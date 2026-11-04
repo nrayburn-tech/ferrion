@@ -542,8 +542,6 @@ struct Walker<'f, 'r, 's> {
     /// The local and anonymous classes whose bodies the walk is in, innermost last.
     classes: Vec<(NodeId, TypeKey)>,
     next_check: usize,
-    /// The one body to walk, if not all of them.
-    target: Option<NodeId>,
 }
 
 /// A scope for a name in a body: the body's declarations, then the summary's class around it.
@@ -573,15 +571,18 @@ pub(crate) fn initializer_names(
     file: FileId,
     tree: &SyntaxTree,
     target: NodeId,
+    summary: usize,
 ) -> Result<Box<[ResolvedName]>, Cancelled> {
-    Ok(walk_names(reads, file, tree, Some(target))?.names)
+    Ok(walk_names(reads, file, tree, Some((target, summary)))?.names)
 }
 
+/// The walk over the whole file, or with `target` over one field initializer of the summary's
+/// type at an index alone.
 fn walk_names(
     reads: &mut Reads<'_>,
     file: FileId,
     tree: &SyntaxTree,
-    target: Option<NodeId>,
+    target: Option<(NodeId, usize)>,
 ) -> Result<BodyNames, Cancelled> {
     let set = reads.snapshot.file(file)?.set;
     let fs = reads.file_scope(file)?;
@@ -628,9 +629,11 @@ fn walk_names(
         candidates: Map::default(),
         classes: Vec::new(),
         next_check: 0,
-        target,
     };
-    w.walk(tree)?;
+    match target {
+        None => w.walk(tree)?,
+        Some((node, summary)) => w.walk_initializer(tree.node(node), summary)?,
+    }
     let mut out = std::mem::take(&mut w.out);
     out.sort_by_key(|n| n.node);
     out.dedup_by_key(|n| n.node);
@@ -751,6 +754,25 @@ impl Walker<'_, '_, '_> {
         let mut events = tree.root().preorder();
         while let Some(event) = events.next() {
             match event {
+                WalkEvent::Enter(node) => {
+                    if !self.enter(node)? {
+                        events.skip_subtree();
+                    }
+                }
+                WalkEvent::Leave(node) => self.leave(node)?,
+            }
+        }
+        Ok(())
+    }
+
+    /// Walks a field initializer of the summary's type at `summary` alone, as the whole walk
+    /// would: a region starts at it, in that type's scope.
+    fn walk_initializer(&mut self, root: SyntaxNode<'_>, summary: usize) -> Result<(), Cancelled> {
+        self.start_region(root, Some(summary), false);
+        let mut events = root.preorder();
+        while let Some(event) = events.next() {
+            match event {
+                WalkEvent::Enter(node) if node == root => {}
                 WalkEvent::Enter(node) => {
                     if !self.enter(node)? {
                         events.skip_subtree();
@@ -894,21 +916,6 @@ impl Walker<'_, '_, '_> {
             return Ok(true);
         }
         let summary = self.summary_types.last().map(|t| t.index);
-        if let Some(target) = self.target {
-            let starts = match kind {
-                SyntaxKind::Block => {
-                    is_method_like(parent.kind()) || parent.kind() == SyntaxKind::Initializer
-                }
-                SyntaxKind::DefaultValue | SyntaxKind::AnnotationArguments => true,
-                SyntaxKind::Arguments | SyntaxKind::ClassBody => {
-                    parent.kind() == SyntaxKind::EnumConstant
-                }
-                _ => parent.kind() == SyntaxKind::VariableDeclarator && kind != SyntaxKind::Dim,
-            };
-            if starts && node.id() != target {
-                return Ok(false);
-            }
-        }
         match kind {
             SyntaxKind::Block if is_method_like(parent.kind()) => {
                 self.start_region(node, summary, false);
@@ -2537,6 +2544,7 @@ impl Walker<'_, '_, '_> {
                 .into_iter()
                 .flatten()
         };
+        let mut generic = None;
         let (at, superclass) = match parent.kind() {
             SyntaxKind::NewExpr => {
                 let new = ast::NewExpr::cast(parent).unwrap();
@@ -2549,6 +2557,18 @@ impl Walker<'_, '_, '_> {
                     Some(TypeResolution::Error(e)) => Err(e),
                     _ => Err(Self::not_found(Name::EMPTY, None)),
                 };
+                // The class or interface as written, with its arguments, for the entry's
+                // generic supertype; not with `<>`, whose arguments inference gives (B3c), nor
+                // after an outer instance.
+                let diamond = match new.ty() {
+                    Some(ast::Type::ClassType(c)) => c
+                        .type_arguments()
+                        .is_some_and(|a| a.arguments().next().is_none()),
+                    _ => true,
+                };
+                if !diamond && new.outer().is_none() && superclass.is_ok() {
+                    generic = Some(TypeRef::from_syntax(new.ty(), &self.names));
+                }
                 // Where javac's tree for the class is: its body's `{`.
                 (node.span().start, superclass)
             }
@@ -2575,21 +2595,30 @@ impl Walker<'_, '_, '_> {
         let summary = anonymous_type(members(), &names);
         let index = self.new_local_type(node, at, TypeKind::Class, MemberAccess::Private);
         self.register_members(index, members());
-        self.set_up_class(index, node, summary, Some(superclass))
+        self.set_up_class(index, node, summary, Some((superclass, generic)))
     }
 
     /// Resolves a local or anonymous class's header, in the scope of its header, then opens
     /// its body's scope with its member types, fields, and methods, declared and inherited.
-    /// `anonymous` is an anonymous class's class or interface.
+    /// `anonymous` is an anonymous class's class or interface, with its type as written when it
+    /// has one to give (an enum constant's enum has none).
     fn set_up_class(
         &mut self,
         index: u32,
         body: SyntaxNode<'_>,
         summary: TypeSummary,
-        anonymous: Option<Result<TypeKey, ErrorSymbol>>,
+        anonymous: Option<(Result<TypeKey, ErrorSymbol>, Option<TypeRef>)>,
     ) -> Result<(), Cancelled> {
+        let (anonymous, generic) = match anonymous {
+            Some((class, generic)) => (Some(class), generic),
+            None => (None, None),
+        };
         let key = self.env.local_types[index as usize].key;
         let kind = summary.kind;
+        let anonymous_kind = match &anonymous {
+            Some(Ok(class)) => self.kind_of(*class)?,
+            _ => None,
+        };
         self.env.local_of_node.insert(body.id(), index);
         let saved = std::mem::take(&mut self.r.errors);
 
@@ -2609,6 +2638,31 @@ impl Walker<'_, '_, '_> {
         for w in written {
             interfaces_ty.push(self.r.ty(&scope, w, 0)?);
         }
+        // An anonymous class's generic supertype: the class it extends, or the interface it
+        // implements; an enum constant's body extends its enum.
+        let mut superclass_ty = superclass_ty;
+        let mut generic_interface = None;
+        match (&anonymous, generic) {
+            (Some(Ok(_)), Some(written)) => {
+                let ty = self.r.ty(&scope, &written, 0)?;
+                if matches!(
+                    anonymous_kind,
+                    Some(TypeKind::Interface | TypeKind::Annotation)
+                ) {
+                    generic_interface = Some(ty);
+                } else {
+                    superclass_ty = Some(ty);
+                }
+            }
+            (Some(Ok(class)), None) if anonymous_kind == Some(TypeKind::Enum) => {
+                superclass_ty = Some(Ty::of(vec![TyPart::Class {
+                    ty: *class,
+                    outer: false,
+                    arguments: TyPart::NO_ARGUMENTS,
+                }]));
+            }
+            _ => {}
+        }
         let mut permits = Vec::new();
         for w in summary.permits.iter() {
             permits.push(self.r.ty(&scope, w, 0)?);
@@ -2624,6 +2678,8 @@ impl Walker<'_, '_, '_> {
         };
         let mut interfaces: Vec<Result<TypeKey, ErrorSymbol>> =
             interfaces_ty.iter().map(|t| erased(self, t)).collect();
+        // The erased list has an anonymous class's interface from `anonymous`, below.
+        interfaces_ty.extend(generic_interface);
         let superclass = match (kind, anonymous) {
             (_, Some(Ok(class)))
                 if matches!(
