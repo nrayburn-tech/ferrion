@@ -43,7 +43,7 @@ use self::trees::TreeCache;
 use crate::attr::BodyTypes;
 use crate::body::BodyNames;
 use crate::classes::{Cache, ClassSource, ClassSources};
-use crate::constants::Constant;
+use crate::constants::{BodyTables, Constant};
 use crate::decl_names::FileNames;
 use crate::input::ClassPathInput;
 use crate::members::Members;
@@ -110,6 +110,7 @@ pub(crate) struct Shared {
     pub(crate) body_names: DerivedTable<FileId, BodyNames>,
     pub(crate) members: DerivedTable<(SourceSetId, TypeKey), Members>,
     pub(crate) constants: DerivedTable<FieldRef, Option<Constant>>,
+    pub(crate) body_tables: BodyTables,
     pub(crate) body_types: DerivedTable<FileId, BodyTypes>,
     pub(crate) names: Arc<Interner>,
     /// Each source set's classpath and platform, by its index.
@@ -322,6 +323,7 @@ impl Engine {
                 body_names: DerivedTable::new(),
                 members: DerivedTable::tracked(|(view, key)| Dep::Members(*view, *key)),
                 constants: DerivedTable::tracked(|field| Dep::Constant(*field)),
+                body_tables: BodyTables::default(),
                 body_types: DerivedTable::new(),
                 names: Arc::new(Interner::new()),
                 configs: configs.into_boxed_slice(),
