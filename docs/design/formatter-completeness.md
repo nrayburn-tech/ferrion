@@ -627,7 +627,8 @@ On `a2/integration`, at most four agents at once, heavy jobs through the shared 
      `cargo format-check ranges`, and the fuzz target's range check.
 3. **The GJF diff** with the three flags gone, working down the largest differences, and
    `docs/style.md`'s new sections (imports, doc comments) and departures.
-   Done: 17,375 lines differ over the corpus, down from 18,176, with 95.9% of the files identical.
+   Done: 17,375 lines differ over the corpus, down from 18,176, with 95.9% of the files identical
+   (17,394 once the corpus took in spring-data-jpa's benchmarks, whose 19 lines are text blocks).
    Of those, 13,666 are text blocks and about 3,300 long `//` comments (SCOPE.md), most of the rest
    `<pre>` indentation and marker comments between imports (departures), and about 200 are small
    cases left as they are: mostly comments in unusual places, and a `Map.ofEntries(...)` chain

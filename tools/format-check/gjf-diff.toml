@@ -5,9 +5,10 @@
 # differing lines are above the number here, or its files compared below it; a change that lowers
 # the differing lines records the new numbers with `cargo format-check gjf --update`. This file's history is the record over time.
 #
-# These numbers are from the exit check (work order step 4): 18,071 lines in all, with 95.6% of the
+# These numbers are from formatter completeness's GJF pass: 17,394 lines in all, with 95.9% of the
 # files identical. Most of what's left is text blocks and long `//` comments, which are departures
-# (docs/style.md). The first pass over the core gave 72,212 lines, with 90% identical; the
+# (docs/style.md). The formatter's exit check (work order step 4) gave 18,071 lines, with 95.6%
+# identical; the first pass over the core gave 72,212 lines, with 90% identical; the
 # construct rules (step 2) gave 74,204, with 88%. The formatter's core, whose first rule printed
 # every construct with single spaces and line breaks, gave 1,156,515; each input compared
 # unchanged, before the formatter, gave 1,747,623, most of lucene's in a few generated files.
@@ -18,8 +19,8 @@ identical = 1019
 differing-lines = 219
 
 [guava]
-compared = 1531
-identical = 1522
+compared = 1595
+identical = 1586
 differing-lines = 53
 
 [caffeine]
@@ -28,9 +29,9 @@ identical = 679
 differing-lines = 376
 
 [spring-data-jpa]
-compared = 612
-identical = 572
-differing-lines = 3304
+compared = 621
+identical = 579
+differing-lines = 3323
 
 [lucene]
 compared = 5968
