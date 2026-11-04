@@ -1543,10 +1543,7 @@ impl<'s, 'r> Walker<'s, 'r> {
                         None => self.unknown(Why::Later),
                     }
                 } else {
-                    match self.cx.superclass(key)? {
-                        Some(t) => t,
-                        None => self.unknown(Why::Incomplete(key)),
-                    }
+                    self.superclass_of(key)?
                 }
             }
             Some(v) => {
@@ -1557,14 +1554,24 @@ impl<'s, 'r> Walker<'s, 'r> {
                 Some(key) if self.inferred_supertypes.contains(&key) => {
                     self.unknown(Why::LeftToB3c)
                 }
-                Some(key) => match self.cx.superclass(key)? {
-                    Some(t) => t,
-                    None => self.unknown(Why::Incomplete(key)),
-                },
+                Some(key) => self.superclass_of(key)?,
                 None => self.unknown(Why::Later),
             },
         };
         Ok(self.expr(node.id(), t))
+    }
+
+    /// A class's superclass as `super` has it: an error if it didn't resolve, where the class's
+    /// hierarchy goes on from `Object`.
+    fn superclass_of(&mut self, key: TypeKey) -> Result<TypeId, Cancelled> {
+        let supers = self.snapshot.supertypes(key)?;
+        if let Some(Err(error)) = supers.as_ref().and_then(|s| s.superclass.as_ref()) {
+            return Ok(self.error_type(error.clone()));
+        }
+        Ok(match self.cx.superclass(key)? {
+            Some(t) => t,
+            None => self.unknown(Why::Incomplete(key)),
+        })
     }
 
     fn class_literal(

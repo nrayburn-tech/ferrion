@@ -119,6 +119,82 @@ fn many_fields_are_found_through_edits() {
     assert_eq!(attribute(&fresh).1, dumps);
 }
 
+/// A name in a class whose supertype didn't resolve could be a member of that supertype, which
+/// would shadow whatever is around the class: what is around is a guess, so it has no answer. The
+/// removed-symbols check found these: in each, a confident answer where javac has another.
+#[test]
+fn what_a_missing_supertype_could_hold_is_no_answer() {
+    let source = "package p;\n\
+        class Q {\n\
+            int m;\n\
+            int own() { return 1; }\n\
+            void f(Object o) {\n\
+                int x = 1;\n\
+                new Missing() {\n\
+                    int here;\n\
+                    int g() { own(); getClass(); return x + m + here; }\n\
+                    Object s = super.toString();\n\
+                };\n\
+            }\n\
+            class In extends Missing {\n\
+                int h() { own(); return m; }\n\
+            }\n\
+            class Fine {\n\
+                int i() { own(); return m; }\n\
+            }\n\
+        }\n";
+    let engine = Engine::new(project(&[("p/Q.java", source)]));
+    let (_, dumps) = attribute(&engine);
+    let of = |text: &str| -> Vec<&str> {
+        dumps[0]
+            .lines()
+            .filter(|l| l.contains(&format!("`{text}`:")))
+            .map(|l| l.split_once("`: ").unwrap().1)
+            .collect()
+    };
+    // In the anonymous class: its own member is an answer, what is around it isn't.
+    assert_eq!(of("here"), ["int"]);
+    assert_eq!(of("x"), ["error x"]);
+    assert_eq!(of("own()")[0], "error own");
+    assert_eq!(of("getClass()"), ["error getClass"]);
+    assert_eq!(of("super"), ["error Missing"]);
+    // In the member class, the same; in one with nothing missing, what is around it.
+    assert_eq!(of("m"), ["error m", "error m", "int"]);
+    assert_eq!(of("own()")[1..], ["error own", "int"]);
+}
+
+/// A common supertype could be among what didn't resolve, so `lub` has no answer. (`? :` under a
+/// cast is standalone, and needs it.)
+#[test]
+fn a_least_upper_bound_through_a_missing_supertype_is_no_answer() {
+    let source = "package p;\n\
+        interface I {}\n\
+        class A implements I, Missing {}\n\
+        class B implements I, Missing {}\n\
+        class C implements I {}\n\
+        class D implements I {}\n\
+        class Q {\n\
+            Object f(boolean b, A a1, B b1, C c1, D d1) {\n\
+                Object o = (Object) (b ? c1 : d1);\n\
+                return (Object) (b ? a1 : b1);\n\
+            }\n\
+        }\n";
+    let engine = Engine::new(project(&[("p/Q.java", source)]));
+    let (_, dumps) = attribute(&engine);
+    let of = |text: &str| {
+        dumps[0]
+            .lines()
+            .find(|l| l.contains(&format!("`{text}`:")))
+            .map(|l| l.split_once("`: ").unwrap().1.to_owned())
+    };
+    assert_eq!(of("b ? c1 : d1").as_deref(), Some("p/I"));
+    let unknown = of("b ? a1 : b1").unwrap();
+    assert!(
+        unknown.starts_with("error Missing") || unknown.contains("unknown"),
+        "{unknown}"
+    );
+}
+
 #[test]
 fn a_constant_edit_reaches_the_files_that_use_it() {
     let engine = Engine::new(project(FILES));

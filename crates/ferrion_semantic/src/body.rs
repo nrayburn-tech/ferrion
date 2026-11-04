@@ -304,6 +304,9 @@ type Candidates = (TypeKey, Arc<[MethodRef]>);
 
 /// The scopes around the walk's position, and what the body has declared so far.
 struct Env {
+    /// The local and anonymous classes around, innermost last, whose members aren't all known
+    /// (a supertype didn't resolve): each's body, index, and the locals declared outside it.
+    incomplete: Vec<(NodeId, u32, usize)>,
     frames: Vec<Frame>,
     vars: Map<Name, Vec<Var>>,
     types: Map<Name, Vec<TypeResolution>>,
@@ -333,6 +336,32 @@ impl Env {
         while self.frames.last().is_some_and(|f| f.owner == owner) {
             let frame = self.frames.pop().unwrap();
             self.unbind(&frame);
+        }
+        if self.incomplete.last().is_some_and(|c| c.0 == owner) {
+            self.incomplete.pop();
+        }
+    }
+
+    /// Whether a name found outside the innermost class with a supertype that didn't resolve might
+    /// instead be a member of that supertype: then what was found is a guess (JLS 6.4.1, a member
+    /// shadows what is around its class).
+    fn beyond_incomplete(&self, var: &Var) -> Option<TypeKey> {
+        let &(_, index, locals) = self.incomplete.last()?;
+        let beyond = match var {
+            Var::Local(local) => (*local as usize) < locals,
+            Var::Field(FieldFound::One(TypeKey::Local { index: owner, .. }, _)) => *owner < index,
+            Var::Field(_) => false,
+        };
+        beyond.then(|| self.local_types[index as usize].key)
+    }
+
+    /// The innermost class around with a supertype that didn't resolve, unless `search` is it or
+    /// inside it.
+    fn method_beyond_incomplete(&self, search: Option<TypeKey>) -> Option<TypeKey> {
+        let &(_, index, _) = self.incomplete.last()?;
+        match search {
+            Some(TypeKey::Local { index: owner, .. }) if owner >= index => None,
+            _ => Some(self.local_types[index as usize].key),
         }
     }
 
@@ -595,6 +624,7 @@ fn walk_names(
     let mut w = Walker {
         r: Resolver::new(reads, set),
         env: Env {
+            incomplete: Vec::new(),
             frames: Vec::new(),
             vars: Map::default(),
             types: Map::default(),
@@ -1777,6 +1807,10 @@ impl Walker<'_, '_, '_> {
     /// static-import-on-demand.
     fn expression_name(&mut self, name: Name) -> Result<(Symbol, Meaning), Cancelled> {
         if let Some(var) = self.env.vars.get(&name).and_then(|v| v.last()).cloned() {
+            if let Some(class) = self.env.beyond_incomplete(&var) {
+                let error = Self::not_found(name, Some(class));
+                return Ok((Symbol::Error(error.clone()), Meaning::Error(error)));
+            }
             return match var {
                 Var::Local(index) => {
                     let local = &self.env.locals[index as usize];
@@ -1792,15 +1826,20 @@ impl Walker<'_, '_, '_> {
                 Var::Field(found) => self.field_symbol(found, name),
             };
         }
-        let mut incomplete = None;
+        if let Some(class) = self.env.method_beyond_incomplete(None) {
+            let error = Self::not_found(name, Some(class));
+            return Ok((Symbol::Error(error.clone()), Meaning::Error(error)));
+        }
         for key in self.summary_chain() {
             let maps = self.named(key, name)?;
             if let Some((found, _)) = maps.fields.get(&name) {
                 let found = found.clone();
                 return self.field_symbol(found, name);
             }
+            // It could be a member of what didn't resolve, which shadows what is around.
             if maps.incomplete {
-                incomplete.get_or_insert(key);
+                let error = Self::not_found(name, Some(key));
+                return Ok((Symbol::Error(error.clone()), Meaning::Error(error)));
             }
         }
         for owner in self.static_imports(name, true)? {
@@ -1837,7 +1876,7 @@ impl Walker<'_, '_, '_> {
                 return Ok((Symbol::Error(error.clone()), Meaning::Error(error)));
             }
         }
-        let error = Self::not_found(name, incomplete);
+        let error = Self::not_found(name, None);
         Ok((Symbol::Error(error.clone()), Meaning::Error(error)))
     }
 
@@ -2100,21 +2139,25 @@ impl Walker<'_, '_, '_> {
     /// method of the name, declared or inherited, is the type to search; else the types the
     /// static imports of it name.
     fn simple_method(&mut self, name: Name) -> Result<Symbol, Cancelled> {
-        if let Some((search, candidates)) = self.env.methods.get(&name).and_then(|v| v.last()) {
+        let binding = self.env.methods.get(&name).and_then(|v| v.last());
+        if let Some(class) = self.env.method_beyond_incomplete(binding.map(|b| b.0)) {
+            return Ok(Symbol::Error(Self::not_found(name, Some(class))));
+        }
+        if let Some((search, candidates)) = binding {
             return Ok(Symbol::Methods {
                 search: *search,
                 name,
                 candidates: candidates.clone(),
             });
         }
-        let mut incomplete = None;
         for key in self.summary_chain() {
             let maps = self.named(key, name)?;
             if maps.methods.get(&name).is_some_and(|m| !m.is_empty()) {
                 return self.methods_in(key, name);
             }
+            // It could be a member of what didn't resolve, which shadows what is around.
             if maps.incomplete {
-                incomplete.get_or_insert(key);
+                return Ok(Symbol::Error(Self::not_found(name, Some(key))));
             }
         }
         for single in [true, false] {
@@ -2143,7 +2186,7 @@ impl Walker<'_, '_, '_> {
                 });
             }
         }
-        Ok(Symbol::Error(Self::not_found(name, incomplete)))
+        Ok(Symbol::Error(Self::not_found(name, None)))
     }
 
     fn method_ref(&mut self, node: SyntaxNode<'_>) -> Result<(), Cancelled> {
@@ -2792,6 +2835,10 @@ impl Walker<'_, '_, '_> {
 
         // Its fields and methods, declared and inherited, bound in the body's scope.
         let maps = self.local_maps(index, &supers)?;
+        if maps.incomplete {
+            let locals = self.env.locals.len();
+            self.env.incomplete.push((body.id(), index, locals));
+        }
         for (name, (found, _)) in &maps.fields {
             self.env.bind_var(*name, Var::Field(found.clone()));
         }
