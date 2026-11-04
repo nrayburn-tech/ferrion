@@ -1,7 +1,7 @@
 //! Applies a sequence of edits, chosen by the fuzz input, to a small project, and after each one
-//! compares the engine's summaries, package tables, type entries, and names in declarations with
-//! a fresh engine's. The input's bytes up to a first zero byte, if any, are one more file of the
-//! project.
+//! compares the engine's summaries, package tables, type entries, names in declarations and
+//! bodies, and each file's attribution with a fresh engine's. The input's bytes up to a first
+//! zero byte, if any, are one more file of the project.
 
 #![no_main]
 

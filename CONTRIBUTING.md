@@ -275,6 +275,10 @@ category with its explanation;
 [docs/design/semantic-oracle-normalization.md](docs/design/semantic-oracle-normalization.md)
 records javac's side. The weekly oracle workflow runs every project; pull requests run jedis.
 
+`cargo oracle attribute` attributes every file of the projects' source sets without javac, and
+reports panics, the fuel each body used, the time per file, and the largest arena; `--dump <file>`
+writes each file's expressions and variables as JSON lines, to look at against javac's by hand.
+
 ### Parser checks
 
 `tools/parser-check` checks the parser on the corpus without javac. With the projects checked out,
@@ -484,8 +488,8 @@ rustup toolchain install && cargo install cargo-fuzz --version 0.13.2 --locked
   changes a few bytes, to reach the code random bytes rarely do.
 - `ctsym` reads arbitrary bytes as a zip and then as `ct.sym`, resolving every release.
 - `semantic_edits` applies edits chosen by the input to a small project, and after each compares
-  the semantic engine's summaries and package tables with a fresh engine's. The input's bytes up
-  to a first zero byte, if any, are one more file of the project.
+  the semantic engine's summaries, package tables, names, and attribution with a fresh engine's.
+  The input's bytes up to a first zero byte, if any, are one more file of the project.
 
 The lexer targets fail when `ferrion_lexer::invariants` finds that the lexer broke a promise its API
 documents, the doc comment targets when `ferrion_doc_comments::invariants` finds the same of the

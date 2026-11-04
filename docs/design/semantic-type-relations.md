@@ -239,6 +239,10 @@ What W1 built differs from the design above in these ways, each for a reason giv
   one, observation 5), which is more than a few lines of B2's names; W4 compares it with
   attribution. `lub` is checked by its tests (W0's observations 1 to 3, W1's 1 to 4) and the
   fuzz target.
+- **W2 changed capture, upward projection, and outer types** as attribution observed javac
+  ([W2's departures](semantic-attribution.md#departures)): `? super Object` captures to `Object`,
+  the outer type is captured too, upward projection has JLS 4.10.5's declared-bound rule, and a
+  written outer type is normalized to the class declaring the member.
 - **Two fixes outside `types`:** `Snapshot::resolve_binary` missed a source type whose name no
   summary had interned yet (it looked the name up rather than interning it), so a context made
   before any summary was read found no source types; and another source set's entries name
