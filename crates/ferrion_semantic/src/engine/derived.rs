@@ -27,7 +27,11 @@
 //! type, error supertypes), so that every entry in a cycle comes out the same whichever was asked
 //! for first. A cyclic request is recorded with [`Fingerprint::CYCLE`], which no entry has, so an
 //! entry that saw a cycle is computed again at every revision: cycles are rare and small, and this
-//! is what notices one being broken. Tracking is per thread, so two threads in the same cycle each
+//! is what notices one being broken. An entry computed in a cycle holds only for a request from
+//! outside it: asked for again at the same revision with an entry of its cycle on the stack, it is
+//! verified again rather than given as already valid, so that the request finds the cycle:
+//! verifying a type's supertypes can compute its member types again with the supertypes on the
+//! stack, and the supertypes then computed read them. Tracking is per thread, so two threads in the same cycle each
 //! find it on their own stack, and neither waits for the other.
 
 use std::cell::RefCell;
@@ -150,6 +154,17 @@ fn enter(dep: &Dep) -> Option<Entered> {
     })
 }
 
+/// Whether an entry of one of `cycles` is on this thread's stack.
+fn on_stack(cycles: &[Arc<Cycle>]) -> bool {
+    !cycles.is_empty()
+        && ACTIVE.with_borrow(|active| {
+            !active.stack.is_empty()
+                && cycles
+                    .iter()
+                    .any(|c| c.deps.iter().any(|d| active.positions.contains_key(d)))
+        })
+}
+
 /// An entry on this thread's stack, popped when dropped (also when the computation returns
 /// `Cancelled` or panics).
 struct Entered {
@@ -191,6 +206,9 @@ pub(crate) struct Memo<V> {
     deps: Box<[(Dep, Fingerprint)]>,
     /// The latest revision at which the entry is known valid. Only grows.
     verified_at: AtomicU64,
+    /// The cycles its computation found; empty if none. Asked for with an entry of one of them
+    /// on the stack, it is verified again, even at the revision it is valid at.
+    cycles: Box<[Arc<Cycle>]>,
 }
 
 /// What a computation reads, recorded as it reads it. The accessors that read engine data and
@@ -302,6 +320,7 @@ impl<K: Clone + Eq + Hash, V: Hash> DerivedTable<K, V> {
         let old = read(self.shard(key)).get(key).cloned();
         if let Some(memo) = &old
             && memo.verified_at.load(Ordering::Acquire) == revision
+            && !on_stack(&memo.cycles)
         {
             return Ok(Some(memo.clone()));
         }
@@ -331,6 +350,7 @@ impl<K: Clone + Eq + Hash, V: Hash> DerivedTable<K, V> {
                 frame: entered.as_ref(),
             };
             let value = compute(&mut reads)?;
+            let cycles = reads.cycles().into_boxed_slice();
             let fingerprint = Fingerprint::of(&value);
             self.computed.fetch_add(1, Ordering::Relaxed);
             let value = match &old {
@@ -345,6 +365,7 @@ impl<K: Clone + Eq + Hash, V: Hash> DerivedTable<K, V> {
                 fingerprint,
                 deps: distinct(reads.deps),
                 verified_at: AtomicU64::new(revision),
+                cycles,
             });
             // Stored even if the revision has moved meanwhile: its dependencies say what it was
             // computed from, so the next revision verifies it like any other. Only an entry

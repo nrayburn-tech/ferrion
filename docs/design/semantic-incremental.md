@@ -304,7 +304,11 @@ one record shared by every entry on the stack in it, and its types one shared li
 n types costs O(n) memory; each entry's fingerprint still hashes the list, so its time is
 quadratic, which the tests keep to 2,000 types. An entry that saw
 a cycle has recorded `CYCLE`, which no entry has, so it is computed again at every revision;
-cycles are rare and small. Tracking is per thread, so threads in the same cycle never wait for
+cycles are rare and small. An entry computed in a cycle keeps the cycle, and is verified again
+when asked for with an entry of the cycle on the stack, even at a revision it is already valid at:
+verifying a type's supertypes can compute its member types again, with the supertypes on the
+stack, before computing the supertypes again, which then read those member types and must find
+the cycle through them (the differential check found that they didn't). Tracking is per thread, so threads in the same cycle never wait for
 each other.
 
 ### Body results

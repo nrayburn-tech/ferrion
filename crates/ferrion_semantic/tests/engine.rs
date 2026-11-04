@@ -6,6 +6,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
 use ferrion_semantic::invariants::check_edits;
+use ferrion_semantic::testing::{dump_file, stub_platform};
 use ferrion_semantic::{
     Cancelled, Engine, EngineOptions, FileId, FileInput, ProjectInput, SourceSetId, SourceSetInput,
     Stats, TableStats,
@@ -519,4 +520,39 @@ fn random_edits_with_a_deeply_nested_file() {
             panic!("seed {seed}: {problem}");
         }
     }
+}
+
+/// A cycle entered from a type's member types at one revision and from its supertypes at the
+/// next: verifying the supertypes computes the member types again with the supertypes on the
+/// stack, and the supertypes computed after that must still find the cycle through them.
+#[test]
+fn a_cycle_is_found_whichever_entry_it_is_entered_from() {
+    // `B` isn't in package `p`, so it is looked up through `import p.q.*`: the member types of the
+    // class `p.q`, which read its supertypes.
+    let files = [
+        (
+            "p/A.java",
+            "package p;\n\nimport p.q.*;\n\npublic class q extends B {}\n",
+        ),
+        ("p/q/C.java", "package p.q;\n\nclass C {}\n"),
+        ("r/D.java", "package r;\n\nclass D {}\n"),
+    ];
+    let mut input = project(&files);
+    input.source_sets[0].platform = Some(stub_platform());
+    let engine = Engine::new(input.clone());
+    let key = engine.snapshot().type_key(file(&engine, 0), 0).unwrap();
+    engine.snapshot().member_types(MAIN, key).unwrap();
+    engine.set_text(
+        file(&engine, 2),
+        Arc::from("package r;\n\nclass D { int f; }\n"),
+    );
+    let supertypes = engine.snapshot().supertypes(key).unwrap().unwrap();
+    assert_eq!(supertypes.cycle.len(), 1);
+    input.source_sets[0].files[2] =
+        FileInput::new("r/D.java", "package r;\n\nclass D { int f; }\n");
+    let fresh = Engine::new(input);
+    assert_eq!(
+        dump_file(&engine.snapshot(), file(&engine, 0)),
+        dump_file(&fresh.snapshot(), file(&fresh, 0))
+    );
 }
