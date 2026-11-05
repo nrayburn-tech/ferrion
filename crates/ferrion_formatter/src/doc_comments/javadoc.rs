@@ -107,12 +107,18 @@ fn build(text: &str, start: u32, end: u32) -> Option<(Layout, bool)> {
             .find(|line| line.0 <= span.end && span.end <= line.1)
             .is_some_and(|line| {
                 let on_line = &text[line.0 as usize..line.1 as usize];
+                let bytes = on_line.as_bytes();
                 let at = (span.end - line.0) as usize;
-                let (before, after) = on_line.split_at(at);
-                let word_start = before.rfind(char::is_whitespace).map_or(0, |k| k + 1);
-                let rest = after.trim_end();
-                !rest.contains(char::is_whitespace)
-                    && ends_with_hyphen(&on_line[word_start..at + rest.len()])
+                let word_start = bytes[..at]
+                    .iter()
+                    .rposition(|&b| is_space(b))
+                    .map_or(0, |k| k + 1);
+                let word_end = bytes[at..]
+                    .iter()
+                    .position(|&b| is_space(b))
+                    .map_or(bytes.len(), |k| at + k);
+                bytes[word_end..].iter().all(|&b| is_space(b))
+                    && ends_with_hyphen(&on_line[word_start..word_end])
             })
     };
     if javadoc.tags.iter().any(|tag| {
@@ -848,16 +854,15 @@ impl Scan<'_> {
             while next_atom < atoms.len() && atoms[next_atom].1 <= line_end {
                 next_atom += 1;
             }
-            let in_atom = atoms
-                .get(next_atom)
-                .is_some_and(|&(start, _)| start < line_end);
-            if !in_atom {
+            let atom = atoms.get(next_atom).filter(|&&(start, _)| start < line_end);
+            if atom.is_none() {
                 self.breaks += 1;
             }
             self.space = true;
             // Inside an element's tag, a hyphen at a line's end joins nothing: `verify` reads the
             // tag's whitespace as written.
-            self.hyphen_break = std::mem::take(&mut self.hyphen) && !in_atom;
+            let in_tag = atom.is_some_and(|&(start, _)| bytes[start as usize] == b'<');
+            self.hyphen_break = std::mem::take(&mut self.hyphen) && !in_tag;
             index += 1;
             pos = self.lines[index].0;
         }
