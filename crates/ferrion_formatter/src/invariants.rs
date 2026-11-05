@@ -21,8 +21,8 @@ const REFLOW_COLUMNS: u32 = 104;
 /// Reads `bytes` as a traditional doc comment's content, the text between `/**` and `*/`, as the
 /// `javadoc` fuzz target does, and, if the rules reflow it, checks the reflow at a column the
 /// first byte picks (docs/design/formatter-completeness.md, "Testing"): reflowing the result at
-/// the same column gives it again, and both have the input's content, as the comments check
-/// compares it.
+/// the same column gives it again, or falls back and formatting the comment settles, and both have
+/// the input's content, as the comments check compares it.
 pub fn check_javadoc_reflow(bytes: &[u8]) -> Result<(), String> {
     let column = bytes.first().map_or(0, |&b| u32::from(b) % REFLOW_COLUMNS);
     let content = match SourceText::decode(bytes) {
@@ -40,11 +40,21 @@ pub fn check_javadoc_reflow(bytes: &[u8]) -> Result<(), String> {
     let Some(once) = reflow(&comment) else {
         return Ok(());
     };
-    let twice = reflow(&once).ok_or_else(|| format!("{once:?}, reflowed, isn't reflowed again"))?;
-    if twice != once {
-        return Err(format!(
-            "reflowing again at column {column} changes {once:?} to {twice:?}"
-        ));
+    match reflow(&once) {
+        Some(twice) if twice != once => {
+            return Err(format!(
+                "reflowing again at column {column} changes {once:?} to {twice:?}"
+            ));
+        }
+        Some(_) => {}
+        // A second run falls back: formatting the comment in a file checks that re-indenting it
+        // leaves what the first run wrote.
+        None => {
+            let file = format!("{comment}\nclass T {{}}\n");
+            if let Ok(source) = SourceText::decode(file.as_bytes()) {
+                check_source(&source, *RELEASES.last().unwrap())?;
+            }
+        }
     }
     let (before, after) = (
         verify::doc_comments::content(&comment),

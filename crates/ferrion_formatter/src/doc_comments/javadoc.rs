@@ -27,6 +27,7 @@ use super::markdown::argument_span;
 use super::{Columns, Glue, Layout, Paragraph, Segment, Word, WordText, fill};
 use crate::document::{LINE_WIDTH, width};
 use crate::printer::trim_end;
+use crate::verify::doc_comments::content;
 
 /// Whether a doc comment written as `text` is one the rules reflow, rather than a block comment to
 /// GJF: it starts with `/**` and a character other than `*`, and ends with `*/`. `/***/`,
@@ -46,7 +47,35 @@ pub fn reflows(text: &str) -> bool {
 /// arguments and references, an argument over a blank line or ending its line with a hyphen, an
 /// element the rules place written across lines, and a word starting with `@` that a rule would
 /// put at the start of a line, where it would become a block tag).
+///
+/// A comment the parser reported something in also has to hold when read back: see [`holds`].
 pub fn layout(text: &str, start: u32, end: u32) -> Option<Layout> {
+    let (layout, reported) = build(text, start, end)?;
+    (!reported || holds(text, start, end, &layout)).then_some(layout)
+}
+
+/// The columns [`holds`] writes a comment at: where its lines are longest, and where they hold
+/// about one word each.
+const CHECKED_COLUMNS: [u32; 2] = [0, 96];
+
+/// Whether `layout`, of the comment at `start..end` of `text`, keeps the comment's content and
+/// gives the same text when reflowed again, at each of [`CHECKED_COLUMNS`]. Joining the lines of
+/// malformed text can change what it parses to in more ways than the rules can name, and well-formed
+/// comments, nearly all of them, don't pay for this.
+fn holds(text: &str, start: u32, end: u32, layout: &Layout) -> bool {
+    let before = content(&text[start as usize..end as usize]);
+    CHECKED_COLUMNS.iter().all(|&column| {
+        let rendered = render(layout, text, column);
+        let once = rendered.join("\n");
+        content(&once) == before
+            && build(&once, 0, once.len() as u32)
+                .is_some_and(|(again, _)| render(&again, &once, column) == rendered)
+    })
+}
+
+/// The layout of the comment at `start..end` of `text`, by the rules alone, and whether the parser
+/// reported anything in it: see [`layout`].
+fn build(text: &str, start: u32, end: u32) -> Option<(Layout, bool)> {
     let comment = text.get(start as usize..end as usize)?;
     if !reflows(comment) || has_escape(comment) {
         return None;
@@ -137,7 +166,7 @@ pub fn layout(text: &str, start: u32, end: u32) -> Option<Layout> {
     if writer.failed {
         return None;
     }
-    Some(writer.layout)
+    Some((writer.layout, !javadoc.diagnostics.is_empty()))
 }
 
 /// The comment's lines at `column`, the column its `/**` is at: the first without indentation,
@@ -819,14 +848,16 @@ impl Scan<'_> {
             while next_atom < atoms.len() && atoms[next_atom].1 <= line_end {
                 next_atom += 1;
             }
-            if !atoms
+            let in_atom = atoms
                 .get(next_atom)
-                .is_some_and(|&(start, _)| start < line_end)
-            {
+                .is_some_and(|&(start, _)| start < line_end);
+            if !in_atom {
                 self.breaks += 1;
             }
             self.space = true;
-            self.hyphen_break = std::mem::take(&mut self.hyphen);
+            // Inside an element's tag, a hyphen at a line's end joins nothing: `verify` reads the
+            // tag's whitespace as written.
+            self.hyphen_break = std::mem::take(&mut self.hyphen) && !in_atom;
             index += 1;
             pos = self.lines[index].0;
         }
