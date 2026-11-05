@@ -260,7 +260,10 @@ GJF's (observed): stars aligned, trailing whitespace removed, a star added to li
 the text after each star kept, and the shape kept. A block tag's argument over a blank line falls
 back too, a departure: the blank line would become a `<p>` inside the argument, which reads back as
 another argument. So does an argument whose word ends its line with a hyphen, which the next line's
-first word would join (decision 11).
+first word would join (decision 11). A comment the parser reports anything in must also hold when
+read back, as Markdown's self-check has it: rendered at columns 0 and 96, it keeps its content and
+settles, or it falls back. Joining the lines of malformed text can change its parse in ways no
+rule names. Well-formed comments don't pay for this.
 
 **Departure: `<pre>` indentation is kept.** GJF removes a margin from `<pre>` content: the least
 indentation after `* ` over every line of the comment, and inside `<pre>{@code`, also the code's
