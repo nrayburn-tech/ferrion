@@ -1,0 +1,24 @@
+version: 2
+updates:
+  # Action pins are full commit SHAs; this keeps them current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      patch:
+        update-types: [patch]
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: cargo
+    directory: /fuzz
+    schedule:
+      interval: weekly
+    groups:
+      patch:
+        update-types: [patch]
