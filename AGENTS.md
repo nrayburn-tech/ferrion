@@ -4,8 +4,8 @@ These are the main instructions for every coding agent working in this repositor
 Copilot, Gemini, Claude Code and others read this file. Humans should read
 [CONTRIBUTING.md](CONTRIBUTING.md) too; it has the full commands and the clean-room policy.
 
-The closest `AGENTS.md` to the file you are editing takes precedence. Keep this file short and put
-details in `docs/`.
+The closest `AGENTS.md` to the file you are editing takes precedence. Each crate has its own at
+`crates/<name>/AGENTS.md`. Keep this file short and put details in `docs/`.
 
 ## What Ferrion is
 
@@ -160,9 +160,9 @@ thresholds, public contracts, stack depth, `unsafe`, and CI.
 
 ## Testing
 
-- Unit tests sit next to the code. Integration tests go in `crates/<crate>/tests/`. Use the
-  crate's existing test setup, and don't add test frameworks, helper crates or test styles without
-  asking.
+- Unit tests sit next to the code. Integration tests go in `crates/<crate>/tests/`. Each crate's
+  `AGENTS.md` has a "where tests go" table. Use the crate's existing test setup, and don't add test
+  frameworks, helper crates or test styles without asking.
 - Snapshot tests are rewritten with `FERRION_BLESS=1`, oracle snapshots with `--bless`. Review every
   resulting diff by hand. Never bulk-accept.
 - `cargo test` is hermetic. The corpus and oracle checks are separate commands, and CI runs them in
