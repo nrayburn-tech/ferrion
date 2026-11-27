@@ -3,7 +3,7 @@
 A change of a kind listed below is **Deep tier** (see [model-tiers.md](model-tiers.md)). It needs
 the extra requirements listed for that area and a Deep-tier review before merge. The areas describe
 kinds of change, not whole crates: most of Ferrion's crates hold both high-risk code and routine
-code.
+code, and each crate's `AGENTS.md` says which is which.
 
 Correctness is Ferrion's first goal ([SCOPE.md](../SCOPE.md#goals)). Most of these areas are where a
 mistake produces output that looks right and isn't.
