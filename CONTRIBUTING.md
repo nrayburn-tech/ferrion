@@ -111,7 +111,9 @@ Concerns are taken seriously, and code with unclear provenance is removed or rew
 
 ### Checks
 
-CI runs the following, and each must pass before a change is merged:
+CI runs the following, and each must pass before a change is merged. `just ready` runs them all
+(it needs [`just`](https://github.com/casey/just) and a clean working tree), and `just --list` shows
+each one on its own:
 
 ```bash
 cargo fmt --all --check
@@ -131,6 +133,10 @@ cargo deny check
 
 ```bash
 cargo deny --manifest-path fuzz/Cargo.toml check
+```
+
+```bash
+cargo codegen && git diff --exit-code
 ```
 
 ```bash
