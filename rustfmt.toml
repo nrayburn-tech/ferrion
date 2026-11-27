@@ -1,0 +1,7 @@
+# Stable rustfmt options only. The edition is set here too, so rustfmt run on a single file
+# formats the same way as `cargo fmt`.
+edition = "2024"
+style_edition = "2024"
+newline_style = "Unix"
+use_field_init_shorthand = true
+use_try_shorthand = true
