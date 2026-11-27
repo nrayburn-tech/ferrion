@@ -593,9 +593,9 @@ History on `main` is linear, so each commit can be read, bisected, and reverted 
 - **No merge commits in a pull request.** Combine work from several branches by rebasing one onto
   another, not by merging them.
 - **Each commit stands on its own.** Every commit builds and passes the checks above, and does one
-  thing. Before review, tidy the series with `git rebase -i origin/main`: squash fixups into the
-  commit they fix, and split commits that do several things. Address review feedback the same
-  way, with `git commit --fixup` and `git rebase -i --autosquash`, rather than with "fix review"
-  commits.
+  thing. Nothing in it names a file, command or check that only a later commit adds. Before
+  review, tidy the series with `git rebase -i origin/main`: squash fixups into the commit they
+  fix, and split commits that do several things. Address review feedback the same way, with
+  `git commit --fixup` and `git rebase -i --autosquash`, rather than with "fix review" commits.
 - **Pull requests land by rebasing** them onto `main`, never with a merge commit. A pull request
   whose commits don't stand on their own is squashed into one instead.
