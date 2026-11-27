@@ -20,7 +20,7 @@
 //! shows it doing, so that the first error matches javac's.
 
 // Functions for areas not written yet.
-#![allow(dead_code)]
+#![allow(dead_code, reason = "for the grammar areas still to come")]
 
 #[cfg(test)]
 mod tests;

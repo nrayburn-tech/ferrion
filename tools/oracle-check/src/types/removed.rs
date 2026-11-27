@@ -715,7 +715,7 @@ fn add_class(class: &str, classes: &mut HashSet<String>, names: &mut HashSet<Str
 }
 
 /// Compares one source set's files with javac's, counting into `row`.
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "one source set's whole context")]
 fn compare_set(
     snapshot: Snapshot,
     view: SourceSetId,

@@ -42,3 +42,11 @@ toml = "1"
 
 [workspace.lints.rust]
 unsafe_code = "deny"
+
+[workspace.lints.clippy]
+# Leftovers from debugging or unfinished work don't land.
+dbg_macro = "warn"
+todo = "warn"
+unimplemented = "warn"
+# A lint exception says why. Prefer `#[expect(lint, reason = "...")]`.
+allow_attributes_without_reason = "warn"
