@@ -1,0 +1,30 @@
+# Only the repository's own source, config and docs. Test inputs (snapshots, fuzz seeds and
+# regressions, oracle difference cases) are left as they are: many are malformed on purpose, with
+# trailing whitespace, missing final newlines or other line endings.
+root = true
+
+[*.{rs,toml,md,yml,yaml,json,py,sh,grammar}]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{yml,yaml,json}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = 100
+
+[*.rs]
+max_line_length = 100
+
+[{fuzz/seeds/**,**/tests/**,tools/oracle-check/differences/**,tools/oracle-check/parser-cases/**,tools/format-check/differences/**}]
+charset = unset
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+indent_style = unset
+indent_size = unset
