@@ -1,0 +1,33 @@
+name: Feature request
+description: Suggest something Ferrion should do
+labels: [enhancement, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check the goals and non-goals in docs/SCOPE.md first. Ferrion makes no network requests, does not replace javac, and has one formatting style.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should Ferrion do? Include example input, commands, ferrion.jsonc snippets or output.
+  - type: textarea
+    id: prior-art
+    attributes:
+      label: Prior art
+      description: How do Google Java Format, Checkstyle, PMD, Error Prone or other tools handle this? Describe their documented or observed behavior, not their code.
+  - type: checkboxes
+    id: contract
+    attributes:
+      label: Does this change a public contract?
+      options:
+        - label: "CLI commands, flags, exit codes or output formats"
+        - label: "`ferrion.jsonc`, its schema, or the project model"
+        - label: "Rule names or the formatter's style"

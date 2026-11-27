@@ -1,0 +1,56 @@
+name: Bug report
+description: Something Ferrion did wrong
+labels: [bug, needs-triage]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Formatter, Linter, Language server, CLI or configuration, Maven plugin, IntelliJ extension, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Include the exact command and the full output.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: For formatting, the output you expected, and Google Java Format's output if you know it.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: >-
+        The smallest Java input that shows the problem, and your ferrion.jsonc if you have one.
+        Please write or reduce the input yourself rather than pasting code you can't share.
+      render: java
+    validations:
+      required: true
+  - type: input
+    id: java-version
+    attributes:
+      label: Java version given to Ferrion
+      placeholder: the --java-version value, or the source set's release
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Ferrion version
+      placeholder: output of `ferrion version`, or a commit
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Linux, macOS, Windows, Other]
+    validations:
+      required: true
