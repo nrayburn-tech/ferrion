@@ -36,6 +36,7 @@ docs/ROADMAP.md     phases, tracks and their exit criteria
 docs/style.md       the formatter's style, construct by construct, and each departure from GJF
 docs/design/        design documents: the decisions in force for each component
 docs/agents/        agent guidance: model tiers, high-risk areas, verification
+.agents/skills/     task playbooks any agent can follow (see "Skills" below)
 .github/workflows/  CI, fuzzing, the weekly oracle run, the daily advisory audit
 justfile            `just ready` runs CI's required checks
 ```
@@ -115,7 +116,7 @@ thresholds, public contracts, stack depth, `unsafe`, and CI.
 - Departing from a decision a design document in [docs/design/](docs/design/) records. Change the
   design document first, and get it reviewed, before code depends on the change.
 - Editing CI workflows, `deny.toml`, either `rust-toolchain.toml`, workspace lints,
-  `.cargo/config.toml`, `tools/scancode/`, `justfile`, or any `AGENTS.md`.
+  `.cargo/config.toml`, `tools/scancode/`, `justfile`, `.agents/`, or any `AGENTS.md`.
 - Moving a pin: the Google Java Format version, a corpus project's commit, or the javac tests' tag.
 - Running `cargo corpus lock`, which runs a corpus project's own build.
 - Shortening or skipping CI's fuzz or oracle runs.
@@ -193,6 +194,16 @@ thresholds, public contracts, stack depth, `unsafe`, and CI.
 5. The PR description discloses AI assistance: exact model and version, reasoning effort and tier.
    If you don't know the exact model or effort, say so; don't guess.
 
+## Skills
+
+Task playbooks live in `.agents/skills/<name>/SKILL.md`. When a task matches one, read the whole
+file before you start.
+
+| Skill                                          | Use it when                                                           |
+| ---------------------------------------------- | --------------------------------------------------------------------- |
+| [pr-writer](.agents/skills/pr-writer/SKILL.md) | Writing a PR title or description, or before opening or updating a PR |
+| [triage](.agents/skills/triage/SKILL.md)       | Investigating a bug report                                            |
+
 ## Commits and PRs
 
 - **Commit messages** have a short, imperative subject that states the behavior, not the file
@@ -202,6 +213,6 @@ thresholds, public contracts, stack depth, `unsafe`, and CI.
   it names a file, command or check that only a later commit adds. History on `main` is linear:
   rebase, never merge (see [CONTRIBUTING.md](CONTRIBUTING.md#rebase-dont-merge)).
 - Agents do not commit, push or open PRs unless the human asks them to.
-- Fill in [the PR template](.github/pull_request_template.md) completely, including the provenance
-  items.
+- Write PRs with the pr-writer skill, and fill in
+  [the PR template](.github/pull_request_template.md) completely, including the provenance items.
   Behavior changes show before and after output captured by actually running Ferrion.
