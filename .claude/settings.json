@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(just ready)",
+      "Bash(just fmt)",
+      "Bash(just fmt-check)",
+      "Bash(just lint)",
+      "Bash(just test:*)",
+      "Bash(just deny)",
+      "Bash(just codegen-check)",
+      "Bash(just scancode)",
+      "Bash(cargo check:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo nextest run:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(cargo doc:*)",
+      "Bash(cargo tree:*)",
+      "Bash(cargo metadata:*)",
+      "Bash(cargo deny check:*)",
+      "Bash(cargo deny --manifest-path fuzz/Cargo.toml check:*)",
+      "Bash(cargo codegen:*)",
+      "Bash(cargo parser-check:*)",
+      "Bash(cargo format-check:*)",
+      "Bash(cargo oracle:*)",
+      "Bash(cargo benchmark:*)",
+      "Bash(cargo fuzz list:*)",
+      "Bash(cargo fuzz run:*)",
+      "Bash(cargo fuzz tmin:*)",
+      "Bash(rustfmt:*)",
+      "Bash(rustc --version)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(rg:*)"
+    ],
+    "ask": [
+      "Bash(cargo add:*)",
+      "Bash(cargo remove:*)",
+      "Bash(cargo update:*)",
+      "Bash(cargo install:*)",
+      "Bash(cargo corpus lock:*)",
+      "Bash(git push:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean:*)",
+      "Bash(git checkout -- :*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh workflow run:*)"
+    ],
+    "deny": [
+      "Bash(cargo publish:*)",
+      "Bash(cargo yank:*)",
+      "Bash(cargo owner:*)",
+      "Bash(cargo login:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push origin main:*)",
+      "Bash(gh release:*)",
+      "Bash(sudo:*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(~/.cargo/credentials)",
+      "Read(~/.cargo/credentials.toml)",
+      "Read(~/.m2/settings.xml)",
+      "Read(~/.m2/settings-security.xml)",
+      "Read(~/.gradle/gradle.properties)",
+      "Read(~/.ssh/**)",
+      "Read(~/.gnupg/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-files.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/agent-tier.sh\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/format-file.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}
