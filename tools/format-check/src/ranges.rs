@@ -522,7 +522,7 @@ fn run_span(tree: &SyntaxTree, run: &Run) -> (u32, u32) {
     )
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, reason = "one mutation's whole context")]
 fn check_mutation(
     clean: &Clean,
     clean_ranges: &Ranges<'_>,

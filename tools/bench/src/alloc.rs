@@ -5,7 +5,7 @@
 //! method only forwards to `System` with the caller's arguments; nothing else touches the
 //! pointers. The tool isn't shipped, and the crates it measures stay free of unsafe code.
 
-#![allow(unsafe_code)]
+#![allow(unsafe_code, reason = "a counting allocator, in a tool never shipped")]
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicU64, Ordering::Relaxed};

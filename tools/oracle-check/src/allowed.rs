@@ -9,7 +9,7 @@
 use serde::Serialize;
 
 /// The categories SCOPE.md allows differences in. Not every one has an entry yet.
-#[allow(dead_code)]
+#[allow(dead_code, reason = "not every category has an entry yet")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Category {
