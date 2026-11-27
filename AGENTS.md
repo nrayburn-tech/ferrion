@@ -214,5 +214,6 @@ file before you start.
   rebase, never merge (see [CONTRIBUTING.md](CONTRIBUTING.md#rebase-dont-merge)).
 - Agents do not commit, push or open PRs unless the human asks them to.
 - Write PRs with the pr-writer skill, and fill in
-  [the PR template](.github/pull_request_template.md) completely, including the provenance items.
-  Behavior changes show before and after output captured by actually running Ferrion.
+  [the PR template](.github/pull_request_template.md) completely, including the provenance items
+  and the AI disclosure. Behavior changes show before and after output captured by actually running
+  Ferrion.
