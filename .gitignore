@@ -1,7 +1,10 @@
 target/
 __pycache__/
 mise.toml
-.claude/
+# Personal agent overrides and agent worktrees (shared settings live in .claude/settings.json)
+.claude/settings.local.json
+.claude/worktrees/
+CLAUDE.local.md
 
 # Local triage workspaces (.agents/skills/triage)
 /triage/

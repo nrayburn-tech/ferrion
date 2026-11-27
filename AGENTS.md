@@ -1,7 +1,7 @@
 # AGENTS.md: Ferrion
 
 These are the main instructions for every coding agent working in this repository. Codex, Cursor,
-Copilot, Gemini, Claude Code and others read this file. Humans should read
+Copilot, Gemini, Claude Code and others read this file. `CLAUDE.md` imports it. Humans should read
 [CONTRIBUTING.md](CONTRIBUTING.md) too; it has the full commands and the clean-room policy.
 
 The closest `AGENTS.md` to the file you are editing takes precedence. Each crate has its own at
@@ -38,6 +38,7 @@ docs/design/        design documents: the decisions in force for each component
 docs/agents/        agent guidance: model tiers, high-risk areas, verification
 .agents/skills/     task playbooks any agent can follow (see "Skills" below)
 .github/workflows/  CI, fuzzing, the weekly oracle run, the daily advisory audit
+.claude/            Claude Code settings, hooks and subagents (other agents: ignore)
 justfile            `just ready` runs CI's required checks
 ```
 
@@ -116,7 +117,8 @@ thresholds, public contracts, stack depth, `unsafe`, and CI.
 - Departing from a decision a design document in [docs/design/](docs/design/) records. Change the
   design document first, and get it reviewed, before code depends on the change.
 - Editing CI workflows, `deny.toml`, either `rust-toolchain.toml`, workspace lints,
-  `.cargo/config.toml`, `tools/scancode/`, `justfile`, `.agents/`, or any `AGENTS.md`.
+  `.cargo/config.toml`, `tools/scancode/`, `justfile`, `.claude/`, `.agents/`, or any
+  `AGENTS.md`/`CLAUDE.md`.
 - Moving a pin: the Google Java Format version, a corpus project's commit, or the javac tests' tag.
 - Running `cargo corpus lock`, which runs a corpus project's own build.
 - Shortening or skipping CI's fuzz or oracle runs.
