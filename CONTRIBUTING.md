@@ -7,6 +7,10 @@ What Ferrion is and is not is defined in [docs/SCOPE.md](docs/SCOPE.md), and the
 in [docs/ROADMAP.md](docs/ROADMAP.md). A change that would alter the scope starts as a change to
 SCOPE.md, discussed in an issue before any code is written.
 
+[AGENTS.md](AGENTS.md) is the short rulebook for coding agents, and for humans too: guardrails,
+conventions and the definition of done. Each crate has its own `AGENTS.md` that says where its tests
+go.
+
 ## Licensing
 
 Ferrion is dual-licensed under the [MIT License](LICENSE-MIT) and the
@@ -96,6 +100,22 @@ The lexer and parser are hand-written; parser generators are not used.
 
 If you believe something in Ferrion was copied or ported in violation of this policy, open an issue.
 Concerns are taken seriously, and code with unclear provenance is removed or rewritten.
+
+## AI-assisted contributions
+
+AI-assisted contributions are welcome, and the repository is set up for them: `AGENTS.md`,
+`CLAUDE.md` and `docs/agents/`. The rules are:
+
+1. **You are the author.** You must understand and be able to defend every line you submit, and the
+   clean-room policy applies to generated code as it does to yours.
+2. **Disclose it** in the pull-request template: the exact model name and version, the reasoning
+   effort, and the tier(s) used ([model-tiers.md](docs/agents/model-tiers.md)). If you don't know
+   the exact model or effort, say so rather than guessing.
+3. **Match the tier to the risk.** Changes in [high-risk areas](docs/agents/high-risk-areas.md) must
+   have a Deep-tier review, by a capable model, a maintainer or both.
+4. **Don't loosen the guardrails** (`.claude/settings.json`, hooks, `deny.toml`, lint config,
+   thresholds) to get an agent unstuck. Fix the root cause or ask.
+5. **Low-quality or unreviewed AI output is closed without review.**
 
 ## Development
 
